@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+:root {
+  --primary-blue: #1E2A36;
+  --accent-orange: #FF8A00;
+  --white: #FFFFFF;
+  --black-text: #1A1A1A;
+  --gray-text: #666666;
+  --light-gray: #F5F5F5;
+
+  /* Spacing system */
+  --spacing-8: 8px;
+  --spacing-16: 16px;
+  --spacing-24: 24px;
+  --spacing-32: 32px;
+  --spacing-48: 48px;
+  --spacing-64: 64px;
+  --spacing-80: 80px;
+  --spacing-100: 100px;
+
+  /* Shadows */
+  --shadow-subtle: 0px 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0px 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+@theme inline {
+  --color-background: var(--white);
+  --color-foreground: var(--black-text);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--white);
+  color: var(--black-text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+h1 {
+  font-size: 40px;
+  line-height: 48px;
+  letter-spacing: -0.5px;
+  font-weight: 600;
+}
+
+h2 {
+  font-size: 32px;
+  line-height: 40px;
+  font-weight: 600;
+}
+
+h3 {
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+}
+
+p {
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.small-text {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.btn {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  padding: 12px 24px;
+  border-radius: 6px;
+  display: inline-block;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background-color: var(--accent-orange);
+  color: var(--white);
+}
+
+.btn-primary:hover {
+  background-color: #e67e00;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.section {
+  padding: var(--spacing-100) 0;
+}
+
+.card {
+  border-radius: 8px;
+  padding: var(--spacing-32);
+  box-shadow: var(--shadow-subtle);
+}
