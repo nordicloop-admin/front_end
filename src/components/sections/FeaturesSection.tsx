@@ -16,7 +16,10 @@ const FeaturesSection = () => {
                   src="/sample-requests.jpg"
                   alt="Sample Requests"
                   fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover rounded-2xl"
+                  priority
+                  loading="eager"
                 />
               </div>
               <div className="pt-4">
@@ -40,7 +43,10 @@ const FeaturesSection = () => {
                   src="/secure-transactions.jpg"
                   alt="Secure Transactions"
                   fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover rounded-2xl"
+                  priority
+                  loading="eager"
                 />
               </div>
               <div className="pt-4">

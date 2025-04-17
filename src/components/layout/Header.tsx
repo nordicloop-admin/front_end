@@ -12,7 +12,9 @@ const Header = () => {
               src="/nordic logo.png"
               alt="Nordic Loop Logo"
               fill
+              sizes="120px"
               priority
+              loading="eager"
               className="object-contain"
             />
           </div>

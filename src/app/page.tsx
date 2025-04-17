@@ -4,7 +4,6 @@ import MarketplaceSection from "../components/sections/MarketplaceSection";
 import FeaturesSection from "../components/sections/FeaturesSection";
 import AnalyticsSection from "../components/sections/AnalyticsSection";
 import StatsSection from "../components/sections/StatsSection";
-import NewsletterSection from "../components/sections/NewsletterSection";
 import ContactFormSection from "../components/sections/ContactFormSection";
 
 export default function Home() {
@@ -16,7 +15,6 @@ export default function Home() {
       <FeaturesSection />
       <AnalyticsSection />
       <StatsSection />
-      {/* <NewsletterSection /> */}
       <ContactFormSection />
     </>
   );

@@ -89,7 +89,10 @@ const ComingSoonPage = () => {
             src="/nordic logo.png"
             alt="Nordic Loop Logo"
             fill
+            sizes="180px"
             className="object-contain"
+            priority
+            loading="eager"
           />
         </div>
 

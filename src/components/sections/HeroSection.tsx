@@ -62,16 +62,21 @@ const HeroSection = () => {
               src="/hero-image.jpg"
               alt="Recycling materials"
               fill
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover rounded-lg"
               priority
+              loading="eager"
             />
           </div>
-          <div className="absolute bottom-4 right-4 w-[120px] h-[120px] bg-white p-2 rounded-lg shadow-md">
+          <div className="absolute bottom-4 right-4 w-[140px] h-[170px] bg-white p-2 rounded-lg shadow-md border-6 border-white">
             <Image
-              src="/recycling-icon.jpg"
+              src="/Nordic Garbage.jpeg"
               alt="Recycling icon"
               fill
-              className="object-cover rounded-md"
+              sizes="120px"
+              className="object-fill rounded-md"
+              priority
+              loading="eager"
             />
           </div>
         </div>

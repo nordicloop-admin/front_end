@@ -8,7 +8,7 @@ const MarketplaceSection = () => {
       <div className=" mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-32 items-center">
           <div>
-            <h3 className="text-md md:text-mdfont-semibold mb-3 text-[#1E2A36]">Waste Marketplace</h3>
+            <h3 className="text-md md:text-md font-semibold mb-3 text-[#1E2A36]">Waste Marketplace</h3>
             <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#1E2A36]">
             Discover Endless Recycling And <br/> Material-Sourcing Opportunities!
             </h2>
@@ -32,7 +32,10 @@ const MarketplaceSection = () => {
               src="/marketplace-image.jpg"
               alt="Recycling materials"
               fill
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover rounded-lg"
+              priority
+              loading="eager"
             />
           </div>
         </div>

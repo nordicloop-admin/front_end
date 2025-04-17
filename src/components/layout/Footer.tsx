@@ -67,7 +67,10 @@ const Footer = () => {
                       src="/nordic logo.png"
                       alt="Nordic Loop Logo"
                       fill
+                      sizes="140px"
                       className="object-contain"
+                      priority
+                      loading="eager"
                     />
                   </div>
                 </div>
