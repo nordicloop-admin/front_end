@@ -76,24 +76,26 @@ const ContactFormSection = () => {
   };
 
   return (
-    <section className="py-10 md:py-16 bg-white">
-      <div className="mx-auto px-4 md:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row gap-8 items-start">
+    <section className="py-10 md:py-16 bg-white min-h-[600px] flex items-center">
+      <div className="mx-auto px-4 md:px-6 lg:px-8 w-full">
+        <div className="flex flex-col md:flex-row gap-8 items-center">
           {/* Left side - Contact us text */}
-          <div className="md:w-1/2">
-            <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Contact us</h3>
+          <div className="md:w-1/2 flex items-center self-stretch">
+            <div>
+              <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Contact us</h3>
 
-            <h2 className="text-2xl md:text-3xl font-semibold text-[#1E2A36] mb-4">
-              Welcome to a world of limitless<br/> possibilities, where the journey is as <br/> exhilarating as the destination,
-            </h2>
+              <h2 className="text-2xl md:text-3xl font-semibold text-[#1E2A36] mb-4">
+                Welcome to a world of limitless<br/> possibilities, where the journey is as <br/> exhilarating as the destination,
+              </h2>
 
-            <p className="text-sm md:text-base text-gray-600 mb-4">
-              where every moment is an opportunity to make your mark <br/> on the canvas of existence. The only limit is the extent of <br/>your imagination.
-            </p>
+              <p className="text-sm md:text-base text-gray-600 mb-4">
+                where every moment is an opportunity to make your mark <br/> on the canvas of existence. The only limit is the extent of <br/>your imagination.
+              </p>
+            </div>
           </div>
 
           {/* Right side - Contact form */}
-          <div className="md:w-1/2 bg-gray-50 p-6 rounded-lg">
+          <div className="md:w-1/2 bg-gray-50 p-6 rounded-lg self-stretch">
             <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Send Us Message</h3>
 
             {/* Status message */}
