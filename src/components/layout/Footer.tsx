@@ -1,8 +1,56 @@
-import React from 'react';
+"use client";
+
+import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
 const Footer = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{ success: boolean; message: string } | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+
+    // Get form data
+    const formElement = e.target as HTMLFormElement;
+    const nameInput = formElement.querySelector('input[name="name"]') as HTMLInputElement;
+    const emailInput = formElement.querySelector('input[name="email"]') as HTMLInputElement;
+
+    const name = nameInput?.value;
+    const email = emailInput?.value;
+
+    if (!name || !email) {
+      setSubmitStatus({ success: false, message: 'Please fill in all fields' });
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus({ success: true, message: 'Thank you for subscribing!' });
+        // Reset form
+        formElement.reset();
+      } else {
+        setSubmitStatus({ success: false, message: data.message || 'Something went wrong' });
+      }
+    } catch (error) {
+      setSubmitStatus({ success: false, message: 'Failed to connect to server' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   return (
     <footer className="bg-[#1E2A36] text-white py-12">
       <div className="max-w-[86%] mx-auto">
@@ -81,26 +129,37 @@ const Footer = () => {
 
             {/* Newsletter inputs */}
             <div className="flex justify-between">
-              <div className="flex flex-col md:flex-row gap-4 w-full">
-                <input
-                  type="text"
-                  placeholder="Your full name"
-                  className="px-4 py-3 bg-[#2A3642] border-none rounded-sm focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-gray-300 placeholder-gray-400 w-full md:flex-1"
-                />
+              <form onSubmit={handleSubmit} className="w-full">
+                <div className="flex flex-col md:flex-row gap-4 w-full">
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Your full name"
+                    className="px-4 py-3 bg-[#2A3642] border-none rounded-sm focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-gray-300 placeholder-gray-400 w-full md:flex-1"
+                  />
 
-                <input
-                  type="email"
-                  placeholder="Your email"
-                  className="px-4 py-3 bg-[#2A3642] border-none rounded-sm focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-gray-300 placeholder-gray-400 w-full md:flex-1"
-                />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Your email"
+                    className="px-4 py-3 bg-[#2A3642] border-none rounded-sm focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-gray-300 placeholder-gray-400 w-full md:flex-1"
+                  />
 
-                <button
-                  type="submit"
-                  className="bg-[#FF8A00] text-white px-8 py-3 rounded-sm hover:bg-[#FF9A20] transition-colors w-full md:w-80 font-medium"
-                >
-                  Subscribe
-                </button>
-              </div>
+                  <button
+                    type="submit"
+                    className="bg-[#FF8A00] text-white px-8 py-3 rounded-sm hover:bg-[#FF9A20] transition-colors w-full md:w-[140px] font-medium"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Subscribing...' : 'Subscribe'}
+                  </button>
+                </div>
+
+                {submitStatus && (
+                  <div className={`mt-2 text-sm ${submitStatus.success ? 'text-green-400' : 'text-red-400'}`}>
+                    {submitStatus.message}
+                  </div>
+                )}
+              </form>
             </div>
           </div>
         </div>
