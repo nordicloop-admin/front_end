@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Header from "../components/layout/Header";
@@ -17,6 +17,25 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Nordic Loop - The Marketplace Where Waste Becomes a Resource",
   description: "Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.",
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.png' },
+    ],
+    apple: [
+      { url: '/favicon.png' },
+    ],
+  },
+  manifest: '/site.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Nordic Loop',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#1E2A36',
 };
 
 export default function RootLayout({
