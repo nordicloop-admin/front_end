@@ -20,22 +20,22 @@ const Header = () => {
 
         <div className="flex items-center space-x-8">
           <nav className="hidden md:flex space-x-8">
-            <Link href="/about" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
+            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
               About Us
             </Link>
-            <Link href="/marketplace" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
+            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
               Market Place
             </Link>
-            <Link href="/pricing" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
+            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
               Pricing
             </Link>
-            <Link href="/contact" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
+            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
               Contact
             </Link>
           </nav>
 
           <Link
-            href="/login"
+            href="/coming-soon"
             className="bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors font-medium"
           >
             Log In

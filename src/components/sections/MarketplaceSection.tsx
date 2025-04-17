@@ -19,12 +19,12 @@ const MarketplaceSection = () => {
               Dive into a world of innovative tools designed to help you achieve <br/>  and exceed your
               sustainability goals.
             </p>
-           
+
             <Link
-              href="/marketplace"
+              href="/coming-soon"
               className="bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors inline-block w-[140px] text-center text-sm font-medium"
             >
-              Market place 
+              Market place
             </Link>
           </div>
           <div className="relative h-[300px] md:h-[400px]">

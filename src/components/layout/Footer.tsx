@@ -4,12 +4,12 @@ import Link from 'next/link';
 
 const Footer = () => {
   return (
-    <footer className="bg-[#1E2A36] text-white py-8">
+    <footer className="bg-[#1E2A36] text-white py-12">
       <div className="container mx-auto px-4 md:px-6 lg:px-8">
         {/* Top section with logo, navigation and social icons */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-12">
           {/* Logo */}
-          <div className="mb-4 md:mb-0">
+          <div className="mb-6 md:mb-0">
             <Link href="/" className="block">
               <div className="flex items-center">
                 <div className="relative w-[140px] h-[40px]">
@@ -25,17 +25,17 @@ const Footer = () => {
           </div>
 
           {/* Navigation */}
-          <div className="flex space-x-6 mb-4 md:mb-0">
-            <Link href="/about" className="text-white hover:text-gray-300 transition-colors">
+          <div className="flex space-x-8 mb-6 md:mb-0">
+            <Link href="/coming-soon" className="text-white hover:text-gray-300 transition-colors">
               About Us
             </Link>
-            <Link href="/marketplace" className="text-white hover:text-gray-300 transition-colors">
+            <Link href="/coming-soon" className="text-white hover:text-gray-300 transition-colors">
               Market Place
             </Link>
-            <Link href="/pricing" className="text-white hover:text-gray-300 transition-colors">
+            <Link href="/coming-soon" className="text-white hover:text-gray-300 transition-colors">
               Pricing
             </Link>
-            <Link href="/contact" className="text-white hover:text-gray-300 transition-colors">
+            <Link href="/coming-soon" className="text-white hover:text-gray-300 transition-colors">
               Contact
             </Link>
           </div>
@@ -66,30 +66,30 @@ const Footer = () => {
         </div>
 
         {/* Newsletter section */}
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8">
-          <div className="mb-4 md:mb-0">
+        <div className="flex flex-col md:flex-row justify-between items-center mb-16">
+          <div className="mb-6 md:mb-0">
             <h3 className="text-base font-normal">
               Get to know us more.<br/>
               Join our newsletter.
             </h3>
           </div>
-          
+
           <div className="w-full md:w-auto flex flex-col md:flex-row gap-4">
             <input
               type="text"
               placeholder="Your full name"
-              className="px-4 py-2 bg-transparent border border-gray-600 rounded focus:outline-none focus:border-[#FF8A00] text-white w-full md:w-[240px]"
+              className="px-4 py-3 bg-transparent border border-gray-600 rounded-md focus:outline-none focus:border-[#FF8A00] text-white w-full md:w-[240px]"
             />
-            
+
             <input
               type="email"
               placeholder="Your email"
-              className="px-4 py-2 bg-transparent border border-gray-600 rounded focus:outline-none focus:border-[#FF8A00] text-white w-full md:w-[240px]"
+              className="px-4 py-3 bg-transparent border border-gray-600 rounded-md focus:outline-none focus:border-[#FF8A00] text-white w-full md:w-[240px]"
             />
-            
+
             <button
               type="submit"
-              className="bg-[#FF8A00] text-white px-6 py-2 rounded hover:bg-[#e67e00] transition-colors w-full md:w-auto"
+              className="bg-[#FF8A00] text-white px-6 py-3 rounded-md hover:bg-[#e67e00] transition-colors w-full md:w-auto font-medium"
             >
               Subscribe
             </button>
@@ -97,9 +97,12 @@ const Footer = () => {
         </div>
 
         {/* Copyright */}
-        <div className="text-center md:text-left mt-8">
-          <p className="text-sm text-gray-400">
-            © Nordic loop 2025, all right reserved
+        <div className="border-t border-gray-700 pt-8">
+          <p className="text-sm text-gray-400 text-center flex items-center justify-center">
+            <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 20C7.59 20 4 16.41 4 12C4 7.59 7.59 4 12 4C16.41 4 20 7.59 20 12C20 16.41 16.41 20 12 20ZM11.07 15.83L16.5 10.4L15.1 9L11.07 13.03L8.9 10.86L7.5 12.26L11.07 15.83Z" fill="currentColor"/>
+            </svg>
+            Nordic loop 2025, all right reserved
           </p>
         </div>
       </div>

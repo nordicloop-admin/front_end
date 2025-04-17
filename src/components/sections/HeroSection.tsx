@@ -30,7 +30,7 @@ const HeroSection = () => {
     <section
       className=" w-full section-margin"
       // style={{ minHeight: heroHeight }}
-      
+
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-32  w-full  py-10 ">
         <div className="order-2 md:order-1 flex flex-col justify-center items-start w-full">
@@ -43,13 +43,13 @@ const HeroSection = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
             <Link
-              href="/join"
+              href="/coming-soon"
               className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center  w-full flex items-center justify-center  font-medium"
             >
               Join Us Now
             </Link>
             <Link
-              href="/marketplace"
+              href="/coming-soon"
               className="bg-[#F5F5F5] text-[#FF8A00] px-6 py-3 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center w-full flex items-center justify-center font-medium"
             >
               Our Market Place
