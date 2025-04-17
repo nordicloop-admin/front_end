@@ -32,6 +32,35 @@ export const metadata: Metadata = {
     statusBarStyle: 'default',
     title: 'Nordic Loop',
   },
+  // Open Graph metadata for social sharing
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://nordicloop.onrender.com/',
+    siteName: 'Nordic Loop',
+    title: 'Nordic Loop - The Marketplace Where Waste Becomes a Resource',
+    description: 'Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.',
+    images: [
+      {
+        url: 'https://nordicloop.onrender.com/logo.png',
+        width: 512,
+        height: 512,
+        alt: 'Nordic Loop Logo',
+      },
+    ],
+  },
+  // Twitter card metadata
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Nordic Loop - The Marketplace Where Waste Becomes a Resource',
+    description: 'Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.',
+    images: ['https://nordicloop.onrender.com/logo.png'],
+    creator: '@nordicloop',
+  },
+  // Canonical URL
+  alternates: {
+    canonical: 'https://nordicloop.onrender.com/',
+  },
 };
 
 export const viewport: Viewport = {
