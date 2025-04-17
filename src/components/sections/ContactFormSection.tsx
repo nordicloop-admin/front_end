@@ -84,11 +84,11 @@ const ContactFormSection = () => {
             <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Contact us</h3>
 
             <h2 className="text-2xl md:text-3xl font-semibold text-[#1E2A36] mb-4">
-              Welcome to a world of limitless possibilities, where the journey is as exhilarating as the destination,
+              Welcome to a world of limitless<br/> possibilities, where the journey is as <br/> exhilarating as the destination,
             </h2>
 
             <p className="text-sm md:text-base text-gray-600 mb-4">
-              where every moment is an opportunity to make your mark on the canvas of existence. The only limit is the extent of your imagination.
+              where every moment is an opportunity to make your mark <br/> on the canvas of existence. The only limit is the extent of <br/>your imagination.
             </p>
           </div>
 

@@ -48,8 +48,8 @@ body {
 }
 
 /* h1 {
-  font-size: 40px; 
-  line-height: 48px; 
+  font-size: 40px;
+  line-height: 48px;
   letter-spacing: -0.5px;
   font-weight: 600;
 }
@@ -133,7 +133,7 @@ p {
 /* Section alignment system */
 /* section {
   @apply py-16;
-  
+
   & > div {
     @apply mx-auto px-4 max-w-7xl w-full;
   }
@@ -147,4 +147,20 @@ p {
   border-radius: 8px;
   padding: var(--spacing-32);
   box-shadow: var(--shadow-subtle);
+}
+
+/* Footer newsletter alignment */
+.footer-newsletter-inputs {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .footer-newsletter-inputs {
+    flex-direction: row;
+    gap: 1rem;
+    margin-left: 0;
+    position: relative;
+    left: -30px;
+  }
 }
