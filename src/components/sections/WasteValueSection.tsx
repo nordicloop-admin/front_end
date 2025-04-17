@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
+
 
 const WasteValueSection = () => {
   return (
@@ -9,7 +9,7 @@ const WasteValueSection = () => {
         <h3 className="header-h2">
         Optimize your waste management with us—from <br/> Circular Waste Scans to Green Sourcing.
         </h3>
-        <p className="text-p1">
+        <p className="text-p1 mx-auto">
           
           Our market place will facilitate the exchange of surplus materials between <br/> businesses.
           Help you cut costs, enhance resource efficiency, boosting <br/>  profits, reducing environmental
