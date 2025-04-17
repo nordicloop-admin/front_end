@@ -114,46 +114,74 @@ const Header = () => {
 
       {/* Mobile Menu Dropdown */}
       <div
-        className={`mobile-menu-container fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`mobile-menu-container fixed inset-0 z-40 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        style={{
+          backdropFilter: 'blur(2px)',
+          backgroundColor: 'rgba(30, 42, 54, 0.7)', /* Dark blue with transparency */
+          width: '100vw',
+          height: '100vh',
+          left: 0,
+          top: 0,
+          position: 'fixed'
+        }}
       >
         <div
-          className={`absolute right-0 top-0 h-screen bg-[#1E2A36] w-64 shadow-lg transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`absolute right-0 top-0 h-screen bg-[#1E2A36] w-[75%] max-w-[300px] shadow-lg transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
-          <div className="p-6 flex flex-col space-y-6">
-            <Link
-              href="/coming-soon"
-              className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-2 border-b border-gray-700"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              About Us
-            </Link>
-            <Link
-              href="/coming-soon"
-              className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-2 border-b border-gray-700"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Market Place
-            </Link>
-            <Link
-              href="/coming-soon"
-              className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-2 border-b border-gray-700"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/coming-soon"
-              className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-2 border-b border-gray-700"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Contact
-            </Link>
+          <div className="flex flex-col h-full">
+            {/* Menu Header with Close Button */}
+            <div className="flex justify-between items-center p-6 border-b border-gray-700">
+              <h2 className="text-white text-lg font-medium">Menu</h2>
+              <button
+                onClick={() => setIsMenuOpen(false)}
+                className="text-gray-400 hover:text-white focus:outline-none"
+                aria-label="Close menu"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Menu Items */}
+            <div className="flex-1 overflow-y-auto py-6 px-6">
+              <nav className="flex flex-col space-y-4">
+                <Link
+                  href="/coming-soon"
+                  className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  About Us
+                </Link>
+                <Link
+                  href="/coming-soon"
+                  className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Market Place
+                </Link>
+                <Link
+                  href="/coming-soon"
+                  className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Pricing
+                </Link>
+                <Link
+                  href="/coming-soon"
+                  className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Contact
+                </Link>
+              </nav>
+            </div>
 
             {/* Login Button in Mobile Menu */}
-            <div className="mt-4 pt-4">
+            <div className="p-6 border-t border-gray-700">
               <Link
                 href="/coming-soon"
-                className="bg-[#FF8A00] text-white px-6 py-3 rounded-md hover:bg-[#e67e00] transition-colors font-medium block text-center"
+                className="bg-[#FF8A00] text-white px-6 py-3 rounded-md hover:bg-[#e67e00] transition-colors font-medium block text-center w-full"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Log In
