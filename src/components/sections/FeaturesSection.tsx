@@ -6,11 +6,11 @@ import FullWidthSection from '../layout/FullWidthSection';
 const FeaturesSection = () => {
   return (
     <FullWidthSection backgroundColor="#F5F5F5">
-      <section className="py-10 md:py-16 max-w-[86%] mx-auto section-margin rounded-corners">
+      <section className="sections-margin max-w-[86%] mx-auto rounded-corners">
         <div className="mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Sample Requests Feature */}
-            <div className="bg-white rounded-lg overflow-hidden  p-10 rounded-corners">
+            <div className="bg-white rounded-lg overflow-hidden rounded-corners sections-padding">
               <div className="relative h-[300px] ">
                 <Image
                   src="/sample-requests.jpg"
@@ -34,7 +34,7 @@ const FeaturesSection = () => {
             </div>
 
             {/* Secure Transactions Feature */}
-            <div className="bg-white rounded-lg overflow-hidden  p-10 rounded-corners">
+            <div className="bg-white rounded-lg overflow-hidden sections-padding rounded-corners">
               <div className="relative h-[300px]">
                 <Image
                   src="/secure-transactions.jpg"
