@@ -4,16 +4,16 @@ import Link from 'next/link';
 
 const Header = () => {
   return (
-    <header className="bg-[#1E2A36] py-4 px-8 rounded-lg mx-4 mt-4">
-      <div className="container mx-auto flex justify-between items-center">
+    <header className="bg-[#1E2A36] py-8 rounded-lg mt-4">
+      <div className="mx-7 flex justify-between items-center">
         <Link href="/" className="flex items-center">
-          <div className="relative w-[150px] h-[40px]">
+          <div className="relative w-[120px] h-[32px]">
             <Image
-              src="/logo.png"
+              src="/nordic logo.png"
               alt="Nordic Loop Logo"
               fill
               priority
-              className="invert object-contain"
+              className="object-contain"
             />
           </div>
         </Link>

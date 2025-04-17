@@ -2,8 +2,8 @@ import React from 'react';
 
 const StatsSection = () => {
   return (
-    <section className="bg-[#1E2A36] text-white py-10 mx-4 rounded-lg my-8">
-      <div className="container mx-auto px-4">
+    <section className="bg-[#1E2A36] text-white py-10 rounded-lg my-8">
+      <div className="container mx-auto">
         <h2 className="text-center text-xl md:text-2xl font-semibold mb-4">Key Statistics</h2>
         <h3 className="text-center text-lg md:text-xl mb-8">Let's close the loop in the Nordics together.</h3>
 

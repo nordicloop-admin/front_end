@@ -2,7 +2,7 @@ import React from 'react';
 
 const NewsletterSection = () => {
   return (
-    <section className="py-10 md:py-16 px-4">
+    <section className="py-10 md:py-16">
       <div className="container mx-auto max-w-2xl">
         <h2 className="text-xl md:text-2xl font-semibold mb-4 text-center text-[#1E2A36]">
           Get to know us more. Join our newsletter.

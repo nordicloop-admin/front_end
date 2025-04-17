@@ -4,17 +4,17 @@ import Link from 'next/link';
 
 const Footer = () => {
   return (
-    <footer className="bg-[#1E2A36] text-white mt-8">
+    <footer className="bg-[#1E2A36] text-white">
       <div className="container mx-auto py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 px-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <div className="col-span-1">
             <Link href="/" className="block mb-3">
               <div className="relative w-[120px] h-[32px]">
                 <Image
-                  src="/logo.png"
+                  src="/nordic logo.png"
                   alt="Nordic Loop Logo"
                   fill
-                  className="invert object-contain"
+                  className="object-contain"
                 />
               </div>
             </Link>
@@ -76,7 +76,7 @@ const Footer = () => {
         </div>
       </div>
       <div className="border-t border-gray-700">
-        <div className="container mx-auto py-3 text-xs text-gray-400 flex flex-col md:flex-row justify-between items-center px-4">
+        <div className="container mx-auto py-3 text-xs text-gray-400 flex flex-col md:flex-row justify-between items-center">
           <p>© Nordic Loop 2024. All rights reserved.</p>
           <div className="flex space-x-4 mt-2 md:mt-0">
             <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
