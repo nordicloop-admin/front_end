@@ -5,7 +5,7 @@ const StatsSection = () => {
     <section className="bg-[#1E2A36] text-white py-10 my-8 rounded-corners">
       <div className="container mx-auto">
         <h2 className="header-h1">Key Statistics</h2>
-        <h3 className="header-h2">Let's close the loop in the Nordics together.</h3>
+        <h3 className="header-h2">Let&apos;s close the loop in the Nordics together.</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
           <div>

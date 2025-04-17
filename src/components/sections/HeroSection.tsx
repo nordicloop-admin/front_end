@@ -29,7 +29,7 @@ const HeroSection = () => {
   return (
     <section
       className=" w-full section-margin"
-      // style={{ minHeight: heroHeight }}
+      style={{ minHeight: heroHeight }}
 
     >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-32  w-full  py-10 ">
