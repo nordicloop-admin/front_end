@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     description: 'Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.',
     images: [
       {
-        url: 'https://nordicloop.onrender.com/logo.png',
+        url: 'https://nordicloop.onrender.com/og.png',
         width: 512,
         height: 512,
         alt: 'Nordic Loop Logo',
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Nordic Loop - The Marketplace Where Waste Becomes a Resource',
     description: 'Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.',
-    images: ['https://nordicloop.onrender.com/logo.png'],
+    images: ['https://nordicloop.onrender.com/og.png'],
     creator: '@nordicloop',
   },
   // Canonical URL
