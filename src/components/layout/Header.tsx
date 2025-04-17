@@ -13,10 +13,17 @@ const Header = () => {
       if (e.key === 'Escape') setIsMenuOpen(false);
     };
 
+    // This is a backup handler for any clicks that might not be caught by the overlay click handler
     const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('.mobile-menu-container') && !target.closest('.hamburger-button')) {
-        setIsMenuOpen(false);
+      if (isMenuOpen) {
+        const target = e.target as HTMLElement;
+        const menuContent = document.querySelector('.menu-content');
+        const hamburgerButton = document.querySelector('.hamburger-button');
+
+        if (menuContent && !menuContent.contains(target as Node) &&
+            hamburgerButton && !hamburgerButton.contains(target as Node)) {
+          setIsMenuOpen(false);
+        }
       }
     };
 
@@ -27,7 +34,7 @@ const Header = () => {
       document.removeEventListener('keydown', handleEscape);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [isMenuOpen]);
 
   // Prevent body scroll when menu is open
   useEffect(() => {
@@ -114,7 +121,7 @@ const Header = () => {
 
       {/* Mobile Menu Dropdown */}
       <div
-        className={`mobile-menu-container fixed inset-0 z-40 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        className={`fixed inset-0 z-40 transition-opacity duration-300 ${isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
         style={{
           backdropFilter: 'blur(2px)',
           backgroundColor: 'rgba(30, 42, 54, 0.7)', /* Dark blue with transparency */
@@ -124,11 +131,14 @@ const Header = () => {
           top: 0,
           position: 'fixed'
         }}
+        onClick={() => setIsMenuOpen(false)}
+        aria-hidden="true"
       >
         <div
           className={`absolute right-0 top-0 h-screen bg-[#1E2A36] w-[75%] max-w-[300px] shadow-lg transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full menu-content">
             {/* Menu Header with Close Button */}
             <div className="flex justify-between items-center p-6 border-b border-gray-700">
               <h2 className="text-white text-lg font-medium">Menu</h2>
