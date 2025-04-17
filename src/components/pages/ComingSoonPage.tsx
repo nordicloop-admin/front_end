@@ -14,6 +14,11 @@ const ComingSoonPage = () => {
     seconds: 0
   });
 
+  // State for notification form
+  const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState<{ success: boolean; message: string } | null>(null);
+
   // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => {
@@ -37,6 +42,42 @@ const ComingSoonPage = () => {
   // Go back to home page
   const goBack = () => {
     router.push('/');
+  };
+
+  // Handle notification form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+
+    if (!email) {
+      setSubmitStatus({ success: false, message: 'Please enter your email' });
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus({ success: true, message: 'Thank you! We will notify you when we launch.' });
+        setEmail('');
+      } else {
+        setSubmitStatus({ success: false, message: data.message || 'Something went wrong' });
+      }
+    } catch (error) {
+      setSubmitStatus({ success: false, message: 'Failed to connect to server' });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -95,21 +136,30 @@ const ComingSoonPage = () => {
         <div className="border border-gray-200 p-8 rounded-lg mb-10 max-w-md mx-auto shadow-sm bg-white">
           <h3 className="text-xl font-medium text-[#1E2A36] mb-2">Get Notified When We Launch</h3>
           <p className="text-gray-500 mb-6 text-sm">Be the first to know when we go live.</p>
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <input
                 type="email"
                 placeholder="Enter your email"
                 className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-sm"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
               />
             </div>
             <button
               type="submit"
               className="w-full bg-[#FF8A00] text-white py-3 px-4 rounded-md hover:bg-[#e67e00] transition-colors text-center font-medium"
+              disabled={isSubmitting}
             >
-              Notify Me
+              {isSubmitting ? 'Submitting...' : 'Notify Me'}
             </button>
+
+            {submitStatus && (
+              <div className={`mt-2 text-sm ${submitStatus.success ? 'text-green-600' : 'text-red-600'}`}>
+                {submitStatus.message}
+              </div>
+            )}
           </form>
         </div>
 
