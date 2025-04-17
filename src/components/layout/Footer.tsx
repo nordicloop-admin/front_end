@@ -45,7 +45,8 @@ const Footer = () => {
       } else {
         setSubmitStatus({ success: false, message: data.message || 'Something went wrong' });
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error('Newsletter subscription error:', error);
       setSubmitStatus({ success: false, message: 'Failed to connect to server' });
     } finally {
       setIsSubmitting(false);

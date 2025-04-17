@@ -26,7 +26,7 @@ const NewsletterSection = () => {
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-3">
-            By clicking Sign Up you're confirming that you agree with our Terms and Conditions.
+            By clicking Sign Up you&apos;re confirming that you agree with our Terms and Conditions.
           </p>
         </form>
       </div>
