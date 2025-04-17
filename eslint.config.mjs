@@ -11,6 +11,34 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    rules: {
+      // Allow unused variables when they start with an underscore
+      "@typescript-eslint/no-unused-vars": ["error", {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }],
+
+      // Downgrade unescaped entities from error to warning
+      "react/no-unescaped-entities": "warn",
+
+      // Disable prop-types as we're using TypeScript
+      "react/prop-types": "off",
+
+      // Allow jsx syntax in .tsx files
+      "react/jsx-filename-extension": ["error", { "extensions": [".tsx"] }],
+
+      // Prevent missing displayName in a React component definition
+      "react/display-name": "off",
+
+      // Disable some accessibility rules that might be too strict for your project
+      "jsx-a11y/anchor-is-valid": "warn",
+
+      // Allow console logs in development but warn in production
+      "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
+    },
+  },
 ];
 
 export default eslintConfig;

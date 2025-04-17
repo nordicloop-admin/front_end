@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
@@ -73,7 +72,7 @@ const ComingSoonPage = () => {
       } else {
         setSubmitStatus({ success: false, message: data.message || 'Something went wrong' });
       }
-    } catch (error) {
+    } catch {
       setSubmitStatus({ success: false, message: 'Failed to connect to server' });
     } finally {
       setIsSubmitting(false);
@@ -104,7 +103,7 @@ const ComingSoonPage = () => {
         <div className="w-24 h-1 bg-[#FF8A00] mx-auto mb-6"></div>
 
         <p className="text-lg text-gray-600 mb-10 max-w-xl mx-auto">
-          We're working hard to bring you something amazing. This page is under construction.
+          We&apos;re working hard to bring you something amazing. This page is under construction.
         </p>
 
         {/* Countdown Timer */}
