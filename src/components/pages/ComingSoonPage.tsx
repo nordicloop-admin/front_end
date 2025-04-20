@@ -7,8 +7,8 @@ import logger from '@/utils/logger';
 
 const ComingSoonPage = () => {
   const router = useRouter();
-  // Set the target launch date to July 1st, 2024
-  const targetDate = useMemo(() => new Date('2024-07-01T00:00:00'), []);
+  // Set the target launch date to July 1st, 2025
+  const targetDate = useMemo(() => new Date('2025-07-01T00:00:00'), []);
 
   const [countdown, setCountdown] = useState({
     days: 0,
