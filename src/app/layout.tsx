@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from 'next/script';
 import "./globals.css";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
@@ -74,6 +75,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <Script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" strategy="beforeInteractive" />
+        <Script id="emailjs-init" strategy="afterInteractive">
+          {`
+            (function() {
+              if (window.emailjs) {
+                window.emailjs.init('veOcNaUf3dPaLwdEZ');
+              }
+            })();
+          `}
+        </Script>
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

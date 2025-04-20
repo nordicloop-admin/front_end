@@ -67,6 +67,26 @@ const ComingSoonPage = () => {
       const data = await response.json();
 
       if (response.ok) {
+        // Send confirmation email using EmailJS browser library
+        try {
+          // Access the EmailJS global object from the window
+          const emailjs = (window as any).emailjs;
+
+          if (emailjs) {
+            // Send the email
+            await emailjs.send('service_8xb9iql', 'template_t7lmtar', {
+              email: email,
+            });
+
+            console.log('Confirmation email sent successfully');
+          } else {
+            console.error('EmailJS not available');
+          }
+        } catch (emailError) {
+          console.error('Error sending confirmation email:', emailError);
+          // We still consider the subscription successful even if the email fails
+        }
+
         setSubmitStatus({ success: true, message: 'Thank you! We will notify you when we launch.' });
         setEmail('');
       } else {
