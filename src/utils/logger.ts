@@ -6,6 +6,17 @@
 // Check if we're in production environment
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Create no-op functions for production
+const noop = (): void => {};
+
+// Create safe console methods that won't trigger ESLint in production
+// eslint-disable-next-line no-console
+const safeConsoleLog = isProduction ? noop : console.log;
+// eslint-disable-next-line no-console
+const safeConsoleWarn = isProduction ? noop : console.warn;
+// eslint-disable-next-line no-console
+const safeConsoleError = isProduction ? noop : console.error;
+
 /**
  * Logger object with methods that wrap console methods
  * In production, these will be no-ops to avoid console statements
@@ -17,9 +28,7 @@ const logger = {
    * @param optionalParams - Additional parameters to log
    */
   info: (message?: any, ...optionalParams: any[]): void => {
-    if (!isProduction) {
-      console.log(message, ...optionalParams);
-    }
+    safeConsoleLog(message, ...optionalParams);
   },
 
   /**
@@ -28,9 +37,7 @@ const logger = {
    * @param optionalParams - Additional parameters to log
    */
   warn: (message?: any, ...optionalParams: any[]): void => {
-    if (!isProduction) {
-      console.warn(message, ...optionalParams);
-    }
+    safeConsoleWarn(message, ...optionalParams);
   },
 
   /**
@@ -39,8 +46,9 @@ const logger = {
    * @param optionalParams - Additional parameters to log
    */
   error: (message?: any, ...optionalParams: any[]): void => {
-    // We still log errors in production, but could disable if needed
-    console.error(message, ...optionalParams);
+    // In production, we might still want to log errors to some error tracking service
+    // For now, we'll just disable console.error in production as well
+    safeConsoleError(message, ...optionalParams);
   }
 };
 
