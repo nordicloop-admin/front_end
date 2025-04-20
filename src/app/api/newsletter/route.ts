@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import logger from '@/utils/logger';
 
 export async function POST(request: Request) {
   try {
@@ -38,13 +39,13 @@ export async function POST(request: Request) {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error('Airtable error:', error);
+      logger.error('Airtable error:', error);
       throw new Error(error.error?.message || 'Failed to subscribe');
     }
 
     return NextResponse.json({ success: true, message: 'Successfully subscribed to newsletter' });
   } catch (error) {
-    console.error('Newsletter subscription error:', error);
+    logger.error('Newsletter subscription error:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to subscribe to newsletter' },
       { status: 500 }

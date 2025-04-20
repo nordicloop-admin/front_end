@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import logger from '@/utils/logger';
 
 const Footer = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +43,7 @@ const Footer = () => {
         // Send confirmation email using EmailJS browser library
         try {
           // Access the EmailJS global object from the window
-          const emailjs = (window as any).emailjs;
+          const emailjs = (window as Window & typeof globalThis & { emailjs?: { send: (serviceId: string, templateId: string, templateParams: Record<string, unknown>) => Promise<unknown> } }).emailjs;
 
           if (emailjs) {
             // Send the email
@@ -51,12 +52,12 @@ const Footer = () => {
               email: email,
             });
 
-            console.log('Newsletter confirmation email sent successfully');
+            logger.info('Newsletter confirmation email sent successfully');
           } else {
-            console.error('EmailJS not available');
+            logger.error('EmailJS not available');
           }
         } catch (emailError) {
-          console.error('Error sending newsletter confirmation email:', emailError);
+          logger.error('Error sending newsletter confirmation email:', emailError);
           // We still consider the subscription successful even if the email fails
         }
 
@@ -67,7 +68,7 @@ const Footer = () => {
         setSubmitStatus({ success: false, message: data.message || 'Something went wrong' });
       }
     } catch (error: unknown) {
-      console.error('Newsletter subscription error:', error);
+      logger.error('Newsletter subscription error:', error);
       setSubmitStatus({ success: false, message: 'Failed to connect to server' });
     } finally {
       setIsSubmitting(false);

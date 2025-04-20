@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import emailjs from 'emailjs-com';
+import logger from '@/utils/logger';
 
 const ContactFormSection = () => {
   // Initialize EmailJS
@@ -65,7 +66,7 @@ const ContactFormSection = () => {
       });
     } catch (error) {
       // Handle error
-      console.error('Error sending email:', error);
+      logger.error('Error sending email:', error);
       setSubmitStatus({
         success: false,
         message: 'Failed to send message. Please try again later.'

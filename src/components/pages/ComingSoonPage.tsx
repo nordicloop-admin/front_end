@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import logger from '@/utils/logger';
 
 const ComingSoonPage = () => {
   const router = useRouter();
@@ -70,7 +71,7 @@ const ComingSoonPage = () => {
         // Send confirmation email using EmailJS browser library
         try {
           // Access the EmailJS global object from the window
-          const emailjs = (window as any).emailjs;
+          const emailjs = (window as Window & typeof globalThis & { emailjs?: { send: (serviceId: string, templateId: string, templateParams: Record<string, unknown>) => Promise<unknown> } }).emailjs;
 
           if (emailjs) {
             // Send the email
@@ -78,12 +79,12 @@ const ComingSoonPage = () => {
               email: email,
             });
 
-            console.log('Confirmation email sent successfully');
+            logger.info('Confirmation email sent successfully');
           } else {
-            console.error('EmailJS not available');
+            logger.error('EmailJS not available');
           }
         } catch (emailError) {
-          console.error('Error sending confirmation email:', emailError);
+          logger.error('Error sending confirmation email:', emailError);
           // We still consider the subscription successful even if the email fails
         }
 

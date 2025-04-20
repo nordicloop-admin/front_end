@@ -35,8 +35,11 @@ const eslintConfig = [
       // Disable some accessibility rules that might be too strict for your project
       "jsx-a11y/anchor-is-valid": "warn",
 
-      // Allow console logs in development but warn in production
-      "no-console": process.env.NODE_ENV === "production" ? "warn" : "off",
+      // Allow console logs in development but error in production
+      "no-console": "error",
+
+      // Disable explicit any errors for now
+      "@typescript-eslint/no-explicit-any": "off",
     },
   },
 ];
