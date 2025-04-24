@@ -61,7 +61,7 @@ const HeroSection = () => {
                 <p className="text-white text-sm mb-6 max-w-xs">
                   Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.
                 </p>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 ">
                   <Link
                     href="/coming-soon"
                     className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
@@ -197,7 +197,7 @@ const HeroSection = () => {
           <p className="text-[#666666] mb-8 max-w-7xl text-base lg:text-lg">
             Nordic Loop connects businesses to trade surplus materials, <br className="hidden lg:block"/> reducing costs, cutting CO₂ emissions, and driving sustainability.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full md:w-full xl:w-[75%]">
             <Link
               href="/coming-soon"
               className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
