@@ -2,7 +2,7 @@ import React from 'react';
 
 const WasteValueSection = () => {
   return (
-    <section className="bg-[#1E2A36] text-white py-10 rounded-4xl">
+    <section className="bg-[#1E2A36] text-white py-24 rounded-4xl">
       <div className="container mx-auto px-6 md:px-10 max-w-[90%]">
         <h2 className="header-h1">Turning Waste Into Value</h2>
         <h3 className="header-h2">
