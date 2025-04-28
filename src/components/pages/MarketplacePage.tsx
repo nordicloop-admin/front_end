@@ -100,10 +100,21 @@ const MarketplacePage = () => {
   const [selectedCategory, setSelectedCategory] = useState('All materials');
   const [showAllMaterialsDropdown, setShowAllMaterialsDropdown] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
+  const [selectedForms, setSelectedForms] = useState<string[]>([]);
+  const [selectedDateFilter, setSelectedDateFilter] = useState('All time');
   const [showLocationPopup, setShowLocationPopup] = useState(false);
   const [showQuantityPopup, setShowQuantityPopup] = useState(false);
   const [showFormPopup, setShowFormPopup] = useState(false);
   const [showDatePopup, setShowDatePopup] = useState(false);
+
+  // Helper function to toggle form selection
+  const toggleFormSelection = (form: string) => {
+    if (selectedForms.includes(form)) {
+      setSelectedForms(selectedForms.filter(f => f !== form));
+    } else {
+      setSelectedForms([...selectedForms, form]);
+    }
+  };
 
 
   const locationRef = useRef<HTMLDivElement>(null);
@@ -498,19 +509,132 @@ const MarketplacePage = () => {
               className="flex items-center justify-between px-4 py-3 bg-white min-w-[180px]"
               onClick={() => setShowFormPopup(!showFormPopup)}
             >
-              <span className="mr-2 font-medium">Form</span>
+              <span className="mr-2 font-medium">{selectedForms.length > 0 ? `Forms (${selectedForms.length})` : 'Form'}</span>
               <ChevronDown size={16} />
             </button>
 
             {showFormPopup && (
-              <div className="absolute top-full left-0 mt-1 w-[200px] bg-white border border-gray-200 shadow-lg z-50 rounded-md">
-                <ul className="py-1">
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">All Forms</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Granulate</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Sheet</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Roll</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Bulk</button></li>
-                </ul>
+              <div className="fixed top-[120px] left-[400px] w-[450px] bg-white border border-gray-200 shadow-lg z-[9999] rounded-lg">
+                <div className="py-6 px-6">
+                  <p className="text-gray-700 font-medium mb-4">Applicable to plastic only</p>
+
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                    {/* Left Column */}
+                    <div>
+                      <label className="flex items-start space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('regrind')}
+                          onChange={() => toggleFormSelection('regrind')}
+                        />
+                        <span className="text-gray-700">regrind</span>
+                      </label>
+
+                      <label className="flex items-start space-x-2 cursor-pointer mt-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('baled')}
+                          onChange={() => toggleFormSelection('baled')}
+                        />
+                        <span className="text-gray-700">baled</span>
+                      </label>
+
+                      <label className="flex items-start space-x-2 cursor-pointer mt-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('loose')}
+                          onChange={() => toggleFormSelection('loose')}
+                        />
+                        <span className="text-gray-700">loose</span>
+                      </label>
+
+                      <label className="flex items-start space-x-2 cursor-pointer mt-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('ingots')}
+                          onChange={() => toggleFormSelection('ingots')}
+                        />
+                        <span className="text-gray-700">ingots</span>
+                      </label>
+
+                      <label className="flex items-start space-x-2 cursor-pointer mt-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('agglomerate')}
+                          onChange={() => toggleFormSelection('agglomerate')}
+                        />
+                        <span className="text-gray-700">agglomerate</span>
+                      </label>
+                    </div>
+
+                    {/* Right Column */}
+                    <div>
+                      <label className="flex items-start space-x-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('masterbatch')}
+                          onChange={() => toggleFormSelection('masterbatch')}
+                        />
+                        <span className="text-gray-700">masterbatch</span>
+                      </label>
+
+                      <label className="flex items-start space-x-2 cursor-pointer mt-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('compound')}
+                          onChange={() => toggleFormSelection('compound')}
+                        />
+                        <span className="text-gray-700">compound</span>
+                      </label>
+
+                      <label className="flex items-start space-x-2 cursor-pointer mt-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('powder')}
+                          onChange={() => toggleFormSelection('powder')}
+                        />
+                        <span className="text-gray-700">powder</span>
+                      </label>
+
+                      <label className="flex items-start space-x-2 cursor-pointer mt-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('regranulate/pelletized')}
+                          onChange={() => toggleFormSelection('regranulate/pelletized')}
+                        />
+                        <span className="text-gray-700">regranulate/pelletized</span>
+                      </label>
+
+                      <label className="flex items-start space-x-2 cursor-pointer mt-3">
+                        <input
+                          type="checkbox"
+                          className="mt-1 form-checkbox h-4 w-4 text-blue-600"
+                          checked={selectedForms.includes('other')}
+                          onChange={() => toggleFormSelection('other')}
+                        />
+                        <span className="text-gray-700">other</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 flex justify-end">
+                    <button
+                      className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                      onClick={() => setShowFormPopup(false)}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -521,19 +645,83 @@ const MarketplacePage = () => {
               className="flex items-center justify-between px-4 py-3 bg-white min-w-[180px]"
               onClick={() => setShowDatePopup(!showDatePopup)}
             >
-              <span className="mr-2 font-medium">Date of publication</span>
+              <span className="mr-2 font-medium">{selectedDateFilter}</span>
               <ChevronDown size={16} />
             </button>
 
             {showDatePopup && (
-              <div className="absolute top-full left-0 mt-1 w-[200px] bg-white border border-gray-200 shadow-lg z-50 rounded-md">
-                <ul className="py-1">
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Any Time</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Today</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Last 7 days</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Last 30 days</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Last 90 days</button></li>
-                </ul>
+              <div className="fixed top-[120px] left-[600px] w-[400px] bg-white border border-gray-200 shadow-lg z-[9999] rounded-lg">
+                <div className="py-6 px-6 space-y-4">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dateFilter"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      checked={selectedDateFilter === 'Last 24 hours'}
+                      onChange={() => {
+                        setSelectedDateFilter('Last 24 hours');
+                        setShowDatePopup(false);
+                      }}
+                    />
+                    <span className="text-gray-700 text-base">Last 24 hours</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dateFilter"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      checked={selectedDateFilter === 'Last 3 days'}
+                      onChange={() => {
+                        setSelectedDateFilter('Last 3 days');
+                        setShowDatePopup(false);
+                      }}
+                    />
+                    <span className="text-gray-700 text-base">Last 3 days</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dateFilter"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      checked={selectedDateFilter === 'Last 7 days'}
+                      onChange={() => {
+                        setSelectedDateFilter('Last 7 days');
+                        setShowDatePopup(false);
+                      }}
+                    />
+                    <span className="text-gray-700 text-base">Last 7 days</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dateFilter"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      checked={selectedDateFilter === 'Last 30 days'}
+                      onChange={() => {
+                        setSelectedDateFilter('Last 30 days');
+                        setShowDatePopup(false);
+                      }}
+                    />
+                    <span className="text-gray-700 text-base">Last 30 days</span>
+                  </label>
+
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="dateFilter"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      checked={selectedDateFilter === 'All time'}
+                      onChange={() => {
+                        setSelectedDateFilter('All time');
+                        setShowDatePopup(false);
+                      }}
+                    />
+                    <span className="text-gray-700 text-base">All time</span>
+                  </label>
+                </div>
               </div>
             )}
           </div>
