@@ -168,7 +168,7 @@ const Header = () => {
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  MarketPlace
+                  MarketPlace 
                 </Link>
                 <Link
                   href="/coming-soon"
@@ -187,7 +187,7 @@ const Header = () => {
               </nav>
             </div>
 
-            {/* Login Button in Mobile Menu */}
+            {/* Login Button in Mobile Menu  */}
             <div className="p-6 border-t border-gray-700">
               <Link
                 href="/coming-soon"
