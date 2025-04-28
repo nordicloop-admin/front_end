@@ -77,7 +77,7 @@ const Header = () => {
               About Us
             </Link>
             <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
-              Market Place
+            Marketplace
             </Link>
             <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
               Pricing
@@ -168,7 +168,7 @@ const Header = () => {
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
-                  MarketPlace 
+                  Marketplace 
                 </Link>
                 <Link
                   href="/coming-soon"
