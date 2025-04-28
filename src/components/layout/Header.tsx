@@ -79,7 +79,7 @@ const Header = () => {
             <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Market Place
             </Link>
-            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
+            <Link href="/pricing" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Pricing
             </Link>
             <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
@@ -89,7 +89,7 @@ const Header = () => {
 
           {/* Login Button - Desktop Only */}
           <Link
-            href="/coming-soon"
+            href="/login"
             className="hidden md:block bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors font-medium ml-4"
           >
             Log In
@@ -171,7 +171,7 @@ const Header = () => {
                   Market Place
                 </Link>
                 <Link
-                  href="/coming-soon"
+                  href="/pricing"
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -190,7 +190,7 @@ const Header = () => {
             {/* Login Button in Mobile Menu */}
             <div className="p-6 border-t border-gray-700">
               <Link
-                href="/coming-soon"
+                href="/login"
                 className="bg-[#FF8A00] text-white px-6 py-3 rounded-md hover:bg-[#e67e00] transition-colors font-medium block text-center w-full"
                 onClick={() => setIsMenuOpen(false)}
               >
