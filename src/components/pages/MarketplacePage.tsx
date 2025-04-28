@@ -99,11 +99,7 @@ const MarketplacePage = () => {
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All materials');
   const [showAllMaterialsDropdown, setShowAllMaterialsDropdown] = useState(false);
-
-  // Debug state changes
-  useEffect(() => {
-    console.log("showAllMaterialsDropdown changed to:", showAllMaterialsDropdown);
-  }, [showAllMaterialsDropdown]);
+  const [selectedLocation, setSelectedLocation] = useState('All Locations');
   const [showLocationPopup, setShowLocationPopup] = useState(false);
   const [showQuantityPopup, setShowQuantityPopup] = useState(false);
   const [showFormPopup, setShowFormPopup] = useState(false);
@@ -432,19 +428,43 @@ const MarketplacePage = () => {
               className="flex items-center justify-between px-4 py-3 bg-white min-w-[180px]"
               onClick={() => setShowLocationPopup(!showLocationPopup)}
             >
-              <span className="mr-2 font-medium">Location</span>
+              <span className="mr-2 font-medium">{selectedLocation}</span>
               <ChevronDown size={16} />
             </button>
 
             {showLocationPopup && (
-              <div className="absolute top-full left-0 mt-1 w-[200px] bg-white border border-gray-200 shadow-lg z-50 rounded-md">
-                <ul className="py-1">
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">All Locations</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Stockholm</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Gothenburg</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Malmö</button></li>
-                  <li><button className="w-full text-left px-4 py-2 hover:bg-gray-100">Uppsala</button></li>
-                </ul>
+              <div className="fixed top-[120px] left-[200px] w-[400px] bg-white border border-gray-200 shadow-lg z-[9999] rounded-lg">
+                <div className="py-6 px-6 space-y-4">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="location"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      checked={selectedLocation === 'Near me'}
+                      onChange={() => {
+                        setSelectedLocation('Near me');
+                        setShowLocationPopup(false);
+                      }}
+                    />
+                    <span className="text-gray-700 text-base">Near me</span>
+                  </label>
+
+                  <div className="border-t border-gray-200 pt-4"></div>
+
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="location"
+                      className="form-radio h-5 w-5 text-blue-600"
+                      checked={selectedLocation === 'Select country'}
+                      onChange={() => {
+                        setSelectedLocation('Select country');
+                        setShowLocationPopup(false);
+                      }}
+                    />
+                    <span className="text-gray-700 text-base">Select country</span>
+                  </label>
+                </div>
               </div>
             )}
           </div>
