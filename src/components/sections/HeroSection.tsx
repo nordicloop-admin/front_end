@@ -145,7 +145,7 @@ const HeroSection = () => {
                 />
               </div>
               {/* Small image - positioned more subtly */}
-              <div className="absolute bottom-4 right-4 w-[100px] h-[120px] bg-white p-1.5 rounded-lg shadow-md border-4 border-white">
+              {/* <div className="absolute bottom-4 right-4 w-[100px] h-[120px] bg-white p-1.5 rounded-lg shadow-md border-4 border-white">
                 <Image
                   src="/Nordic Garbage.jpeg"
                   alt="Recycling icon"
@@ -155,7 +155,7 @@ const HeroSection = () => {
                   priority
                   loading="eager"
                 />
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -223,7 +223,7 @@ const HeroSection = () => {
               loading="eager"
             />
           </div>
-          <div className="absolute bottom-4 right-4 w-[140px] h-[170px] bg-white p-2 rounded-lg shadow-md border-6 border-white">
+          {/* <div className="absolute bottom-4 right-4 w-[140px] h-[170px] bg-white p-2 rounded-lg shadow-md border-6 border-white">
             <Image
               src="/Nordic Garbage.jpeg"
               alt="Recycling icon"
@@ -233,7 +233,7 @@ const HeroSection = () => {
               priority
               loading="eager"
             />
-          </div>
+          </div> */}
         </div>
       </div>
     </section>

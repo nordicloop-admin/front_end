@@ -25,8 +25,8 @@ NEXT_PUBLIC_EMAILJS_CONTACT_PUBLIC_KEY=your_emailjs_contact_public_key
 NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_NOTIFICATION=your_emailjs_notification_template_id
 
 # Table Names
-AIRTABLE_NEWSLETTER_TABLE=Newsletter
-AIRTABLE_NOTIFICATION_TABLE=Notification List
+AIRTABLE_NEWSLETTER_TABLE=Newsletters
+AIRTABLE_NOTIFICATION_TABLE=Notification Lists
 ```
 
 Replace the placeholder values with your actual credentials.
