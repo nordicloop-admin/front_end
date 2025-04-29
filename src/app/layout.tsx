@@ -93,7 +93,7 @@ export default function RootLayout({
           {`
             (function() {
               if (window.emailjs) {
-                window.emailjs.init('veOcNaUf3dPaLwdEZ');
+                window.emailjs.init('${process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY}');
               }
             })();
           `}
