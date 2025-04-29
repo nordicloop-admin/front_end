@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     // Airtable API credentials from environment variables
     const AIRTABLE_PAT = process.env.AIRTABLE_PAT || '';
     const AIRTABLE_BASE_ID = process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID || '';
-    const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_NEWSLETTER_TABLE || 'Newsletter';
+    const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_NEWSLETTER_TABLE || 'Newsletters';
 
     // Format today's date as YYYY-MM-DD
     const today = new Date();
