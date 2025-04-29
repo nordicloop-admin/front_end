@@ -47,7 +47,10 @@ const Footer = () => {
 
           if (emailjs) {
             // Send the email
-            await emailjs.send('service_8xb9iql', 'template_esd49tn', {
+            await emailjs.send(
+              process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID_NEWSLETTER || 'service_8xb9iql',
+              process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_NEWSLETTER || 'template_esd49tn',
+              {
               name: name,
               email: email,
             });
