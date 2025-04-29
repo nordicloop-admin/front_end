@@ -10,10 +10,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: 'Name and email are required' }, { status: 400 });
     }
 
-    // Airtable API credentials
-    const AIRTABLE_PAT = 'patmOQKnXR9SZsGj7.4335f190ffd9fdab306b5afe1802ed13c181cc3533bcfde1d46651f08788b27d';
-    const AIRTABLE_BASE_ID = 'appIiD2vycmBErjPC';
-    const AIRTABLE_TABLE_NAME = 'Newsletter';
+    // Airtable API credentials from environment variables
+    const AIRTABLE_PAT = process.env.AIRTABLE_PAT || '';
+    const AIRTABLE_BASE_ID = process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID || '';
+    const AIRTABLE_TABLE_NAME = process.env.AIRTABLE_NEWSLETTER_TABLE || 'Newsletter';
 
     // Format today's date as YYYY-MM-DD
     const today = new Date();

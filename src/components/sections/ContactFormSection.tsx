@@ -5,9 +5,9 @@ import emailjs from 'emailjs-com';
 import logger from '@/utils/logger';
 
 const ContactFormSection = () => {
-  // Initialize EmailJS
+  // Initialize EmailJS with key from environment variable
   useEffect(() => {
-    emailjs.init('GwpR6HErNwXDhHY8_');
+    emailjs.init(process.env.NEXT_PUBLIC_EMAILJS_CONTACT_PUBLIC_KEY || 'GwpR6HErNwXDhHY8_');
   }, []);
   // Form state
   const [formData, setFormData] = useState({
@@ -39,8 +39,8 @@ const ContactFormSection = () => {
     try {
       // Send email using EmailJS
       await emailjs.send(
-        'service_3xw1ha8', // Your EmailJS service ID
-        'template_8ofcv4m', // Your EmailJS template ID
+        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID_CONTACT || 'service_3xw1ha8', // EmailJS service ID
+        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_CONTACT || 'template_8ofcv4m', // EmailJS template ID
         {
           name: formData.name,
           email: formData.email,
@@ -48,7 +48,7 @@ const ContactFormSection = () => {
           message: formData.message,
           time: new Date().toLocaleString()
         },
-        'GwpR6HErNwXDhHY8_' // Your EmailJS public key
+        process.env.NEXT_PUBLIC_EMAILJS_CONTACT_PUBLIC_KEY || 'GwpR6HErNwXDhHY8_' // EmailJS public key
       );
 
       // Handle success

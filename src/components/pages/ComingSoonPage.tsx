@@ -112,7 +112,10 @@ const ComingSoonPage = () => {
 
           if (emailjs) {
             // Send the email
-            await emailjs.send('service_8xb9iql', 'template_t7lmtar', {
+            await emailjs.send(
+              process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID_NEWSLETTER || 'service_8xb9iql',
+              process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_NOTIFICATION || 'template_t7lmtar',
+              {
               email: email,
             });
 
