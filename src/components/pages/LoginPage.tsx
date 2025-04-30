@@ -26,7 +26,7 @@ const LoginPage = () => {
 
       // For demo purposes, redirect to home page
       router.push('/');
-    } catch (err) {
+    } catch (_err) {
       setError('Login failed. Please check your credentials and try again.');
     } finally {
       setIsSubmitting(false);
@@ -179,7 +179,7 @@ const LoginPage = () => {
 
             <div className="text-center mt-6">
               <p className="text-gray-600 text-sm">
-                Don't Have An Account?{' '}
+                Don&apos;t Have An Account?{' '}
                 <Link href="/register" className="text-[#FF8A00] hover:text-[#e67e00] transition-colors font-medium">
                   Register
                 </Link>

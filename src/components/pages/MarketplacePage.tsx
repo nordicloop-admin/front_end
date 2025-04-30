@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronDown, SlidersHorizontal, ChevronRight } from 'lucide-react';
+import { ChevronDown, SlidersHorizontal, ChevronRight } from '@/components/ui/Icons';
 
 
 

@@ -13,7 +13,7 @@ const PricingPage = () => {
         <h3 className="text-[#FF8A00] font-medium mb-4">Pricing</h3>
         <h1 className="text-4xl font-bold mb-4">Flexible Business Plans for<br />Sustainable Growth</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
-          Flexible plans for every business; whether you're just starting or looking to scale sustainability.
+          Flexible plans for every business; whether you&apos;re just starting or looking to scale sustainability.
         </p>
       </div>
 
@@ -74,8 +74,8 @@ const PricingPage = () => {
             </li>
           </ul>
 
-          <Link 
-            href="/coming-soon" 
+          <Link
+            href="/coming-soon"
             className="block text-center py-3 px-6 border border-gray-300 rounded-md font-medium hover:bg-gray-100 transition-colors"
           >
             Get Started
@@ -135,8 +135,8 @@ const PricingPage = () => {
             </li>
           </ul>
 
-          <Link 
-            href="/coming-soon" 
+          <Link
+            href="/coming-soon"
             className="block text-center py-3 px-6 bg-[#FF8A00] text-white rounded-md font-medium hover:bg-[#e67e00] transition-colors"
           >
             Get Started
@@ -184,8 +184,8 @@ const PricingPage = () => {
             </li>
           </ul>
 
-          <Link 
-            href="/coming-soon" 
+          <Link
+            href="/coming-soon"
             className="block text-center py-3 px-6 border border-gray-300 rounded-md font-medium hover:bg-gray-100 transition-colors"
           >
             Get Started

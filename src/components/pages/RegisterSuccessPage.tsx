@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const RegisterSuccessPage = () => {
-  const router = useRouter();
+  const _router = useRouter();
 
   return (
     <div className="flex min-h-screen w-full">
@@ -23,7 +23,7 @@ const RegisterSuccessPage = () => {
           </p>
         </div>
       </div>
-      
+
       {/* Mobile-only dark header */}
       <div className="md:hidden w-full bg-[#1E2A36] text-white p-6 absolute top-0 left-0 right-0">
         <h1 className="text-xl font-bold">
@@ -59,15 +59,15 @@ const RegisterSuccessPage = () => {
                 <path d="M5 12L10 17L20 7" stroke="#FF8A00" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            
+
             {/* Success Message */}
             <h3 className="text-xl font-medium text-gray-900 mb-3">Account created successfully</h3>
             <p className="text-gray-600 text-center mb-6">
-              Please wait for admin confirmation before you can start posting your auctions."
+              Please wait for admin confirmation before you can start posting your auctions.
             </p>
-            
+
             {/* Back to Home Button */}
-            <Link 
+            <Link
               href="/"
               className="w-full bg-[#FF8A00] text-white py-3 px-4 rounded-md hover:bg-[#e67e00] transition-colors text-center font-medium"
             >

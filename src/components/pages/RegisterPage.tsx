@@ -27,7 +27,7 @@ const RegisterPage = () => {
 
       // For demo purposes, redirect to success page
       router.push('/register/success');
-    } catch (err) {
+    } catch (_err) {
       setError('Registration failed. Please check your information and try again.');
     } finally {
       setIsSubmitting(false);
