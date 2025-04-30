@@ -19,7 +19,7 @@ const LoginPage = () => {
     setError('');
 
     // For now, just simulate a login process
-    // In a real app, you would connect this to your authentication system
+    // In a real app, you would connect this to your authentication app
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
