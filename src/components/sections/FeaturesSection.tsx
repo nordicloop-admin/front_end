@@ -29,7 +29,7 @@ const FeaturesSection = () => {
                 </p>
                 <Link
                   href="/coming-soon"
-                  className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#e67e00] transition-colors inline-block text-xs w-[120px] text-center font-medium"
+                  className="bg-[#FF8A00] text-white px-8 py-4 w-[200px] rounded-md hover:bg-[#e67e00] transition-colors inline-block text-xs text-center font-medium"
                 >
                   Market Place
                 </Link>
@@ -56,7 +56,7 @@ const FeaturesSection = () => {
                 </p>
                 <Link
                   href="/coming-soon"
-                  className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#e67e00] transition-colors inline-block text-xs w-[140px] text-center font-medium"
+                  className="bg-[#FF8A00] text-white px-8 py-4 w-[200px] rounded-md hover:bg-[#e67e00] transition-colors inline-block text-xs text-center font-medium"
                 >
                   Get Started
                 </Link>

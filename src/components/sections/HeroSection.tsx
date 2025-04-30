@@ -56,12 +56,12 @@ const HeroSection = () => {
             <div className="absolute inset-0 bg-gradient-to-b from-[#1E2A36]/90 to-[#1E2A36]/60 flex flex-col justify-center">
               <div className="p-6 pt-8">
                 <h1 className="text-white text-3xl font-bold mb-3 leading-tight">
-                  The Marketplace Where Waste Becomes A Resource
+                  The Marketplace <br/> <span className="sm:whitespace-nowrap">Where Waste Becomes</span> <br/> A Resource
                 </h1>
                 <p className="text-white text-sm mb-6 max-w-xs">
                   Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.
                 </p>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 ">
                   <Link
                     href="/coming-soon"
                     className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
@@ -110,7 +110,8 @@ const HeroSection = () => {
             {/* Text Content */}
             <div className="flex flex-col justify-center">
               <h1 className="text-[32px] font-bold text-[#1E2A36] mb-4 leading-tight">
-                The Marketplace Where Waste Becomes A Resource
+                The Marketplace<br/>
+                <span className="whitespace-nowrap">Where Waste Becomes</span>
               </h1>
               <p className="text-[#666666] mb-6 text-base">
                 Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.
@@ -191,12 +192,12 @@ const HeroSection = () => {
         <div className="order-2 lg:order-1 flex flex-col justify-center items-start w-full">
           <h1 className="text-[36px] lg:text-[56px] leading-[1.2] font-bold text-[#1E2A36] mb-6 tracking-[-0.5px]">
             The Marketplace <br/>
-            Where Waste Becomes <br/> A Resource
+            <span className="whitespace-nowrap">Where Waste Becomes</span> <br/> A Resource
           </h1>
           <p className="text-[#666666] mb-8 max-w-7xl text-base lg:text-lg">
             Nordic Loop connects businesses to trade surplus materials, <br className="hidden lg:block"/> reducing costs, cutting CO₂ emissions, and driving sustainability.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center w-full md:w-full xl:w-[75%]">
             <Link
               href="/coming-soon"
               className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"

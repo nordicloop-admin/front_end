@@ -70,27 +70,27 @@ const Header = () => {
           </div>
         </Link>
 
-        <div className="flex items-center space-x-4 md:space-x-8">
+        <div className="flex items-center">
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
+          <nav className="hidden md:flex items-center">
+            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               About Us
             </Link>
-            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
+            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Market Place
             </Link>
-            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
+            <Link href="/pricing" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Pricing
             </Link>
-            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
+            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Contact
             </Link>
           </nav>
 
           {/* Login Button - Desktop Only */}
           <Link
-            href="/coming-soon"
-            className="hidden md:block bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors font-medium"
+            href="/login"
+            className="hidden md:block bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors font-medium ml-4"
           >
             Log In
           </Link>
@@ -171,7 +171,7 @@ const Header = () => {
                   Market Place
                 </Link>
                 <Link
-                  href="/coming-soon"
+                  href="/pricing"
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
@@ -190,7 +190,7 @@ const Header = () => {
             {/* Login Button in Mobile Menu */}
             <div className="p-6 border-t border-gray-700">
               <Link
-                href="/coming-soon"
+                href="/login"
                 className="bg-[#FF8A00] text-white px-6 py-3 rounded-md hover:bg-[#e67e00] transition-colors font-medium block text-center w-full"
                 onClick={() => setIsMenuOpen(false)}
               >
