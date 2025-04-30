@@ -1,14 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import emailjs from 'emailjs-com';
+import React, { useState } from 'react';
 import logger from '@/utils/logger';
 
 const ContactFormSection = () => {
-  // Initialize EmailJS with key from environment variable
-  useEffect(() => {
-    emailjs.init(process.env.NEXT_PUBLIC_EMAILJS_CONTACT_PUBLIC_KEY || 'GwpR6HErNwXDhHY8_');
-  }, []);
+  // EmailJS is already initialized in layout.tsx, so we don't need to initialize it again here
   // Form state
   const [formData, setFormData] = useState({
     name: '',
@@ -37,6 +33,13 @@ const ContactFormSection = () => {
     setSubmitStatus(null);
 
     try {
+      // Access the EmailJS global object from the window
+      const emailjs = (window as Window & typeof globalThis & { emailjs?: { send: (serviceId: string, templateId: string, templateParams: Record<string, unknown>) => Promise<unknown> } }).emailjs;
+
+      if (!emailjs) {
+        throw new Error('EmailJS not available');
+      }
+
       // Send email using EmailJS
       await emailjs.send(
         process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID_CONTACT || 'service_3xw1ha8', // EmailJS service ID
@@ -47,8 +50,7 @@ const ContactFormSection = () => {
           subject: formData.subject,
           message: formData.message,
           time: new Date().toLocaleString()
-        },
-        process.env.NEXT_PUBLIC_EMAILJS_CONTACT_PUBLIC_KEY || 'GwpR6HErNwXDhHY8_' // EmailJS public key
+        }
       );
 
       // Handle success
