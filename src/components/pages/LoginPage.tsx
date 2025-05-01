@@ -46,9 +46,7 @@ const LoginPage = () => {
     setShowPassword(!showPassword);
   };
 
-  const goBack = () => {
-    router.back();
-  };
+
 
   return (
     <div className="flex min-h-screen w-full">
@@ -77,15 +75,15 @@ const LoginPage = () => {
       <div className="w-full md:w-1/2 bg-white p-6 md:p-10 pt-20 md:pt-10 flex flex-col min-h-screen">
         {/* Top Navigation - Hidden on very small screens */}
         <div className="hidden sm:flex justify-between items-center mb-16">
-          <button
-            onClick={goBack}
+          <Link
+            href="/"
             className="flex items-center text-gray-700 hover:text-gray-900 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back
-          </button>
+            Back to Home
+          </Link>
           <Link
             href="/coming-soon"
             className="flex items-center text-gray-700 hover:text-gray-900 transition-colors"
