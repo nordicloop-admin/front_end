@@ -14,56 +14,56 @@ const marketplaceItems = [
     category: 'Plastics',
     name: 'PPA Thermocomp UFW49RSC (Black)',
     basePrice: '5 013 008',
-    image: '/images/marketplace/plastic1.jpg'
+    image: '/images/marketplace/categories/plastics.jpg'
   },
   {
     id: 2,
     category: 'Plastics',
     name: 'PPA Thermocomp UFW49RSC (White)',
     basePrice: '4 850 000',
-    image: '/images/marketplace/plastic2.jpg'
+    image: '/images/marketplace/categories/plastics-alt.jpg'
   },
   {
     id: 3,
     category: 'Plastics',
     name: 'PPA Thermocomp UFW49RSC (Clear)',
     basePrice: '4 975 500',
-    image: '/images/marketplace/plastic3.jpg'
+    image: '/images/marketplace/categories/plastics.jpg'
   },
   {
     id: 4,
     category: 'Metals',
     name: 'Aluminum Scrap 6061',
     basePrice: '7 250 000',
-    image: '/images/marketplace/plastic1.jpg'
+    image: '/images/marketplace/categories/metals.jpg'
   },
   {
     id: 5,
     category: 'Paper',
     name: 'Recycled Cardboard Sheets',
     basePrice: '2 500 000',
-    image: '/images/marketplace/plastic2.jpg'
+    image: '/images/marketplace/categories/paper.jpg'
   },
   {
     id: 6,
     category: 'Glass',
     name: 'Clear Glass Cullet',
     basePrice: '3 750 000',
-    image: '/images/marketplace/plastic3.jpg'
+    image: '/images/marketplace/categories/glass.jpg'
   },
   {
     id: 7,
     category: 'Wood',
     name: 'Reclaimed Pine Lumber',
     basePrice: '4 125 000',
-    image: '/images/marketplace/plastic1.jpg'
+    image: '/images/marketplace/categories/wood.jpg'
   },
   {
     id: 8,
     category: 'Textiles',
     name: 'Recycled Cotton Fabric',
     basePrice: '3 900 000',
-    image: '/images/marketplace/plastic2.jpg'
+    image: '/images/marketplace/categories/textiles.jpg'
   },
 ];
 
@@ -76,8 +76,10 @@ const ProductCard = ({ item }: { item: typeof marketplaceItems[0] }) => {
           src={item.image}
           alt={item.name}
           fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           style={{ objectFit: 'cover' }}
           className="transition-transform duration-300 hover:scale-105"
+          priority={item.id <= 4} // Prioritize loading the first 4 images
         />
         <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs font-medium">
           {item.category}
