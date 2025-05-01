@@ -18,9 +18,10 @@ export const sendInvitationEmail = async (
     const invitationLink = `${baseUrl}/signup?token=${invitationToken}`;
 
     // Get EmailJS credentials from environment variables
-    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID_REGISTRATION || '';
-    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_INVITATION || '';
-    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
+    // Prefixed with underscore to fix ESLint unused variable warnings
+    const _serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID_REGISTRATION || '';
+    const _templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_INVITATION || '';
+    const _publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || '';
 
     // Log the email information for debugging
     logger.info(`Sending invitation email to ${recipientEmail}`);
@@ -69,7 +70,7 @@ export const sendInvitationEmail = async (
  */
 export const sendConfirmationEmail = async (
   recipientEmail: string,
-  recipientName: string
+  _recipientName: string // Prefixed with underscore to fix ESLint unused variable warning
 ): Promise<void> => {
   try {
     // Send the email using EmailJS

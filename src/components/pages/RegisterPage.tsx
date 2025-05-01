@@ -5,7 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SECTOR_CHOICES, COUNTRY_CHOICES } from '@/types/auth';
-import { motion, AnimatePresence } from 'framer-motion';
+// Imports removed to fix ESLint errors
+// import { motion, AnimatePresence } from 'framer-motion';
 
 // Step types for the registration process
 type RegistrationStep = 'company' | 'contact';
