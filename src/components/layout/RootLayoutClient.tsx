@@ -12,19 +12,23 @@ export default function RootLayoutClient({
   const pathname = usePathname();
   const isAuthPage = pathname === '/login' ||
                     pathname === '/register' ||
-                    pathname === '/register/success';
+                    pathname === '/register/success' ||
+                    pathname === '/signup';
+
+  const isDashboardPage = pathname === '/dashboard' ||
+                         pathname.startsWith('/dashboard/');
 
   return (
     <>
-      {!isAuthPage && (
+      {!isAuthPage && !isDashboardPage && (
         <div className="max-w-[86%] mx-auto">
           <Header />
         </div>
       )}
-      <main className={`flex-1 ${!isAuthPage ? 'max-w-[86%] mx-auto w-full' : 'w-full'}`}>
+      <main className={`flex-1 ${!isAuthPage && !isDashboardPage ? 'max-w-[86%] mx-auto w-full' : 'w-full'}`}>
         {children}
       </main>
-      {!isAuthPage && <Footer />}
+      {!isAuthPage && !isDashboardPage && <Footer />}
     </>
   );
 }

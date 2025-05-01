@@ -5,38 +5,70 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-const LoginPage = () => {
+const SignUpPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const token = searchParams.get('token');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    // Check if user is coming from a successful signup
-    if (searchParams.get('signup') === 'success') {
-      setSuccessMessage('Your account has been created successfully. Please log in.');
-    }
-  }, [searchParams]);
+    // For testing purposes, we'll decode the token directly in the browser
+    const verifyToken = () => {
+      if (!token) {
+        setError('Invalid invitation link. Please contact support.');
+        setIsVerifying(false);
+        return;
+      }
+
+      try {
+        // Decode the token (in a real app, this would be done securely on the server)
+        const decodedToken = JSON.parse(Buffer.from(token, 'base64').toString());
+
+        // Check if the token has expired
+        if (decodedToken.exp < Date.now()) {
+          throw new Error('Invitation link has expired');
+        }
+
+        // Set the email from the token
+        setEmail(decodedToken.email);
+        setIsVerifying(false);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Invalid invitation link. Please contact support.');
+        setIsVerifying(false);
+      }
+    };
+
+    // Simulate a short delay to show the loading state
+    setTimeout(verifyToken, 1000);
+  }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate passwords
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
-    setSuccessMessage('');
 
     try {
-      // For testing purposes, we'll simulate a successful login
+      // For testing purposes, we'll simulate a successful sign-up
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Redirect directly to dashboard
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials and try again.');
+      setError(err instanceof Error ? err.message : 'Sign-up failed. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -46,9 +78,26 @@ const LoginPage = () => {
     setShowPassword(!showPassword);
   };
 
-  const goBack = () => {
-    router.back();
-  };
+  if (isVerifying) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="mb-4">
+            <Image
+              src="/nordic-infinity-logo.svg"
+              alt="Nordic Loop Logo"
+              width={64}
+              height={64}
+              priority
+              className="mx-auto"
+            />
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Verifying invitation...</h2>
+          <p className="text-gray-500">Please wait while we verify your invitation link.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full">
@@ -73,31 +122,9 @@ const LoginPage = () => {
         </h1>
       </div>
 
-      {/* Right Side - White Background with Login Form */}
+      {/* Right Side - White Background with Sign-Up Form */}
       <div className="w-full md:w-1/2 bg-white p-6 md:p-10 pt-20 md:pt-10 flex flex-col min-h-screen">
-        {/* Top Navigation - Hidden on very small screens */}
-        <div className="hidden sm:flex justify-between items-center mb-16">
-          <button
-            onClick={goBack}
-            className="flex items-center text-gray-700 hover:text-gray-900 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back
-          </button>
-          <Link
-            href="/coming-soon"
-            className="flex items-center text-gray-700 hover:text-gray-900 transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            Contact support
-          </Link>
-        </div>
-
-        {/* Login Form Container - Centered */}
+        {/* Sign-Up Form Container - Centered */}
         <div className="flex-grow flex flex-col justify-center items-center max-w-md mx-auto w-full px-4 sm:px-0">
           {/* Logo */}
           <div className="mb-8 relative w-16 h-16">
@@ -112,39 +139,32 @@ const LoginPage = () => {
 
           {/* Welcome Text */}
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Welcome to Nordic Loop</h2>
-            <p className="text-gray-500">Please enter your details</p>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Complete Your Registration</h2>
+            <p className="text-gray-500">Set your password to access your account</p>
           </div>
 
-          {/* Login Form */}
+          {/* Sign-Up Form */}
           <form onSubmit={handleSubmit} className="w-full">
             {error && (
               <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
                 {error}
               </div>
             )}
-            {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-md text-sm">
-                {successMessage}
-              </div>
-            )}
 
             <div className="mb-4">
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                Email/phone number
+                Email
               </label>
               <input
                 id="email"
-                type="text"
+                type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter Your email"
-                className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700"
-                required
+                className="w-full p-3 border border-gray-200 rounded-md bg-gray-50 text-gray-700"
+                disabled
               />
             </div>
 
-            <div className="mb-2">
+            <div className="mb-4">
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
@@ -154,7 +174,7 @@ const LoginPage = () => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Confirm password"
+                  placeholder="Create a password"
                   className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 pr-10"
                   required
                 />
@@ -177,10 +197,21 @@ const LoginPage = () => {
               </div>
             </div>
 
-            <div className="flex justify-end mb-6">
-              <Link href="/coming-soon" className="text-sm text-[#FF8A00] hover:text-[#e67e00] transition-colors">
-                Forgot password?
-              </Link>
+            <div className="mb-6">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm your password"
+                  className="w-full p-3 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 pr-10"
+                  required
+                />
+              </div>
             </div>
 
             <button
@@ -188,17 +219,8 @@ const LoginPage = () => {
               className="w-full bg-[#FF8A00] text-white py-3 px-4 rounded-md hover:bg-[#e67e00] transition-colors text-center font-medium"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Logging in...' : 'Continue'}
+              {isSubmitting ? 'Creating Account...' : 'Create Account'}
             </button>
-
-            <div className="text-center mt-6">
-              <p className="text-gray-600 text-sm">
-                Don&apos;t Have An Account?{' '}
-                <Link href="/register" className="text-[#FF8A00] hover:text-[#e67e00] transition-colors font-medium">
-                  Register
-                </Link>
-              </p>
-            </div>
           </form>
         </div>
 
@@ -219,4 +241,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default SignUpPage;

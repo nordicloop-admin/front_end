@@ -61,9 +61,9 @@ const RegisterSuccessPage = () => {
             </div>
 
             {/* Success Message */}
-            <h3 className="text-xl font-medium text-gray-900 mb-3">Account created successfully</h3>
+            <h3 className="text-xl font-medium text-gray-900 mb-3">Company Registration Successful</h3>
             <p className="text-gray-600 text-center mb-6">
-              Please wait for admin confirmation before you can start posting your auctions.
+              Thank you for registering your company. We've sent an invitation email to the contact person's email address. Please check the email to complete the sign-up process.
             </p>
 
             {/* Back to Home Button */}
