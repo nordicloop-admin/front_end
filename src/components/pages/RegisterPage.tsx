@@ -34,6 +34,9 @@ const RegisterPage = () => {
   // Form validation state
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+  // State to show company error message on contact tab
+  const [showContactTabCompanyError, setShowContactTabCompanyError] = useState(false);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -48,6 +51,11 @@ const RegisterPage = () => {
         delete newErrors[name];
         return newErrors;
       });
+    }
+
+    // Clear company error message when filling out company fields
+    if (['companyName', 'vatNumber', 'country', 'sector'].includes(name) && value.trim() !== '') {
+      setShowContactTabCompanyError(false);
     }
   };
 
@@ -80,20 +88,64 @@ const RegisterPage = () => {
     return Object.keys(errors).length === 0;
   };
 
+  // Function to check if required company fields are filled
+  const validateCompanyFields = (): boolean => {
+    // Check if required company fields are filled
+    if (!formData.companyName.trim()) {
+      setValidationErrors(prev => ({ ...prev, companyName: 'Company name is required' }));
+      return false;
+    }
+    if (!formData.vatNumber.trim()) {
+      setValidationErrors(prev => ({ ...prev, vatNumber: 'VAT number is required' }));
+      return false;
+    }
+    if (!formData.country) {
+      setValidationErrors(prev => ({ ...prev, country: 'Country is required' }));
+      return false;
+    }
+    if (!formData.sector) {
+      setValidationErrors(prev => ({ ...prev, sector: 'Sector is required' }));
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Final validation before submission
-    if (!validateForm()) {
+    // First check if company fields are filled when on contact tab
+    if (activeTab === 'contact') {
+      const companyFieldsValid = validateCompanyFields();
+      if (!companyFieldsValid) {
+        setError('Please complete the required Company Information fields before submitting.');
+
+        // Show a prominent error message on the contact tab
+        setShowContactTabCompanyError(true);
+
+        return;
+      }
+    }
+
+    // Run full validation
+    const isValid = validateForm();
+
+    // Check which tab has errors
+    const companyFieldsWithErrors = ['companyName', 'vatNumber', 'email', 'website', 'country', 'sector'];
+    const contactFieldsWithErrors = ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition'];
+
+    const hasCompanyErrors = companyFieldsWithErrors.some(field => validationErrors[field]);
+    const hasContactErrors = contactFieldsWithErrors.some(field => validationErrors[field]);
+
+    // If there are any errors, show the error message and switch to the appropriate tab
+    if (!isValid) {
       setError('Please fill in all required fields correctly.');
 
-      // Switch to the tab with errors
-      const companyFieldsWithErrors = ['companyName', 'vatNumber', 'email', 'website', 'country', 'sector'];
-      const hasCompanyErrors = companyFieldsWithErrors.some(field => validationErrors[field]);
-
-      if (hasCompanyErrors) {
+      // If we're on the contact tab but there are company errors, switch to company tab
+      if (activeTab === 'contact' && hasCompanyErrors) {
         setActiveTab('company');
-      } else {
+      }
+      // If we're on the company tab but there are only contact errors, switch to contact tab
+      else if (activeTab === 'company' && !hasCompanyErrors && hasContactErrors) {
         setActiveTab('contact');
       }
 
@@ -194,7 +246,7 @@ const RegisterPage = () => {
 
           {/* Registration Form */}
           <form onSubmit={handleSubmit} className="w-full max-w-3xl">
-            {error && (
+            {error && !showContactTabCompanyError && activeTab === 'contact' && (
               <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
                 {error}
               </div>
@@ -204,36 +256,66 @@ const RegisterPage = () => {
             <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-6">
               {/* Tabs */}
               <div className="flex border-b border-gray-200">
+                {/* Company Tab */}
                 <button
                   type="button"
-                  className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors ${
+                  className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors relative ${
                     activeTab === 'company'
                       ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
-                  onClick={() => setActiveTab('company')}
+                  onClick={() => {
+                    setActiveTab('company');
+                    setShowContactTabCompanyError(false);
+                    setError('');
+                  }}
                 >
                   <span className="flex items-center justify-center">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                     </svg>
                     Company Information
+
+                    {/* Error indicator for Company tab */}
+                    {Object.keys(validationErrors).some(key =>
+                      ['companyName', 'vatNumber', 'country', 'sector', 'email', 'website'].includes(key)
+                    ) && (
+                      <span className="ml-2 flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                      </span>
+                    )}
                   </span>
                 </button>
+
+                {/* Contact Tab */}
                 <button
                   type="button"
-                  className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors ${
+                  className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors relative ${
                     activeTab === 'contact'
                       ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
-                  onClick={() => setActiveTab('contact')}
+                  onClick={() => {
+                    setActiveTab('contact');
+                    setError('');
+                  }}
                 >
                   <span className="flex items-center justify-center">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
                     Contact Person
+
+                    {/* Error indicator for Contact tab */}
+                    {Object.keys(validationErrors).some(key =>
+                      ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition'].includes(key)
+                    ) && (
+                      <span className="ml-2 flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                      </span>
+                    )}
                   </span>
                 </button>
               </div>
@@ -242,6 +324,25 @@ const RegisterPage = () => {
               <div className="p-6">
                 {/* Company Information Tab */}
                 <div className={activeTab === 'company' ? 'block' : 'hidden'}>
+                  {/* Company Tab Error Summary */}
+                  {Object.keys(validationErrors).some(key =>
+                    ['companyName', 'vatNumber', 'country', 'sector', 'email', 'website'].includes(key)
+                  ) && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-md">
+                      <h4 className="text-sm font-medium text-red-800 mb-1">Please correct the following errors:</h4>
+                      <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
+                        {validationErrors.companyName && <li>{validationErrors.companyName}</li>}
+                        {validationErrors.vatNumber && <li>{validationErrors.vatNumber}</li>}
+                        {validationErrors.country && <li>{validationErrors.country}</li>}
+                        {validationErrors.sector && <li>{validationErrors.sector}</li>}
+                        {validationErrors.email && <li>{validationErrors.email}</li>}
+                        {validationErrors.website && <li>{validationErrors.website}</li>}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Removed notification about Contact tab errors - we already have the red dot indicator */}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -379,6 +480,49 @@ const RegisterPage = () => {
 
                 {/* Contact Person Tab */}
                 <div className={activeTab === 'contact' ? 'block' : 'hidden'}>
+                  {/* Company Information Missing Error - only show when needed */}
+                  {showContactTabCompanyError && !Object.keys(validationErrors).some(key =>
+                    ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition'].includes(key)
+                  ) && (
+                    <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
+                      <div className="flex">
+                        <svg className="h-6 w-6 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <div>
+                          <h3 className="text-md font-medium text-red-800">Company Information Required</h3>
+                          <p className="text-sm text-red-700 mt-1">
+                            Please complete the required Company Information fields before submitting.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setActiveTab('company')}
+                            className="mt-2 text-sm font-medium text-red-800 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-md transition-colors"
+                          >
+                            Go to Company Information
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Contact Tab Error Summary */}
+                  {Object.keys(validationErrors).some(key =>
+                    ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition'].includes(key)
+                  ) && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-md">
+                      <h4 className="text-sm font-medium text-red-800 mb-1">Please correct the following errors:</h4>
+                      <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
+                        {validationErrors.contactFirstName && <li>{validationErrors.contactFirstName}</li>}
+                        {validationErrors.contactLastName && <li>{validationErrors.contactLastName}</li>}
+                        {validationErrors.contactEmail && <li>{validationErrors.contactEmail}</li>}
+                        {validationErrors.contactPosition && <li>{validationErrors.contactPosition}</li>}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Removed notification about Company tab errors - we already have the red dot indicator */}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label htmlFor="contactFirstName" className="block text-sm font-medium text-gray-700 mb-1">
@@ -482,9 +626,23 @@ const RegisterPage = () => {
                       Back to Company
                     </button>
                     <button
-                      type="submit"
+                      type="button"
                       className="bg-[#FF8A00] text-white py-2 px-6 rounded-md hover:bg-[#e67e00] transition-colors text-center font-medium"
                       disabled={isSubmitting}
+                      onClick={(e) => {
+                        // Check if company fields are filled
+                        const companyFieldsValid = validateCompanyFields();
+
+                        if (!companyFieldsValid) {
+                          e.preventDefault();
+                          setError('Please complete the required Company Information fields before submitting.');
+                          setShowContactTabCompanyError(true);
+                          return;
+                        }
+
+                        // If company fields are valid, submit the form
+                        handleSubmit(e as any);
+                      }}
                     >
                       {isSubmitting ? 'Registering...' : 'Register Company'}
                     </button>
