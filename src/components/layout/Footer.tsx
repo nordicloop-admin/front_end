@@ -117,7 +117,7 @@ const Footer = () => {
             <div className="flex flex-col md:flex-row justify-between items-center mb-12">
               {/* Navigation */}
               <div className="flex space-x-8 mb-6 md:mb-0">
-                <Link href="/coming-soon" className="text-white hover:text-gray-300 transition-colors">
+                <Link href="/about" className="text-white hover:text-gray-300 transition-colors">
                   About Us
                 </Link>
                 <Link href="/market-place" className="text-white hover:text-gray-300 transition-colors">
