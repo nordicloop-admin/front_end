@@ -41,7 +41,7 @@ const DashboardPage = () => {
           <div className="ml-3">
             <h3 className="text-sm font-medium text-blue-800">Your business is under verification</h3>
             <div className="mt-2 text-sm text-blue-700">
-              <p>Thank you for registering your company with Nordic Loop. Our team is currently reviewing your information. You'll be notified once the verification is complete.</p>
+              <p>Thank you for registering your company with Nordic Loop. Our team is currently reviewing your information. You&apos;ll be notified once the verification is complete.</p>
             </div>
           </div>
         </div>

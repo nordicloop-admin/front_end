@@ -612,7 +612,7 @@ const RegisterPage = () => {
                       </div>
                       <div className="ml-3">
                         <p className="text-sm text-blue-700">
-                          After registration, we'll send an invitation email to this address to complete your account setup.
+                          After registration, we&apos;ll send an invitation email to this address to complete your account setup.
                         </p>
                       </div>
                     </div>

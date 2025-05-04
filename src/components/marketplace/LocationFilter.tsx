@@ -27,8 +27,9 @@ export function LocationFilter({ selectedLocation, setSelectedLocation }: Locati
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
   const [locationType, setLocationType] = useState<'near-me' | 'select-country'>('select-country');
   const [showRegionDetails, setShowRegionDetails] = useState<string | null>(null);
-  const [savedLocation, setSavedLocation] = useState<string>('');
-  const [radius, setRadius] = useState<string>('100 km');
+  // Prefix with underscore to indicate intentionally unused variables
+  const [_savedLocation, _setSavedLocation] = useState<string>('');
+  const [radius, _setRadius] = useState<string>('100 km');
 
   useEffect(() => {
     setCountries(locationsData.countries);
@@ -48,7 +49,8 @@ export function LocationFilter({ selectedLocation, setSelectedLocation }: Locati
   };
 
   // Get countries for the main view based on region
-  const getRegionCountries = (regionName: string) => {
+  // Prefix with underscore to indicate intentionally unused variable
+  const _getRegionCountries = (regionName: string) => {
     return countries.filter(country => country.region === regionName);
   };
 
@@ -149,7 +151,7 @@ export function LocationFilter({ selectedLocation, setSelectedLocation }: Locati
                       <circle cx="12" cy="10" r="3" />
                     </svg>
                     <span className="text-sm text-gray-600">Your saved location:</span>
-                    <a href="#" className="text-sm text-[#FF8A00] ml-1">Please select your location</a>
+                    <button className="text-sm text-[#FF8A00] ml-1 underline">Please select your location</button>
                   </div>
 
                   <div className="flex items-center space-x-2">
