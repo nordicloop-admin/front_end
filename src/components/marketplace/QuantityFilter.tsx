@@ -10,11 +10,11 @@ interface QuantityFilterProps {
   setMaxQuantity: (value: number) => void;
 }
 
-export function QuantityFilter({ 
-  minQuantity, 
-  maxQuantity, 
-  setMinQuantity, 
-  setMaxQuantity 
+export function QuantityFilter({
+  minQuantity,
+  maxQuantity,
+  setMinQuantity,
+  setMaxQuantity
 }: QuantityFilterProps) {
   const [localMin, setLocalMin] = useState(minQuantity);
   const [localMax, setLocalMax] = useState(maxQuantity);
@@ -25,7 +25,7 @@ export function QuantityFilter({
   };
 
   return (
-    <FilterDropdown 
+    <FilterDropdown
       label="Quantity"
       contentClassName="w-[400px]"
     >
@@ -57,7 +57,7 @@ export function QuantityFilter({
           />
         </div>
         <button
-          className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition-colors"
+          className="w-full bg-[#FF8A00] text-white py-2 rounded hover:bg-[#e67e00] transition-colors font-medium"
           onClick={handleApply}
         >
           Apply

@@ -22,7 +22,7 @@ export function FormFilter({ selectedForms, toggleFormSelection }: FormFilterPro
   ];
 
   return (
-    <FilterDropdown 
+    <FilterDropdown
       label={selectedForms.length > 0 ? `Form (${selectedForms.length})` : 'Form'}
       contentClassName="w-[450px]"
     >
@@ -33,7 +33,7 @@ export function FormFilter({ selectedForms, toggleFormSelection }: FormFilterPro
               <input
                 type="checkbox"
                 id={form.toLowerCase()}
-                className="h-4 w-4 text-blue-600"
+                className="h-4 w-4 text-[#FF8A00]"
                 checked={selectedForms.includes(form)}
                 onChange={() => toggleFormSelection(form)}
               />

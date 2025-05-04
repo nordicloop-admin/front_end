@@ -18,7 +18,7 @@ export function TimeFilter({ selectedDateFilter, setSelectedDateFilter }: TimeFi
   ];
 
   return (
-    <FilterDropdown 
+    <FilterDropdown
       label={selectedDateFilter}
       contentClassName="w-[400px]"
     >
@@ -29,7 +29,7 @@ export function TimeFilter({ selectedDateFilter, setSelectedDateFilter }: TimeFi
               type="radio"
               id={option.replace(/\s+/g, '-').toLowerCase()}
               name="time-filter"
-              className="h-4 w-4 text-blue-600"
+              className="h-4 w-4 text-[#FF8A00]"
               checked={selectedDateFilter === option}
               onChange={() => setSelectedDateFilter(option)}
             />
