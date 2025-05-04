@@ -24,7 +24,7 @@ const AnalyticsSection = () => {
             </div>
             <div className="order-1 md:order-2 relative h-[250px] md:h-[300px]">
               <Image
-                src="/analytics-image.jpg"
+                src="/images/landing page/made-from-the-sky-i-eXpmQ98M8-unsplash.jpg"
                 alt="Analytics dashboard"
                 fill
                 sizes="(max-width: 768px) 100vw, 50vw"
