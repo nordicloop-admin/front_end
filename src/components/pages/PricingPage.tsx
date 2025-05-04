@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 
 const PricingPage = () => {
-  const [billingCycle, setBillingCycle] = useState('annually');
-
   return (
     <div className="py-16">
       {/* Pricing Header */}
@@ -17,28 +15,6 @@ const PricingPage = () => {
         </p>
       </div>
 
-      {/* Billing Toggle */}
-      <div className="flex justify-center mb-16">
-        <div className="bg-gray-100 rounded-full p-1 inline-flex">
-          <button
-            className={`px-6 py-2 rounded-full text-sm font-medium ${
-              billingCycle === 'annually' ? 'bg-black text-white' : 'text-gray-700'
-            }`}
-            onClick={() => setBillingCycle('annually')}
-          >
-            Annually
-          </button>
-          <button
-            className={`px-6 py-2 rounded-full text-sm font-medium ${
-              billingCycle === 'monthly' ? 'bg-black text-white' : 'text-gray-700'
-            }`}
-            onClick={() => setBillingCycle('monthly')}
-          >
-            Monthly
-          </button>
-        </div>
-      </div>
-
       {/* Pricing Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4">
         {/* Basic Package */}
@@ -47,7 +23,7 @@ const PricingPage = () => {
             <h3 className="text-[#008066] font-semibold text-xl mb-4">Basic Package</h3>
             <div className="flex items-end mb-4">
               <span className="text-3xl font-bold">Free</span>
-              <span className="text-gray-500 ml-2">/ Month</span>
+              <span className="text-gray-500 ml-2">/ Year</span>
             </div>
           </div>
 
@@ -58,7 +34,7 @@ const PricingPage = () => {
             </li>
             <li className="flex items-start">
               <div className="flex-shrink-0 h-5 w-5 rounded-full bg-gray-200 mr-3 mt-1"></div>
-              <span>Limited auctions per month</span>
+              <span>Limited auctions</span>
             </li>
             <li className="flex items-start">
               <div className="flex-shrink-0 h-5 w-5 rounded-full bg-gray-200 mr-3 mt-1"></div>
@@ -87,8 +63,8 @@ const PricingPage = () => {
           <div className="mb-8">
             <h3 className="text-[#008066] font-semibold text-xl mb-4">Premium</h3>
             <div className="flex items-end mb-4">
-              <span className="text-3xl font-bold">799 SEK</span>
-              <span className="text-gray-500 ml-2">/ Month</span>
+              <span className="text-3xl font-bold">9 588 SEK</span>
+              <span className="text-gray-500 ml-2">/ Year</span>
             </div>
           </div>
 
@@ -115,7 +91,7 @@ const PricingPage = () => {
             </li>
             <li className="flex items-start">
               <div className="flex-shrink-0 h-5 w-5 rounded-full bg-gray-200 mr-3 mt-1"></div>
-              <span>Unlimited auctions per month</span>
+              <span>Unlimited auctions</span>
             </li>
             <li className="flex items-start">
               <div className="flex-shrink-0 h-5 w-5 rounded-full bg-gray-200 mr-3 mt-1"></div>
@@ -148,8 +124,8 @@ const PricingPage = () => {
           <div className="mb-8">
             <h3 className="text-[#008066] font-semibold text-xl mb-4">Standard</h3>
             <div className="flex items-end mb-4">
-              <span className="text-3xl font-bold">599 SEK</span>
-              <span className="text-gray-500 ml-2">/ Month</span>
+              <span className="text-3xl font-bold">7 188 SEK</span>
+              <span className="text-gray-500 ml-2">/ Year</span>
             </div>
           </div>
 
@@ -160,7 +136,7 @@ const PricingPage = () => {
             </li>
             <li className="flex items-start">
               <div className="flex-shrink-0 h-5 w-5 rounded-full bg-gray-200 mr-3 mt-1"></div>
-              <span>Unlimited auctions per month</span>
+              <span>Unlimited auctions</span>
             </li>
             <li className="flex items-start">
               <div className="flex-shrink-0 h-5 w-5 rounded-full bg-gray-200 mr-3 mt-1"></div>
