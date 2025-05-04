@@ -4,7 +4,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ### Environment Variables
 
-Before running the project, you need to set up the environment variables. Create a `.env.local` file in the root directory with the following variables:
+Before running the project, you need to set up the environment variables. Create a `.env.local` file in the root directory with the following variables: 
 
 ```
 # Airtable Credentials
