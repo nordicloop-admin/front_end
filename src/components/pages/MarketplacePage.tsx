@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { ChevronDown, SlidersHorizontal, ChevronRight } from '@/components/ui/Icons';
 
 
@@ -14,6 +13,10 @@ const marketplaceItems = [
     category: 'Plastics',
     name: 'PPA Thermocomp UFW49RSC (Black)',
     basePrice: '5 013 008',
+    highestBid: '5 250 000',
+    timeLeft: '2d 4h',
+    volume: '500 kg',
+    countryOfOrigin: 'Sweden',
     image: '/images/marketplace/categories/plastics.jpg'
   },
   {
@@ -21,6 +24,10 @@ const marketplaceItems = [
     category: 'Plastics',
     name: 'PPA Thermocomp UFW49RSC (White)',
     basePrice: '4 850 000',
+    highestBid: null,
+    timeLeft: '5d 12h',
+    volume: '750 kg',
+    countryOfOrigin: 'Norway',
     image: '/images/marketplace/categories/plastics-alt.jpg'
   },
   {
@@ -28,6 +35,10 @@ const marketplaceItems = [
     category: 'Plastics',
     name: 'PPA Thermocomp UFW49RSC (Clear)',
     basePrice: '4 975 500',
+    highestBid: '5 100 000',
+    timeLeft: '1d 8h',
+    volume: '600 kg',
+    countryOfOrigin: 'Denmark',
     image: '/images/marketplace/categories/plastics.jpg'
   },
   {
@@ -35,6 +46,10 @@ const marketplaceItems = [
     category: 'Metals',
     name: 'Aluminum Scrap 6061',
     basePrice: '7 250 000',
+    highestBid: '7 500 000',
+    timeLeft: '3d 6h',
+    volume: '1200 kg',
+    countryOfOrigin: 'Finland',
     image: '/images/marketplace/categories/metals.jpg'
   },
   {
@@ -42,6 +57,10 @@ const marketplaceItems = [
     category: 'Paper',
     name: 'Recycled Cardboard Sheets',
     basePrice: '2 500 000',
+    highestBid: null,
+    timeLeft: '6d 18h',
+    volume: '850 kg',
+    countryOfOrigin: 'Sweden',
     image: '/images/marketplace/categories/paper.jpg'
   },
   {
@@ -49,6 +68,10 @@ const marketplaceItems = [
     category: 'Glass',
     name: 'Clear Glass Cullet',
     basePrice: '3 750 000',
+    highestBid: '3 900 000',
+    timeLeft: '4d 2h',
+    volume: '1500 kg',
+    countryOfOrigin: 'Norway',
     image: '/images/marketplace/categories/glass.jpg'
   },
   {
@@ -56,6 +79,10 @@ const marketplaceItems = [
     category: 'Wood',
     name: 'Reclaimed Pine Lumber',
     basePrice: '4 125 000',
+    highestBid: '4 250 000',
+    timeLeft: '2d 22h',
+    volume: '950 kg',
+    countryOfOrigin: 'Denmark',
     image: '/images/marketplace/categories/wood.jpg'
   },
   {
@@ -63,14 +90,30 @@ const marketplaceItems = [
     category: 'Textiles',
     name: 'Recycled Cotton Fabric',
     basePrice: '3 900 000',
+    highestBid: null,
+    timeLeft: '7d 14h',
+    volume: '350 kg',
+    countryOfOrigin: 'Finland',
     image: '/images/marketplace/categories/textiles.jpg'
   },
 ];
 
 // Product Card Component
 const ProductCard = ({ item }: { item: typeof marketplaceItems[0] }) => {
+  const handleItemClick = () => {
+    window.location.href = '/coming-soon';
+  };
+
+  const handleBidClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the card click event
+    alert('Bidding functionality coming soon!');
+  };
+
   return (
-    <div className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300">
+    <div
+      className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
+      onClick={handleItemClick}
+    >
       <div className="relative h-48 w-full">
         <Image
           src={item.image}
@@ -84,13 +127,41 @@ const ProductCard = ({ item }: { item: typeof marketplaceItems[0] }) => {
         <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs font-medium">
           {item.category}
         </div>
+        {/* Time left badge */}
+        <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs font-medium text-white">
+          {item.timeLeft} left
+        </div>
       </div>
       <div className="p-4">
         <h3 className="font-medium text-gray-900 line-clamp-2 h-12">{item.name}</h3>
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-gray-500">Base Price</span>
-          <span className="font-semibold text-blue-600">{item.basePrice}</span>
+
+        {/* Country of origin and volume */}
+        <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+          <div>
+            <span>Origin: {item.countryOfOrigin}</span>
+          </div>
+          <div>
+            <span>Volume: {item.volume}</span>
+          </div>
         </div>
+
+        {/* Price information */}
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xs text-gray-500">
+            {item.highestBid ? 'Highest Bid' : 'Base Price'}
+          </span>
+          <span className="font-semibold text-blue-600">
+            {item.highestBid || item.basePrice}
+          </span>
+        </div>
+
+        {/* Bid button */}
+        <button
+          className="mt-3 w-full bg-[#FF8A00] text-white py-2 rounded hover:bg-[#e67e00] transition-colors text-sm font-medium"
+          onClick={handleBidClick}
+        >
+          Place Bid
+        </button>
       </div>
     </div>
   );
@@ -735,9 +806,9 @@ const MarketplacePage = () => {
         {marketplaceItems
           .filter(item => selectedCategory === 'All materials' ? true : item.category === selectedCategory)
           .map((item) => (
-            <Link href="/coming-soon" key={item.id}>
+            <div key={item.id} className="cursor-pointer">
               <ProductCard item={item} />
-            </Link>
+            </div>
           ))}
       </div>
     </div>
