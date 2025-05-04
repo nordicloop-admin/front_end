@@ -123,10 +123,10 @@ const Footer = () => {
                 <Link href="/market-place" className="text-white hover:text-gray-300 transition-colors">
                   Market Place
                 </Link>
-                <Link href="/coming-soon" className="text-white hover:text-gray-300 transition-colors">
+                <Link href="/pricing" className="text-white hover:text-gray-300 transition-colors">
                   Pricing
                 </Link>
-                <Link href="/coming-soon" className="text-white hover:text-gray-300 transition-colors">
+                <Link href="/contact" className="text-white hover:text-gray-300 transition-colors">
                   Contact
                 </Link>
               </div>
