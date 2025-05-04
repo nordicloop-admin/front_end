@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 interface DesignToggleProps {
@@ -10,9 +10,8 @@ interface DesignToggleProps {
 }
 
 const DesignToggle: React.FC<DesignToggleProps> = ({ originalPath, alternativePath }) => {
-  const router = useRouter();
   const pathname = usePathname();
-  
+
   const isAlternative = pathname === alternativePath;
 
   return (
@@ -22,8 +21,8 @@ const DesignToggle: React.FC<DesignToggleProps> = ({ originalPath, alternativePa
         <Link
           href={originalPath}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            !isAlternative 
-              ? 'bg-[#1E2A36] text-white' 
+            !isAlternative
+              ? 'bg-[#1E2A36] text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
@@ -32,8 +31,8 @@ const DesignToggle: React.FC<DesignToggleProps> = ({ originalPath, alternativePa
         <Link
           href={alternativePath}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            isAlternative 
-              ? 'bg-[#1E2A36] text-white' 
+            isAlternative
+              ? 'bg-[#1E2A36] text-white'
               : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >

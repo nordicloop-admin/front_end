@@ -90,14 +90,14 @@ const ContactPage = () => {
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#1E2A36]/90 to-[#1E2A36]/70"></div>
-        
+
         <div className="absolute inset-0 flex flex-col justify-center items-center text-center px-4 z-10">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
             Get in Touch
           </h1>
           <div className="w-24 h-1 bg-[#FF8A00] mb-6"></div>
           <p className="text-white text-lg md:text-xl max-w-2xl">
-            We're here to help you transform waste into valuable resources
+            We&apos;re here to help you transform waste into valuable resources
           </p>
         </div>
       </div>
@@ -112,7 +112,7 @@ const ContactPage = () => {
               <p className="text-gray-600 mb-8">
                 Our team is ready to answer your questions about sustainable material trading and circular economy solutions. Reach out to us through any of the channels below.
               </p>
-              
+
               <div className="space-y-8">
                 {/* Address Card */}
                 <div className="flex items-start">
@@ -131,7 +131,7 @@ const ContactPage = () => {
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Email Card */}
                 <div className="flex items-start">
                   <div className="w-12 h-12 bg-[#FF8A00]/10 rounded-full flex items-center justify-center mr-4 shrink-0">
@@ -151,7 +151,7 @@ const ContactPage = () => {
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Phone Card */}
                 <div className="flex items-start">
                   <div className="w-12 h-12 bg-[#FF8A00]/10 rounded-full flex items-center justify-center mr-4 shrink-0">
@@ -173,7 +173,7 @@ const ContactPage = () => {
                 </div>
               </div>
             </div>
-            
+
             {/* Social Media */}
             <div>
               <h3 className="text-lg font-medium text-[#1E2A36] mb-4">Connect With Us</h3>
@@ -192,19 +192,19 @@ const ContactPage = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Right Column - Contact Form */}
           <div className="order-1 lg:order-2">
             <div className="bg-gray-50 p-8 rounded-xl shadow-sm">
               <h2 className="text-2xl font-semibold text-[#1E2A36] mb-6">Send Us a Message</h2>
-              
+
               {/* Status message */}
               {submitStatus && (
                 <div className={`p-4 mb-6 rounded-md ${submitStatus.success ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                   {submitStatus.message}
                 </div>
               )}
-              
+
               <form className="space-y-6" onSubmit={handleSubmit}>
                 {/* Name input */}
                 <div>
@@ -220,7 +220,7 @@ const ContactPage = () => {
                     required
                   />
                 </div>
-                
+
                 {/* Email input */}
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
@@ -235,7 +235,7 @@ const ContactPage = () => {
                     required
                   />
                 </div>
-                
+
                 {/* Subject input */}
                 <div>
                   <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
@@ -250,7 +250,7 @@ const ContactPage = () => {
                     required
                   />
                 </div>
-                
+
                 {/* Message input */}
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">Message</label>
@@ -265,7 +265,7 @@ const ContactPage = () => {
                     required
                   />
                 </div>
-                
+
                 {/* Submit button */}
                 <button
                   type="submit"
@@ -289,16 +289,16 @@ const ContactPage = () => {
           </div>
         </div>
       </div>
-      
+
       {/* Map Section */}
       <div className="w-full h-[400px] mt-12">
-        <iframe 
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2034.7891342109316!2d18.068540677320247!3d59.33470647460436!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x465f9d5c9f40a0bd%3A0x1b3917175d6c7abc!2sStorgatan%201%2C%20114%2055%20Stockholm%2C%20Sweden!5e0!3m2!1sen!2sus!4v1720000000000!5m2!1sen!2sus" 
-          width="100%" 
-          height="100%" 
-          style={{ border: 0 }} 
-          allowFullScreen 
-          loading="lazy" 
+        <iframe
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2034.7891342109316!2d18.068540677320247!3d59.33470647460436!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x465f9d5c9f40a0bd%3A0x1b3917175d6c7abc!2sStorgatan%201%2C%20114%2055%20Stockholm%2C%20Sweden!5e0!3m2!1sen!2sus!4v1720000000000!5m2!1sen!2sus"
+          width="100%"
+          height="100%"
+          style={{ border: 0 }}
+          allowFullScreen
+          loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
           title="Nordic Loop Office Location"
           className="w-full h-full"

@@ -86,7 +86,7 @@ const ContactFormSection = () => {
               <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Contact us</h3>
 
               <h2 className="text-2xl md:text-3xl font-semibold text-[#1E2A36] mb-4">
-                Let's start a conversation about<br/> sustainable material trading and<br/> circular economy solutions
+                Let&apos;s start a conversation about<br/> sustainable material trading and<br/> circular economy solutions
               </h2>
 
               <p className="text-sm md:text-base text-gray-600 mb-4">

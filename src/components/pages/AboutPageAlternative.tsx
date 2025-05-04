@@ -264,7 +264,7 @@ const AboutPageAlternative = () => {
                 <span className="font-semibold">Our Mission:</span> At Nordic Loop, we revolutionize waste management by creating a seamless marketplace where businesses can trade surplus materials, reducing costs and environmental impact simultaneously.
               </p>
               <p className="text-gray-600 mb-6">
-                <span className="font-semibold">Our Vision:</span> We envision a future where waste is no longer seen as a burden but as a valuable resource in a circular economy. By connecting businesses and facilitating the exchange of materials that would otherwise be discarded, we're building a more sustainable future for generations to come.
+                <span className="font-semibold">Our Vision:</span> We envision a future where waste is no longer seen as a burden but as a valuable resource in a circular economy. By connecting businesses and facilitating the exchange of materials that would otherwise be discarded, we&apos;re building a more sustainable future for generations to come.
               </p>
               <p className="text-gray-600">
                 Our platform is designed to make this vision a reality by providing businesses with the tools they need to participate in the circular economy efficiently and profitably.
@@ -306,7 +306,7 @@ const AboutPageAlternative = () => {
             <div className="w-16 h-1 bg-[#FF8A00] mx-auto mb-6"></div>
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Journey</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
-              From our founding to today, we've been on a mission to transform waste management.
+              From our founding to today, we&apos;ve been on a mission to transform waste management.
             </p>
           </div>
 
@@ -432,7 +432,7 @@ const AboutPageAlternative = () => {
             <div className="w-16 h-1 bg-[#FF8A00] mx-auto mb-6"></div>
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Impact</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
-              Through our platform, we're making a real difference in waste reduction and resource efficiency. Here's the impact we've made so far.
+              Through our platform, we&apos;re making a real difference in waste reduction and resource efficiency. Here&apos;s the impact we&apos;ve made so far.
             </p>
           </div>
 
@@ -487,7 +487,7 @@ const AboutPageAlternative = () => {
                     <p className="text-gray-500">{testimonial.company}</p>
                   </div>
                 </div>
-                <p className="text-gray-600 italic">"{testimonial.quote}"</p>
+                <p className="text-gray-600 italic">&ldquo;{testimonial.quote}&rdquo;</p>
               </div>
             ))}
           </div>
@@ -501,7 +501,7 @@ const AboutPageAlternative = () => {
             <div>
               <h2 className="text-3xl font-bold mb-6">Ready to Join the Circular Economy?</h2>
               <p className="text-gray-300 mb-8">
-                Whether you have surplus materials to sell or you're looking for sustainable sourcing options, Nordic Loop can help you reduce costs and environmental impact.
+                Whether you have surplus materials to sell or you&apos;re looking for sustainable sourcing options, Nordic Loop can help you reduce costs and environmental impact.
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link
