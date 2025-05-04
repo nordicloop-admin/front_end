@@ -29,7 +29,7 @@ const MarketplaceSection = () => {
           </div>
           <div className="relative h-[300px] md:h-[400px] mt-8 md:mt-0">
             <Image
-              src="/marketplace-image.jpg"
+              src="/images/landing page/sol-tZw3fcjUIpM-unsplash.jpg"
               alt="Recycling materials"
               fill
               sizes="(max-width: 768px) 100vw, 50vw"

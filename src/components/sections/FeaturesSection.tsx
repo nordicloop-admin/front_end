@@ -13,7 +13,7 @@ const FeaturesSection = () => {
             <div className="bg-white rounded-lg overflow-hidden rounded-corners sections-padding">
               <div className="relative h-[300px] ">
                 <Image
-                  src="/sample-requests.jpg"
+                  src="/images/landing page/slava-kompaniets-L2XiRnvJVz0-unsplash.jpg"
                   alt="Sample Requests"
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -40,7 +40,7 @@ const FeaturesSection = () => {
             <div className="bg-white rounded-lg overflow-hidden sections-padding rounded-corners">
               <div className="relative h-[300px]">
                 <Image
-                  src="/secure-transactions.jpg"
+                  src="/images/landing page/amina-atar-Mqc-m8kgxkg-unsplash.jpg"
                   alt="Secure Transactions"
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"

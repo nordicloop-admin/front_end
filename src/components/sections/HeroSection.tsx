@@ -215,7 +215,7 @@ const HeroSection = () => {
         <div className="order-1 lg:order-2 relative">
           <div className="relative w-full" style={{ height: 'calc(100vh - 30vh)' }}>
             <Image
-              src="/hero-image.jpg"
+              src="/images/landing page/jeriden-villegas-VLPUm5wP5Z0-unsplash.jpg"
               alt="Recycling materials"
               fill
               sizes="(max-width: 1023px) 100vw, 50vw"
