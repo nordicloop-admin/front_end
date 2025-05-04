@@ -82,7 +82,7 @@ const Header = () => {
             <Link href="/pricing" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Pricing
             </Link>
-            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
+            <Link href="/contact" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Contact
             </Link>
           </nav>
@@ -178,7 +178,7 @@ const Header = () => {
                   Pricing
                 </Link>
                 <Link
-                  href="/coming-soon"
+                  href="/contact"
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
