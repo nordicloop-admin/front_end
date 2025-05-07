@@ -114,24 +114,6 @@ const ContactPage = () => {
               </p>
 
               <div className="space-y-8">
-                {/* Address Card */}
-                <div className="flex items-start">
-                  <div className="w-12 h-12 bg-[#FF8A00]/10 rounded-full flex items-center justify-center mr-4 shrink-0">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#FF8A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-medium text-[#1E2A36] mb-1">Visit Our Office</h3>
-                    <p className="text-gray-600">
-                      Nordic Loop Headquarters<br />
-                      Storgatan 1<br />
-                      114 55 Stockholm, Sweden
-                    </p>
-                  </div>
-                </div>
-
                 {/* Email Card */}
                 <div className="flex items-start">
                   <div className="w-12 h-12 bg-[#FF8A00]/10 rounded-full flex items-center justify-center mr-4 shrink-0">
@@ -141,13 +123,8 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-medium text-[#1E2A36] mb-1">Email Us</h3>
-                    <p className="text-gray-600 mb-1">
-                      General Inquiries:
-                      <a href="mailto:info@nordicloop.se" className="text-[#FF8A00] hover:underline ml-1">info@nordicloop.se</a>
-                    </p>
                     <p className="text-gray-600">
-                      Support:
-                      <a href="mailto:support@nordicloop.se" className="text-[#FF8A00] hover:underline ml-1">support@nordicloop.se</a>
+                      <a href="mailto:info@nordicloop.se" className="text-[#FF8A00] hover:underline">info@nordicloop.se</a>
                     </p>
                   </div>
                 </div>
@@ -162,8 +139,7 @@ const ContactPage = () => {
                   <div>
                     <h3 className="text-lg font-medium text-[#1E2A36] mb-1">Call Us</h3>
                     <p className="text-gray-600 mb-1">
-                      Main Office:
-                      <a href="tel:+46701234567" className="text-[#FF8A00] hover:underline ml-1">+46 70 123 45 67</a>
+                      <a href="tel:+46704356584" className="text-[#FF8A00] hover:underline">+46 70 435 6584</a>
                     </p>
                     <p className="text-gray-600">
                       Business Hours:<br />
@@ -288,21 +264,6 @@ const ContactPage = () => {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Map Section */}
-      <div className="w-full h-[400px] mt-12">
-        <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2034.7891342109316!2d18.068540677320247!3d59.33470647460436!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x465f9d5c9f40a0bd%3A0x1b3917175d6c7abc!2sStorgatan%201%2C%20114%2055%20Stockholm%2C%20Sweden!5e0!3m2!1sen!2sus!4v1720000000000!5m2!1sen!2sus"
-          width="100%"
-          height="100%"
-          style={{ border: 0 }}
-          allowFullScreen
-          loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
-          title="Nordic Loop Office Location"
-          className="w-full h-full"
-        ></iframe>
       </div>
     </div>
   );
