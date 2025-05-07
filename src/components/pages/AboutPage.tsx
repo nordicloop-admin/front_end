@@ -135,7 +135,7 @@ const AboutPage = () => {
           <div className="w-full md:w-[45%] px-7 md:px-7 lg:px-7 py-20 md:py-0 flex flex-col justify-center text-left">
             {/* Refined typography for main heading */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#1E2A36] mb-8 leading-tight text-left">
-              Transforming waste into <span className="text-[#FF8A00] font-normal">valuable resources</span>
+              Transforming waste into valuable resources<span className="text-[#FF8A00] font-normal">.</span>
             </h1>
 
             {/* Description */}
@@ -192,29 +192,7 @@ const AboutPage = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-[#1E2A36]/30 to-transparent"></div>
             </div>
 
-            {/* Elegant company values card - enhanced on hover */}
-            <div className="absolute bottom-12 left-12 max-w-sm transition-all duration-300 group">
-              <div className="bg-white/80 backdrop-blur-sm p-8 shadow-sm group-hover:bg-white/95 group-hover:shadow-md transition-all duration-300 transform group-hover:scale-105">
-                <div className="mb-4 flex items-center">
-                  <div className="h-[1px] w-8 bg-gray-300 group-hover:w-12 transition-all duration-300"></div>
-                  <span className="ml-3 text-xs uppercase tracking-widest text-[#1E2A36]/70 font-medium group-hover:text-[#1E2A36] transition-colors duration-300">OUR VALUES</span>
-                </div>
-                <p className="text-sm text-[#1E2A36]/80 leading-relaxed group-hover:text-[#1E2A36] transition-colors duration-300">
-                  We believe in sustainability, innovation, and collaboration as the foundation for creating a circular economy that benefits businesses and the environment.
-                </p>
-                <div className="mt-6 flex justify-end">
-                  <button
-                    onClick={() => document.getElementById('values-section')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="text-[#FF8A00] text-xs uppercase tracking-widest font-medium flex items-center group"
-                  >
-                    <span className="group-hover:mr-4 mr-2 transition-all duration-300 uppercase tracking-widest text-xs">EXPLORE VALUES</span>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
+
 
             {/* Decorative elements */}
             <div className="absolute top-12 right-12 w-16 h-16 border border-white/30 rounded-full"></div>
@@ -223,12 +201,12 @@ const AboutPage = () => {
         </div>
 
         {/* Minimal scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-[#1E2A36]/30 z-20 flex flex-col items-center">
+        {/* <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-[#1E2A36]/30 z-20 flex flex-col items-center">
           <span className="text-xs uppercase tracking-widest font-light mb-2 text-[#1E2A36]/50">Scroll</span>
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
           </svg>
-        </div>
+        </div> */}
       </section>
 
       {/* Main content anchor */}
