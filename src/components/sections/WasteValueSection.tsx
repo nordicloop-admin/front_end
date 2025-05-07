@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 
 // Custom Icons for Feature Cards
 const TransparentPricingIcon = () => (
@@ -64,6 +65,7 @@ const FeatureCard = ({ title, description, icon, index }: FeatureCardProps) => {
 };
 
 const WasteValueSection = () => {
+  const [activeIndex, setActiveIndex] = React.useState(0);
 
   const features = [
     {
@@ -120,8 +122,8 @@ const WasteValueSection = () => {
             </h2>
           </div>
 
-          {/* Feature cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto mb-16">
+          {/* Feature cards - Desktop */}
+          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto mb-16">
             {features.map((feature, index) => (
               <FeatureCard
                 key={index}
@@ -131,6 +133,47 @@ const WasteValueSection = () => {
                 index={index}
               />
             ))}
+          </div>
+
+          {/* Feature cards - Mobile with horizontal scroll */}
+          <div className="md:hidden max-w-6xl mx-auto mb-16">
+            <Carousel
+              opts={{
+                align: "start",
+                loop: false,
+              }}
+              className="w-full"
+              setApi={(api) => {
+                api?.on("select", () => {
+                  // Get the current slide index
+                  const currentSlide = api.selectedScrollSnap();
+                  setActiveIndex(currentSlide);
+                });
+              }}
+            >
+              <CarouselContent className="-ml-4">
+                {features.map((feature, index) => (
+                  <CarouselItem key={index} className="pl-4 basis-[85%] sm:basis-[45%]">
+                    <FeatureCard
+                      title={feature.title}
+                      description={feature.description}
+                      icon={feature.icon}
+                      index={index}
+                    />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+            </Carousel>
+            <div className="flex justify-center mt-4">
+              <div className="flex space-x-2">
+                {features.map((_, index) => (
+                  <div
+                    key={index}
+                    className={`h-1.5 rounded-full ${index === activeIndex ? 'w-6 bg-[#FF8A00]' : 'w-1.5 bg-gray-400'}`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
