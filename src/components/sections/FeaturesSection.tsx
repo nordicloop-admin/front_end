@@ -6,9 +6,9 @@ import FullWidthSection from '../layout/FullWidthSection';
 const FeaturesSection = () => {
   return (
     <FullWidthSection backgroundColor="#F5F5F5">
-      <section className="mx-auto max-w-[86%] section-margin mb-10 md:mb-16 mt-24 md:mt-32">
+      <section className="mx-auto max-w-[86%] section-margin mb-6 md:mb-10 mt-8 md:mt-12">
         {/* Sample Requests Feature */}
-        <div className="bg-white rounded-corners sections-padding mb-16 md:mb-24">
+        <div className="bg-white rounded-corners sections-padding mb-8 md:mb-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
             <div className="order-1 md:order-1 relative h-[250px] md:h-[300px]">
               <Image

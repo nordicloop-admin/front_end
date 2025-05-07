@@ -111,7 +111,7 @@ const WasteValueSection = () => {
 
   return (
     <>
-      <section className="bg-[#1E2A36] py-16">
+      <section className="bg-[#1E2A36] py-12">
         <div className="container mx-auto px-4 md:px-6">
           {/* Main heading */}
           <div className="text-center mb-12">
@@ -136,7 +136,7 @@ const WasteValueSection = () => {
       </section>
 
       {/* Endorsements section with light gray background */}
-      <section className="bg-gray-100 py-12">
+      <section className="bg-gray-100 py-10">
         <div className="container mx-auto px-4 md:px-6">
           <div className="max-w-5xl mx-auto">
             {/* Desktop layout */}

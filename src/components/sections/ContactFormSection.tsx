@@ -77,7 +77,7 @@ const ContactFormSection = () => {
   };
 
   return (
-    <section className="py-10 md:py-16 bg-white min-h-[600px] flex items-center">
+    <section className="py-8 md:py-12 bg-white min-h-[600px] flex items-center">
       <div className="mx-auto px-4 md:px-6 lg:px-8 w-full">
         <div className="flex flex-col md:flex-row gap-8 items-center">
           {/* Left side - Contact us text */}
