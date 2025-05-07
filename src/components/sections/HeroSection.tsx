@@ -63,13 +63,13 @@ const HeroSection = () => {
                 </p>
                 <div className="flex flex-col gap-3 ">
                   <Link
-                    href="/coming-soon"
+                    href="/register"
                     className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
                   >
                     Join Us Now
                   </Link>
                   <Link
-                    href="/coming-soon"
+                    href="/market-place"
                     className="bg-white text-[#FF8A00] px-6 py-3 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center w-full flex items-center justify-center font-medium"
                   >
                     Our Market Place
@@ -118,13 +118,13 @@ const HeroSection = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <Link
-                  href="/coming-soon"
+                  href="/register"
                   className="bg-[#FF8A00] text-white px-5 py-2.5 rounded-lg hover:bg-[#e67e00] transition-colors text-center flex-1 flex items-center justify-center font-medium"
                 >
                   Join Us Now
                 </Link>
                 <Link
-                  href="/coming-soon"
+                  href="/market-place"
                   className="bg-[#F5F5F5] text-[#FF8A00] px-5 py-2.5 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center flex-1 flex items-center justify-center font-medium"
                 >
                   Our Market Place
@@ -199,13 +199,13 @@ const HeroSection = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center w-full md:w-full xl:w-[75%]">
             <Link
-              href="/coming-soon"
+              href="/register"
               className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
             >
               Join Us Now
             </Link>
             <Link
-              href="/coming-soon"
+              href="/market-place"
               className="bg-[#F5F5F5] text-[#FF8A00] px-6 py-3 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center w-full flex items-center justify-center font-medium"
             >
               Our Market Place
