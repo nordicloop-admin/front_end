@@ -164,7 +164,7 @@ const AboutPage = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-start">
               <Link
-                href="/coming-soon"
+                href="/register"
                 className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
               >
                 Join Us Now
@@ -469,7 +469,7 @@ const AboutPage = () => {
               </p>
               <div className="flex flex-wrap gap-4">
                 <Link
-                  href="/coming-soon"
+                  href="/register"
                   className="bg-[#FF8A00] text-white px-8 py-3 rounded hover:bg-[#e67e00] transition-colors inline-block font-medium"
                 >
                   Join Us Now
