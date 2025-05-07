@@ -49,8 +49,8 @@ const AboutPage = () => {
     },
     {
       name: 'Raissa Uwase',
-      role: 'CTO',
-      bio: 'With extensive experience across multiple tech companies, Raissa brings deep expertise in developing complex, enterprise-scale systems. Her background in leading challenging technical projects and implementing innovative solutions makes her the ideal leader for Nordic Loop\'s technology strategy and platform development.',
+      role: 'Technical Lead',
+      bio: 'With extensive experience across multiple tech companies, Raissa brings deep expertise in developing complex, enterprise-scale systems. Her background in leading challenging technical projects makes her an ideal leader for Nordic Loop\'s technology development.',
       image: '/images/About/raissa uwase.jpeg',
     },
     {
@@ -118,7 +118,7 @@ const AboutPage = () => {
   return (
     <div className="min-h-screen bg-white">
       {/* Full-Width Elegant Hero Section with Side-by-Side Layout */}
-      <section className="relative w-full overflow-hidden bg-white">
+      <section className="relative w-full overflow-hidden bg-white mt-6 md:mt-8">
         {/* Subtle background pattern */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
           <div className="h-full w-full"
@@ -132,22 +132,19 @@ const AboutPage = () => {
         {/* Main hero content */}
         <div className="min-h-[90vh] flex flex-col md:flex-row">
           {/* Left content area - Takes full width on mobile, 45% on desktop */}
-          <div className="w-full md:w-[45%] px-8 md:px-16 lg:px-24 py-20 md:py-0 flex flex-col justify-center">
-            {/* Section label */}
-            <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">About Us</h2>
-
+          <div className="w-full md:w-[45%] px-7 md:px-7 lg:px-7 py-20 md:py-0 flex flex-col justify-center text-left">
             {/* Refined typography for main heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#1E2A36] mb-8 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#1E2A36] mb-8 leading-tight text-left">
               Transforming waste into <span className="text-[#FF8A00] font-normal">valuable resources</span>
             </h1>
 
             {/* Description */}
-            <p className="text-lg text-[#1E2A36]/80 leading-relaxed mb-12 max-w-xl">
+            <p className="text-lg text-[#1E2A36]/80 leading-relaxed mb-12 max-w-xl text-left">
               Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability through our innovative marketplace.
             </p>
 
             {/* Key stats with minimal styling - Horizontal layout */}
-            <div className="grid grid-cols-3 gap-6 mb-12 border-t border-[#1E2A36]/10 pt-8">
+            <div className="grid grid-cols-3 gap-6 mb-12 border-t border-[#1E2A36]/10 pt-8 text-left">
               <div>
                 <div className="text-3xl font-light text-[#FF8A00]">5,000+</div>
                 <div className="text-xs uppercase tracking-widest text-[#1E2A36]/70 font-light mt-1">Tons Diverted</div>
@@ -165,7 +162,7 @@ const AboutPage = () => {
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
+            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-start">
               <Link
                 href="/coming-soon"
                 className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
@@ -235,14 +232,14 @@ const AboutPage = () => {
       </section>
 
       {/* Main content anchor */}
-      <div id="main-content"></div>
+      <div id="main-content" className="mb-6 md:mb-8"></div>
 
       {/* Mission & Vision Section - Asymmetrical layout */}
       <section id="mission-section" className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-7">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
             {/* Image - Takes 5 columns on desktop */}
-            <div className="md:col-span-5 relative h-[400px] rounded-lg overflow-hidden shadow-lg">
+            <div className="md:col-span-5 relative h-[400px] rounded-lg overflow-hidden shadow-lg my-6 md:my-8">
               <Image
                 src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80"
                 alt="Nordic Loop Mission"
@@ -270,7 +267,7 @@ const AboutPage = () => {
 
       {/* Values Section - Horizontal cards with icons */}
       <section id="values-section" className="py-16 bg-[#F5F5F5]">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-7">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Values</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -294,7 +291,7 @@ const AboutPage = () => {
 
       {/* Timeline Section - New section not in original */}
       <section className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-7">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Journey</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -372,7 +369,7 @@ const AboutPage = () => {
 
       {/* Team Section - Interactive cards */}
       <section className="py-16 bg-[#F5F5F5]">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-7">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Team</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -388,7 +385,7 @@ const AboutPage = () => {
                 onMouseEnter={() => setHoveredTeamMember(index)}
                 onMouseLeave={() => setHoveredTeamMember(null)}
               >
-                <div className="relative h-[300px]">
+                <div className="relative h-[300px] my-6 md:my-8">
                   <Image
                     src={member.image}
                     alt={member.name}
@@ -418,7 +415,7 @@ const AboutPage = () => {
 
       {/* Impact Section - Circular progress indicators */}
       <section className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-7">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Impact</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -429,7 +426,7 @@ const AboutPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {impactStats.map((stat, index) => (
               <div key={index} className="flex flex-col items-center">
-                <div className="relative w-48 h-48 mb-6">
+                <div className="relative w-48 h-48 mb-6 my-6 md:my-8">
                   {/* Circular background */}
                   <div className="absolute inset-0 rounded-full bg-[#F5F5F5]"></div>
 
@@ -451,7 +448,7 @@ const AboutPage = () => {
 
       {/* Testimonials Section - New section not in original */}
       <section className="py-16 bg-[#F5F5F5]">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-7">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">What Our Partners Say</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -463,7 +460,7 @@ const AboutPage = () => {
             {testimonials.map((testimonial, index) => (
               <div key={index} className="bg-white p-8 rounded-lg shadow-sm">
                 <div className="flex items-start mb-6">
-                  <div className="relative w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0">
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0 my-2">
                     <Image
                       src={testimonial.image}
                       alt={testimonial.author}
@@ -485,7 +482,7 @@ const AboutPage = () => {
 
       {/* CTA Section - Different style */}
       <section className="py-16 bg-[#1E2A36] text-white mb-16">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-7">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold mb-6">Ready to Join the Circular Economy?</h2>
@@ -507,7 +504,7 @@ const AboutPage = () => {
                 </Link>
               </div>
             </div>
-            <div className="relative h-[300px] rounded-lg overflow-hidden">
+            <div className="relative h-[300px] rounded-lg overflow-hidden my-6 md:my-8">
               <Image
                 src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80"
                 alt="Join Nordic Loop"
