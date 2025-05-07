@@ -12,29 +12,24 @@ const AboutPage = () => {
   // Timeline data
   const timelineItems = [
     {
-      year: '2020',
+      year: 'September 2024',
       title: 'The Beginning',
       description: 'Nordic Loop was founded with a vision to transform waste management in the Nordic region.',
     },
     {
-      year: '2021',
-      title: 'First Partnerships',
-      description: 'We established our first key partnerships with businesses committed to sustainability.',
+      year: 'December 2024',
+      title: 'National Recognition',
+      description: 'Selected among the Top 20 Startup Ideas in Sweden 2024 by Venture Cup.',
     },
     {
-      year: '2022',
-      title: 'Platform Launch',
-      description: 'Our marketplace platform was officially launched, connecting businesses across the region.',
+      year: 'May 2025',
+      title: 'MVP Launch',
+      description: 'Development and launch of the MVP and onboarding of the first clients.',
     },
     {
-      year: '2023',
-      title: 'Expansion',
-      description: 'Nordic Loop expanded operations beyond the Nordic countries, reaching new markets.',
-    },
-    {
-      year: 'Today',
-      title: 'Growing Impact',
-      description: 'We continue to grow, connecting more businesses and making a significant environmental impact.',
+      year: 'September 2025',
+      title: 'Market Presence',
+      description: 'Established as a recognized player in the circular economy, gaining market visibility and reaching 20 active clients.',
     },
   ];
 
@@ -70,7 +65,7 @@ const AboutPage = () => {
   const values = [
     {
       title: 'Sustainability',
-      description: 'We are committed to environmental stewardship and promoting sustainable business practices.',
+      description: 'We are committed to environmental stewardship and promoting sustainable business practices toward SDGs 12 and 13.',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#FF8A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -79,7 +74,7 @@ const AboutPage = () => {
     },
     {
       title: 'Innovation',
-      description: 'We constantly seek new solutions and approaches to waste management challenges.',
+      description: 'We constantly seek new solutions and approaches to waste management challenges and circular economy.',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-[#FF8A00]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
@@ -138,11 +133,8 @@ const AboutPage = () => {
         <div className="min-h-[90vh] flex flex-col md:flex-row">
           {/* Left content area - Takes full width on mobile, 45% on desktop */}
           <div className="w-full md:w-[45%] px-8 md:px-16 lg:px-24 py-20 md:py-0 flex flex-col justify-center">
-            {/* Minimal section label */}
-            <div className="mb-8 flex items-center">
-              <div className="h-[1px] w-12 bg-[#FF8A00]"></div>
-              <span className="ml-4 text-sm uppercase tracking-widest text-[#1E2A36]/70 font-light">About Us</span>
-            </div>
+            {/* Section label */}
+            <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">About Us</h2>
 
             {/* Refined typography for main heading */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#1E2A36] mb-8 leading-tight">
@@ -206,22 +198,22 @@ const AboutPage = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-[#1E2A36]/30 to-transparent"></div>
             </div>
 
-            {/* Elegant company values card */}
-            <div className="absolute bottom-12 left-12 max-w-sm">
-              <div className="bg-white/90 backdrop-blur-sm p-8 shadow-sm">
+            {/* Elegant company values card - enhanced on hover */}
+            <div className="absolute bottom-12 left-12 max-w-sm transition-all duration-300 group">
+              <div className="bg-white/80 backdrop-blur-sm p-8 shadow-sm group-hover:bg-white/95 group-hover:shadow-md transition-all duration-300 transform group-hover:scale-105">
                 <div className="mb-4 flex items-center">
-                  <div className="h-[1px] w-8 bg-[#FF8A00]"></div>
-                  <span className="ml-3 text-xs uppercase tracking-widest text-[#1E2A36]/70 font-light">Our Values</span>
+                  <div className="h-[1px] w-8 bg-gray-300 group-hover:w-12 transition-all duration-300"></div>
+                  <span className="ml-3 text-xs uppercase tracking-widest text-[#1E2A36]/70 font-medium group-hover:text-[#1E2A36] transition-colors duration-300">OUR VALUES</span>
                 </div>
-                <p className="text-sm text-[#1E2A36]/80 leading-relaxed">
+                <p className="text-sm text-[#1E2A36]/80 leading-relaxed group-hover:text-[#1E2A36] transition-colors duration-300">
                   We believe in sustainability, innovation, and collaboration as the foundation for creating a circular economy that benefits businesses and the environment.
                 </p>
                 <div className="mt-6 flex justify-end">
                   <button
                     onClick={() => document.getElementById('values-section')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="text-[#FF8A00] text-xs uppercase tracking-widest font-light flex items-center group"
+                    className="text-[#FF8A00] text-xs uppercase tracking-widest font-medium flex items-center group"
                   >
-                    <span className="group-hover:mr-4 mr-2 transition-all duration-300">Explore values</span>
+                    <span className="group-hover:mr-4 mr-2 transition-all duration-300 uppercase tracking-widest text-xs">EXPLORE VALUES</span>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                     </svg>
@@ -264,10 +256,9 @@ const AboutPage = () => {
 
             {/* Text content - Takes 7 columns on desktop */}
             <div className="md:col-span-7">
-              <div className="w-16 h-1 bg-[#FF8A00] mb-6"></div>
               <h2 className="text-3xl font-bold text-[#1E2A36] mb-6">Our Mission & Vision</h2>
               <p className="text-gray-600 mb-6">
-                <span className="font-semibold">Our Mission:</span> At Nordic Loop, we revolutionize waste management by creating a seamless marketplace where businesses can trade surplus materials, reducing costs and environmental impact simultaneously.
+                <span className="font-semibold">Our Mission:</span> At Nordic Loop, we want to revolutionize waste management by creating a seamless marketplace where businesses can trade surplus materials with maximum profitability, reducing their disposal costs and environmental impact simultaneously. and help companies reach the SDGs 12 and 13 goals.
               </p>
               <p className="text-gray-600 mb-6">
                 <span className="font-semibold">Our Vision:</span> We envision a future where waste is no longer seen as a burden but as a valuable resource in a circular economy. By connecting businesses and facilitating the exchange of materials that would otherwise be discarded, we&apos;re building a more sustainable future for generations to come.
@@ -284,7 +275,6 @@ const AboutPage = () => {
       <section id="values-section" className="py-16 bg-[#F5F5F5]">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <div className="w-16 h-1 bg-[#FF8A00] mx-auto mb-6"></div>
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Values</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
               These core principles guide everything we do at Nordic Loop.
@@ -309,7 +299,6 @@ const AboutPage = () => {
       <section className="py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <div className="w-16 h-1 bg-[#FF8A00] mx-auto mb-6"></div>
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Journey</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
               From our founding to today, we&apos;ve been on a mission to transform waste management.
@@ -388,7 +377,6 @@ const AboutPage = () => {
       <section className="py-16 bg-[#F5F5F5]">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <div className="w-16 h-1 bg-[#FF8A00] mx-auto mb-6"></div>
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Team</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
               Meet the passionate individuals behind Nordic Loop who are dedicated to transforming waste management and promoting sustainability.
@@ -435,7 +423,6 @@ const AboutPage = () => {
       <section className="py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <div className="w-16 h-1 bg-[#FF8A00] mx-auto mb-6"></div>
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Impact</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
               Through our platform, we&apos;re making a real difference in waste reduction and resource efficiency. Here&apos;s the impact we&apos;ve made so far.
@@ -469,7 +456,6 @@ const AboutPage = () => {
       <section className="py-16 bg-[#F5F5F5]">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="text-center mb-16">
-            <div className="w-16 h-1 bg-[#FF8A00] mx-auto mb-6"></div>
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">What Our Partners Say</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
               Hear from businesses that have transformed their approach to waste management with Nordic Loop.
@@ -501,7 +487,7 @@ const AboutPage = () => {
       </section>
 
       {/* CTA Section - Different style */}
-      <section className="py-16 bg-[#1E2A36] text-white">
+      <section className="py-16 bg-[#1E2A36] text-white mb-16">
         <div className="max-w-7xl mx-auto px-4 md:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
@@ -512,13 +498,13 @@ const AboutPage = () => {
               <div className="flex flex-wrap gap-4">
                 <Link
                   href="/coming-soon"
-                  className="bg-[#FF8A00] text-white px-8 py-3 rounded-md hover:bg-[#e67e00] transition-colors inline-block font-medium"
+                  className="bg-[#FF8A00] text-white px-8 py-3 rounded hover:bg-[#e67e00] transition-colors inline-block font-medium"
                 >
                   Join Us Now
                 </Link>
                 <Link
                   href="/contact"
-                  className="bg-transparent border border-white text-white px-8 py-3 rounded-md hover:bg-white/10 transition-colors inline-block font-medium"
+                  className="bg-transparent border border-white text-white px-8 py-3 rounded hover:bg-white/10 transition-colors inline-block font-medium"
                 >
                   Contact Us
                 </Link>
