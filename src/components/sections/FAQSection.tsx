@@ -70,8 +70,18 @@ const FAQSection = () => {
     setOpenIndex(index === openIndex ? -1 : index);
   };
 
+  const scrollToContact = () => {
+    const contactSection = document.getElementById('contact-section');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <section className="py-12 md:py-16 bg-white">
+    <section className="py-12 md:py-16 bg-white relative">
+      {/* Visual connector to contact section */}
+      <div className="absolute left-1/2 bottom-0 transform -translate-x-1/2 translate-y-1/2 w-16 h-16 bg-gray-50 rotate-45 z-10 hidden md:block"></div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Frequently Asked Questions</h2>
@@ -90,6 +100,22 @@ const FAQSection = () => {
               toggleOpen={() => toggleFAQ(index)}
             />
           ))}
+
+          {/* Transition element with CTA */}
+          <div className="mt-12 text-center">
+            <p className="text-lg text-gray-700 mb-6">
+              Still have questions? We're here to help!
+            </p>
+            <button
+              onClick={scrollToContact}
+              className="bg-[#FF8A00] text-white px-8 py-3 rounded-lg hover:bg-[#e67e00] transition-colors inline-flex items-center gap-2 font-medium"
+            >
+              Contact Us
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M16.707 10.293a1 1 0 010 1.414l-6 6a1 1 0 01-1.414 0l-6-6a1 1 0 111.414-1.414L9 14.586V3a1 1 0 012 0v11.586l4.293-4.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </section>
