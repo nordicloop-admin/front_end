@@ -417,7 +417,7 @@ const AboutPage = () => {
       <section className="py-16 md:py-24">
         <div className="max-w-7xl mx-auto px-7">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Impact</h2>
+            <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Goals</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
               Through our platform, we&apos;re making a real difference in waste reduction and resource efficiency. Here&apos;s the impact we&apos;ve made so far.
             </p>
