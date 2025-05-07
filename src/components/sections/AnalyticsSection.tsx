@@ -6,7 +6,7 @@ import FullWidthSection from '../layout/FullWidthSection';
 const AnalyticsSection = () => {
   return (
     <FullWidthSection backgroundColor="#F5F5F5">
-      <section className="mx-auto max-w-[86%] bg-white section-margin rounded-corners sections-padding mb-10 md:mb-16 mt-16 md:mt-24">
+      <section className="mx-auto max-w-[86%] bg-white section-margin rounded-corners sections-padding mb-6 md:mb-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="order-1 md:order-1 relative h-[250px] md:h-[300px]">
             <Image

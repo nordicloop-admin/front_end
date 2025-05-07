@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 const MarketplaceSection = () => {
   return (
-    <section className="py-10 md:py-16 section-margin">
+    <section className="py-8 md:py-12 section-margin">
       <div className="container mx-auto px-6 md:px-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
           <div>
