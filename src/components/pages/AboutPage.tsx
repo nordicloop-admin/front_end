@@ -164,22 +164,19 @@ const AboutPage = () => {
               </div>
             </div>
 
-            {/* Minimal CTAs */}
-            <div className="flex space-x-8">
-              <Link
-                href="/contact"
-                className="group inline-flex items-center text-[#1E2A36] hover:text-[#FF8A00] transition-colors duration-300"
-              >
-                <span className="mr-3 text-sm uppercase tracking-widest font-light">Contact Us</span>
-                <span className="h-[1px] w-8 bg-current transition-all duration-300 group-hover:w-12"></span>
-              </Link>
-
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
               <Link
                 href="/coming-soon"
-                className="group inline-flex items-center text-[#1E2A36] hover:text-[#FF8A00] transition-colors duration-300"
+                className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
               >
-                <span className="mr-3 text-sm uppercase tracking-widest font-light">Join Network</span>
-                <span className="h-[1px] w-8 bg-current transition-all duration-300 group-hover:w-12"></span>
+                Join Us Now
+              </Link>
+              <Link
+                href="/market-place"
+                className="bg-[#F5F5F5] text-[#FF8A00] px-6 py-3 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center w-full flex items-center justify-center font-medium"
+              >
+                Our Market Place
               </Link>
             </div>
           </div>
