@@ -73,7 +73,8 @@ interface SignupCredentials {
  */
 export async function login(credentials: LoginCredentials) {
   try {
-    const response = await apiPost<LoginResponse>('/users/login/', credentials);
+    // Login is a public endpoint, so we don't need to send the token
+    const response = await apiPost<LoginResponse>('/users/login/', credentials, false);
 
     if (response.data) {
       // Make sure we have all the required data
@@ -184,7 +185,8 @@ export async function signup(credentials: SignupCredentials) {
     // Log the request payload for debugging (remove in production)
     // console.log('Signup request payload:', credentials);
 
-    const response = await apiPost<SignupResponse>('/users/signup/', credentials);
+    // Signup is a public endpoint, so we don't need to send the token
+    const response = await apiPost<SignupResponse>('/users/signup/', credentials, false);
 
     // Log the response for debugging (remove in production)
     // console.log('Signup response:', response);
