@@ -24,13 +24,13 @@ export interface UserSignUp {
 }
 
 export interface User {
-  id: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  position: string;
-  companyId: string;
-  createdAt: string;
+  username: string;
+}
+
+export interface AuthTokens {
+  access: string;
+  refresh: string;
 }
 
 export interface Company {

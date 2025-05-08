@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LoginPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,11 +32,16 @@ const LoginPage = () => {
     setSuccessMessage('');
 
     try {
-      // For testing purposes, we'll simulate a successful login
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the login function from the auth context
+      const result = await login(email, password);
 
-      // Redirect directly to dashboard
-      router.push('/dashboard');
+      if (result.success) {
+        // Redirect to dashboard on successful login
+        router.push('/dashboard');
+      } else {
+        // Display error message
+        setError(result.error || 'Login failed. Please check your credentials and try again.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please check your credentials and try again.');
     } finally {

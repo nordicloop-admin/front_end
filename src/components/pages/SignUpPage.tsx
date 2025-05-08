@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SignUpPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const { signup } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -62,11 +64,16 @@ const SignUpPage = () => {
     setError('');
 
     try {
-      // For testing purposes, we'll simulate a successful sign-up
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the signup function from the auth context
+      const result = await signup(email, password);
 
-      // Redirect directly to dashboard
-      router.push('/dashboard');
+      if (result.success) {
+        // Redirect to dashboard on successful signup
+        router.push('/dashboard');
+      } else {
+        // Display error message
+        setError(result.error || 'Sign-up failed. Please try again.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-up failed. Please try again.');
     } finally {
