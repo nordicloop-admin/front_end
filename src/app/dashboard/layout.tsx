@@ -7,11 +7,16 @@ export const metadata: Metadata = {
 };
 
 import DashboardLayoutClient from '@/components/layout/DashboardLayoutClient';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <DashboardLayoutClient>{children}</DashboardLayoutClient>;
+  return (
+    <ProtectedRoute>
+      <DashboardLayoutClient>{children}</DashboardLayoutClient>
+    </ProtectedRoute>
+  );
 }

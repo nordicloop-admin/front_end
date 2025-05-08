@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function DashboardLayoutClient({
   children,
@@ -12,10 +13,21 @@ export default function DashboardLayoutClient({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { logout, user } = useAuth();
+
+  // Debug function to help troubleshoot user data issues
+  // To debug user data, uncomment the following code and add useEffect import:
+  //
+  // import React, { useEffect } from 'react';
+  // ...
+  // useEffect(() => {
+  //   console.log('Current user data:', user);
+  // }, [user]);
 
   const handleLogout = () => {
-    // In a real app, you would clear authentication state here
-    // For now, just redirect to the login page
+    // Call the logout function from the auth context
+    logout();
+    // Redirect to the login page
     router.push('/login');
   };
 
@@ -162,7 +174,7 @@ export default function DashboardLayoutClient({
             </button>
 
             <div className="flex items-center">
-              <span className="font-medium mr-2">AI</span>
+              <span className="font-medium mr-2">Hello {user?.firstName || user?.username?.split(' ')[0] || 'User'}</span>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>

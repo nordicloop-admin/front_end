@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
 
   useEffect(() => {
     // Simulate loading data
@@ -27,7 +29,9 @@ const DashboardPage = () => {
       {/* Greeting */}
       <div className="mb-6">
         <div className="text-gray-600">Hello</div>
-        <h1 className="text-2xl font-bold text-gray-900">Raissa</h1>
+        <h1 className="text-2xl font-bold text-gray-900">
+          {user?.firstName || user?.username?.split(' ')[0] || 'User'}
+        </h1>
       </div>
 
       {/* Verification Status Alert */}

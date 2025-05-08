@@ -86,7 +86,7 @@ const FAQSection = () => {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Frequently Asked Questions</h2>
           <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Find answers to common questions about Nordic Loop's B2B waste marketplace.
+            Find answers to common questions about Nordic Loop&apos;s B2B waste marketplace.
           </p>
         </div>
 
@@ -104,7 +104,7 @@ const FAQSection = () => {
           {/* Transition element with CTA */}
           <div className="mt-12 text-center">
             <p className="text-lg text-gray-700 mb-6">
-              Still have questions? We're here to help!
+              Still have questions? We&apos;re here to help!
             </p>
             <button
               onClick={scrollToContact}
