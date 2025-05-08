@@ -2,7 +2,7 @@
  * Company service for handling company registration and management
  */
 import { apiPost } from './api';
-import { CompanyRegistration, Company } from '@/types/auth';
+import { CompanyRegistration } from '@/types/auth';
 
 /**
  * Interface for company registration response
@@ -30,7 +30,7 @@ interface CompanyRegistrationResponse {
 export async function registerCompany(companyData: CompanyRegistration) {
   try {
     const response = await apiPost<CompanyRegistrationResponse>('/company/companies/create/', companyData);
-    
+
     return response;
   } catch (error) {
     // Use a logger instead of console to avoid ESLint warnings
@@ -53,6 +53,6 @@ export function generateSignupToken(email: string): string {
     email,
     exp: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days expiration
   };
-  
+
   return Buffer.from(JSON.stringify(payload)).toString('base64');
 }

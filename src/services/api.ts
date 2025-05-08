@@ -103,7 +103,7 @@ export async function apiPost<T>(endpoint: string, body: any, token?: string): P
       try {
         // Try to parse it anyway in case the content-type header is wrong
         data = JSON.parse(text);
-      } catch (e) {
+      } catch (_e) {
         // If it's not JSON, create an error message
         return {
           data: null,

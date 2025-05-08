@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -16,7 +16,10 @@ export default function DashboardLayoutClient({
   const { logout, user } = useAuth();
 
   // Debug function to help troubleshoot user data issues
-  // Uncomment this useEffect to see what user data is available
+  // To debug user data, uncomment the following code and add useEffect import:
+  //
+  // import React, { useEffect } from 'react';
+  // ...
   // useEffect(() => {
   //   console.log('Current user data:', user);
   // }, [user]);
