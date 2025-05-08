@@ -18,6 +18,7 @@ interface LoginResponse {
   email: string;
   access: string;
   refresh: string;
+  first_name?: string;
 }
 
 /**
@@ -64,7 +65,8 @@ export async function login(credentials: LoginCredentials) {
       // Store the user info in local storage
       const user: User = {
         email: response.data.email,
-        username: response.data.username
+        username: response.data.username,
+        firstName: response.data.first_name || response.data.username.split(' ')[0] || 'User'
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
     }
@@ -146,16 +148,20 @@ export function getUser(): User | null {
  */
 export async function signup(credentials: SignupCredentials) {
   try {
+    // Log the request payload for debugging (remove in production)
+    // console.log('Signup request payload:', credentials);
+
     const response = await apiPost<LoginResponse>('/users/signup/', credentials);
+
+    // Log the response for debugging (remove in production)
+    // console.log('Signup response:', response);
 
     if (response.data) {
       // Make sure we have all the required data
       if (!response.data.access || !response.data.refresh || !response.data.email || !response.data.username) {
-        // Use a logger instead of console to avoid ESLint warnings
-        // console.error('Signup response missing required fields:', response.data);
         return {
           data: null,
-          error: 'Invalid response from server',
+          error: 'Invalid response from server: Missing required fields',
           status: response.status
         };
       }
@@ -167,15 +173,24 @@ export async function signup(credentials: SignupCredentials) {
       // Store the user info in local storage
       const user: User = {
         email: response.data.email,
-        username: response.data.username
+        username: response.data.username,
+        firstName: response.data.first_name || response.data.username.split(' ')[0] || 'User'
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } else if (response.error) {
+      // If there's an error in the response, return it
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
     }
 
     return response;
   } catch (error) {
-    // Use a logger instead of console to avoid ESLint warnings
+    // Log the error for debugging (remove in production)
     // console.error('Signup error:', error);
+
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred during signup',

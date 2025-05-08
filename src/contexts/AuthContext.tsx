@@ -40,7 +40,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await loginService({ email, password });
 
       if (response.data) {
-        setUser(response.data.user);
+        // Create a user object from the response data
+        const user: User = {
+          email: response.data.email,
+          username: response.data.username,
+          firstName: response.data.first_name || response.data.username.split(' ')[0] || 'User'
+        };
+
+        setUser(user);
         return { success: true };
       }
 
@@ -58,18 +65,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+
+      // Log the signup attempt for debugging (remove in production)
+      // console.log('Attempting signup with email:', email);
+
       const response = await signupService({ email, password });
 
+      // Log the response for debugging (remove in production)
+      // console.log('Signup response:', response);
+
       if (response.data) {
-        setUser(response.data.user);
+        // Create a user object from the response data
+        const user: User = {
+          email: response.data.email,
+          username: response.data.username,
+          firstName: response.data.first_name || response.data.username.split(' ')[0] || 'User'
+        };
+
+        setUser(user);
         return { success: true };
       }
 
-      return { success: false, error: response.error || 'Signup failed' };
+      // If there's an error in the response, return it with more details
+      if (response.error) {
+        return {
+          success: false,
+          error: `Signup failed: ${response.error} (Status: ${response.status})`
+        };
+      }
+
+      return { success: false, error: 'Signup failed: Unknown error' };
     } catch (error) {
+      // Log the error for debugging (remove in production)
+      // console.error('Signup exception:', error);
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Signup failed'
+        error: error instanceof Error ? error.message : 'Signup failed: Unexpected error'
       };
     } finally {
       setIsLoading(false);

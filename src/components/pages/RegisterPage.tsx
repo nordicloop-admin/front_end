@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { SECTOR_CHOICES, COUNTRY_CHOICES } from '@/types/auth';
+import { SECTOR_CHOICES, COUNTRY_CHOICES, CompanyRegistration } from '@/types/auth';
+import { registerCompany, generateSignupToken } from '@/services/company';
 // Imports removed to fix ESLint errors
 // import { motion, AnimatePresence } from 'framer-motion';
 
@@ -29,6 +30,9 @@ const RegisterPage = () => {
     contactEmail: '',
     contactPosition: '',
   });
+
+  // State for success message
+  const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -155,20 +159,45 @@ const RegisterPage = () => {
 
     setIsSubmitting(true);
     setError('');
+    setSuccessMessage('');
 
     try {
-      // For testing purposes, we'll simulate a successful registration
-      // and generate a fake token for the signup page
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Prepare the company registration data
+      const companyRegistrationData: CompanyRegistration = {
+        official_name: formData.companyName,
+        vat_number: formData.vatNumber,
+        email: formData.email || undefined,
+        website: formData.website || undefined,
+        country: formData.country,
+        sector: formData.sector,
+        contact_name: `${formData.contactFirstName} ${formData.contactLastName}`,
+        contact_position: formData.contactPosition,
+        contact_email: formData.contactEmail,
+        status: 'pending'
+      };
 
-      // Create a simple token with the email (in a real app, this would be more secure)
-      const fakeToken = Buffer.from(JSON.stringify({
-        email: formData.contactEmail,
-        exp: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days expiration
-      })).toString('base64');
+      // Register the company
+      const response = await registerCompany(companyRegistrationData);
 
-      // Redirect directly to signup page with the token
-      router.push(`/signup?token=${fakeToken}`);
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      if (!response.data) {
+        throw new Error('Failed to register company. Please try again.');
+      }
+
+      // Set success message
+      setSuccessMessage('Company registered successfully! Redirecting to signup page...');
+
+      // Generate a signup token
+      const token = generateSignupToken(formData.contactEmail);
+
+      // Wait a moment to show the success message
+      setTimeout(() => {
+        // Redirect to signup page with the token
+        router.push(`/signup?token=${token}`);
+      }, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please check your information and try again.');
     } finally {
@@ -247,9 +276,15 @@ const RegisterPage = () => {
 
           {/* Registration Form */}
           <form onSubmit={handleSubmit} className="w-full max-w-3xl">
-            {error && !showContactTabCompanyError && activeTab === 'contact' && (
+            {error && !showContactTabCompanyError && (
               <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
                 {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-md text-sm">
+                {successMessage}
               </div>
             )}
 

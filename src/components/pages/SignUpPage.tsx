@@ -60,6 +60,12 @@ const SignUpPage = () => {
       return;
     }
 
+    // Validate password length
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
 
@@ -73,9 +79,16 @@ const SignUpPage = () => {
       } else {
         // Display error message
         setError(result.error || 'Sign-up failed. Please try again.');
+
+        // Log the error for debugging (remove in production)
+        // console.error('Signup error:', result.error);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-up failed. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Sign-up failed. Please try again.';
+      setError(errorMessage);
+
+      // Log the error for debugging (remove in production)
+      // console.error('Signup exception:', err);
     } finally {
       setIsSubmitting(false);
     }
