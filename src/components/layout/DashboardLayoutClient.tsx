@@ -184,7 +184,7 @@ export default function DashboardLayoutClient({
           {/* Search */}
           <div className={cn(
             "relative",
-            isMobile ? "w-full max-w-[200px]" : "w-[300px]"
+            isMobile ? "w-full max-w-[160px]" : "w-[300px]"
           )}>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -199,9 +199,9 @@ export default function DashboardLayoutClient({
           </div>
 
           {/* Right Side Actions */}
-          <div className="flex items-center space-x-2 md:space-x-4">
+          <div className="flex items-center space-x-4 md:space-x-4">
             {/* Add Auctions Button - Show text only on larger screens */}
-            <button className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded flex items-center">
+            <button className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded flex items-center ml-3">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:mr-2" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
               </svg>
