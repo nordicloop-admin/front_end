@@ -10,12 +10,14 @@ import {
   isAuthenticated
 } from '@/services/auth';
 
+// We'll use type guards instead of interfaces to check for user property
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  signup: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  signup: (email: string, password: string) => Promise<{ success: boolean; error?: string; message?: string }>;
   logout: () => void;
 }
 
@@ -42,9 +44,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.data) {
         // Create a user object from the response data
         const user: User = {
+          id: response.data.id,
           email: response.data.email,
           username: response.data.username,
-          firstName: response.data.first_name || response.data.username.split(' ')[0] || 'User'
+          firstName: response.data.first_name || response.data.firstName || (response.data.username ? response.data.username.split(' ')[0] : 'User'),
+          lastName: response.data.last_name || response.data.lastName,
+          position: response.data.position,
+          companyId: response.data.company_id || response.data.companyId
         };
 
         setUser(user);
@@ -74,7 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Log the response for debugging (remove in production)
       // console.log('Signup response:', response);
 
-      if (response.data && response.data.user) {
+      // Check if we have an enhanced response with user data
+      if (response.data && 'user' in response.data && response.data.user) {
         // If we have user data from signup, we need to login to get tokens
         // First, store the user temporarily
         const tempUser = response.data.user;

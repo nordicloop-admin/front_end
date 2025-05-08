@@ -19,6 +19,13 @@ interface LoginResponse {
   access: string;
   refresh: string;
   first_name?: string;
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  last_name?: string;
+  position?: string;
+  companyId?: string;
+  company_id?: string;
 }
 
 /**
@@ -28,6 +35,11 @@ interface SignupResponse {
   message: string;
   username: string;
   error?: string;
+  id?: string;
+  first_name?: string;
+  last_name?: string;
+  position?: string;
+  company_id?: string;
 }
 
 /**
@@ -81,9 +93,13 @@ export async function login(credentials: LoginCredentials) {
 
       // Store the user info in local storage
       const user: User = {
+        id: response.data.id,
         email: response.data.email,
         username: response.data.username,
-        firstName: response.data.first_name || response.data.username.split(' ')[0] || 'User'
+        firstName: response.data.first_name || response.data.firstName || (response.data.username ? response.data.username.split(' ')[0] : 'User'),
+        lastName: response.data.last_name || response.data.lastName,
+        position: response.data.position,
+        companyId: response.data.company_id || response.data.companyId
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
     }
@@ -178,9 +194,13 @@ export async function signup(credentials: SignupCredentials) {
       if (response.data.message && response.data.username) {
         // Create a temporary user object with the available information
         const user: User = {
+          id: response.data.id,
           email: credentials.email, // Use the email from the credentials
           username: response.data.username,
-          firstName: response.data.username.split(' ')[0] || 'User'
+          firstName: response.data.first_name || (response.data.username ? response.data.username.split(' ')[0] : 'User'),
+          lastName: response.data.last_name,
+          position: response.data.position,
+          companyId: response.data.company_id
         };
 
         // Create an enhanced response with user data

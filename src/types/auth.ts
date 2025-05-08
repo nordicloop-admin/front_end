@@ -3,16 +3,27 @@
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
 export interface CompanyRegistration {
-  official_name: string;
-  vat_number: string;
+  // Backend API fields
+  official_name?: string;
+  vat_number?: string;
+  contact_name?: string;
+  contact_position?: string;
+  contact_email?: string;
+  status?: ReviewStatus;
+
+  // Frontend form fields
+  companyName?: string;
+  vatNumber?: string;
   email?: string;
   website?: string;
   country: string;
   sector: string;
-  contact_name: string;
-  contact_position: string;
-  contact_email: string;
-  status: ReviewStatus;
+  contactFirstName?: string;
+  contactLastName?: string;
+  contactEmail?: string;
+  contactPosition?: string;
+  reviewStatus?: ReviewStatus;
+  createdAt?: string;
 }
 
 export interface UserSignUp {
@@ -22,9 +33,14 @@ export interface UserSignUp {
 }
 
 export interface User {
+  id?: string;
   email: string;
-  username: string;
+  username?: string;
   firstName?: string;
+  lastName?: string;
+  position?: string;
+  companyId?: string;
+  createdAt?: string;
 }
 
 export interface AuthTokens {
