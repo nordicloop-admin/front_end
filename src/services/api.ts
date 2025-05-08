@@ -16,20 +16,24 @@ interface ApiResponse<T> {
 }
 
 /**
- * Get authorization headers
+ * Get headers for API requests
+ * @param requiresAuth Whether the request requires authentication
  * @param token Optional authentication token
- * @returns The headers with authorization if token is provided
+ * @returns The headers with authorization if required and token is available
  */
-function getAuthHeaders(token?: string): HeadersInit {
+function getHeaders(requiresAuth: boolean = false, token?: string): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
   };
 
-  // Use provided token or get from storage
-  const authToken = token || getAccessToken();
+  // Only add authorization header if the endpoint requires authentication
+  if (requiresAuth) {
+    // Use provided token or get from storage
+    const authToken = token || getAccessToken();
 
-  if (authToken) {
-    headers['Authorization'] = `Bearer ${authToken}`;
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
   }
 
   return headers;
@@ -38,12 +42,17 @@ function getAuthHeaders(token?: string): HeadersInit {
 /**
  * Make a GET request to the API
  * @param endpoint The API endpoint to call
+ * @param requiresAuth Whether the request requires authentication
  * @param token Optional authentication token
  * @returns The API response
  */
-export async function apiGet<T>(endpoint: string, token?: string): Promise<ApiResponse<T>> {
+export async function apiGet<T>(
+  endpoint: string,
+  requiresAuth: boolean = false,
+  token?: string
+): Promise<ApiResponse<T>> {
   try {
-    const headers = getAuthHeaders(token);
+    const headers = getHeaders(requiresAuth, token);
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
@@ -70,12 +79,18 @@ export async function apiGet<T>(endpoint: string, token?: string): Promise<ApiRe
  * Make a POST request to the API
  * @param endpoint The API endpoint to call
  * @param body The request body
+ * @param requiresAuth Whether the request requires authentication
  * @param token Optional authentication token
  * @returns The API response
  */
-export async function apiPost<T>(endpoint: string, body: any, token?: string): Promise<ApiResponse<T>> {
+export async function apiPost<T>(
+  endpoint: string,
+  body: any,
+  requiresAuth: boolean = false,
+  token?: string
+): Promise<ApiResponse<T>> {
   try {
-    const headers = getAuthHeaders(token);
+    const headers = getHeaders(requiresAuth, token);
     const url = `${API_BASE_URL}${endpoint}`;
 
     // Log the request for debugging (remove in production)
@@ -149,12 +164,18 @@ export async function apiPost<T>(endpoint: string, body: any, token?: string): P
  * Make a PUT request to the API
  * @param endpoint The API endpoint to call
  * @param body The request body
+ * @param requiresAuth Whether the request requires authentication
  * @param token Optional authentication token
  * @returns The API response
  */
-export async function apiPut<T>(endpoint: string, body: any, token?: string): Promise<ApiResponse<T>> {
+export async function apiPut<T>(
+  endpoint: string,
+  body: any,
+  requiresAuth: boolean = true,
+  token?: string
+): Promise<ApiResponse<T>> {
   try {
-    const headers = getAuthHeaders(token);
+    const headers = getHeaders(requiresAuth, token);
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
@@ -181,12 +202,17 @@ export async function apiPut<T>(endpoint: string, body: any, token?: string): Pr
 /**
  * Make a DELETE request to the API
  * @param endpoint The API endpoint to call
+ * @param requiresAuth Whether the request requires authentication
  * @param token Optional authentication token
  * @returns The API response
  */
-export async function apiDelete<T>(endpoint: string, token?: string): Promise<ApiResponse<T>> {
+export async function apiDelete<T>(
+  endpoint: string,
+  requiresAuth: boolean = true,
+  token?: string
+): Promise<ApiResponse<T>> {
   try {
-    const headers = getAuthHeaders(token);
+    const headers = getHeaders(requiresAuth, token);
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'DELETE',
