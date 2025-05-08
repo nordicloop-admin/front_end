@@ -63,7 +63,7 @@ const PricingPage = () => {
           <div className="mb-8">
             <h3 className="text-[#008066] font-semibold text-xl mb-4">Standard Plan</h3>
             <div className="flex items-end mb-4">
-              <span className="text-3xl font-bold">7 188 SEK</span>
+              <span className="text-3xl font-bold">599 SEK</span>
               <span className="text-gray-500 ml-2">/ Year</span>
             </div>
           </div>
@@ -112,7 +112,7 @@ const PricingPage = () => {
           <div className="mb-8">
             <h3 className="text-[#008066] font-semibold text-xl mb-4">Premium Plan</h3>
             <div className="flex items-end mb-4">
-              <span className="text-3xl font-bold">9 588 SEK</span>
+              <span className="text-3xl font-bold">799 SEK</span>
               <span className="text-gray-500 ml-2">/ Year</span>
             </div>
           </div>
