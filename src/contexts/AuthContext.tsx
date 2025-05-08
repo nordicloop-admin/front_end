@@ -74,16 +74,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Log the response for debugging (remove in production)
       // console.log('Signup response:', response);
 
-      if (response.data) {
-        // Create a user object from the response data
-        const user: User = {
-          email: response.data.email,
-          username: response.data.username,
-          firstName: response.data.first_name || response.data.username.split(' ')[0] || 'User'
-        };
+      if (response.data && response.data.user) {
+        // If we have user data from signup, we need to login to get tokens
+        // First, store the user temporarily
+        const tempUser = response.data.user;
 
-        setUser(user);
-        return { success: true };
+        // Now attempt to login with the same credentials
+        const loginResponse = await login(email, password);
+
+        if (loginResponse.success) {
+          // Login successful, we're already authenticated
+          return { success: true };
+        } else {
+          // If login fails, we'll still set the user from signup
+          // but we won't have tokens, so the user will need to login manually
+          setUser(tempUser);
+
+          return {
+            success: true,
+            message: 'Account created successfully. Please login to continue.'
+          };
+        }
       }
 
       // If there's an error in the response, return it with more details

@@ -22,6 +22,23 @@ interface LoginResponse {
 }
 
 /**
+ * Interface for signup response
+ */
+interface SignupResponse {
+  message: string;
+  username: string;
+  error?: string;
+}
+
+/**
+ * Interface for the enhanced signup response with user data
+ */
+interface EnhancedSignupResponse {
+  user: User;
+  message: string;
+}
+
+/**
  * Interface for login credentials
  */
 interface LoginCredentials {
@@ -151,34 +168,47 @@ export async function signup(credentials: SignupCredentials) {
     // Log the request payload for debugging (remove in production)
     // console.log('Signup request payload:', credentials);
 
-    const response = await apiPost<LoginResponse>('/users/signup/', credentials);
+    const response = await apiPost<SignupResponse>('/users/signup/', credentials);
 
     // Log the response for debugging (remove in production)
     // console.log('Signup response:', response);
 
     if (response.data) {
-      // Make sure we have all the required data
-      if (!response.data.access || !response.data.refresh || !response.data.email || !response.data.username) {
+      // Check if we have a success message and username
+      if (response.data.message && response.data.username) {
+        // Create a temporary user object with the available information
+        const user: User = {
+          email: credentials.email, // Use the email from the credentials
+          username: response.data.username,
+          firstName: response.data.username.split(' ')[0] || 'User'
+        };
+
+        // Create an enhanced response with user data
+        const enhancedResponse: EnhancedSignupResponse = {
+          user,
+          message: response.data.message
+        };
+
+        // Return success with the enhanced data
         return {
-          data: null,
-          error: 'Invalid response from server: Missing required fields',
+          data: enhancedResponse,
+          error: null,
           status: response.status
         };
       }
 
-      // Store the tokens in local storage
-      localStorage.setItem(ACCESS_TOKEN_KEY, response.data.access);
-      localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refresh);
+      // If we have an error in the data, return it
+      if (response.data.error) {
+        return {
+          data: null,
+          error: response.data.error,
+          status: response.status
+        };
+      }
+    }
 
-      // Store the user info in local storage
-      const user: User = {
-        email: response.data.email,
-        username: response.data.username,
-        firstName: response.data.first_name || response.data.username.split(' ')[0] || 'User'
-      };
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-    } else if (response.error) {
-      // If there's an error in the response, return it
+    // If there's an error in the response, return it
+    if (response.error) {
       return {
         data: null,
         error: response.error,

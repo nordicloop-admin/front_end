@@ -18,6 +18,7 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
@@ -68,14 +69,26 @@ const SignUpPage = () => {
 
     setIsSubmitting(true);
     setError('');
+    setSuccessMessage('');
 
     try {
       // Call the signup function from the auth context
       const result = await signup(email, password);
 
       if (result.success) {
-        // Redirect to dashboard on successful signup
-        router.push('/dashboard');
+        if (result.message) {
+          // Show success message
+          setSuccessMessage(result.message);
+
+          // Wait a moment to show the success message before redirecting
+          setTimeout(() => {
+            // Redirect to login page since we need to login manually
+            router.push('/login');
+          }, 2000);
+        } else {
+          // Redirect to dashboard on successful signup with automatic login
+          router.push('/dashboard');
+        }
       } else {
         // Display error message
         setError(result.error || 'Sign-up failed. Please try again.');
@@ -168,6 +181,12 @@ const SignUpPage = () => {
             {error && (
               <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
                 {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-md text-sm">
+                {successMessage}
               </div>
             )}
 
