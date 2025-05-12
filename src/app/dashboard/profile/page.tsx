@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { User, Mail, Phone, Building, Shield, Key, Save, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -12,13 +11,12 @@ export default function Profile() {
 
   // Mock user data
   const userData = {
-    firstName: user?.firstName || 'Raissa',
+    firstName: user?.firstName || 'Charmant',
     lastName: user?.lastName || 'Uwase',
-    email: user?.email || 'raissa@ecosolutions.se',
+    email: user?.email || 'charmant@ecosolutions.se',
     phone: '+46 70 123 4567',
     company: 'Eco Solutions AB',
-    position: 'Procurement Manager',
-    profileImage: '/nordic logo.png'
+    position: 'Procurement Manager'
   };
 
   // Form state
@@ -56,23 +54,12 @@ export default function Profile() {
 
       <div className="bg-white border border-gray-100 rounded-md overflow-hidden">
         {/* Profile Header */}
-        <div className="p-5 border-b border-gray-100 flex items-center">
-          <div className="relative h-16 w-16 rounded-full overflow-hidden mr-4">
-            <Image
-              src={userData.profileImage}
-              alt="Profile"
-              fill
-              className="object-cover"
-            />
-          </div>
-
-          <div>
-            <h2 className="text-lg font-medium text-gray-900">
-              {userData.firstName} {userData.lastName}
-            </h2>
-            <div className="text-sm text-gray-500">
-              {userData.position} at {userData.company}
-            </div>
+        <div className="p-5 border-b border-gray-100">
+          <h2 className="text-lg font-medium text-gray-900">
+            {userData.firstName} {userData.lastName}
+          </h2>
+          <div className="text-sm text-gray-500">
+            {userData.position} at {userData.company}
           </div>
         </div>
 
