@@ -77,6 +77,20 @@ export default function AdminLayoutClient({
           </Link>
 
           <Link
+            href="/admin/companies"
+            className={`flex items-center px-4 py-2 mt-4 ${pathname === '/admin/companies' ? 'text-[#FF8A00] font-medium' : 'text-gray-600 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <svg className="h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M19 21V5C19 3.89543 18.1046 3 17 3H7C5.89543 3 5 3.89543 5 5V21" stroke={pathname === '/admin/companies' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
+              <path d="M14 8H10" stroke={pathname === '/admin/companies' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M14 12H10" stroke={pathname === '/admin/companies' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M3 21H21" stroke={pathname === '/admin/companies' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+            <span>Companies</span>
+          </Link>
+
+          <Link
             href="/admin/marketplace"
             className={`flex items-center px-4 py-2 mt-4 ${pathname === '/admin/marketplace' ? 'text-[#FF8A00] font-medium' : 'text-gray-600 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
@@ -187,14 +201,6 @@ export default function AdminLayoutClient({
 
           {/* Right side controls */}
           <div className="flex items-center space-x-4">
-            {/* Add Functions Button */}
-            <button className="bg-[#FF8A00] text-white px-3 py-2 rounded-md hover:bg-[#e67e00] transition-colors flex items-center">
-              <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M5 12H19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span>Add functions</span>
-            </button>
 
             {/* Grid View */}
             <button className="p-2 text-gray-500 hover:text-gray-700">
