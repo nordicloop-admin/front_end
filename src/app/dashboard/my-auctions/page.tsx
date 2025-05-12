@@ -35,8 +35,8 @@ const myAuctions = [
 ];
 
 export default function MyAuctions() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [auctions, setAuctions] = useState(myAuctions);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleAddAuction = (auctionData: AuctionFormData) => {
     // In a real app, this would send the data to an API
@@ -177,3 +177,5 @@ export default function MyAuctions() {
     </div>
   );
 }
+
+

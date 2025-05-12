@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
+import AddAuctionModal, { AuctionFormData } from '@/components/auctions/AddAuctionModal';
 import {
   Home,
   FileText,
@@ -30,6 +31,7 @@ export default function DashboardLayoutClient({
   const router = useRouter();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -52,6 +54,17 @@ export default function DashboardLayoutClient({
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleAddAuction = (auctionData: AuctionFormData) => {
+    // In a real app, this would send the data to an API
+    // For now, we'll just close the modal and redirect to My Auctions
+    setIsModalOpen(false);
+
+    // If we're not already on the My Auctions page, redirect there
+    if (pathname !== '/dashboard/my-auctions') {
+      router.push('/dashboard/my-auctions');
+    }
   };
 
   return (
@@ -195,7 +208,10 @@ export default function DashboardLayoutClient({
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4 md:space-x-4">
             {/* Add Auctions Button - Show text only on larger screens */}
-            <button className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded-md flex items-center ml-3 text-sm">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded-md flex items-center ml-3 text-sm"
+            >
               <Plus size={16} className="md:mr-2" />
               <span className="hidden md:inline">Add auctions</span>
             </button>
@@ -215,6 +231,13 @@ export default function DashboardLayoutClient({
 
         {/* Page Content */}
         {children}
+
+        {/* Add Auction Modal */}
+        <AddAuctionModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddAuction}
+        />
       </div>
     </div>
   );
