@@ -73,16 +73,16 @@ const Header = () => {
         <div className="flex items-center">
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center">
-            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
-              About Us
+            <Link href="/market-place" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
+              Marketplace
             </Link>
-            <Link href="/market-place" className="text-white hover:text-[#FF8A00] transition-colors font-medium">
-            Marketplace
+            <Link href="/about" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
+              About Us
             </Link>
             <Link href="/pricing" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Pricing
             </Link>
-            <Link href="/coming-soon" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
+            <Link href="/contact" className="text-white hover:text-[#FF8A00] transition-colors font-medium px-4">
               Contact
             </Link>
           </nav>
@@ -157,18 +157,18 @@ const Header = () => {
             <div className="flex-1 overflow-y-auto py-6 px-6">
               <nav className="flex flex-col space-y-4">
                 <Link
-                  href="/coming-soon"
-                  className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  About Us
-                </Link>
-                <Link
                   href="/market-place"
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Marketplace
+                </Link>
+                <Link
+                  href="/about"
+                  className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  About Us
                 </Link>
                 <Link
                   href="/pricing"
@@ -178,7 +178,7 @@ const Header = () => {
                   Pricing
                 </Link>
                 <Link
-                  href="/coming-soon"
+                  href="/contact"
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
                   onClick={() => setIsMenuOpen(false)}
                 >

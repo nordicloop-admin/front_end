@@ -4,10 +4,10 @@ import Link from 'next/link';
 
 const MarketplaceSection = () => {
   return (
-    <section className="py-10 md:py-16 section-margin">
+    <section className="py-8 md:py-12 section-margin">
       <div className="container mx-auto px-6 md:px-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center">
-          <div>
+          <div className="order-1 md:order-1">
             <h3 className="text-md md:text-md font-semibold mb-3 text-[#1E2A36]">Waste Marketplace</h3>
             <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#1E2A36]">
               Discover Endless Recycling And <br className="hidden md:block"/> Material-Sourcing Opportunities!
@@ -27,9 +27,9 @@ const MarketplaceSection = () => {
               Market place
             </Link>
           </div>
-          <div className="relative h-[300px] md:h-[400px] mt-8 md:mt-0">
+          <div className="order-2 md:order-2 relative h-[300px] md:h-[400px] mt-8 md:mt-0">
             <Image
-              src="/marketplace-image.jpg"
+              src="/images/landing page/sol-tZw3fcjUIpM-unsplash.jpg"
               alt="Recycling materials"
               fill
               sizes="(max-width: 768px) 100vw, 50vw"

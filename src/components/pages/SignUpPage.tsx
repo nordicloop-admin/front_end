@@ -4,11 +4,13 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SignUpPage = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
+  const { signup } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -16,6 +18,7 @@ const SignUpPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
@@ -58,17 +61,47 @@ const SignUpPage = () => {
       return;
     }
 
+    // Validate password length
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long');
+      return;
+    }
+
     setIsSubmitting(true);
     setError('');
+    setSuccessMessage('');
 
     try {
-      // For testing purposes, we'll simulate a successful sign-up
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Call the signup function from the auth context
+      const result = await signup(email, password);
 
-      // Redirect directly to dashboard
-      router.push('/dashboard');
+      if (result.success) {
+        if (result.message) {
+          // Show success message
+          setSuccessMessage(result.message);
+
+          // Wait a moment to show the success message before redirecting
+          setTimeout(() => {
+            // Redirect to login page since we need to login manually
+            router.push('/login');
+          }, 2000);
+        } else {
+          // Redirect to dashboard on successful signup with automatic login
+          router.push('/dashboard');
+        }
+      } else {
+        // Display error message
+        setError(result.error || 'Sign-up failed. Please try again.');
+
+        // Log the error for debugging (remove in production)
+        // console.error('Signup error:', result.error);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-up failed. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'Sign-up failed. Please try again.';
+      setError(errorMessage);
+
+      // Log the error for debugging (remove in production)
+      // console.error('Signup exception:', err);
     } finally {
       setIsSubmitting(false);
     }
@@ -148,6 +181,12 @@ const SignUpPage = () => {
             {error && (
               <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
                 {error}
+              </div>
+            )}
+
+            {successMessage && (
+              <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-md text-sm">
+                {successMessage}
               </div>
             )}
 

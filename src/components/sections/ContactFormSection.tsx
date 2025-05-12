@@ -77,8 +77,8 @@ const ContactFormSection = () => {
   };
 
   return (
-    <section className="py-10 md:py-16 bg-white min-h-[600px] flex items-center">
-      <div className="mx-auto px-4 md:px-6 lg:px-8 w-full">
+    <section id="contact-section" className="py-12 md:py-16 bg-gray-50 min-h-[600px] flex items-center">
+      <div className="mx-auto px-4 md:px-6 lg:px-8 w-full max-w-7xl">
         <div className="flex flex-col md:flex-row gap-8 items-center">
           {/* Left side - Contact us text */}
           <div className="md:w-1/2 flex items-center self-stretch">
@@ -86,18 +86,18 @@ const ContactFormSection = () => {
               <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Contact us</h3>
 
               <h2 className="text-2xl md:text-3xl font-semibold text-[#1E2A36] mb-4">
-                Welcome to a world of limitless<br/> possibilities, where the journey is as <br/> exhilarating as the destination,
+                Couldn&apos;t find your answer?<br/> Let&apos;s start a conversation
               </h2>
 
               <p className="text-sm md:text-base text-gray-600 mb-4">
-                where every moment is an opportunity to make your mark <br/> on the canvas of existence. The only limit is the extent of <br/>your imagination.
+                Our team is ready to answer your specific questions and help you<br/> discover how Nordic Loop can transform your waste<br/> management approach and reduce your environmental impact.
               </p>
             </div>
           </div>
 
           {/* Right side - Contact form */}
-          <div className="md:w-1/2 bg-gray-50 p-6 rounded-lg self-stretch">
-            <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Send Us Message</h3>
+          <div className="md:w-1/2 bg-white p-6 rounded-lg shadow-md self-stretch">
+            <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Send Us Your Question</h3>
 
             {/* Status message */}
             {submitStatus && (
