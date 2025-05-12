@@ -1,9 +1,10 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Package, Clock, ArrowUpRight, Filter, Search, Plus } from 'lucide-react';
 import Image from 'next/image';
+import AddAuctionModal, { AuctionFormData } from '@/components/auctions/AddAuctionModal';
 
 // Mock data for auctions
 const myAuctions = [
@@ -11,6 +12,7 @@ const myAuctions = [
     id: '1',
     name: 'PPA Thermocomp UFW49RSC (Black)',
     category: 'Plastics',
+    subcategory: 'PP (Polypropylene)',
     basePrice: '5,013,008',
     currentBid: '5,250,000',
     status: 'active',
@@ -22,6 +24,7 @@ const myAuctions = [
     id: '2',
     name: 'Aluminum Scrap 6061',
     category: 'Metals',
+    subcategory: 'Aluminum',
     basePrice: '7,250,000',
     currentBid: '7,500,000',
     status: 'active',
@@ -32,15 +35,53 @@ const myAuctions = [
 ];
 
 export default function MyAuctions() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [auctions, setAuctions] = useState(myAuctions);
+
+  const handleAddAuction = (auctionData: AuctionFormData) => {
+    // In a real app, this would send the data to an API
+    // For now, we'll just add it to our local state
+
+    // Create a new auction object
+    const newAuction = {
+      id: (auctions.length + 1).toString(),
+      name: auctionData.name,
+      category: auctionData.category,
+      subcategory: auctionData.subcategory,
+      basePrice: auctionData.basePrice,
+      currentBid: '',
+      status: 'pending',
+      timeLeft: '7d 0h', // Default to 7 days
+      volume: `${auctionData.volume} ${auctionData.unit}`,
+      image: auctionData.image ? URL.createObjectURL(auctionData.image) : '/images/marketplace/categories/plastics.jpg'
+    };
+
+    // Add the new auction to the list
+    setAuctions([newAuction, ...auctions]);
+
+    // Close the modal
+    setIsModalOpen(false);
+  };
+
   return (
     <div className="p-5">
       <div className="flex justify-between items-center mb-5">
         <h1 className="text-xl font-medium">My Auctions</h1>
-        <button className="bg-[#FF8A00] text-white py-2 px-4 rounded-md flex items-center text-sm">
+        <button
+          className="bg-[#FF8A00] text-white py-2 px-4 rounded-md flex items-center text-sm"
+          onClick={() => setIsModalOpen(true)}
+        >
           <Plus size={16} className="mr-2" />
           New Auction
         </button>
       </div>
+
+      {/* Add Auction Modal */}
+      <AddAuctionModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddAuction}
+      />
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-3 mb-5">
@@ -65,7 +106,8 @@ export default function MyAuctions() {
 
       {/* Auctions List */}
       <div className="space-y-4">
-        {myAuctions.map((auction) => (
+        {auctions.length > 0 ? (
+          auctions.map((auction) => (
           <div key={auction.id} className="bg-white border border-gray-100 rounded-md p-4">
             <div className="flex flex-col md:flex-row gap-4">
               <div className="w-full md:w-[120px] h-[100px] relative rounded-md overflow-hidden">
@@ -81,7 +123,10 @@ export default function MyAuctions() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-base font-medium text-gray-900">{auction.name}</h2>
-                    <div className="text-xs text-gray-500 mt-1">Category: {auction.category}</div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Category: {auction.category}
+                      {auction.subcategory && <span> • {auction.subcategory}</span>}
+                    </div>
                     <div className="text-xs text-gray-500">Volume: {auction.volume}</div>
                   </div>
 
@@ -113,7 +158,21 @@ export default function MyAuctions() {
               </div>
             </div>
           </div>
-        ))}
+        ))
+        ) : (
+          <div className="bg-white border border-gray-100 rounded-md p-6 text-center">
+            <Package size={32} className="mx-auto mb-3 text-gray-300" />
+            <h2 className="text-base font-medium text-gray-800 mb-2">No auctions yet</h2>
+            <p className="text-sm text-gray-500 mb-4">You haven't created any auctions yet. Click the "New Auction" button to get started.</p>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-[#FF8A00] text-white py-2 px-4 rounded-md inline-flex items-center text-sm"
+            >
+              <Plus size={16} className="mr-2" />
+              Create Your First Auction
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
