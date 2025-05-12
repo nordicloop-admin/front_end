@@ -306,6 +306,9 @@
         {
           "id": "glass-soda-lime",
           "name": "Soda-lime (bottles)"
+        },{
+          "id": "window-glass",
+          "name": "Window glass"
         }
       ]
     },
