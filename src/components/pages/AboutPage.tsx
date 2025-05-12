@@ -50,7 +50,7 @@ const AboutPage = () => {
       role: 'CEO & Co-founder',
       bio: 'Shaya brings over 3 years of experience in marketing and campaign management. With a deep understanding of the circular economy, negotiation, advertisement, and marketing strategies he has spearheaded the creation of Nordic Loop\'s platform, leading the company\'s strategic growth and market entry in Sweden.',
       image: '/images/About/Shaya.jpeg',
-      email: 'shayar18@gmail.com',
+      email: 'shaya.rahimian@nordicloop.se',
       phone: '+46 70 435 6584',
     },
     {
