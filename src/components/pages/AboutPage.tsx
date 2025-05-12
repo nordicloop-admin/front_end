@@ -4,6 +4,16 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
+// Define interfaces for data structures
+interface TeamMember {
+  name: string;
+  role: string;
+  bio: string;
+  image: string;
+  email?: string;
+  phone?: string;
+}
+
 const AboutPage = () => {
   // State for interactive elements
   const [activeTimelineItem, setActiveTimelineItem] = useState(0);
@@ -34,18 +44,22 @@ const AboutPage = () => {
   ];
 
   // Team data
-  const teamMembers = [
+  const teamMembers: TeamMember[] = [
     {
       name: 'Shaya Rahimian',
       role: 'CEO & Co-founder',
       bio: 'Shaya brings over 3 years of experience in marketing and campaign management. With a deep understanding of the circular economy, negotiation, advertisement, and marketing strategies he has spearheaded the creation of Nordic Loop\'s platform, leading the company\'s strategic growth and market entry in Sweden.',
       image: '/images/About/Shaya.jpeg',
+      email: 'shaya.rahimian@nordicloop.se',
+      phone: '+46 70 435 6584',
     },
     {
       name: 'Nicola Valenti',
       role: 'COO & Co-founder',
       bio: 'Nicola leads the operations, communications, and customer Success team, focusing on client onboarding, user satisfaction, and support services. He ensures that clients derive maximum value from the Nordic Loop platform. He also brings extensive experience in digital marketing and brand strategy.',
       image: '/images/About/nick.jpeg',
+      email: 'nicola.valenti@nordicloop.se',
+      phone: '+46 737553358',
     },
     {
       name: 'Raissa Uwase',
@@ -382,7 +396,17 @@ const AboutPage = () => {
                 </div>
                 <div className="p-6">
                   <h3 className="text-xl font-semibold text-[#1E2A36] mb-1">{member.name}</h3>
-                  <p className="text-[#FF8A00] font-medium mb-4">{member.role}</p>
+                  <p className="text-[#FF8A00] font-medium mb-2">{member.role}</p>
+                  {member.email && (
+                    <p className="text-gray-600 text-sm mb-1">
+                      <span className="font-medium">Email:</span> {member.email}
+                    </p>
+                  )}
+                  {member.phone && (
+                    <p className="text-gray-600 text-sm mb-4">
+                      <span className="font-medium">Phone:</span> {member.phone}
+                    </p>
+                  )}
                   <p className="text-gray-600">{member.bio}</p>
                 </div>
               </div>
