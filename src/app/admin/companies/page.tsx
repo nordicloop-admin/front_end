@@ -12,8 +12,20 @@ const mockCompanies = [
     vatNumber: 'SE123456789001',
     country: 'Sweden',
     sector: 'Recycling & Waste Management',
-    contactName: 'Erik Johansson',
-    contactEmail: 'erik@ecosolutions.se',
+    companyEmail: 'info@ecosolutions.se',
+    companyPhone: '+46 8 123 45 67',
+    contacts: [
+      {
+        name: 'Erik Johansson',
+        email: 'erik@ecosolutions.se',
+        position: 'Sustainability Manager'
+      },
+      {
+        name: 'Anna Lindberg',
+        email: 'anna@ecosolutions.se',
+        position: 'Operations Director'
+      }
+    ],
     status: 'approved',
     createdAt: '2023-05-15'
   },
@@ -23,8 +35,20 @@ const mockCompanies = [
     vatNumber: 'NO987654321001',
     country: 'Norway',
     sector: 'Energy & Utilities',
-    contactName: 'Astrid Olsen',
-    contactEmail: 'astrid@greentech.no',
+    companyEmail: 'info@greentech.no',
+    companyPhone: '+47 21 98 76 54',
+    contacts: [
+      {
+        name: 'Astrid Olsen',
+        email: 'astrid@greentech.no',
+        position: 'CEO'
+      },
+      {
+        name: 'Lars Hansen',
+        email: 'lars@greentech.no',
+        position: 'Technical Director'
+      }
+    ],
     status: 'pending',
     createdAt: '2023-06-20'
   },
@@ -34,8 +58,20 @@ const mockCompanies = [
     vatNumber: 'FI567890123001',
     country: 'Finland',
     sector: 'Manufacturing & Production',
-    contactName: 'Mikko Virtanen',
-    contactEmail: 'mikko@circularmaterials.fi',
+    companyEmail: 'info@circularmaterials.fi',
+    companyPhone: '+358 9 876 54 32',
+    contacts: [
+      {
+        name: 'Mikko Virtanen',
+        email: 'mikko@circularmaterials.fi',
+        position: 'Operations Director'
+      },
+      {
+        name: 'Elina Korhonen',
+        email: 'elina@circularmaterials.fi',
+        position: 'Sustainability Coordinator'
+      }
+    ],
     status: 'pending',
     createdAt: '2023-07-05'
   }
@@ -44,7 +80,7 @@ const mockCompanies = [
 export default function CompaniesPage() {
   const searchParams = useSearchParams();
   const statusFilter = searchParams.get('status');
-  
+
   const [companies, setCompanies] = useState(mockCompanies);
   const [filteredCompanies, setFilteredCompanies] = useState(mockCompanies);
   const [searchTerm, setSearchTerm] = useState('');
@@ -53,25 +89,30 @@ export default function CompaniesPage() {
   useEffect(() => {
     // Filter companies based on search term and status
     let filtered = companies;
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(company => 
+      filtered = filtered.filter(company =>
         company.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.contactEmail.toLowerCase().includes(searchTerm.toLowerCase())
+        company.companyEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        company.companyPhone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        company.contacts.some(contact =>
+          contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          contact.position.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       );
     }
-    
+
     if (selectedStatus !== 'all') {
       filtered = filtered.filter(company => company.status === selectedStatus);
     }
-    
+
     setFilteredCompanies(filtered);
   }, [searchTerm, selectedStatus, companies]);
 
   const handleStatusChange = (companyId: string, newStatus: string) => {
     // Update company status
-    const updatedCompanies = companies.map(company => 
+    const updatedCompanies = companies.map(company =>
       company.id === companyId ? { ...company, status: newStatus } : company
     );
     setCompanies(updatedCompanies);
@@ -81,8 +122,8 @@ export default function CompaniesPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Companies Management</h1>
-        <Link 
-          href="/admin/companies/new" 
+        <Link
+          href="/admin/companies/new"
           className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#e67e00] transition-colors"
         >
           Add New Company
@@ -131,7 +172,10 @@ export default function CompaniesPage() {
                   Company
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
+                  Company Contact
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact People
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Country
@@ -157,8 +201,27 @@ export default function CompaniesPage() {
                       <div className="text-xs text-gray-500">Registered: {company.createdAt}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{company.contactName}</div>
-                      <div className="text-sm text-gray-500">{company.contactEmail}</div>
+                      <div className="text-sm text-gray-900">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        {company.companyEmail}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        {company.companyPhone}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {company.contacts.map((contact, index) => (
+                        <div key={index} className={`${index > 0 ? 'mt-3 pt-3 border-t border-gray-200' : ''}`}>
+                          <div className="text-sm font-medium text-gray-900">{contact.name}</div>
+                          <div className="text-sm text-gray-500">{contact.email}</div>
+                          <div className="text-xs text-gray-500">{contact.position}</div>
+                        </div>
+                      ))}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {company.country}
@@ -167,9 +230,9 @@ export default function CompaniesPage() {
                       {company.sector}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${company.status === 'approved' ? 'bg-green-100 text-green-800' : 
-                          company.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                        ${company.status === 'approved' ? 'bg-green-100 text-green-800' :
+                          company.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-red-100 text-red-800'}`}>
                         {company.status.charAt(0).toUpperCase() + company.status.slice(1)}
                       </span>
@@ -181,13 +244,13 @@ export default function CompaniesPage() {
                         </Link>
                         {company.status === 'pending' && (
                           <>
-                            <button 
+                            <button
                               onClick={() => handleStatusChange(company.id, 'approved')}
                               className="text-green-600 hover:text-green-900"
                             >
                               Approve
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleStatusChange(company.id, 'rejected')}
                               className="text-red-600 hover:text-red-900"
                             >
@@ -201,7 +264,7 @@ export default function CompaniesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                  <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
                     No companies found
                   </td>
                 </tr>
