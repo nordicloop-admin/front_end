@@ -121,7 +121,7 @@ const Footer = () => {
                   About Us
                 </Link>
                 <Link href="/market-place" className="text-white hover:text-gray-300 transition-colors">
-                  Market Place
+                  Marketplace
                 </Link>
                 <Link href="/pricing" className="text-white hover:text-gray-300 transition-colors">
                   Pricing

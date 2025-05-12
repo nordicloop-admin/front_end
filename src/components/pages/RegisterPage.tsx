@@ -24,11 +24,17 @@ const RegisterPage = () => {
     country: '',
     sector: '',
 
-    // Contact Person Information
+    // Primary Contact Person Information
     contactFirstName: '',
     contactLastName: '',
     contactEmail: '',
     contactPosition: '',
+
+    // Secondary Contact Person Information (Optional)
+    contact2FirstName: '',
+    contact2LastName: '',
+    contact2Email: '',
+    contact2Position: '',
   });
 
   // State for success message
@@ -79,7 +85,7 @@ const RegisterPage = () => {
       errors.website = 'Please enter a valid website URL';
     }
 
-    // Contact validation
+    // Primary Contact validation
     if (!formData.contactFirstName.trim()) errors.contactFirstName = 'First name is required';
     if (!formData.contactLastName.trim()) errors.contactLastName = 'Last name is required';
     if (!formData.contactEmail.trim()) {
@@ -88,6 +94,25 @@ const RegisterPage = () => {
       errors.contactEmail = 'Please enter a valid email address';
     }
     if (!formData.contactPosition.trim()) errors.contactPosition = 'Position is required';
+
+    // Secondary Contact validation (only if any field is filled)
+    const hasSecondaryContact =
+      formData.contact2FirstName.trim() ||
+      formData.contact2LastName.trim() ||
+      formData.contact2Email.trim() ||
+      formData.contact2Position.trim();
+
+    if (hasSecondaryContact) {
+      // If any secondary contact field is filled, validate all fields
+      if (!formData.contact2FirstName.trim()) errors.contact2FirstName = 'First name is required';
+      if (!formData.contact2LastName.trim()) errors.contact2LastName = 'Last name is required';
+      if (!formData.contact2Email.trim()) {
+        errors.contact2Email = 'Email is required';
+      } else if (!/^\S+@\S+\.\S+$/.test(formData.contact2Email)) {
+        errors.contact2Email = 'Please enter a valid email address';
+      }
+      if (!formData.contact2Position.trim()) errors.contact2Position = 'Position is required';
+    }
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -136,7 +161,10 @@ const RegisterPage = () => {
 
     // Check which tab has errors
     const companyFieldsWithErrors = ['companyName', 'vatNumber', 'email', 'website', 'country', 'sector'];
-    const contactFieldsWithErrors = ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition'];
+    const contactFieldsWithErrors = [
+      'contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition',
+      'contact2FirstName', 'contact2LastName', 'contact2Email', 'contact2Position'
+    ];
 
     const hasCompanyErrors = companyFieldsWithErrors.some(field => validationErrors[field]);
     const hasContactErrors = contactFieldsWithErrors.some(field => validationErrors[field]);
@@ -175,6 +203,19 @@ const RegisterPage = () => {
         contact_email: formData.contactEmail,
         status: 'pending'
       };
+
+      // Add second contact person data if provided
+      const hasSecondaryContact =
+        formData.contact2FirstName.trim() ||
+        formData.contact2LastName.trim() ||
+        formData.contact2Email.trim() ||
+        formData.contact2Position.trim();
+
+      if (hasSecondaryContact) {
+        companyRegistrationData.contact2_name = `${formData.contact2FirstName} ${formData.contact2LastName}`;
+        companyRegistrationData.contact2_position = formData.contact2Position;
+        companyRegistrationData.contact2_email = formData.contact2Email;
+      }
 
       // Register the company
       const response = await registerCompany(companyRegistrationData);
@@ -269,27 +310,27 @@ const RegisterPage = () => {
         {/* Registration Form Container */}
         <div className="flex-grow flex flex-col justify-center items-center w-full px-4 sm:px-6">
           {/* Welcome Text */}
-          <div className="text-center mb-6 w-full max-w-3xl">
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Register Your Company</h2>
+          <div className="text-center mb-8 w-full max-w-3xl">
+            <h2 className="text-3xl font-semibold text-gray-900 mb-2">Register Your Company</h2>
             <p className="text-gray-500">Please enter your company details</p>
           </div>
 
           {/* Registration Form */}
           <form onSubmit={handleSubmit} className="w-full max-w-3xl">
             {error && !showContactTabCompanyError && (
-              <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-md text-sm">
+              <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-md text-sm">
                 {error}
               </div>
             )}
 
             {successMessage && (
-              <div className="mb-4 p-3 bg-green-50 text-green-600 rounded-md text-sm">
+              <div className="mb-6 p-4 bg-green-50 text-green-600 rounded-md text-sm">
                 {successMessage}
               </div>
             )}
 
             {/* Card Container */}
-            <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-6">
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-6">
               {/* Tabs */}
               <div className="flex border-b border-gray-200">
                 {/* Company Tab */}
@@ -297,8 +338,8 @@ const RegisterPage = () => {
                   type="button"
                   className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors relative ${
                     activeTab === 'company'
-                      ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'border-b-[3px] border-[#FF8A00]'
+                      : 'text-gray-600 hover:text-gray-800'
                   }`}
                   onClick={() => {
                     setActiveTab('company');
@@ -307,10 +348,10 @@ const RegisterPage = () => {
                   }}
                 >
                   <span className="flex items-center justify-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <svg className={`w-5 h-5 mr-2 ${activeTab === 'company' ? 'text-[#FF8A00]' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                     </svg>
-                    Company Information
+                    <span className={activeTab === 'company' ? 'text-[#FF8A00]' : ''}>Company Information</span>
 
                     {/* Error indicator for Company tab */}
                     {Object.keys(validationErrors).some(key =>
@@ -329,8 +370,8 @@ const RegisterPage = () => {
                   type="button"
                   className={`flex-1 py-4 px-4 text-center font-medium text-sm transition-colors relative ${
                     activeTab === 'contact'
-                      ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]'
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'border-b-[3px] border-[#FF8A00]'
+                      : 'text-gray-600 hover:text-gray-800'
                   }`}
                   onClick={() => {
                     setActiveTab('contact');
@@ -338,14 +379,15 @@ const RegisterPage = () => {
                   }}
                 >
                   <span className="flex items-center justify-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <svg className={`w-5 h-5 mr-2 ${activeTab === 'contact' ? 'text-[#FF8A00]' : 'text-gray-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
-                    Contact Person
+                    <span className={activeTab === 'contact' ? 'text-[#FF8A00]' : ''}>Contact Person</span>
 
                     {/* Error indicator for Contact tab */}
                     {Object.keys(validationErrors).some(key =>
-                      ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition'].includes(key)
+                      ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition',
+                       'contact2FirstName', 'contact2LastName', 'contact2Email', 'contact2Position'].includes(key)
                     ) && (
                       <span className="ml-2 flex h-2 w-2 relative">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -364,7 +406,7 @@ const RegisterPage = () => {
                   {Object.keys(validationErrors).some(key =>
                     ['companyName', 'vatNumber', 'country', 'sector', 'email', 'website'].includes(key)
                   ) && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-md">
+                    <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-md">
                       <h4 className="text-sm font-medium text-red-800 mb-1">Please correct the following errors:</h4>
                       <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
                         {validationErrors.companyName && <li>{validationErrors.companyName}</li>}
@@ -377,9 +419,7 @@ const RegisterPage = () => {
                     </div>
                   )}
 
-                  {/* Removed notification about Contact tab errors - we already have the red dot indicator */}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
                     <div>
                       <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
                         Company Name*
@@ -391,7 +431,7 @@ const RegisterPage = () => {
                         value={formData.companyName}
                         onChange={handleChange}
                         placeholder="Enter your company name"
-                        className={`w-full p-3 border ${validationErrors.companyName ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
+                        className={`w-full p-3 border ${validationErrors.companyName ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
                         required
                       />
                       {validationErrors.companyName && (
@@ -410,7 +450,7 @@ const RegisterPage = () => {
                         value={formData.vatNumber}
                         onChange={handleChange}
                         placeholder="Enter your VAT number"
-                        className={`w-full p-3 border ${validationErrors.vatNumber ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
+                        className={`w-full p-3 border ${validationErrors.vatNumber ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
                         required
                       />
                       {validationErrors.vatNumber && (
@@ -429,7 +469,7 @@ const RegisterPage = () => {
                         value={formData.email}
                         onChange={handleChange}
                         placeholder="Enter company email"
-                        className={`w-full p-3 border ${validationErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
+                        className={`w-full p-3 border ${validationErrors.email ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
                       />
                       {validationErrors.email && (
                         <p className="mt-1 text-xs text-red-500">{validationErrors.email}</p>
@@ -447,7 +487,7 @@ const RegisterPage = () => {
                         value={formData.website}
                         onChange={handleChange}
                         placeholder="Enter company website"
-                        className={`w-full p-3 border ${validationErrors.website ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
+                        className={`w-full p-3 border ${validationErrors.website ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
                       />
                       {validationErrors.website && (
                         <p className="mt-1 text-xs text-red-500">{validationErrors.website}</p>
@@ -458,21 +498,28 @@ const RegisterPage = () => {
                       <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
                         Country*
                       </label>
-                      <select
-                        id="country"
-                        name="country"
-                        value={formData.country}
-                        onChange={handleChange}
-                        className={`w-full p-3 border ${validationErrors.country ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
-                        required
-                      >
-                        <option value="">Select a country</option>
-                        {COUNTRY_CHOICES.map(country => (
-                          <option key={country.value} value={country.value}>
-                            {country.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          id="country"
+                          name="country"
+                          value={formData.country}
+                          onChange={handleChange}
+                          className={`w-full p-3 border ${validationErrors.country ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white appearance-none`}
+                          required
+                        >
+                          <option value="">Select a country</option>
+                          {COUNTRY_CHOICES.map(country => (
+                            <option key={country.value} value={country.value}>
+                              {country.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                          <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                          </svg>
+                        </div>
+                      </div>
                       {validationErrors.country && (
                         <p className="mt-1 text-xs text-red-500">{validationErrors.country}</p>
                       )}
@@ -482,32 +529,39 @@ const RegisterPage = () => {
                       <label htmlFor="sector" className="block text-sm font-medium text-gray-700 mb-1">
                         Sector*
                       </label>
-                      <select
-                        id="sector"
-                        name="sector"
-                        value={formData.sector}
-                        onChange={handleChange}
-                        className={`w-full p-3 border ${validationErrors.sector ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
-                        required
-                      >
-                        <option value="">Select a sector</option>
-                        {SECTOR_CHOICES.map(sector => (
-                          <option key={sector.value} value={sector.value}>
-                            {sector.label}
-                          </option>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          id="sector"
+                          name="sector"
+                          value={formData.sector}
+                          onChange={handleChange}
+                          className={`w-full p-3 border ${validationErrors.sector ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white appearance-none`}
+                          required
+                        >
+                          <option value="">Select a sector</option>
+                          {SECTOR_CHOICES.map(sector => (
+                            <option key={sector.value} value={sector.value}>
+                              {sector.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                          <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                            <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                          </svg>
+                        </div>
+                      </div>
                       {validationErrors.sector && (
                         <p className="mt-1 text-xs text-red-500">{validationErrors.sector}</p>
                       )}
                     </div>
                   </div>
 
-                  <div className="mt-6 flex justify-end">
+                  <div className="mt-8 flex justify-end">
                     <button
                       type="button"
                       onClick={() => setActiveTab('contact')}
-                      className="bg-[#FF8A00] text-white py-2 px-6 rounded-md hover:bg-[#e67e00] transition-colors text-center font-medium"
+                      className="bg-[#FF8A00] text-white py-3 px-8 rounded-md hover:bg-[#e67e00] transition-colors text-center font-medium"
                     >
                       Next: Contact Information
                     </button>
@@ -520,7 +574,7 @@ const RegisterPage = () => {
                   {showContactTabCompanyError && !Object.keys(validationErrors).some(key =>
                     ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition'].includes(key)
                   ) && (
-                    <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
+                    <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-md">
                       <div className="flex">
                         <svg className="h-6 w-6 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -544,96 +598,188 @@ const RegisterPage = () => {
 
                   {/* Contact Tab Error Summary */}
                   {Object.keys(validationErrors).some(key =>
-                    ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition'].includes(key)
+                    ['contactFirstName', 'contactLastName', 'contactEmail', 'contactPosition',
+                     'contact2FirstName', 'contact2LastName', 'contact2Email', 'contact2Position'].includes(key)
                   ) && (
-                    <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-md">
+                    <div className="mb-6 p-3 bg-red-50 border border-red-100 rounded-md">
                       <h4 className="text-sm font-medium text-red-800 mb-1">Please correct the following errors:</h4>
                       <ul className="list-disc pl-5 text-xs text-red-700 space-y-1">
+                        {/* Primary Contact Errors */}
                         {validationErrors.contactFirstName && <li>{validationErrors.contactFirstName}</li>}
                         {validationErrors.contactLastName && <li>{validationErrors.contactLastName}</li>}
                         {validationErrors.contactEmail && <li>{validationErrors.contactEmail}</li>}
                         {validationErrors.contactPosition && <li>{validationErrors.contactPosition}</li>}
+
+                        {/* Secondary Contact Errors */}
+                        {validationErrors.contact2FirstName && <li>{validationErrors.contact2FirstName}</li>}
+                        {validationErrors.contact2LastName && <li>{validationErrors.contact2LastName}</li>}
+                        {validationErrors.contact2Email && <li>{validationErrors.contact2Email}</li>}
+                        {validationErrors.contact2Position && <li>{validationErrors.contact2Position}</li>}
                       </ul>
                     </div>
                   )}
 
-                  {/* Removed notification about Company tab errors - we already have the red dot indicator */}
+                  {/* Primary Contact Person */}
+                  <div className="mb-8">
+                    <h3 className="text-base font-medium text-gray-800 mb-4 pb-2 border-b border-gray-200">Primary Contact Person</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                      <div>
+                        <label htmlFor="contactFirstName" className="block text-sm font-medium text-gray-700 mb-1">
+                          First Name*
+                        </label>
+                        <input
+                          id="contactFirstName"
+                          name="contactFirstName"
+                          type="text"
+                          value={formData.contactFirstName}
+                          onChange={handleChange}
+                          placeholder="Enter first name"
+                          className={`w-full p-3 border ${validationErrors.contactFirstName ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
+                          required
+                        />
+                        {validationErrors.contactFirstName && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.contactFirstName}</p>
+                        )}
+                      </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="contactFirstName" className="block text-sm font-medium text-gray-700 mb-1">
-                        First Name*
-                      </label>
-                      <input
-                        id="contactFirstName"
-                        name="contactFirstName"
-                        type="text"
-                        value={formData.contactFirstName}
-                        onChange={handleChange}
-                        placeholder="Enter your first name"
-                        className={`w-full p-3 border ${validationErrors.contactFirstName ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
-                        required
-                      />
-                      {validationErrors.contactFirstName && (
-                        <p className="mt-1 text-xs text-red-500">{validationErrors.contactFirstName}</p>
-                      )}
+                      <div>
+                        <label htmlFor="contactLastName" className="block text-sm font-medium text-gray-700 mb-1">
+                          Last Name*
+                        </label>
+                        <input
+                          id="contactLastName"
+                          name="contactLastName"
+                          type="text"
+                          value={formData.contactLastName}
+                          onChange={handleChange}
+                          placeholder="Enter last name"
+                          className={`w-full p-3 border ${validationErrors.contactLastName ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
+                          required
+                        />
+                        {validationErrors.contactLastName && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.contactLastName}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                          Email*
+                        </label>
+                        <input
+                          id="contactEmail"
+                          name="contactEmail"
+                          type="email"
+                          value={formData.contactEmail}
+                          onChange={handleChange}
+                          placeholder="Enter email"
+                          className={`w-full p-3 border ${validationErrors.contactEmail ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
+                          required
+                        />
+                        {validationErrors.contactEmail && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.contactEmail}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="contactPosition" className="block text-sm font-medium text-gray-700 mb-1">
+                          Position*
+                        </label>
+                        <input
+                          id="contactPosition"
+                          name="contactPosition"
+                          type="text"
+                          value={formData.contactPosition}
+                          onChange={handleChange}
+                          placeholder="Enter position"
+                          className={`w-full p-3 border ${validationErrors.contactPosition ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
+                          required
+                        />
+                        {validationErrors.contactPosition && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.contactPosition}</p>
+                        )}
+                      </div>
                     </div>
+                  </div>
 
-                    <div>
-                      <label htmlFor="contactLastName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Last Name*
-                      </label>
-                      <input
-                        id="contactLastName"
-                        name="contactLastName"
-                        type="text"
-                        value={formData.contactLastName}
-                        onChange={handleChange}
-                        placeholder="Enter your last name"
-                        className={`w-full p-3 border ${validationErrors.contactLastName ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
-                        required
-                      />
-                      {validationErrors.contactLastName && (
-                        <p className="mt-1 text-xs text-red-500">{validationErrors.contactLastName}</p>
-                      )}
+                  {/* Secondary Contact Person (Optional) */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-base font-medium text-gray-800 pb-2 border-b border-gray-200 w-full">
+                        Secondary Contact Person <span className="text-sm font-normal text-gray-500 ml-2">(Optional)</span>
+                      </h3>
                     </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                      <div>
+                        <label htmlFor="contact2FirstName" className="block text-sm font-medium text-gray-700 mb-1">
+                          First Name
+                        </label>
+                        <input
+                          id="contact2FirstName"
+                          name="contact2FirstName"
+                          type="text"
+                          value={formData.contact2FirstName}
+                          onChange={handleChange}
+                          placeholder="Enter first name"
+                          className={`w-full p-3 border ${validationErrors.contact2FirstName ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
+                        />
+                        {validationErrors.contact2FirstName && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.contact2FirstName}</p>
+                        )}
+                      </div>
 
-                    <div>
-                      <label htmlFor="contactEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                        Email*
-                      </label>
-                      <input
-                        id="contactEmail"
-                        name="contactEmail"
-                        type="email"
-                        value={formData.contactEmail}
-                        onChange={handleChange}
-                        placeholder="Enter your email"
-                        className={`w-full p-3 border ${validationErrors.contactEmail ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
-                        required
-                      />
-                      {validationErrors.contactEmail && (
-                        <p className="mt-1 text-xs text-red-500">{validationErrors.contactEmail}</p>
-                      )}
-                    </div>
+                      <div>
+                        <label htmlFor="contact2LastName" className="block text-sm font-medium text-gray-700 mb-1">
+                          Last Name
+                        </label>
+                        <input
+                          id="contact2LastName"
+                          name="contact2LastName"
+                          type="text"
+                          value={formData.contact2LastName}
+                          onChange={handleChange}
+                          placeholder="Enter last name"
+                          className={`w-full p-3 border ${validationErrors.contact2LastName ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
+                        />
+                        {validationErrors.contact2LastName && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.contact2LastName}</p>
+                        )}
+                      </div>
 
-                    <div>
-                      <label htmlFor="contactPosition" className="block text-sm font-medium text-gray-700 mb-1">
-                        Position*
-                      </label>
-                      <input
-                        id="contactPosition"
-                        name="contactPosition"
-                        type="text"
-                        value={formData.contactPosition}
-                        onChange={handleChange}
-                        placeholder="Enter your position"
-                        className={`w-full p-3 border ${validationErrors.contactPosition ? 'border-red-300 bg-red-50' : 'border-gray-200'} rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] text-gray-700 bg-white`}
-                        required
-                      />
-                      {validationErrors.contactPosition && (
-                        <p className="mt-1 text-xs text-red-500">{validationErrors.contactPosition}</p>
-                      )}
+                      <div>
+                        <label htmlFor="contact2Email" className="block text-sm font-medium text-gray-700 mb-1">
+                          Email
+                        </label>
+                        <input
+                          id="contact2Email"
+                          name="contact2Email"
+                          type="email"
+                          value={formData.contact2Email}
+                          onChange={handleChange}
+                          placeholder="Enter email"
+                          className={`w-full p-3 border ${validationErrors.contact2Email ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
+                        />
+                        {validationErrors.contact2Email && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.contact2Email}</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <label htmlFor="contact2Position" className="block text-sm font-medium text-gray-700 mb-1">
+                          Position
+                        </label>
+                        <input
+                          id="contact2Position"
+                          name="contact2Position"
+                          type="text"
+                          value={formData.contact2Position}
+                          onChange={handleChange}
+                          placeholder="Enter position"
+                          className={`w-full p-3 border ${validationErrors.contact2Position ? 'border-red-300 bg-red-50' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-gray-700 bg-white`}
+                        />
+                        {validationErrors.contact2Position && (
+                          <p className="mt-1 text-xs text-red-500">{validationErrors.contact2Position}</p>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -647,23 +793,23 @@ const RegisterPage = () => {
                       </div>
                       <div className="ml-3">
                         <p className="text-sm text-blue-700">
-                          After registration, we&apos;ll send an invitation email to this address to complete your account setup.
+                          After registration, we&apos;ll send an invitation email to the primary contact address to complete your account setup.
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-6 flex justify-between">
+                  <div className="mt-8 flex justify-between">
                     <button
                       type="button"
                       onClick={() => setActiveTab('company')}
-                      className="text-gray-700 bg-gray-100 py-2 px-6 rounded-md hover:bg-gray-200 transition-colors text-center font-medium"
+                      className="text-gray-700 bg-gray-100 py-3 px-8 rounded-md hover:bg-gray-200 transition-colors text-center font-medium"
                     >
                       Back to Company
                     </button>
                     <button
                       type="button"
-                      className="bg-[#FF8A00] text-white py-2 px-6 rounded-md hover:bg-[#e67e00] transition-colors text-center font-medium"
+                      className="bg-[#FF8A00] text-white py-3 px-8 rounded-md hover:bg-[#e67e00] transition-colors text-center font-medium"
                       disabled={isSubmitting}
                       onClick={(e) => {
                         // Check if company fields are filled
@@ -687,8 +833,8 @@ const RegisterPage = () => {
               </div>
             </div>
 
-            <div className="text-center text-sm text-gray-500 mt-4">
-              Already have an account? <Link href="/login" className="text-[#FF8A00] hover:text-[#e67e00]">Log in</Link>
+            <div className="text-center text-sm text-gray-600 mt-6">
+              Already have an account? <Link href="/login" className="text-[#FF8A00] hover:text-[#e67e00] font-medium">Log in</Link>
             </div>
           </form>
         </div>

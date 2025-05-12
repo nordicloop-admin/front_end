@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { SlidersHorizontal } from '@/components/ui/Icons';
+// import { SlidersHorizontal } from '@/components/ui/Icons';
 import { CategoryFilter } from '@/components/marketplace/CategoryFilter';
 import { LocationFilter } from '@/components/marketplace/LocationFilter';
 import { TimeFilter } from '@/components/marketplace/TimeFilter';
@@ -211,11 +211,6 @@ const MarketplacePage = () => {
             <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
           </div>
 
-          {/* Categories Button */}
-          <button className="flex items-center px-4 py-2 bg-gray-100 rounded-md">
-            <SlidersHorizontal size={16} className="mr-2" />
-            <span>Categories</span>
-          </button>
         </div>
       </div>
 
