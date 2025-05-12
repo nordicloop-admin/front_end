@@ -9,6 +9,9 @@ export interface CompanyRegistration {
   contact_name?: string;
   contact_position?: string;
   contact_email?: string;
+  contact2_name?: string;
+  contact2_position?: string;
+  contact2_email?: string;
   status?: ReviewStatus;
 
   // Frontend form fields
@@ -22,6 +25,10 @@ export interface CompanyRegistration {
   contactLastName?: string;
   contactEmail?: string;
   contactPosition?: string;
+  contact2FirstName?: string;
+  contact2LastName?: string;
+  contact2Email?: string;
+  contact2Position?: string;
   reviewStatus?: ReviewStatus;
   createdAt?: string;
 }

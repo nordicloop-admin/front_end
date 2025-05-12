@@ -20,6 +20,29 @@ export const registerCompany = async (companyData: CompanyRegistration): Promise
     const formattedDate = today.toISOString().split('T')[0];
 
     // Prepare the data for Airtable
+    const fields: Record<string, string> = {
+      'Company Name': companyData.companyName,
+      'VAT Number': companyData.vatNumber,
+      'Email': companyData.email || '',
+      'Website': companyData.website || '',
+      'Country': companyData.country,
+      'Sector': companyData.sector,
+      'Contact First Name': companyData.contactFirstName,
+      'Contact Last Name': companyData.contactLastName,
+      'Contact Email': companyData.contactEmail,
+      'Contact Position': companyData.contactPosition,
+      'Review Status': 'pending',
+      'Created At': formattedDate
+    };
+
+    // Add second contact person data if provided
+    if (companyData.contact2FirstName && companyData.contact2LastName) {
+      fields['Contact2 First Name'] = companyData.contact2FirstName;
+      fields['Contact2 Last Name'] = companyData.contact2LastName;
+      fields['Contact2 Email'] = companyData.contact2Email || '';
+      fields['Contact2 Position'] = companyData.contact2Position || '';
+    }
+
     const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${COMPANIES_TABLE}`, {
       method: 'POST',
       headers: {
@@ -28,20 +51,7 @@ export const registerCompany = async (companyData: CompanyRegistration): Promise
       },
       body: JSON.stringify({
         records: [{
-          fields: {
-            'Company Name': companyData.companyName,
-            'VAT Number': companyData.vatNumber,
-            'Email': companyData.email || '',
-            'Website': companyData.website || '',
-            'Country': companyData.country,
-            'Sector': companyData.sector,
-            'Contact First Name': companyData.contactFirstName,
-            'Contact Last Name': companyData.contactLastName,
-            'Contact Email': companyData.contactEmail,
-            'Contact Position': companyData.contactPosition,
-            'Review Status': 'pending',
-            'Created At': formattedDate
-          }
+          fields
         }]
       })
     });
