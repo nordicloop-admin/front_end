@@ -6,9 +6,10 @@ import FullWidthSection from '../layout/FullWidthSection';
 const AnalyticsSection = () => {
   return (
     <FullWidthSection backgroundColor="#F5F5F5">
-      <section className=" mx-auto max-w-[86%] bg-white section-margin rounded-corners  sections-margin sections-padding pt-0">
+      <section className=" mx-auto max-w-[86%] bg-white section-margin rounded-corners   sections-padding mb-10 md:mb-16">
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+
             <div className="order-2 md:order-1">
               <h3 className="text-xl md:text-2xl font-semibold mb-3 text-[#1E2A36]">Analytics for Sustainability</h3>
               <p className="text-[#666666] mb-6 text-sm md:text-base">
@@ -16,7 +17,7 @@ const AnalyticsSection = () => {
               </p>
               <Link
                 href="/coming-soon"
-                className="bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors inline-block w-[140px] text-center text-sm font-medium"
+                className="bg-[#FF8A00] text-white px-8 py-4 w-[200px] rounded-md hover:bg-[#e67e00] transition-colors inline-block  text-center text-sm font-medium"
               >
                 Try for free →
               </Link>

@@ -24,9 +24,24 @@ NEXT_PUBLIC_EMAILJS_CONTACT_PUBLIC_KEY=your_emailjs_contact_public_key
 # EmailJS Credentials - Coming Soon Notification
 NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_NOTIFICATION=your_emailjs_notification_template_id
 
+<<<<<<< HEAD
 # Table Names
 AIRTABLE_NEWSLETTER_TABLE=Newsletters
 AIRTABLE_NOTIFICATION_TABLE=Notification Lists
+=======
+# EmailJS Credentials - Company Registration
+NEXT_PUBLIC_EMAILJS_SERVICE_ID_REGISTRATION=your_emailjs_registration_service_id
+NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_INVITATION=your_emailjs_invitation_template_id
+
+# Table Names
+AIRTABLE_NEWSLETTER_TABLE=Newsletters
+AIRTABLE_NOTIFICATION_TABLE=Notification Lists
+AIRTABLE_COMPANIES_TABLE=Companies
+AIRTABLE_USERS_TABLE=Users
+
+# Application Settings
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+>>>>>>> Testing
 ```
 
 Replace the placeholder values with your actual credentials.
