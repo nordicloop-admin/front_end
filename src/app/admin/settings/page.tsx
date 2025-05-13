@@ -1,14 +1,11 @@
 "use client";
 
 import React, { useState } from 'react';
-import { 
-  Settings, 
-  Bell, 
-  Shield, 
-  Globe, 
-  Mail, 
-  CreditCard, 
-  Users, 
+import {
+  Settings,
+  Bell,
+  Shield,
+  CreditCard,
   Save,
   ChevronRight
 } from 'lucide-react';
@@ -22,43 +19,43 @@ export default function SettingsPage() {
   const [defaultLanguage, setDefaultLanguage] = useState('en');
   const [defaultCurrency, setDefaultCurrency] = useState('SEK');
   const [timeZone, setTimeZone] = useState('Europe/Stockholm');
-  
+
   // Notification Settings
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [newUserNotifications, setNewUserNotifications] = useState(true);
   const [newListingNotifications, setNewListingNotifications] = useState(true);
   const [newBidNotifications, setNewBidNotifications] = useState(true);
   const [paymentNotifications, setPaymentNotifications] = useState(true);
-  
+
   // Security Settings
   const [twoFactorAuth, setTwoFactorAuth] = useState(true);
   const [passwordExpiry, setPasswordExpiry] = useState(90);
   const [sessionTimeout, setSessionTimeout] = useState(60);
   const [loginAttempts, setLoginAttempts] = useState(5);
-  
+
   // Payment Settings
   const [commissionRateFree, setCommissionRateFree] = useState(9);
   const [commissionRateStandard, setCommissionRateStandard] = useState(7);
   const [commissionRatePremium, setCommissionRatePremium] = useState(0);
   const [standardPlanPrice, setStandardPlanPrice] = useState(599);
   const [premiumPlanPrice, setPremiumPlanPrice] = useState(799);
-  
+
   // Active tab state
   const [activeTab, setActiveTab] = useState('general');
-  
+
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // In a real application, this would save the settings to the backend
     alert('Settings saved successfully!');
   };
-  
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Platform Settings</h1>
       </div>
-      
+
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
         <div className="flex flex-col md:flex-row">
           {/* Settings Navigation */}
@@ -66,8 +63,8 @@ export default function SettingsPage() {
             <nav className="space-y-1">
               <button
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md w-full ${
-                  activeTab === 'general' 
-                    ? 'bg-[#FF8A00] text-white' 
+                  activeTab === 'general'
+                    ? 'bg-[#FF8A00] text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 onClick={() => setActiveTab('general')}
@@ -76,11 +73,11 @@ export default function SettingsPage() {
                 <span>General</span>
                 <ChevronRight className="ml-auto h-5 w-5" />
               </button>
-              
+
               <button
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md w-full ${
-                  activeTab === 'notifications' 
-                    ? 'bg-[#FF8A00] text-white' 
+                  activeTab === 'notifications'
+                    ? 'bg-[#FF8A00] text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 onClick={() => setActiveTab('notifications')}
@@ -89,11 +86,11 @@ export default function SettingsPage() {
                 <span>Notifications</span>
                 <ChevronRight className="ml-auto h-5 w-5" />
               </button>
-              
+
               <button
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md w-full ${
-                  activeTab === 'security' 
-                    ? 'bg-[#FF8A00] text-white' 
+                  activeTab === 'security'
+                    ? 'bg-[#FF8A00] text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 onClick={() => setActiveTab('security')}
@@ -102,11 +99,11 @@ export default function SettingsPage() {
                 <span>Security</span>
                 <ChevronRight className="ml-auto h-5 w-5" />
               </button>
-              
+
               <button
                 className={`flex items-center px-3 py-2 text-sm font-medium rounded-md w-full ${
-                  activeTab === 'payment' 
-                    ? 'bg-[#FF8A00] text-white' 
+                  activeTab === 'payment'
+                    ? 'bg-[#FF8A00] text-white'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
                 onClick={() => setActiveTab('payment')}
@@ -117,7 +114,7 @@ export default function SettingsPage() {
               </button>
             </nav>
           </div>
-          
+
           {/* Settings Content */}
           <div className="flex-1 p-6">
             <form onSubmit={handleSubmit}>
@@ -125,7 +122,7 @@ export default function SettingsPage() {
               {activeTab === 'general' && (
                 <div>
                   <h2 className="text-lg font-medium text-gray-900 mb-4">General Settings</h2>
-                  
+
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
@@ -140,7 +137,7 @@ export default function SettingsPage() {
                           onChange={(e) => setSiteName(e.target.value)}
                         />
                       </div>
-                      
+
                       <div>
                         <label htmlFor="siteDescription" className="block text-sm font-medium text-gray-700 mb-1">
                           Site Description
@@ -154,7 +151,7 @@ export default function SettingsPage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label htmlFor="supportEmail" className="block text-sm font-medium text-gray-700 mb-1">
@@ -168,7 +165,7 @@ export default function SettingsPage() {
                           onChange={(e) => setSupportEmail(e.target.value)}
                         />
                       </div>
-                      
+
                       <div>
                         <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700 mb-1">
                           Admin Email
@@ -182,7 +179,7 @@ export default function SettingsPage() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label htmlFor="defaultLanguage" className="block text-sm font-medium text-gray-700 mb-1">
@@ -201,7 +198,7 @@ export default function SettingsPage() {
                           <option value="da">Danish</option>
                         </select>
                       </div>
-                      
+
                       <div>
                         <label htmlFor="defaultCurrency" className="block text-sm font-medium text-gray-700 mb-1">
                           Default Currency
@@ -219,7 +216,7 @@ export default function SettingsPage() {
                           <option value="USD">US Dollar (USD)</option>
                         </select>
                       </div>
-                      
+
                       <div>
                         <label htmlFor="timeZone" className="block text-sm font-medium text-gray-700 mb-1">
                           Time Zone
@@ -241,12 +238,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
-              
+
               {/* Notification Settings */}
               {activeTab === 'notifications' && (
                 <div>
                   <h2 className="text-lg font-medium text-gray-900 mb-4">Notification Settings</h2>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center">
                       <input
@@ -260,7 +257,7 @@ export default function SettingsPage() {
                         Enable Email Notifications
                       </label>
                     </div>
-                    
+
                     <div className="pl-6 space-y-3">
                       <div className="flex items-center">
                         <input
@@ -275,7 +272,7 @@ export default function SettingsPage() {
                           New User Registrations
                         </label>
                       </div>
-                      
+
                       <div className="flex items-center">
                         <input
                           type="checkbox"
@@ -289,7 +286,7 @@ export default function SettingsPage() {
                           New Marketplace Listings
                         </label>
                       </div>
-                      
+
                       <div className="flex items-center">
                         <input
                           type="checkbox"
@@ -303,7 +300,7 @@ export default function SettingsPage() {
                           New Bids
                         </label>
                       </div>
-                      
+
                       <div className="flex items-center">
                         <input
                           type="checkbox"
@@ -321,12 +318,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
-              
+
               {/* Security Settings */}
               {activeTab === 'security' && (
                 <div>
                   <h2 className="text-lg font-medium text-gray-900 mb-4">Security Settings</h2>
-                  
+
                   <div className="space-y-4">
                     <div className="flex items-center">
                       <input
@@ -340,7 +337,7 @@ export default function SettingsPage() {
                         Require Two-Factor Authentication for Admin Users
                       </label>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label htmlFor="passwordExpiry" className="block text-sm font-medium text-gray-700 mb-1">
@@ -358,7 +355,7 @@ export default function SettingsPage() {
                           Set to 0 for no expiry
                         </p>
                       </div>
-                      
+
                       <div>
                         <label htmlFor="sessionTimeout" className="block text-sm font-medium text-gray-700 mb-1">
                           Session Timeout (minutes)
@@ -372,7 +369,7 @@ export default function SettingsPage() {
                           min="5"
                         />
                       </div>
-                      
+
                       <div>
                         <label htmlFor="loginAttempts" className="block text-sm font-medium text-gray-700 mb-1">
                           Max Login Attempts
@@ -390,12 +387,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
-              
+
               {/* Payment Settings */}
               {activeTab === 'payment' && (
                 <div>
                   <h2 className="text-lg font-medium text-gray-900 mb-4">Payment & Subscription Plans</h2>
-                  
+
                   <div className="space-y-6">
                     <div>
                       <h3 className="text-md font-medium text-gray-800 mb-3">Commission Rates</h3>
@@ -414,7 +411,7 @@ export default function SettingsPage() {
                             max="100"
                           />
                         </div>
-                        
+
                         <div>
                           <label htmlFor="commissionRateStandard" className="block text-sm font-medium text-gray-700 mb-1">
                             Standard Plan Commission (%)
@@ -429,7 +426,7 @@ export default function SettingsPage() {
                             max="100"
                           />
                         </div>
-                        
+
                         <div>
                           <label htmlFor="commissionRatePremium" className="block text-sm font-medium text-gray-700 mb-1">
                             Premium Plan Commission (%)
@@ -446,7 +443,7 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <h3 className="text-md font-medium text-gray-800 mb-3">Subscription Pricing</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -463,7 +460,7 @@ export default function SettingsPage() {
                             min="0"
                           />
                         </div>
-                        
+
                         <div>
                           <label htmlFor="premiumPlanPrice" className="block text-sm font-medium text-gray-700 mb-1">
                             Premium Plan Price (SEK)
@@ -482,7 +479,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
-              
+
               {/* Save Button */}
               <div className="mt-6">
                 <button

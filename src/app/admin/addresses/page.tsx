@@ -95,50 +95,50 @@ export default function AddressesPage() {
   const [selectedType, setSelectedType] = useState('all');
   const [selectedVerification, setSelectedVerification] = useState('all');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
-  
+
   // Filter addresses based on search term, type, and verification status
   useEffect(() => {
     let result = addresses;
-    
+
     if (searchTerm) {
-      result = result.filter(address => 
+      result = result.filter(address =>
         address.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         address.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
         address.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
         address.contactName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (selectedType !== 'all') {
       result = result.filter(address => address.type === selectedType);
     }
-    
+
     if (selectedVerification !== 'all') {
       const isVerified = selectedVerification === 'verified';
       result = result.filter(address => address.isVerified === isVerified);
     }
-    
+
     setFilteredAddresses(result);
   }, [searchTerm, selectedType, selectedVerification, addresses]);
-  
+
   // Handle verification status change
   const handleVerificationChange = (addressId: string, isVerified: boolean) => {
-    const updatedAddresses = addresses.map(address => 
+    const updatedAddresses = addresses.map(address =>
       address.id === addressId ? { ...address, isVerified } : address
     );
     setAddresses(updatedAddresses);
   };
-  
+
   // Handle sort
   const requestSort = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
-    
+
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
     }
-    
+
     setSortConfig({ key, direction });
-    
+
     const sortedAddresses = [...filteredAddresses].sort((a, b) => {
       if (a[key as keyof typeof a] < b[key as keyof typeof b]) {
         return direction === 'ascending' ? -1 : 1;
@@ -148,21 +148,21 @@ export default function AddressesPage() {
       }
       return 0;
     });
-    
+
     setFilteredAddresses(sortedAddresses);
   };
-  
+
   // Get sort indicator
   const getSortIndicator = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) {
       return null;
     }
-    
+
     return sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
-  // Format address for display
-  const formatAddress = (address: typeof mockAddresses[0]) => {
+  // Format address for display - prefixed with underscore to indicate it's not currently used
+  const _formatAddress = (address: typeof mockAddresses[0]) => {
     let formattedAddress = address.addressLine1;
     if (address.addressLine2) formattedAddress += `, ${address.addressLine2}`;
     formattedAddress += `, ${address.city}, ${address.postalCode}, ${address.country}`;
@@ -174,7 +174,7 @@ export default function AddressesPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Address Management</h1>
       </div>
-      
+
       {/* Filters */}
       <div className="bg-white p-4 rounded-md shadow-sm mb-6">
         <div className="flex flex-col md:flex-row gap-4">
@@ -190,7 +190,7 @@ export default function AddressesPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
@@ -203,7 +203,7 @@ export default function AddressesPage() {
               <option value="shipping">Shipping</option>
             </select>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
@@ -218,7 +218,7 @@ export default function AddressesPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Addresses Table */}
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -294,7 +294,7 @@ export default function AddressesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
                         ${address.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {address.isVerified ? 'Verified' : 'Unverified'}
                       </span>
@@ -312,7 +312,7 @@ export default function AddressesPage() {
                           Edit
                         </Link>
                         {!address.isVerified ? (
-                          <button 
+                          <button
                             className="text-green-600 hover:text-green-900 flex items-center"
                             onClick={() => handleVerificationChange(address.id, true)}
                           >
@@ -320,7 +320,7 @@ export default function AddressesPage() {
                             Verify
                           </button>
                         ) : (
-                          <button 
+                          <button
                             className="text-red-600 hover:text-red-900 flex items-center"
                             onClick={() => handleVerificationChange(address.id, false)}
                           >

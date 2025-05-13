@@ -163,7 +163,7 @@ export default function MyAuctions() {
           <div className="bg-white border border-gray-100 rounded-md p-6 text-center">
             <Package size={32} className="mx-auto mb-3 text-gray-300" />
             <h2 className="text-base font-medium text-gray-800 mb-2">No auctions yet</h2>
-            <p className="text-sm text-gray-500 mb-4">You haven't created any auctions yet. Click the "New Auction" button to get started.</p>
+            <p className="text-sm text-gray-500 mb-4">You haven&apos;t created any auctions yet. Click the &quot;New Auction&quot; button to get started.</p>
             <button
               onClick={() => setIsModalOpen(true)}
               className="bg-[#FF8A00] text-white py-2 px-4 rounded-md inline-flex items-center text-sm"
