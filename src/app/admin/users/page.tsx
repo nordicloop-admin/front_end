@@ -38,14 +38,14 @@ const mockUsers = [
 ];
 
 export default function UsersPage() {
-  const [users, setUsers] = useState(mockUsers);
+  const [users] = useState(mockUsers);
   const [filteredUsers, setFilteredUsers] = useState(mockUsers);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     // Filter users based on search term
     if (searchTerm) {
-      const filtered = users.filter(user => 
+      const filtered = users.filter(user =>
         user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -61,8 +61,8 @@ export default function UsersPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Users Management</h1>
-        <Link 
-          href="/admin/users/new" 
+        <Link
+          href="/admin/users/new"
           className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#e67e00] transition-colors"
         >
           Add New User

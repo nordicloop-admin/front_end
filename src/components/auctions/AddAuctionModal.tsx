@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { X, Upload, Calendar, Clock } from 'lucide-react';
 
 interface AddAuctionModalProps {
@@ -386,11 +387,14 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
               <div className="border border-dashed border-gray-300 rounded-md p-4">
                 {imagePreview ? (
                   <div className="relative">
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="h-40 w-full object-cover rounded-md"
-                    />
+                    <div className="relative h-40 w-full">
+                      <Image
+                        src={imagePreview}
+                        alt="Preview"
+                        fill
+                        className="object-cover rounded-md"
+                      />
+                    </div>
                     <button
                       type="button"
                       onClick={() => {

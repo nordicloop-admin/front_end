@@ -85,63 +85,71 @@ export default function MarketplacePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
-  
+
   // Filter listings based on search term and status
   useEffect(() => {
     let result = listings;
-    
+
     if (searchTerm) {
-      result = result.filter(listing => 
+      result = result.filter(listing =>
         listing.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         listing.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
         listing.seller.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (selectedStatus !== 'all') {
       result = result.filter(listing => listing.status === selectedStatus);
     }
-    
+
     setFilteredListings(result);
   }, [searchTerm, selectedStatus, listings]);
-  
+
   // Handle status change
   const handleStatusChange = (listingId: string, newStatus: string) => {
-    const updatedListings = listings.map(listing => 
+    const updatedListings = listings.map(listing =>
       listing.id === listingId ? { ...listing, status: newStatus } : listing
     );
     setListings(updatedListings);
   };
-  
+
   // Handle sort
   const requestSort = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
-    
+
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
     }
-    
+
     setSortConfig({ key, direction });
-    
+
     const sortedListings = [...filteredListings].sort((a, b) => {
-      if (a[key as keyof typeof a] < b[key as keyof typeof b]) {
+      const aValue = a[key as keyof typeof a];
+      const bValue = b[key as keyof typeof b];
+
+      // Handle null or undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return direction === 'ascending' ? -1 : 1;
+      if (bValue == null) return direction === 'ascending' ? 1 : -1;
+
+      if (aValue < bValue) {
         return direction === 'ascending' ? -1 : 1;
       }
-      if (a[key as keyof typeof a] > b[key as keyof typeof b]) {
+      if (aValue > bValue) {
         return direction === 'ascending' ? 1 : -1;
       }
       return 0;
     });
-    
+
     setFilteredListings(sortedListings);
   };
-  
+
   // Get sort indicator
   const getSortIndicator = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) {
       return null;
     }
-    
+
     return sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
@@ -149,14 +157,14 @@ export default function MarketplacePage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Marketplace Management</h1>
-        <Link 
-          href="/admin/marketplace/new" 
+        <Link
+          href="/admin/marketplace/new"
           className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#e67e00] transition-colors"
         >
           Add New Listing
         </Link>
       </div>
-      
+
       {/* Filters */}
       <div className="bg-white p-4 rounded-md shadow-sm mb-6">
         <div className="flex flex-col md:flex-row gap-4">
@@ -172,7 +180,7 @@ export default function MarketplacePage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
@@ -188,7 +196,7 @@ export default function MarketplacePage() {
           </div>
         </div>
       </div>
-      
+
       {/* Listings Table */}
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -261,9 +269,9 @@ export default function MarketplacePage() {
                       <div className="text-sm text-gray-500">{listing.countryOfOrigin}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${listing.status === 'active' ? 'bg-green-100 text-green-800' : 
-                          listing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                        ${listing.status === 'active' ? 'bg-green-100 text-green-800' :
+                          listing.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                           'bg-gray-100 text-gray-800'}`}>
                         {listing.status.charAt(0).toUpperCase() + listing.status.slice(1)}
                       </span>
@@ -279,7 +287,7 @@ export default function MarketplacePage() {
                         <Link href={`/admin/marketplace/${listing.id}/edit`} className="text-indigo-600 hover:text-indigo-900">
                           Edit
                         </Link>
-                        <button 
+                        <button
                           className="text-red-600 hover:text-red-900"
                           onClick={() => handleStatusChange(listing.id, listing.status === 'active' ? 'inactive' : 'active')}
                         >

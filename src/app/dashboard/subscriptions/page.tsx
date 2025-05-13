@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Check, X, CreditCard, Calendar, ArrowRight } from 'lucide-react';
+import { Check, X, Calendar, ArrowRight } from 'lucide-react';
 
 // Subscription plan details
 const subscriptionPlans = [

@@ -134,67 +134,75 @@ export default function SubscriptionsPage() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
   const [showPlanDetails, setShowPlanDetails] = useState<string | null>(null);
-  
+
   // Filter subscriptions based on search term, plan, and status
   useEffect(() => {
     let result = subscriptions;
-    
+
     if (searchTerm) {
-      result = result.filter(subscription => 
+      result = result.filter(subscription =>
         subscription.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         subscription.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         subscription.contactEmail.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (selectedPlan !== 'all') {
       result = result.filter(subscription => subscription.plan === selectedPlan);
     }
-    
+
     if (selectedStatus !== 'all') {
       result = result.filter(subscription => subscription.status === selectedStatus);
     }
-    
+
     setFilteredSubscriptions(result);
   }, [searchTerm, selectedPlan, selectedStatus, subscriptions]);
-  
+
   // Handle subscription status change
   const handleStatusChange = (subscriptionId: string, newStatus: string) => {
-    const updatedSubscriptions = subscriptions.map(subscription => 
+    const updatedSubscriptions = subscriptions.map(subscription =>
       subscription.id === subscriptionId ? { ...subscription, status: newStatus } : subscription
     );
     setSubscriptions(updatedSubscriptions);
   };
-  
+
   // Handle sort
   const requestSort = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
-    
+
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
     }
-    
+
     setSortConfig({ key, direction });
-    
+
     const sortedSubscriptions = [...filteredSubscriptions].sort((a, b) => {
-      if (a[key as keyof typeof a] < b[key as keyof typeof b]) {
+      const aValue = a[key as keyof typeof a];
+      const bValue = b[key as keyof typeof b];
+
+      // Handle null or undefined values
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return direction === 'ascending' ? -1 : 1;
+      if (bValue == null) return direction === 'ascending' ? 1 : -1;
+
+      if (aValue < bValue) {
         return direction === 'ascending' ? -1 : 1;
       }
-      if (a[key as keyof typeof a] > b[key as keyof typeof b]) {
+      if (aValue > bValue) {
         return direction === 'ascending' ? 1 : -1;
       }
       return 0;
     });
-    
+
     setFilteredSubscriptions(sortedSubscriptions);
   };
-  
+
   // Get sort indicator
   const getSortIndicator = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) {
       return null;
     }
-    
+
     return sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
@@ -212,7 +220,7 @@ export default function SubscriptionsPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Subscription Management</h1>
       </div>
-      
+
       {/* Subscription Plans */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {subscriptionPlans.map((plan) => (
@@ -224,7 +232,7 @@ export default function SubscriptionsPage() {
             <div className="text-sm text-gray-500 mb-2">
               {plan.features.length} features
             </div>
-            <button 
+            <button
               className="text-[#FF8A00] text-sm font-medium hover:text-[#e67e00] focus:outline-none"
               onClick={() => togglePlanDetails(plan.id)}
             >
@@ -243,7 +251,7 @@ export default function SubscriptionsPage() {
           </div>
         ))}
       </div>
-      
+
       {/* Filters */}
       <div className="bg-white p-4 rounded-md shadow-sm mb-6">
         <div className="flex flex-col md:flex-row gap-4">
@@ -259,7 +267,7 @@ export default function SubscriptionsPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
@@ -273,7 +281,7 @@ export default function SubscriptionsPage() {
               <option value="premium">Premium Plan</option>
             </select>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
@@ -290,7 +298,7 @@ export default function SubscriptionsPage() {
           </div>
         </div>
       </div>
-      
+
       {/* Subscriptions Table */}
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -344,7 +352,7 @@ export default function SubscriptionsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {subscription.plan === 'premium' ? 'Premium Plan' : 
+                        {subscription.plan === 'premium' ? 'Premium Plan' :
                          subscription.plan === 'standard' ? 'Standard Plan' : 'Free Plan'}
                       </div>
                       <div className="text-xs text-gray-500">
@@ -352,14 +360,14 @@ export default function SubscriptionsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${subscription.status === 'active' ? 'bg-green-100 text-green-800' : 
-                          subscription.status === 'expired' ? 'bg-gray-100 text-gray-800' : 
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                        ${subscription.status === 'active' ? 'bg-green-100 text-green-800' :
+                          subscription.status === 'expired' ? 'bg-gray-100 text-gray-800' :
                           subscription.status === 'payment_failed' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'}`}>
-                        {subscription.status === 'active' ? 'Active' : 
-                         subscription.status === 'expired' ? 'Expired' : 
-                         subscription.status === 'payment_failed' ? 'Payment Failed' : 
+                        {subscription.status === 'active' ? 'Active' :
+                         subscription.status === 'expired' ? 'Expired' :
+                         subscription.status === 'payment_failed' ? 'Payment Failed' :
                          'Cancelled'}
                       </span>
                       {subscription.status === 'payment_failed' && (
@@ -373,7 +381,7 @@ export default function SubscriptionsPage() {
                       <div className="flex items-center text-sm text-gray-500">
                         <Clock className="h-4 w-4 mr-1 text-gray-400" />
                         <span>
-                          {subscription.startDate} 
+                          {subscription.startDate}
                           {subscription.endDate ? ` to ${subscription.endDate}` : ' (No end date)'}
                         </span>
                       </div>
@@ -412,7 +420,7 @@ export default function SubscriptionsPage() {
                           View Company
                         </Link>
                         {subscription.status === 'payment_failed' && (
-                          <button 
+                          <button
                             className="text-green-600 hover:text-green-900"
                             onClick={() => handleStatusChange(subscription.id, 'active')}
                           >
@@ -420,7 +428,7 @@ export default function SubscriptionsPage() {
                           </button>
                         )}
                         {subscription.status === 'active' && (
-                          <button 
+                          <button
                             className="text-red-600 hover:text-red-900"
                             onClick={() => handleStatusChange(subscription.id, 'cancelled')}
                           >

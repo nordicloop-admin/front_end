@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+// Link is imported but not used in this file
+import _Link from 'next/link';
 import { User, Mail, Phone, Building, Shield, Key, Save, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -228,7 +229,7 @@ export default function Profile() {
                     <div className="ml-3">
                       <h3 className="text-sm font-medium text-blue-700">Company Verification</h3>
                       <div className="mt-1 text-xs text-blue-600">
-                        <p>Your company is currently under verification. Once verified, you'll have full access to all platform features.</p>
+                        <p>Your company is currently under verification. Once verified, you&apos;ll have full access to all platform features.</p>
                       </div>
                     </div>
                   </div>

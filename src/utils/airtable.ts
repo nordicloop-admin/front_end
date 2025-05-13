@@ -21,16 +21,16 @@ export const registerCompany = async (companyData: CompanyRegistration): Promise
 
     // Prepare the data for Airtable
     const fields: Record<string, string> = {
-      'Company Name': companyData.companyName,
-      'VAT Number': companyData.vatNumber,
+      'Company Name': companyData.companyName || '',
+      'VAT Number': companyData.vatNumber || '',
       'Email': companyData.email || '',
       'Website': companyData.website || '',
       'Country': companyData.country,
       'Sector': companyData.sector,
-      'Contact First Name': companyData.contactFirstName,
-      'Contact Last Name': companyData.contactLastName,
-      'Contact Email': companyData.contactEmail,
-      'Contact Position': companyData.contactPosition,
+      'Contact First Name': companyData.contactFirstName || '',
+      'Contact Last Name': companyData.contactLastName || '',
+      'Contact Email': companyData.contactEmail || '',
+      'Contact Position': companyData.contactPosition || '',
       'Review Status': 'pending',
       'Created At': formattedDate
     };

@@ -15,13 +15,13 @@ export default function AdminLayoutClient({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  const handleLogout = () => {
+  const _handleLogout = () => {
     logout();
     router.push('/login');
   };

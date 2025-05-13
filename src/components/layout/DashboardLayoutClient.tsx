@@ -56,7 +56,7 @@ export default function DashboardLayoutClient({
     setSidebarOpen(!sidebarOpen);
   };
 
-  const handleAddAuction = (auctionData: AuctionFormData) => {
+  const handleAddAuction = (_auctionData: AuctionFormData) => {
     // In a real app, this would send the data to an API
     // For now, we'll just close the modal and redirect to My Auctions
     setIsModalOpen(false);
