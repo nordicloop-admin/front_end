@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Search, Filter, Clock, ArrowUpRight } from 'lucide-react';
 import Image from 'next/image';
+import PlaceBidModal from '@/components/auctions/PlaceBidModal';
+import useBidding from '@/hooks/useBidding';
 
 // Mock data for marketplace auctions
 const marketplaceAuctions = [
@@ -71,6 +73,7 @@ const categories = [
 export default function Auctions() {
   const [selectedCategory, setSelectedCategory] = useState('All materials');
   const [searchTerm, setSearchTerm] = useState('');
+  const { selectedAuction, isModalOpen, openBidModal, closeBidModal, submitBid } = useBidding();
 
   // Filter auctions based on search term and category
   const filteredAuctions = marketplaceAuctions.filter(auction => {
@@ -177,13 +180,13 @@ export default function Auctions() {
                   </div>
                 </div>
 
-                <Link
-                  href={`/dashboard/auctions/${auction.id}`}
+                <button
+                  onClick={() => openBidModal(auction)}
                   className="px-3 py-1.5 bg-[#FF8A00] text-white rounded-md text-xs hover:bg-[#e67e00] transition-colors flex items-center"
                 >
                   Place Bid
                   <ArrowUpRight size={12} className="ml-1" />
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -194,6 +197,16 @@ export default function Auctions() {
         <div className="bg-white border border-gray-100 rounded-md p-6 text-center">
           <p className="text-gray-500 text-sm">No auctions found matching your criteria.</p>
         </div>
+      )}
+
+      {/* Bid Modal */}
+      {selectedAuction && (
+        <PlaceBidModal
+          isOpen={isModalOpen}
+          onClose={closeBidModal}
+          onSubmit={submitBid}
+          auction={selectedAuction}
+        />
       )}
     </div>
   );
