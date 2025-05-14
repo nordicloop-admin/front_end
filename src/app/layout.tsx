@@ -4,6 +4,7 @@ import Script from 'next/script';
 import "./globals.css";
 import RootLayoutClient from "../components/layout/RootLayoutClient";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { Toaster } from 'sonner';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -104,6 +105,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <RootLayoutClient>
+            <Toaster position="top-right" richColors />
             {children}
           </RootLayoutClient>
         </AuthProvider>
