@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from 'react';
-import Link from 'next/link';
+// Link is not used in this file
+// import Link from 'next/link';
 import { Search, Filter, Clock, ArrowUpRight } from 'lucide-react';
 import Image from 'next/image';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';

@@ -116,7 +116,7 @@ export default function AuctionDetail() {
   const { selectedAuction, isModalOpen, openBidModal, closeBidModal, submitBid } = useBidding();
   const [auction, setAuction] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Format date to readable string
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -128,25 +128,25 @@ export default function AuctionDetail() {
       minute: '2-digit'
     });
   };
-  
+
   // Fetch auction data
   useEffect(() => {
     if (params.id) {
       // In a real app, you would fetch from API
       // For demo, we'll use the mock data
       const foundAuction = marketplaceAuctions.find(a => a.id === params.id);
-      
+
       if (foundAuction) {
         setAuction(foundAuction);
       } else {
         // Auction not found, redirect to auctions list
         router.push('/dashboard/auctions');
       }
-      
+
       setIsLoading(false);
     }
   }, [params.id, router]);
-  
+
   if (isLoading) {
     return (
       <div className="p-5 flex justify-center items-center h-64">
@@ -154,14 +154,14 @@ export default function AuctionDetail() {
       </div>
     );
   }
-  
+
   if (!auction) {
     return (
       <div className="p-5">
         <div className="bg-white border border-gray-100 rounded-md p-6 text-center">
           <AlertCircle size={24} className="mx-auto text-gray-400 mb-2" />
           <h2 className="text-lg font-medium text-gray-900">Auction not found</h2>
-          <p className="text-gray-500 mt-1">The auction you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-500 mt-1">The auction you&apos;re looking for doesn&apos;t exist or has been removed.</p>
           <button
             onClick={() => router.push('/dashboard/auctions')}
             className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
@@ -172,7 +172,7 @@ export default function AuctionDetail() {
       </div>
     );
   }
-  
+
   return (
     <div className="p-5">
       <div className="mb-5">
@@ -184,7 +184,7 @@ export default function AuctionDetail() {
           Back to Auctions
         </button>
       </div>
-      
+
       <div className="bg-white border border-gray-100 rounded-md overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="relative h-64 md:h-full">
@@ -202,10 +202,10 @@ export default function AuctionDetail() {
               {auction.timeLeft}
             </div>
           </div>
-          
+
           <div className="p-6">
             <h1 className="text-xl font-medium text-gray-900">{auction.name}</h1>
-            
+
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
                 <div className="text-xs text-gray-500">
@@ -215,7 +215,7 @@ export default function AuctionDetail() {
                   {auction.highestBid || auction.basePrice} SEK
                 </div>
               </div>
-              
+
               <div>
                 <div className="text-xs text-gray-500">Volume</div>
                 <div className="text-sm font-medium flex items-center">
@@ -223,7 +223,7 @@ export default function AuctionDetail() {
                   {auction.volume}
                 </div>
               </div>
-              
+
               <div>
                 <div className="text-xs text-gray-500">Seller</div>
                 <div className="text-sm font-medium flex items-center">
@@ -231,7 +231,7 @@ export default function AuctionDetail() {
                   {auction.seller}
                 </div>
               </div>
-              
+
               <div>
                 <div className="text-xs text-gray-500">Origin</div>
                 <div className="text-sm font-medium flex items-center">
@@ -240,7 +240,7 @@ export default function AuctionDetail() {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-6">
               <button
                 onClick={() => openBidModal(auction)}
@@ -252,11 +252,11 @@ export default function AuctionDetail() {
             </div>
           </div>
         </div>
-        
+
         <div className="border-t border-gray-100 p-6">
           <h2 className="text-lg font-medium mb-3">Description</h2>
           <p className="text-sm text-gray-700">{auction.description}</p>
-          
+
           <h2 className="text-lg font-medium mt-6 mb-3">Specifications</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {auction.specifications.map((spec: any, index: number) => (
@@ -266,7 +266,7 @@ export default function AuctionDetail() {
               </div>
             ))}
           </div>
-          
+
           <h2 className="text-lg font-medium mt-6 mb-3">Bid History</h2>
           {auction.bidHistory.length > 0 ? (
             <div className="overflow-hidden border border-gray-100 rounded-md">
@@ -297,7 +297,7 @@ export default function AuctionDetail() {
           )}
         </div>
       </div>
-      
+
       {/* Bid Modal */}
       {selectedAuction && (
         <PlaceBidModal

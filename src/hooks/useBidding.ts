@@ -60,7 +60,8 @@ export default function useBidding(): UseBiddingReturn {
         throw new Error(errorData.error || 'Failed to place bid');
       }
 
-      const data = await response.json();
+      // Parse response data (not currently used but might be needed in the future)
+      await response.json();
 
       // Show success message
       toast.success(`Bid of ${bidAmount} SEK placed successfully`, {

@@ -56,7 +56,7 @@ export default function AuctionDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  
+
   // Format date to readable string
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -68,21 +68,21 @@ export default function AuctionDetail() {
       minute: '2-digit'
     });
   };
-  
+
   // Fetch auction data
   useEffect(() => {
     if (params.id) {
       // In a real app, you would fetch from API
       // For demo, we'll use the mock data
       const foundAuction = myAuctions.find(a => a.id === params.id);
-      
+
       if (foundAuction) {
         setAuction(foundAuction);
       } else {
         // Auction not found, redirect to auctions list
         router.push('/dashboard/my-auctions');
       }
-      
+
       setIsLoading(false);
     }
   }, [params.id, router]);
@@ -95,10 +95,10 @@ export default function AuctionDetail() {
       ...auction,
       ...updatedAuction
     });
-    
+
     // Close the modal
     setIsEditModalOpen(false);
-    
+
     // Show success message
     toast.success('Auction updated successfully', {
       description: 'Your changes have been saved.',
@@ -110,17 +110,17 @@ export default function AuctionDetail() {
   const handleDeleteAuction = () => {
     // In a real app, you would send a delete request to an API
     // For now, we'll just redirect back to the auctions list
-    
+
     // Show success message
     toast.success('Auction deleted successfully', {
       description: 'The auction has been removed from your listings.',
       duration: 3000,
     });
-    
+
     // Redirect to auctions list
     router.push('/dashboard/my-auctions');
   };
-  
+
   if (isLoading) {
     return (
       <div className="p-5 flex justify-center items-center h-64">
@@ -128,14 +128,14 @@ export default function AuctionDetail() {
       </div>
     );
   }
-  
+
   if (!auction) {
     return (
       <div className="p-5">
         <div className="bg-white border border-gray-100 rounded-md p-6 text-center">
           <AlertCircle size={24} className="mx-auto text-gray-400 mb-2" />
           <h2 className="text-lg font-medium text-gray-900">Auction not found</h2>
-          <p className="text-gray-500 mt-1">The auction you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-500 mt-1">The auction you&apos;re looking for doesn&apos;t exist or has been removed.</p>
           <button
             onClick={() => router.push('/dashboard/my-auctions')}
             className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
@@ -146,7 +146,7 @@ export default function AuctionDetail() {
       </div>
     );
   }
-  
+
   return (
     <div className="p-5">
       <div className="mb-5">
@@ -158,7 +158,7 @@ export default function AuctionDetail() {
           Back to My Auctions
         </button>
       </div>
-      
+
       <div className="bg-white border border-gray-100 rounded-md overflow-hidden">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="relative h-64 md:h-full">
@@ -176,11 +176,11 @@ export default function AuctionDetail() {
               {auction.timeLeft}
             </div>
           </div>
-          
+
           <div className="p-6">
             <div className="flex justify-between items-start">
               <h1 className="text-xl font-medium text-gray-900">{auction.name}</h1>
-              
+
               <div className="flex space-x-2">
                 <button
                   onClick={() => setIsEditModalOpen(true)}
@@ -196,11 +196,11 @@ export default function AuctionDetail() {
                 </button>
               </div>
             </div>
-            
+
             <div className="text-sm text-gray-500 mt-1">
               {auction.subcategory && <span>{auction.subcategory}</span>}
             </div>
-            
+
             <div className="mt-4 grid grid-cols-2 gap-4">
               <div>
                 <div className="text-xs text-gray-500">
@@ -210,7 +210,7 @@ export default function AuctionDetail() {
                   {auction.currentBid || auction.basePrice} SEK
                 </div>
               </div>
-              
+
               <div>
                 <div className="text-xs text-gray-500">Volume</div>
                 <div className="text-sm font-medium flex items-center">
@@ -218,7 +218,7 @@ export default function AuctionDetail() {
                   {auction.volume}
                 </div>
               </div>
-              
+
               <div>
                 <div className="text-xs text-gray-500">Status</div>
                 <div className="text-xs font-medium px-2 py-1 bg-green-50 text-green-700 rounded-full inline-flex items-center mt-1">
@@ -226,7 +226,7 @@ export default function AuctionDetail() {
                   Active
                 </div>
               </div>
-              
+
               <div>
                 <div className="text-xs text-gray-500">Created On</div>
                 <div className="text-sm font-medium flex items-center">
@@ -235,14 +235,14 @@ export default function AuctionDetail() {
                 </div>
               </div>
             </div>
-            
+
             <div className="mt-6">
               <h2 className="text-sm font-medium mb-2">Description</h2>
               <p className="text-sm text-gray-700">{auction.description}</p>
             </div>
           </div>
         </div>
-        
+
         <div className="border-t border-gray-100 p-6">
           <h2 className="text-lg font-medium mb-3">Bid History</h2>
           {auction.bidHistory && auction.bidHistory.length > 0 ? (
@@ -276,7 +276,7 @@ export default function AuctionDetail() {
           )}
         </div>
       </div>
-      
+
       {/* Edit Auction Modal */}
       {auction && (
         <EditAuctionModal
@@ -286,7 +286,7 @@ export default function AuctionDetail() {
           auction={auction}
         />
       )}
-      
+
       {/* Delete Confirmation Dialog */}
       {isDeleteConfirmOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -295,7 +295,7 @@ export default function AuctionDetail() {
             <p className="text-sm text-gray-500 mb-4">
               Are you sure you want to delete this auction? This action cannot be undone.
             </p>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
@@ -303,7 +303,7 @@ export default function AuctionDetail() {
               >
                 Cancel
               </button>
-              
+
               <button
                 onClick={handleDeleteAuction}
                 className="px-4 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors"

@@ -34,7 +34,7 @@ const initialBids = [
 ];
 
 export default function MyBids() {
-  const [bids, setBids] = useState(initialBids);
+  const [bids] = useState(initialBids);
   const [isLoading, setIsLoading] = useState(true);
 
   // Simulate loading bids from API
@@ -42,7 +42,7 @@ export default function MyBids() {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -61,7 +61,7 @@ export default function MyBids() {
   return (
     <div className="p-5">
       <h1 className="text-xl font-medium mb-5">My Bids</h1>
-      
+
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF8A00]"></div>
@@ -82,7 +82,7 @@ export default function MyBids() {
                     {bid.category}
                   </div>
                 </div>
-                
+
                 <div className="p-4 flex-grow">
                   <div className="flex justify-between items-start">
                     <div>
@@ -91,7 +91,7 @@ export default function MyBids() {
                         Bid placed on {formatDate(bid.bidDate)}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-2">
                       <div className="flex items-center text-xs">
                         <Clock size={12} className="mr-1 text-gray-500" />
@@ -99,18 +99,18 @@ export default function MyBids() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <div className="text-xs text-gray-500">Your Bid</div>
                       <div className="text-sm font-medium">{bid.bidAmount} SEK</div>
                     </div>
-                    
+
                     <div>
                       <div className="text-xs text-gray-500">Current Highest Bid</div>
                       <div className="text-sm font-medium">{bid.currentHighestBid} SEK</div>
                     </div>
-                    
+
                     <div>
                       <div className="text-xs text-gray-500">Status</div>
                       {bid.isHighestBidder ? (
@@ -126,7 +126,7 @@ export default function MyBids() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="mt-4 flex justify-end">
                     {!bid.isHighestBidder && (
                       <Link
@@ -148,7 +148,7 @@ export default function MyBids() {
           <div className="flex flex-col items-center">
             <AlertCircle size={24} className="text-gray-400 mb-2" />
             <h3 className="text-base font-medium text-gray-900">No bids yet</h3>
-            <p className="text-gray-500 text-sm mt-1">You haven't placed any bids on auctions yet.</p>
+            <p className="text-gray-500 text-sm mt-1">You haven&apos;t placed any bids on auctions yet.</p>
             <Link
               href="/dashboard/auctions"
               className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
