@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Package, Clock, ArrowUpRight, Filter, Search, Plus } from 'lucide-react';
 import Image from 'next/image';
+import { toast } from 'sonner';
 import AddAuctionModal, { AuctionFormData } from '@/components/auctions/AddAuctionModal';
+import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
 
 // Mock data for auctions
 const myAuctions = [
@@ -37,6 +39,8 @@ const myAuctions = [
 export default function MyAuctions() {
   const [auctions, setAuctions] = useState(myAuctions);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedAuction, setSelectedAuction] = useState<AuctionData | null>(null);
 
   const handleAddAuction = (auctionData: AuctionFormData) => {
     // In a real app, this would send the data to an API
@@ -61,6 +65,38 @@ export default function MyAuctions() {
 
     // Close the modal
     setIsModalOpen(false);
+
+    // Show success message
+    toast.success('Auction created successfully', {
+      description: 'Your new auction has been listed.',
+      duration: 3000,
+    });
+  };
+
+  // Handle opening the edit modal
+  const handleEditClick = (auction: AuctionData) => {
+    setSelectedAuction(auction);
+    setIsEditModalOpen(true);
+  };
+
+  // Handle edit auction submission
+  const handleEditAuction = (updatedAuction: AuctionData) => {
+    // In a real app, you would send the updated data to an API
+    // For now, we'll just update our local state
+    const updatedAuctions = auctions.map(auction =>
+      auction.id === updatedAuction.id ? updatedAuction : auction
+    );
+
+    setAuctions(updatedAuctions);
+
+    // Close the modal
+    setIsEditModalOpen(false);
+
+    // Show success message
+    toast.success('Auction updated successfully', {
+      description: 'Your changes have been saved.',
+      duration: 3000,
+    });
   };
 
   return (
@@ -143,7 +179,10 @@ export default function MyAuctions() {
                   </div>
 
                   <div className="mt-2 md:mt-0 flex space-x-2">
-                    <button className="px-3 py-1.5 border border-gray-100 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button
+                      onClick={() => handleEditClick(auction)}
+                      className="px-3 py-1.5 border border-gray-100 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
                       Edit
                     </button>
                     <Link
@@ -174,6 +213,16 @@ export default function MyAuctions() {
           </div>
         )}
       </div>
+
+      {/* Edit Auction Modal */}
+      {selectedAuction && (
+        <EditAuctionModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          onSubmit={handleEditAuction}
+          auction={selectedAuction}
+        />
+      )}
     </div>
   );
 }
