@@ -20,7 +20,7 @@ export interface AuctionFormData {
   pricePerPartition: string;
   volume: string;
   unit: string;
-  sellingType: 'auction' | 'fixed' | 'both';
+  sellingType: 'partition' | 'whole' | 'both';
   countryOfOrigin: string;
   endDate: string;
   endTime: string;
@@ -98,22 +98,28 @@ const categoryOptions = {
 // Get just the main categories for the dropdown
 const categories = Object.keys(categoryOptions);
 
+// Unit choices from backend
 const units = [
-  'kg',
-  'ton',
-  'liter',
-  'm²',
-  'm³',
-  'piece'
+  { value: 'kg', label: 'Kilogram' },
+  { value: 'g', label: 'Gram' },
+  { value: 'lb', label: 'Pound' },
+  { value: 'ton', label: 'Ton' }
+];
+
+// Selling type choices from backend
+const sellingTypes = [
+  { value: 'partition', label: 'Selling in Partition' },
+  { value: 'whole', label: 'Selling as Whole' },
+  { value: 'both', label: 'Selling as Whole and Partition' }
 ];
 
 const countries = [
   'Sweden',
-  'Norway',
-  'Denmark',
-  'Finland',
-  'Iceland',
-  'Other'
+  // 'Norway',
+  // 'Denmark',
+  // 'Finland',
+  // 'Iceland',
+  // 'Other'
 ];
 
 export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctionModalProps) {
@@ -126,7 +132,7 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
     pricePerPartition: '',
     volume: '',
     unit: 'kg',
-    sellingType: 'both',
+    sellingType: 'both', // Default to "selling as whole and partition"
     countryOfOrigin: '',
     endDate: '',
     endTime: '',
@@ -381,7 +387,7 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                   Base Price (SEK)
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   id="basePrice"
                   name="basePrice"
                   value={formData.basePrice}
@@ -396,7 +402,7 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                   Price Per Partition (SEK)
                 </label>
                 <input
-                  type="text"
+                  type="number"
                   id="pricePerPartition"
                   name="pricePerPartition"
                   value={formData.pricePerPartition}
@@ -415,7 +421,7 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                     Volume
                   </label>
                   <input
-                    type="text"
+                    type="number"
                     id="volume"
                     name="volume"
                     value={formData.volume}
@@ -438,7 +444,7 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                     required
                   >
                     {units.map(unit => (
-                      <option key={unit} value={unit}>{unit}</option>
+                      <option key={unit.value} value={unit.value}>{unit.label}</option>
                     ))}
                   </select>
                 </div>
@@ -456,9 +462,9 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                   className="w-full px-3 py-2 border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm"
                   required
                 >
-                  <option value="auction">Auction Only</option>
-                  <option value="fixed">Fixed Price Only</option>
-                  <option value="both">Both (Auction & Fixed Price)</option>
+                  {sellingTypes.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
                 </select>
               </div>
             </div>

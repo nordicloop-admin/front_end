@@ -66,6 +66,14 @@ export default function MyAuctions() {
 
       console.log('Creating auction with data:', apiData);
 
+      // Validate selling type is one of the allowed values
+      if (!['partition', 'whole', 'both'].includes(apiData.selling_type)) {
+        console.warn('Invalid selling type:', apiData.selling_type);
+        toast.error('Invalid selling type. Please select a valid option.');
+        toast.dismiss(loadingToast);
+        return;
+      }
+
       let response;
 
       // If there's an image, use the createAuctionWithImage function

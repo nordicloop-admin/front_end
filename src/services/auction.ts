@@ -33,7 +33,7 @@ export interface AuctionCreateData {
   price_per_partition: string;
   volume: string;
   unit: string;
-  selling_type: 'auction' | 'fixed' | 'both';
+  selling_type: 'partition' | 'whole' | 'both';
   country_of_origin: string;
   end_date: string;
   end_time: string;
