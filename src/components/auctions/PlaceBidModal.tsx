@@ -6,7 +6,7 @@ import { X, ArrowRight, AlertCircle } from 'lucide-react';
 interface PlaceBidModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (bidAmount: string) => void;
+  onSubmit: (bidAmount: string, bidVolume?: string) => void;
   auction: {
     id: string;
     name: string;
@@ -21,7 +21,9 @@ interface PlaceBidModalProps {
 
 export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction }: PlaceBidModalProps) {
   const [bidAmount, setBidAmount] = useState('');
+  const [bidVolume, setBidVolume] = useState('');
   const [error, setError] = useState('');
+  const [volumeError, setVolumeError] = useState('');
 
   // Format price string to number (remove commas)
   const formatPrice = useCallback((price: string): number => {
@@ -41,17 +43,31 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction }: Pl
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
-  // Set initial bid amount when modal opens
+  // Extract volume value from auction.volume (e.g., "100 kg" -> "100")
+  const extractVolumeValue = useCallback((volumeString: string): string => {
+    const match = volumeString.match(/^(\d+(\.\d+)?)/);
+    return match ? match[1] : '';
+  }, []);
+
+  // Set initial bid amount and volume when modal opens
   useEffect(() => {
     if (isOpen) {
       const minBid = calculateMinimumBid();
       setBidAmount(formatNumberToPrice(minBid));
+
+      // Extract volume from auction.volume (e.g., "100 kg" -> "100")
+      const volumeValue = extractVolumeValue(auction.volume);
+      setBidVolume(volumeValue);
+
       setError('');
+      setVolumeError('');
     }
-  }, [isOpen, auction, calculateMinimumBid]);
+  }, [isOpen, auction, calculateMinimumBid, extractVolumeValue]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    let hasError = false;
 
     // Validate bid amount
     const minBid = calculateMinimumBid();
@@ -59,10 +75,28 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction }: Pl
 
     if (currentBid < minBid) {
       setError(`Bid must be at least ${formatNumberToPrice(minBid)}`);
+      hasError = true;
+    }
+
+    // Validate bid volume
+    if (bidVolume) {
+      const volumeValue = parseFloat(bidVolume);
+      const maxVolume = parseFloat(extractVolumeValue(auction.volume));
+
+      if (isNaN(volumeValue) || volumeValue <= 0) {
+        setVolumeError('Volume must be a positive number');
+        hasError = true;
+      } else if (volumeValue > maxVolume) {
+        setVolumeError(`Volume cannot exceed ${maxVolume}`);
+        hasError = true;
+      }
+    }
+
+    if (hasError) {
       return;
     }
 
-    onSubmit(bidAmount);
+    onSubmit(bidAmount, bidVolume);
   };
 
   if (!isOpen) return null;
@@ -105,31 +139,60 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction }: Pl
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700 mb-1">
-                Your Bid (SEK)
-              </label>
-              <input
-                type="text"
-                id="bidAmount"
-                value={bidAmount}
-                onChange={(e) => {
-                  // Only allow numbers and commas
-                  const value = e.target.value.replace(/[^\d,]/g, '');
-                  setBidAmount(value);
-                  setError('');
-                }}
-                className={`w-full px-3 py-2 border ${error ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
-                required
-              />
-              {error && (
-                <div className="mt-1 text-xs text-red-500 flex items-center">
-                  <AlertCircle size={12} className="mr-1" />
-                  {error}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                  Your Bid (SEK)
+                </label>
+                <input
+                  type="text"
+                  id="bidAmount"
+                  value={bidAmount}
+                  onChange={(e) => {
+                    // Only allow numbers and commas
+                    const value = e.target.value.replace(/[^\d,]/g, '');
+                    setBidAmount(value);
+                    setError('');
+                  }}
+                  className={`w-full px-3 py-2 border ${error ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
+                  required
+                />
+                {error && (
+                  <div className="mt-1 text-xs text-red-500 flex items-center">
+                    <AlertCircle size={12} className="mr-1" />
+                    {error}
+                  </div>
+                )}
+                <div className="mt-1 text-xs text-gray-500">
+                  Minimum bid: {minBid}
                 </div>
-              )}
-              <div className="mt-1 text-xs text-gray-500">
-                Minimum bid: {minBid}
+              </div>
+
+              <div>
+                <label htmlFor="bidVolume" className="block text-sm font-medium text-gray-700 mb-1">
+                  Volume (in {auction.volume.split(' ')[1] || 'units'})
+                </label>
+                <input
+                  type="text"
+                  id="bidVolume"
+                  value={bidVolume}
+                  onChange={(e) => {
+                    // Only allow numbers and decimal point
+                    const value = e.target.value.replace(/[^\d.]/g, '');
+                    setBidVolume(value);
+                    setVolumeError('');
+                  }}
+                  className={`w-full px-3 py-2 border ${volumeError ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
+                />
+                {volumeError && (
+                  <div className="mt-1 text-xs text-red-500 flex items-center">
+                    <AlertCircle size={12} className="mr-1" />
+                    {volumeError}
+                  </div>
+                )}
+                <div className="mt-1 text-xs text-gray-500">
+                  Maximum volume: {extractVolumeValue(auction.volume)} {auction.volume.split(' ')[1] || 'units'}
+                </div>
               </div>
             </div>
 

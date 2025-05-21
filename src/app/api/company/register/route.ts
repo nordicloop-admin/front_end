@@ -32,12 +32,22 @@ export async function POST(request: Request) {
 
     // Prepare company registration data
     const companyData: CompanyRegistration = {
-      companyName: data.companyName,
-      vatNumber: data.vatNumber,
+      // Required fields for the backend API
+      official_name: data.companyName,
+      vat_number: data.vatNumber,
       email: data.email,
       website: data.website,
       country: data.country,
       sector: data.sector,
+      primary_first_name: data.contactFirstName,
+      primary_last_name: data.contactLastName,
+      primary_email: data.contactEmail,
+      primary_position: data.contactPosition,
+      status: 'pending',
+
+      // Legacy fields for backward compatibility
+      companyName: data.companyName,
+      vatNumber: data.vatNumber,
       contactFirstName: data.contactFirstName,
       contactLastName: data.contactLastName,
       contactEmail: data.contactEmail,
@@ -48,6 +58,13 @@ export async function POST(request: Request) {
 
     // Add second contact person data if provided
     if (data.contact2FirstName && data.contact2LastName) {
+      // Backend API fields
+      companyData.secondary_first_name = data.contact2FirstName;
+      companyData.secondary_last_name = data.contact2LastName;
+      companyData.secondary_email = data.contact2Email;
+      companyData.secondary_position = data.contact2Position;
+
+      // Legacy fields
       companyData.contact2FirstName = data.contact2FirstName;
       companyData.contact2LastName = data.contact2LastName;
       companyData.contact2Email = data.contact2Email;
