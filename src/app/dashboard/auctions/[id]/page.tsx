@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { ArrowLeft, Clock, Building, MapPin, Package, ArrowUpRight, AlertCircle } from 'lucide-react';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 import useBidding from '@/hooks/useBidding';
+import { getAuctionById } from '@/services/auction';
+import { getAuctionBids } from '@/services/bid';
 
 // Mock data for marketplace auctions
 const marketplaceAuctions = [
@@ -129,21 +131,108 @@ export default function AuctionDetail() {
     });
   };
 
+  // Calculate time left for an auction
+  const calculateTimeLeft = (endDate: string, endTime: string) => {
+    const now = new Date();
+    const end = new Date(`${endDate}T${endTime}`);
+
+    if (end <= now) {
+      return 'Ended';
+    }
+
+    const diffMs = end.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    return `${diffDays}d ${diffHours}h`;
+  };
+
   // Fetch auction data
   useEffect(() => {
     if (params.id) {
-      // In a real app, you would fetch from API
-      // For demo, we'll use the mock data
-      const foundAuction = marketplaceAuctions.find(a => a.id === params.id);
+      setIsLoading(true);
 
-      if (foundAuction) {
-        setAuction(foundAuction);
-      } else {
-        // Auction not found, redirect to auctions list
-        router.push('/dashboard/auctions');
-      }
+      // Fetch auction data from API
+      getAuctionById(params.id)
+        .then(response => {
+          if (response.error || !response.data) {
+            console.error('Error fetching auction:', response.error);
 
-      setIsLoading(false);
+            // Fallback to mock data if API fails
+            const foundAuction = marketplaceAuctions.find(a => a.id === params.id);
+
+            if (foundAuction) {
+              setAuction(foundAuction);
+            } else {
+              // Auction not found, redirect to auctions list
+              router.push('/dashboard/auctions');
+            }
+          } else {
+            // Format API data to match the expected format
+            const apiAuction = response.data;
+
+            const formattedAuction = {
+              id: apiAuction.id.toString(),
+              name: apiAuction.item_name,
+              category: apiAuction.category || 'Unknown',
+              basePrice: apiAuction.base_price,
+              highestBid: null, // Will be updated if we fetch bids
+              timeLeft: calculateTimeLeft(apiAuction.end_date, apiAuction.end_time),
+              volume: `${apiAuction.volume} ${apiAuction.unit}`,
+              seller: apiAuction.seller || 'Unknown Seller',
+              countryOfOrigin: apiAuction.country_of_origin,
+              image: apiAuction.item_image || '/images/marketplace/categories/plastics.jpg',
+              description: apiAuction.description,
+              bidHistory: [], // Will be populated if we fetch bids
+              specifications: [
+                { name: 'Material Type', value: apiAuction.category || 'Unknown' },
+                { name: 'Quantity', value: `${apiAuction.volume} ${apiAuction.unit}` },
+                { name: 'Country of Origin', value: apiAuction.country_of_origin }
+              ]
+            };
+
+            setAuction(formattedAuction);
+
+            // Fetch bids for this auction
+            getAuctionBids(apiAuction.id)
+              .then(bidsResponse => {
+                if (!bidsResponse.error && bidsResponse.data && bidsResponse.data.length > 0) {
+                  // Format the bids
+                  const formattedBids = bidsResponse.data.map(bid => ({
+                    bidder: bid.user || 'Anonymous',
+                    amount: bid.amount,
+                    date: bid.timestamp
+                  }));
+
+                  // Update the auction with bid history and highest bid
+                  setAuction(prevAuction => ({
+                    ...prevAuction,
+                    bidHistory: formattedBids,
+                    highestBid: formattedBids[0].amount
+                  }));
+                }
+              })
+              .catch(error => {
+                console.error('Error fetching bids:', error);
+              });
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching auction:', error);
+
+          // Fallback to mock data if API fails
+          const foundAuction = marketplaceAuctions.find(a => a.id === params.id);
+
+          if (foundAuction) {
+            setAuction(foundAuction);
+          } else {
+            // Auction not found, redirect to auctions list
+            router.push('/dashboard/auctions');
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
   }, [params.id, router]);
 
@@ -305,6 +394,7 @@ export default function AuctionDetail() {
           onClose={closeBidModal}
           onSubmit={submitBid}
           auction={selectedAuction}
+          initialBidAmount={selectedAuction.originalBidAmount}
         />
       )}
     </div>
