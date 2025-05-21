@@ -16,8 +16,10 @@ export interface AuctionFormData {
   subcategory: string;
   description: string;
   basePrice: string;
+  pricePerPartition: string;
   volume: string;
   unit: string;
+  sellingType: 'auction' | 'fixed' | 'both';
   countryOfOrigin: string;
   endDate: string;
   endTime: string;
@@ -120,8 +122,10 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
     subcategory: '',
     description: '',
     basePrice: '',
+    pricePerPartition: '',
     volume: '',
     unit: 'kg',
+    sellingType: 'both',
     countryOfOrigin: '',
     endDate: '',
     endTime: '',
@@ -279,6 +283,24 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                 />
               </div>
 
+              <div>
+                <label htmlFor="pricePerPartition" className="block text-sm font-medium text-gray-700 mb-1">
+                  Price Per Partition (SEK)
+                </label>
+                <input
+                  type="text"
+                  id="pricePerPartition"
+                  name="pricePerPartition"
+                  value={formData.pricePerPartition}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Volume and Unit */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex space-x-2">
                 <div className="flex-1">
                   <label htmlFor="volume" className="block text-sm font-medium text-gray-700 mb-1">
@@ -312,6 +334,24 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="sellingType" className="block text-sm font-medium text-gray-700 mb-1">
+                  Selling Type
+                </label>
+                <select
+                  id="sellingType"
+                  name="sellingType"
+                  value={formData.sellingType}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm"
+                  required
+                >
+                  <option value="auction">Auction Only</option>
+                  <option value="fixed">Fixed Price Only</option>
+                  <option value="both">Both (Auction & Fixed Price)</option>
+                </select>
               </div>
             </div>
 
