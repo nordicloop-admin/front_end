@@ -163,13 +163,13 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
           const response = await getCategories();
 
           if (response.error) {
-            console.error('Error fetching categories:', response.error);
+            // Error handling for category fetch failures
             setError(response.error);
           } else if (response.data) {
-            console.log('Categories fetched successfully:', response.data);
+            // Successfully fetched categories
             setApiCategories(response.data);
           } else {
-            console.warn('No categories data returned from API');
+            // No categories data available
             setError('No categories found');
           }
         } catch (err) {
@@ -185,25 +185,22 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
 
   // Update subcategories when category changes
   useEffect(() => {
-    console.log('Category changed or API categories updated:', {
-      selectedCategory: formData.category,
-      apiCategoriesCount: apiCategories?.length || 0
-    });
+    // Category selection or API categories have been updated
 
     if (formData.category && apiCategories && apiCategories.length > 0) {
       const selectedCategory = apiCategories.find(cat => cat.name === formData.category);
-      console.log('Selected category from API:', selectedCategory);
+      // Found matching category from API
 
       if (selectedCategory && selectedCategory.subcategories) {
-        console.log('Setting subcategories:', selectedCategory.subcategories);
+        // Setting subcategories from selected category
         setApiSubcategories(selectedCategory.subcategories);
       } else {
         // If category not found in API data, reset subcategories
-        console.log('Category not found in API data or has no subcategories, resetting');
+        // Category not found or has no subcategories, resetting
         setApiSubcategories([]);
       }
     } else {
-      console.log('No category selected or no API categories available, resetting subcategories');
+      // No category selected or API data unavailable, resetting subcategories
       setApiSubcategories([]);
     }
   }, [formData.category, apiCategories]);
@@ -291,7 +288,7 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                       onChange={(e) => {
                         // Reset subcategory when category changes
                         const newCategory = e.target.value;
-                        
+
 
                         setFormData({
                           ...formData,
@@ -299,14 +296,7 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                           subcategory: ''
                         });
 
-                        // Log available subcategories for debugging
-                        if (newCategory && apiCategories && apiCategories.length > 0) {
-                          const selectedCat = apiCategories.find(cat => cat.name === newCategory);
-                          console.log('Selected category object:', selectedCat);
-                          if (selectedCat) {
-                            console.log('Available subcategories:', selectedCat.subcategories);
-                          }
-                        }
+                        // Category changed, subcategories will be updated in the useEffect
                       }}
                       className="w-full px-3 py-2 border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm"
                       required

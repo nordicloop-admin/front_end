@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { Search, Filter, Clock, ArrowUpRight, AlertCircle, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
@@ -91,7 +90,7 @@ export default function Auctions() {
         const response = await getAuctions();
 
         if (response.error) {
-          console.error('Error fetching auctions:', response.error, 'Status:', response.status);
+          // Error handling for auction fetch failures
 
           // Check if it's an authentication error
           if (response.status === 401) {
@@ -100,14 +99,14 @@ export default function Auctions() {
             setError(response.error);
           }
         } else if (response.data) {
-          console.log('Auctions fetched successfully:', response.data);
+          // Successfully fetched auctions
           setApiAuctions(response.data);
         } else {
-          console.warn('No auctions data returned from API');
+          // No auction data available
           setError('No auctions found');
         }
       } catch (err) {
-        console.error('Error in fetchAuctions:', err);
+        // Handle unexpected errors
         setError(err instanceof Error ? err.message : 'Failed to fetch auctions');
       } finally {
         setIsLoading(false);

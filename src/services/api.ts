@@ -68,7 +68,7 @@ export async function apiGet<T>(
       data = await response.json();
     } else {
       const text = await response.text();
-      console.log(`Non-JSON response from ${url}:`, text.substring(0, 100));
+      // Non-JSON response handling (removed console.log for production)
 
       try {
         // Try to parse it anyway in case the content-type header is wrong
@@ -101,7 +101,7 @@ export async function apiGet<T>(
       status: response.status,
     };
   } catch (error) {
-    console.error('API GET error:', error);
+    // Error handling (removed console.error for production)
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred',

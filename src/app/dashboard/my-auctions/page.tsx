@@ -64,11 +64,11 @@ export default function MyAuctions() {
         end_time: auctionData.endTime
       };
 
-      console.log('Creating auction with data:', apiData);
+      // Preparing auction data for submission
 
       // Validate selling type is one of the allowed values
       if (!['partition', 'whole', 'both'].includes(apiData.selling_type)) {
-        console.warn('Invalid selling type:', apiData.selling_type);
+        // Invalid selling type detected
         toast.error('Invalid selling type. Please select a valid option.');
         toast.dismiss(loadingToast);
         return;

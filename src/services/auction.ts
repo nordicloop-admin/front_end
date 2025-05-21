@@ -1,7 +1,7 @@
 /**
  * Auction service for handling auction creation and management
  */
-import { apiPost, apiGet, apiPut, apiDelete } from './api';
+import { apiPost, apiGet } from './api';
 import { getAccessToken } from './auth';
 
 /**

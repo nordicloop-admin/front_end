@@ -78,7 +78,7 @@ export default function useBidding(): UseBiddingReturn {
         bidData.volume = parseFloat(bidVolume);
       }
 
-      console.log('Submitting bid:', bidData, 'Auth token exists:', !!token);
+      // Removed console.log for production build
 
       // Make API call to submit the bid
       const response = await createBid(bidData);
