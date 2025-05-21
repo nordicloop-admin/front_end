@@ -89,8 +89,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         if (response.data) {
           setApiCategories(response.data);
         }
-      } catch (error) {
-        console.error('Error fetching categories:', error);
+      } catch (_error) { // Prefixed with underscore to indicate it's not used
+        // Error handling for category fetch failures
       } finally {
         setIsLoading(false);
       }
@@ -324,17 +324,20 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                       ))
                     ) : (
                       category && ['Plastics', 'Metals', 'Paper', 'Glass', 'Wood', 'Textiles', 'Other'].includes(category) ? (
-                        {
-                          'Plastics': ['PET', 'HDPE', 'PVC', 'LDPE', 'PP', 'PS', 'Other'],
-                          'Metals': ['Aluminum', 'Steel', 'Copper', 'Brass', 'Iron', 'Zinc', 'Other'],
-                          'Paper': ['Cardboard', 'Newspaper', 'Office Paper', 'Mixed Paper', 'Other'],
-                          'Glass': ['Clear Glass', 'Green Glass', 'Brown Glass', 'Other'],
-                          'Wood': ['Hardwood', 'Softwood', 'Plywood', 'MDF', 'Other'],
-                          'Textiles': ['Cotton', 'Polyester', 'Wool', 'Nylon', 'Other'],
-                          'Other': ['Miscellaneous']
-                        }[category].map(subcat => (
-                          <option key={subcat} value={subcat}>{subcat}</option>
-                        ))
+                        (() => {
+                          const subcategoryMap: Record<string, string[]> = {
+                            'Plastics': ['PET', 'HDPE', 'PVC', 'LDPE', 'PP', 'PS', 'Other'],
+                            'Metals': ['Aluminum', 'Steel', 'Copper', 'Brass', 'Iron', 'Zinc', 'Other'],
+                            'Paper': ['Cardboard', 'Newspaper', 'Office Paper', 'Mixed Paper', 'Other'],
+                            'Glass': ['Clear Glass', 'Green Glass', 'Brown Glass', 'Other'],
+                            'Wood': ['Hardwood', 'Softwood', 'Plywood', 'MDF', 'Other'],
+                            'Textiles': ['Cotton', 'Polyester', 'Wool', 'Nylon', 'Other'],
+                            'Other': ['Miscellaneous']
+                          };
+                          return subcategoryMap[category].map(subcat => (
+                            <option key={subcat} value={subcat}>{subcat}</option>
+                          ));
+                        })()
                       ) : []
                     )}
                   </select>

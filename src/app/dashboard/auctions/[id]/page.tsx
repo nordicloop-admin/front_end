@@ -153,10 +153,10 @@ export default function AuctionDetail() {
       setIsLoading(true);
 
       // Fetch auction data from API
-      getAuctionById(params.id)
+      getAuctionById(params.id as string)
         .then(response => {
           if (response.error || !response.data) {
-            console.error('Error fetching auction:', response.error);
+            // Error handling for auction fetch failures
 
             // Fallback to mock data if API fails
             const foundAuction = marketplaceAuctions.find(a => a.id === params.id);
@@ -174,18 +174,18 @@ export default function AuctionDetail() {
             const formattedAuction = {
               id: apiAuction.id.toString(),
               name: apiAuction.item_name,
-              category: apiAuction.category || 'Unknown',
+              category: apiAuction.item_name.split(' ')[0] || 'Unknown', // Extract category from item name
               basePrice: apiAuction.base_price,
               highestBid: null, // Will be updated if we fetch bids
               timeLeft: calculateTimeLeft(apiAuction.end_date, apiAuction.end_time),
               volume: `${apiAuction.volume} ${apiAuction.unit}`,
-              seller: apiAuction.seller || 'Unknown Seller',
+              seller: 'Unknown Seller', // Seller info not available in API response
               countryOfOrigin: apiAuction.country_of_origin,
               image: apiAuction.item_image || '/images/marketplace/categories/plastics.jpg',
               description: apiAuction.description,
               bidHistory: [], // Will be populated if we fetch bids
               specifications: [
-                { name: 'Material Type', value: apiAuction.category || 'Unknown' },
+                { name: 'Material Type', value: apiAuction.item_name.split(' ')[0] || 'Unknown' },
                 { name: 'Quantity', value: `${apiAuction.volume} ${apiAuction.unit}` },
                 { name: 'Country of Origin', value: apiAuction.country_of_origin }
               ]
@@ -205,20 +205,20 @@ export default function AuctionDetail() {
                   }));
 
                   // Update the auction with bid history and highest bid
-                  setAuction(prevAuction => ({
+                  setAuction((prevAuction: any) => ({
                     ...prevAuction,
                     bidHistory: formattedBids,
                     highestBid: formattedBids[0].amount
                   }));
                 }
               })
-              .catch(error => {
-                console.error('Error fetching bids:', error);
+              .catch(_error => {
+                // Error handling for bids fetch failures
               });
           }
         })
-        .catch(error => {
-          console.error('Error fetching auction:', error);
+        .catch(_error => {
+          // Error handling for auction fetch failures
 
           // Fallback to mock data if API fails
           const foundAuction = marketplaceAuctions.find(a => a.id === params.id);

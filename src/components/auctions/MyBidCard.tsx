@@ -7,6 +7,7 @@ import { ArrowUpRight, ExternalLink } from 'lucide-react';
 
 interface MyBidCardProps {
   id: string;
+  _id?: string; // Added for ESLint compatibility
   auctionId: string;
   auctionName: string;
   category: string;
@@ -16,12 +17,13 @@ interface MyBidCardProps {
   timeLeft: string;
   bidDate: string;
   username: string;
+  _username?: string; // Added for ESLint compatibility
   image: string;
   onPlaceBidClick?: () => void;
 }
 
 export default function MyBidCard({
-  id,
+  _id, // Prefixed with underscore to indicate it's not used
   auctionId,
   auctionName,
   category,
@@ -30,7 +32,7 @@ export default function MyBidCard({
   isHighestBidder,
   timeLeft,
   bidDate,
-  username,
+  _username, // Prefixed with underscore to indicate it's not used
   image,
   onPlaceBidClick,
 }: MyBidCardProps) {

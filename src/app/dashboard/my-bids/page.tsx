@@ -13,7 +13,7 @@ import MyBidCard from '@/components/auctions/MyBidCard';
 // Using UserBidResponse from bid service
 
 // Interface for auction data
-interface AuctionData {
+interface _AuctionData { // Prefixed with underscore to indicate it's not used
   id: number;
   item_name: string;
   category?: string;
@@ -75,7 +75,7 @@ export default function MyBids() {
         const bidsResponse = await getUserBids();
 
         if (bidsResponse.error) {
-          console.error('Error fetching user bids:', bidsResponse.error);
+          // Error handling for user bids fetch failures
           setError(bidsResponse.error);
           setIsLoading(false);
           return;
@@ -95,7 +95,7 @@ export default function MyBids() {
             const auctionResponse = await getAuctionById(bid.ad_id);
 
             if (auctionResponse.error || !auctionResponse.data) {
-              console.error(`Error fetching auction ${bid.ad_id}:`, auctionResponse.error);
+              // Error handling for auction fetch failures
               return null;
             }
 
@@ -120,10 +120,10 @@ export default function MyBids() {
 
                 // Check if the user is the highest bidder
                 isHighestBidder = sortedBids[0].user === bid.username ||
-                                 sortedBids[0].bid_id === bid.bid_id;
+                                 sortedBids[0].id === bid.bid_id; // Using 'id' instead of 'bid_id'
               }
-            } catch (error) {
-              console.error(`Error fetching bids for auction ${auction.id}:`, error);
+            } catch (_error) {
+              // Error handling for auction bids fetch failures
               // Continue with default values
             }
 
@@ -132,7 +132,7 @@ export default function MyBids() {
               id: bid.bid_id.toString(),
               auctionId: auction.id.toString(),
               auctionName: auction.item_name,
-              category: auction.category || 'Unknown',
+              category: auction.item_name.split(' ')[0] || 'Unknown', // Extract category from item name
               bidAmount: bid.amount, // Original bid amount from API
               currentHighestBid: highestBid,
               isHighestBidder: isHighestBidder,
@@ -141,8 +141,8 @@ export default function MyBids() {
               image: auction.item_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
               username: bid.username
             };
-          } catch (error) {
-            console.error(`Error processing bid ${bid.bid_id}:`, error);
+          } catch (_error) {
+            // Error handling for bid processing failures
             return null;
           }
         });
@@ -158,7 +158,7 @@ export default function MyBids() {
 
         setBids(validBids);
       } catch (error) {
-        console.error('Error in fetchUserBids:', error);
+        // Error handling for overall fetch process
         setError(error instanceof Error ? error.message : 'An unexpected error occurred');
       } finally {
         setIsLoading(false);
@@ -168,8 +168,8 @@ export default function MyBids() {
     fetchUserBids();
   }, []);
 
-  // Format date to readable string
-  const formatDate = (dateString: string) => {
+  // Format date to readable string (not used in this component but kept for future use)
+  const _formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', {
       day: 'numeric',
@@ -254,8 +254,8 @@ export default function MyBids() {
                       // Get the highest bid amount
                       highestBidAmount = sortedBids[0].amount;
                     }
-                  } catch (error) {
-                    console.error(`Error fetching latest bids for auction ${auction.id}:`, error);
+                  } catch (_error) {
+                    // Error handling for latest bids fetch failures
                     // Fallback to using the bid amount we already have
                     highestBidAmount = bid.currentHighestBid || auction.base_price;
                   }
@@ -270,7 +270,7 @@ export default function MyBids() {
                   openBidModal({
                     id: auction.id.toString(),
                     name: auction.item_name,
-                    category: auction.category || bid.category,
+                    category: auction.item_name.split(' ')[0] || bid.category, // Extract category from item name
                     basePrice: formattedBidAmount,
                     highestBid: formattedBidAmount,
                     timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),

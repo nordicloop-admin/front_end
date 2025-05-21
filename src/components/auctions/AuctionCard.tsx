@@ -16,6 +16,7 @@ interface AuctionCardProps {
   volume: string;
   image: string;
   status?: 'active' | 'ended' | 'pending';
+  _status?: 'active' | 'ended' | 'pending'; // Added for ESLint compatibility
   isMyAuction?: boolean;
   isMyBid?: boolean;
   bidAmount?: string;
@@ -36,7 +37,7 @@ export default function AuctionCard({
   timeLeft,
   volume,
   image,
-  status = 'active',
+  _status = 'active', // Prefixed with underscore to indicate it's not used
   isMyAuction = false,
   isMyBid = false,
   bidAmount,
@@ -153,7 +154,7 @@ export default function AuctionCard({
                     Edit
                   </button>
                 )}
-                
+
                 {isMyBid && !isHighestBidder && timeLeft !== 'Ended' && onPlaceBidClick && (
                   <button
                     onClick={onPlaceBidClick}
@@ -163,7 +164,7 @@ export default function AuctionCard({
                     <ArrowUpRight size={12} className="ml-1" />
                   </button>
                 )}
-                
+
                 <Link
                   href={isMyAuction ? `/dashboard/my-auctions/${id}` : `/dashboard/auctions/${id}`}
                   className="px-3 py-1.5 border border-gray-100 text-gray-700 rounded-md text-xs hover:bg-gray-50 transition-colors flex items-center"

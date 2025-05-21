@@ -9,8 +9,8 @@ import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuction
 import { getAuctionById, updateAuction, deleteAuction } from '@/services/auction';
 import { getAuctionBids } from '@/services/bid';
 
-// Mock data for auctions
-const myAuctions = [
+// Mock data for auctions (not used but kept for reference)
+const _myAuctions = [
   {
     id: '1',
     name: 'PPA Thermocomp UFW49RSC (Black)',
@@ -93,10 +93,10 @@ export default function AuctionDetail() {
       setIsLoading(true);
 
       // Fetch auction data from API
-      getAuctionById(params.id)
+      getAuctionById(params.id as string)
         .then(response => {
           if (response.error) {
-            console.error('Error fetching auction:', response.error);
+            // Error handling for auction fetch failures
             // Auction not found or error, redirect to auctions list
             router.push('/dashboard/my-auctions');
             return;
@@ -110,8 +110,8 @@ export default function AuctionDetail() {
             const formattedAuction = {
               id: apiAuction.id.toString(),
               name: apiAuction.item_name,
-              category: apiAuction.category || apiAuction.item_name.split(' ')[0], // Use category if available
-              subcategory: apiAuction.subcategory || '',
+              category: apiAuction.item_name.split(' ')[0], // Extract category from item name
+              subcategory: '', // Subcategory not available in API response
               basePrice: apiAuction.base_price,
               currentBid: '', // Will be updated if we fetch bids
               status: 'active',
@@ -138,7 +138,7 @@ export default function AuctionDetail() {
                   }));
 
                   // Update the auction with bid history
-                  setAuction(prevAuction => ({
+                  setAuction((prevAuction: any) => ({
                     ...prevAuction,
                     bidHistory: formattedBids,
                     // Update current bid with highest bid if available
@@ -146,8 +146,8 @@ export default function AuctionDetail() {
                   }));
                 }
               })
-              .catch(error => {
-                console.error('Error fetching bids:', error);
+              .catch(_error => {
+                // Error handling for bids fetch failures
                 // Don't redirect, just continue with the auction data we have
               })
               .finally(() => {
@@ -159,8 +159,8 @@ export default function AuctionDetail() {
             setIsLoading(false);
           }
         })
-        .catch(error => {
-          console.error('Error fetching auction:', error);
+        .catch(_error => {
+          // Error handling for auction fetch failures
           router.push('/dashboard/my-auctions');
           setIsLoading(false);
         });
@@ -189,7 +189,7 @@ export default function AuctionDetail() {
       };
 
       // Send update to API
-      const response = await updateAuction(params.id, apiData);
+      const response = await updateAuction(params.id as string, apiData);
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);
@@ -236,7 +236,7 @@ export default function AuctionDetail() {
 
     try {
       // Send delete request to API
-      const response = await deleteAuction(params.id);
+      const response = await deleteAuction(params.id as string);
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);

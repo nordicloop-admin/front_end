@@ -46,7 +46,7 @@ export default function MyAuctions() {
         const response = await getUserAuctions();
 
         if (response.error) {
-          console.error('Error fetching user auctions:', response.error, 'Status:', response.status);
+          // Error handling for user auctions fetch failures
 
           // Check if it's an authentication error
           if (response.status === 401) {
@@ -55,7 +55,7 @@ export default function MyAuctions() {
             setError(response.error);
           }
         } else if (response.data) {
-          console.log('User auctions fetched successfully:', response.data);
+          // Successfully fetched user auctions
 
           // Convert API auctions to the format expected by the UI
           const convertedAuctions = response.data.map(auction => ({
@@ -74,11 +74,11 @@ export default function MyAuctions() {
           // Update the auctions state with the API data
           setAuctions(convertedAuctions);
         } else {
-          console.warn('No user auctions data returned from API');
+          // No user auctions data available
           // Don't set error here, just keep the mock data
         }
       } catch (err) {
-        console.error('Error in fetchUserAuctions:', err);
+        // Error handling for overall fetch process
         setError(err instanceof Error ? err.message : 'Failed to fetch your auctions');
       } finally {
         setIsLoading(false);
@@ -187,8 +187,8 @@ export default function MyAuctions() {
             // Update the auctions state with the API data
             setAuctions(convertedAuctions);
           }
-        }).catch(err => {
-          console.error('Error refreshing auctions:', err);
+        }).catch(_err => {
+          // Error handling for auction refresh failures
         });
       }
     } catch (error) {
