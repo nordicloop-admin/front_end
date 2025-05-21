@@ -64,6 +64,8 @@ export default function MyAuctions() {
         end_time: auctionData.endTime
       };
 
+      console.log('Creating auction with data:', apiData);
+
       let response;
 
       // If there's an image, use the createAuctionWithImage function

@@ -5,6 +5,23 @@ import { apiPost, apiGet, apiPut, apiDelete } from './api';
 import { getAccessToken } from './auth';
 
 /**
+ * Interface for category data
+ */
+export interface Category {
+  id: number;
+  name: string;
+  subcategories: Subcategory[];
+}
+
+/**
+ * Interface for subcategory data
+ */
+export interface Subcategory {
+  id: number;
+  name: string;
+}
+
+/**
  * Interface for auction creation data
  */
 export interface AuctionCreateData {
@@ -50,7 +67,7 @@ export async function createAuction(auctionData: AuctionCreateData) {
   try {
     // Create auction requires authentication
     const response = await apiPost<AuctionCreateResponse>('/ads/create/', auctionData, true);
-    
+
     return response;
   } catch (error) {
     return {
@@ -71,18 +88,18 @@ export async function createAuctionWithImage(auctionData: Omit<AuctionCreateData
   try {
     // For file uploads, we need to use FormData
     const formData = new FormData();
-    
+
     // Add all auction data to the form
     Object.entries(auctionData).forEach(([key, value]) => {
       formData.append(key, value);
     });
-    
+
     // Add the image file
     formData.append('item_image', image);
-    
+
     // Get the access token
     const token = getAccessToken();
-    
+
     if (!token) {
       return {
         data: null,
@@ -90,7 +107,7 @@ export async function createAuctionWithImage(auctionData: Omit<AuctionCreateData
         status: 401
       };
     }
-    
+
     // Make the request with FormData
     const response = await fetch(`https://nordic-loop-platform.onrender.com/api/ads/create/`, {
       method: 'POST',
@@ -99,9 +116,9 @@ export async function createAuctionWithImage(auctionData: Omit<AuctionCreateData
       },
       body: formData
     });
-    
+
     const data = await response.json();
-    
+
     return {
       data: response.ok ? data : null,
       error: response.ok ? null : data.message || data.error || data.detail || 'An error occurred',
@@ -111,6 +128,24 @@ export async function createAuctionWithImage(auctionData: Omit<AuctionCreateData
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred during auction creation',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Fetch all categories and subcategories
+ * @returns The API response with the categories
+ */
+export async function getCategories() {
+  try {
+    const response = await apiGet<Category[]>('/category/', false);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching categories',
       status: 500
     };
   }
