@@ -12,6 +12,7 @@ interface Auction {
   timeLeft: string;
   volume: string;
   countryOfOrigin: string;
+  originalBidAmount?: string; // Original bid amount for pre-filling the bid form
 }
 
 interface UseBiddingReturn {

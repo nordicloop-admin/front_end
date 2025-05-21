@@ -24,6 +24,19 @@ export interface BidCreateResponse {
 }
 
 /**
+ * Interface for user bid response
+ */
+export interface UserBidResponse {
+  bid_id: number;
+  user_id: number;
+  username: string;
+  ad_id: number;
+  amount: string;
+  timestamp: string;
+  volume?: string;
+}
+
+/**
  * Interface for bid error response
  */
 export interface BidErrorResponse {
@@ -39,7 +52,7 @@ export async function createBid(bidData: BidCreateData) {
   try {
     // Create bid requires authentication
     const response = await apiPost<BidCreateResponse | BidErrorResponse>('/bids/create/', bidData, true);
-    
+
     return response;
   } catch (error) {
     return {
@@ -59,7 +72,7 @@ export async function getAuctionBids(auctionId: number) {
   try {
     // Get bids requires authentication
     const response = await apiGet<BidCreateResponse[]>(`/bids/auction/${auctionId}/`, true);
-    
+
     return response;
   } catch (error) {
     return {
@@ -71,14 +84,14 @@ export async function getAuctionBids(auctionId: number) {
 }
 
 /**
- * Get all bids placed by the current user
+ * Get all bids for the current user
  * @returns The API response with the user's bids
  */
 export async function getUserBids() {
   try {
     // Get user bids requires authentication
-    const response = await apiGet<BidCreateResponse[]>('/bids/user/', true);
-    
+    const response = await apiGet<UserBidResponse[]>('/bids/user/', true);
+
     return response;
   } catch (error) {
     return {
@@ -88,3 +101,5 @@ export async function getUserBids() {
     };
   }
 }
+
+
