@@ -1,7 +1,7 @@
 /**
  * Auction service for handling auction creation and management
  */
-import { apiPost, apiGet } from './api';
+import { apiPost, apiGet, apiPut, apiDelete } from './api';
 import { getAccessToken } from './auth';
 
 /**
@@ -202,6 +202,85 @@ export async function getUserAuctions() {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while fetching your auctions',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Fetch a single auction by ID
+ * @param auctionId The ID of the auction to fetch
+ * @returns The API response with the auction details
+ */
+export async function getAuctionById(auctionId: string | number) {
+  try {
+    // This endpoint requires authentication
+    const response = await apiGet<AuctionItem>(`/ads/${auctionId}/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching auction details',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Interface for auction update data
+ */
+export interface AuctionUpdateData {
+  item_name?: string;
+  category?: string;
+  subcategory?: string;
+  description?: string;
+  base_price?: string;
+  price_per_partition?: string;
+  volume?: string;
+  unit?: string;
+  selling_type?: 'partition' | 'whole' | 'both';
+  country_of_origin?: string;
+  end_date?: string;
+  end_time?: string;
+}
+
+/**
+ * Update an existing auction
+ * @param auctionId The ID of the auction to update
+ * @param auctionData The updated auction data
+ * @returns The API response with the updated auction
+ */
+export async function updateAuction(auctionId: string | number, auctionData: AuctionUpdateData) {
+  try {
+    // Update auction requires authentication
+    const response = await apiPut<AuctionItem>(`/ads/${auctionId}/update/`, auctionData, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while updating the auction',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Delete an auction
+ * @param auctionId The ID of the auction to delete
+ * @returns The API response
+ */
+export async function deleteAuction(auctionId: string | number) {
+  try {
+    // Delete auction requires authentication
+    const response = await apiDelete<{ success: boolean }>(`/ads/${auctionId}/delete/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while deleting the auction',
       status: 500
     };
   }

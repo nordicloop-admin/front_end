@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { ArrowLeft, Clock, Package, User, Calendar, AlertCircle, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
+import { getAuctionById, updateAuction, deleteAuction } from '@/services/auction';
+import { getAuctionBids } from '@/services/bid';
 
 // Mock data for auctions
 const myAuctions = [
@@ -69,56 +71,203 @@ export default function AuctionDetail() {
     });
   };
 
+  // Calculate time left for an auction
+  const calculateTimeLeft = (endDate: string, endTime: string) => {
+    const now = new Date();
+    const end = new Date(`${endDate}T${endTime}`);
+
+    if (end <= now) {
+      return 'Ended';
+    }
+
+    const diffMs = end.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    return `${diffDays}d ${diffHours}h`;
+  };
+
   // Fetch auction data
   useEffect(() => {
     if (params.id) {
-      // In a real app, you would fetch from API
-      // For demo, we'll use the mock data
-      const foundAuction = myAuctions.find(a => a.id === params.id);
+      setIsLoading(true);
 
-      if (foundAuction) {
-        setAuction(foundAuction);
-      } else {
-        // Auction not found, redirect to auctions list
-        router.push('/dashboard/my-auctions');
-      }
+      // Fetch auction data from API
+      getAuctionById(params.id)
+        .then(response => {
+          if (response.error) {
+            console.error('Error fetching auction:', response.error);
+            // Auction not found or error, redirect to auctions list
+            router.push('/dashboard/my-auctions');
+            return;
+          }
 
-      setIsLoading(false);
+          if (response.data) {
+            // Convert API auction to the format expected by the UI
+            const apiAuction = response.data;
+
+            // Create a formatted auction object
+            const formattedAuction = {
+              id: apiAuction.id.toString(),
+              name: apiAuction.item_name,
+              category: apiAuction.category || apiAuction.item_name.split(' ')[0], // Use category if available
+              subcategory: apiAuction.subcategory || '',
+              basePrice: apiAuction.base_price,
+              currentBid: '', // Will be updated if we fetch bids
+              status: 'active',
+              timeLeft: calculateTimeLeft(apiAuction.end_date, apiAuction.end_time),
+              volume: `${apiAuction.volume} ${apiAuction.unit}`,
+              image: apiAuction.item_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
+              description: apiAuction.description,
+              createdAt: new Date().toISOString(), // API might not provide this
+              bidHistory: [] // Will be populated if we fetch bids
+            };
+
+            // Set the auction data
+            setAuction(formattedAuction);
+
+            // Now fetch the bid history
+            getAuctionBids(parseInt(params.id as string))
+              .then(bidsResponse => {
+                if (!bidsResponse.error && bidsResponse.data && bidsResponse.data.length > 0) {
+                  // Format the bids
+                  const formattedBids = bidsResponse.data.map(bid => ({
+                    bidder: bid.user || 'Anonymous',
+                    amount: bid.amount,
+                    date: bid.timestamp
+                  }));
+
+                  // Update the auction with bid history
+                  setAuction(prevAuction => ({
+                    ...prevAuction,
+                    bidHistory: formattedBids,
+                    // Update current bid with highest bid if available
+                    currentBid: formattedBids.length > 0 ? formattedBids[0].amount : prevAuction.currentBid
+                  }));
+                }
+              })
+              .catch(error => {
+                console.error('Error fetching bids:', error);
+                // Don't redirect, just continue with the auction data we have
+              })
+              .finally(() => {
+                setIsLoading(false);
+              });
+          } else {
+            // Auction not found, redirect to auctions list
+            router.push('/dashboard/my-auctions');
+            setIsLoading(false);
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching auction:', error);
+          router.push('/dashboard/my-auctions');
+          setIsLoading(false);
+        });
     }
   }, [params.id, router]);
 
   // Handle edit auction
-  const handleEditAuction = (updatedAuction: AuctionData) => {
-    // In a real app, you would send the updated data to an API
-    // For now, we'll just update our local state
-    setAuction({
-      ...auction,
-      ...updatedAuction
-    });
+  const handleEditAuction = async (updatedAuction: AuctionData) => {
+    // Show loading toast
+    const loadingToast = toast.loading('Updating auction...');
 
-    // Close the modal
-    setIsEditModalOpen(false);
+    try {
+      // Extract volume and unit from the volume string
+      const volumeParts = updatedAuction.volume.split(' ');
+      const volumeValue = volumeParts[0];
+      const volumeUnit = volumeParts[1];
 
-    // Show success message
-    toast.success('Auction updated successfully', {
-      description: 'Your changes have been saved.',
-      duration: 3000,
-    });
+      // Prepare data for API
+      const apiData = {
+        item_name: updatedAuction.name,
+        category: updatedAuction.category,
+        subcategory: updatedAuction.subcategory,
+        base_price: updatedAuction.basePrice.replace(/,/g, ''), // Remove commas
+        volume: volumeValue,
+        unit: volumeUnit
+      };
+
+      // Send update to API
+      const response = await updateAuction(params.id, apiData);
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to update auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Update local state
+      setAuction({
+        ...auction,
+        ...updatedAuction
+      });
+
+      // Close the modal
+      setIsEditModalOpen(false);
+
+      // Show success message
+      toast.success('Auction updated successfully', {
+        description: 'Your changes have been saved.',
+        duration: 3000,
+      });
+    } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to update auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
   };
 
   // Handle delete auction
-  const handleDeleteAuction = () => {
-    // In a real app, you would send a delete request to an API
-    // For now, we'll just redirect back to the auctions list
+  const handleDeleteAuction = async () => {
+    // Show loading toast
+    const loadingToast = toast.loading('Deleting auction...');
 
-    // Show success message
-    toast.success('Auction deleted successfully', {
-      description: 'The auction has been removed from your listings.',
-      duration: 3000,
-    });
+    try {
+      // Send delete request to API
+      const response = await deleteAuction(params.id);
 
-    // Redirect to auctions list
-    router.push('/dashboard/my-auctions');
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to delete auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Show success message
+      toast.success('Auction deleted successfully', {
+        description: 'The auction has been removed from your listings.',
+        duration: 3000,
+      });
+
+      // Redirect to auctions list
+      router.push('/dashboard/my-auctions');
+    } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to delete auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
   };
 
   if (isLoading) {
@@ -287,15 +436,14 @@ export default function AuctionDetail() {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Confirmation Modal */}
       {isDeleteConfirmOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-md max-w-md w-full p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">Delete Auction</h2>
-            <p className="text-sm text-gray-500 mb-4">
+            <h2 className="text-lg font-medium mb-4">Delete Auction</h2>
+            <p className="text-gray-700 mb-6">
               Are you sure you want to delete this auction? This action cannot be undone.
             </p>
-
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setIsDeleteConfirmOpen(false)}
@@ -303,7 +451,6 @@ export default function AuctionDetail() {
               >
                 Cancel
               </button>
-
               <button
                 onClick={handleDeleteAuction}
                 className="px-4 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors"
