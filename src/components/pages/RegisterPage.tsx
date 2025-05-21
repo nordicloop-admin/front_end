@@ -190,7 +190,7 @@ const RegisterPage = () => {
     setSuccessMessage('');
 
     try {
-      // Prepare the company registration data
+      // Prepare the company registration data with the new API format
       const companyRegistrationData: CompanyRegistration = {
         official_name: formData.companyName,
         vat_number: formData.vatNumber,
@@ -198,9 +198,13 @@ const RegisterPage = () => {
         website: formData.website || undefined,
         country: formData.country,
         sector: formData.sector,
-        contact_name: `${formData.contactFirstName} ${formData.contactLastName}`,
-        contact_position: formData.contactPosition,
-        contact_email: formData.contactEmail,
+
+        // Primary contact person
+        primary_first_name: formData.contactFirstName,
+        primary_last_name: formData.contactLastName,
+        primary_email: formData.contactEmail,
+        primary_position: formData.contactPosition,
+
         status: 'pending'
       };
 
@@ -212,9 +216,10 @@ const RegisterPage = () => {
         formData.contact2Position.trim();
 
       if (hasSecondaryContact) {
-        companyRegistrationData.contact2_name = `${formData.contact2FirstName} ${formData.contact2LastName}`;
-        companyRegistrationData.contact2_position = formData.contact2Position;
-        companyRegistrationData.contact2_email = formData.contact2Email;
+        companyRegistrationData.secondary_first_name = formData.contact2FirstName;
+        companyRegistrationData.secondary_last_name = formData.contact2LastName;
+        companyRegistrationData.secondary_email = formData.contact2Email;
+        companyRegistrationData.secondary_position = formData.contact2Position;
       }
 
       // Register the company
@@ -231,7 +236,7 @@ const RegisterPage = () => {
       // Set success message
       setSuccessMessage('Company registered successfully! Redirecting to signup page...');
 
-      // Generate a signup token
+      // Generate a signup token using the primary contact email
       const token = generateSignupToken(formData.contactEmail);
 
       // Wait a moment to show the success message
