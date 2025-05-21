@@ -7,7 +7,9 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import AddAuctionModal, { AuctionFormData } from '@/components/auctions/AddAuctionModal';
+import { createAuction, createAuctionWithImage } from '@/services/auction';
 import {
   Home,
   FileText,
@@ -56,14 +58,78 @@ export default function DashboardLayoutClient({
     setSidebarOpen(!sidebarOpen);
   };
 
-  const handleAddAuction = (_auctionData: AuctionFormData) => {
-    // In a real app, this would send the data to an API
-    // For now, we'll just close the modal and redirect to My Auctions
-    setIsModalOpen(false);
+  const handleAddAuction = async (auctionData: AuctionFormData) => {
+    // Show loading toast
+    const loadingToast = toast.loading('Creating auction...');
 
-    // If we're not already on the My Auctions page, redirect there
-    if (pathname !== '/dashboard/my-auctions') {
-      router.push('/dashboard/my-auctions');
+    try {
+      // Prepare the data for the API
+      const apiData = {
+        item_name: auctionData.name,
+        category: auctionData.category,
+        subcategory: auctionData.subcategory,
+        description: auctionData.description,
+        base_price: auctionData.basePrice,
+        price_per_partition: auctionData.pricePerPartition,
+        volume: auctionData.volume,
+        unit: auctionData.unit,
+        selling_type: auctionData.sellingType,
+        country_of_origin: auctionData.countryOfOrigin,
+        end_date: auctionData.endDate,
+        end_time: auctionData.endTime
+      };
+
+      // Validate selling type is one of the allowed values
+      if (!['partition', 'whole', 'both'].includes(apiData.selling_type)) {
+        // Invalid selling type detected
+        toast.dismiss(loadingToast);
+        toast.error('Invalid selling type. Please select a valid option.');
+        return;
+      }
+
+      let response;
+
+      // If there's an image, use the createAuctionWithImage function
+      if (auctionData.image) {
+        response = await createAuctionWithImage(apiData, auctionData.image);
+      } else {
+        response = await createAuction(apiData);
+      }
+
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to create auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Show success message
+      toast.success('Auction created successfully', {
+        description: 'Your new auction has been listed.',
+        duration: 3000,
+      });
+
+      // Close the modal
+      setIsModalOpen(false);
+
+      // If we're not already on the My Auctions page, redirect there
+      if (pathname !== '/dashboard/my-auctions') {
+        router.push('/dashboard/my-auctions');
+      }
+    } catch (error) {
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to create auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
     }
   };
 
