@@ -291,7 +291,7 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                       onChange={(e) => {
                         // Reset subcategory when category changes
                         const newCategory = e.target.value;
-                        console.log('Category selected:', newCategory);
+                        
 
                         setFormData({
                           ...formData,

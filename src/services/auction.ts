@@ -150,3 +150,59 @@ export async function getCategories() {
     };
   }
 }
+
+/**
+ * Interface for auction item data
+ */
+export interface AuctionItem {
+  id: number;
+  item_name: string;
+  description: string;
+  base_price: string;
+  price_per_partition: string;
+  volume: string;
+  unit: string;
+  selling_type: string;
+  country_of_origin: string;
+  end_date: string;
+  end_time: string;
+  item_image: string | null;
+}
+
+/**
+ * Fetch all auctions
+ * @returns The API response with the auctions
+ */
+export async function getAuctions() {
+  try {
+    // Always require authentication for the /ads/ endpoint
+    const response = await apiGet<AuctionItem[]>('/ads/', true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching auctions',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Fetch auctions created by the current user
+ * @returns The API response with the user's auctions
+ */
+export async function getUserAuctions() {
+  try {
+    // This endpoint requires authentication
+    const response = await apiGet<AuctionItem[]>('/ads/user/', true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching your auctions',
+      status: 500
+    };
+  }
+}

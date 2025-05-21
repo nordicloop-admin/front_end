@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
-// Link is not used in this file
-// import Link from 'next/link';
-import { Search, Filter, Clock, ArrowUpRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Search, Filter, Clock, ArrowUpRight, AlertCircle, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 import useBidding from '@/hooks/useBidding';
+import { getAuctions, AuctionItem } from '@/services/auction';
 
 // Mock data for marketplace auctions
 const marketplaceAuctions = [
@@ -76,15 +76,89 @@ export default function Auctions() {
   const [searchTerm, setSearchTerm] = useState('');
   const { selectedAuction, isModalOpen, openBidModal, closeBidModal, submitBid } = useBidding();
 
+  // State for API auctions
+  const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch auctions from API
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await getAuctions();
+
+        if (response.error) {
+          console.error('Error fetching auctions:', response.error, 'Status:', response.status);
+
+          // Check if it's an authentication error
+          if (response.status === 401) {
+            setError('Authentication required. Please log in to view auctions.');
+          } else {
+            setError(response.error);
+          }
+        } else if (response.data) {
+          console.log('Auctions fetched successfully:', response.data);
+          setApiAuctions(response.data);
+        } else {
+          console.warn('No auctions data returned from API');
+          setError('No auctions found');
+        }
+      } catch (err) {
+        console.error('Error in fetchAuctions:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch auctions');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAuctions();
+  }, []);
+
+  // Calculate time left for an auction
+  const calculateTimeLeft = (endDate: string, endTime: string) => {
+    const now = new Date();
+    const end = new Date(`${endDate}T${endTime}`);
+
+    if (end <= now) {
+      return 'Ended';
+    }
+
+    const diffMs = end.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    return `${diffDays}d ${diffHours}h`;
+  };
+
+  // Convert API auctions to the format expected by the UI
+  const convertedAuctions = apiAuctions.map(auction => ({
+    id: auction.id.toString(),
+    name: auction.item_name,
+    category: auction.item_name.split(' ')[0], // Temporary category extraction
+    basePrice: auction.base_price,
+    highestBid: null, // API doesn't provide highest bid yet
+    timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
+    volume: `${auction.volume} ${auction.unit}`,
+    seller: 'Unknown', // API doesn't provide seller info yet
+    countryOfOrigin: auction.country_of_origin,
+    image: auction.item_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+  }));
+
+  // Use API auctions if available, otherwise fall back to mock data
+  const auctionsToDisplay = apiAuctions.length > 0 ? convertedAuctions : marketplaceAuctions;
+
   // Filter auctions based on search term and category
-  const filteredAuctions = marketplaceAuctions.filter(auction => {
+  const filteredAuctions = auctionsToDisplay.filter(auction => {
     const matchesSearch = searchTerm === '' ||
       auction.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      auction.seller.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      auction.category.toLowerCase().includes(searchTerm.toLowerCase());
+      (auction.seller && auction.seller.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (auction.category && auction.category.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesCategory = selectedCategory === 'All materials' ||
-      auction.category === selectedCategory;
+      (auction.category && auction.category === selectedCategory);
 
     return matchesSearch && matchesCategory;
   });
@@ -143,58 +217,85 @@ export default function Auctions() {
         ))}
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="bg-white border border-gray-100 rounded-md p-6 flex justify-center items-center">
+          <Loader2 size={24} className="animate-spin text-[#FF8A00] mr-2" />
+          <p className="text-gray-700">Loading auctions...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {!isLoading && error && (
+        <div className="bg-white border border-red-100 rounded-md p-6 text-center">
+          <div className="flex justify-center mb-2">
+            <AlertCircle size={24} className="text-red-500" />
+          </div>
+          <p className="text-red-500 font-medium">Error loading auctions</p>
+          <p className="text-gray-500 text-sm mt-1">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Auctions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredAuctions.map((auction) => (
-          <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden">
-            <div className="relative h-40 w-full">
-              <Image
-                src={auction.image}
-                alt={auction.name}
-                fill
-                className="object-cover"
-              />
-              <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs">
-                {auction.category}
-              </div>
-              <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white flex items-center">
-                <Clock size={12} className="mr-1" />
-                {auction.timeLeft}
-              </div>
-            </div>
-
-            <div className="p-3">
-              <h2 className="text-sm font-medium text-gray-900 line-clamp-1">{auction.name}</h2>
-
-              <div className="mt-2 flex justify-between text-xs text-gray-500">
-                <div>Origin: {auction.countryOfOrigin}</div>
-                <div>Volume: {auction.volume}</div>
+      {!isLoading && !error && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredAuctions.map((auction) => (
+            <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden">
+              <div className="relative h-40 w-full">
+                <Image
+                  src={auction.image}
+                  alt={auction.name}
+                  fill
+                  className="object-cover"
+                />
+                <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs">
+                  {auction.category}
+                </div>
+                <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white flex items-center">
+                  <Clock size={12} className="mr-1" />
+                  {auction.timeLeft}
+                </div>
               </div>
 
-              <div className="mt-2 flex justify-between items-center">
-                <div>
-                  <div className="text-xs text-gray-500">
-                    {auction.highestBid ? 'Highest Bid' : 'Base Price'}
-                  </div>
-                  <div className="text-sm font-medium text-[#FF8A00]">
-                    {auction.highestBid || auction.basePrice}
-                  </div>
+              <div className="p-3">
+                <h2 className="text-sm font-medium text-gray-900 line-clamp-1">{auction.name}</h2>
+
+                <div className="mt-2 flex justify-between text-xs text-gray-500">
+                  <div>Origin: {auction.countryOfOrigin}</div>
+                  <div>Volume: {auction.volume}</div>
                 </div>
 
-                <button
-                  onClick={() => openBidModal(auction)}
-                  className="px-3 py-1.5 bg-[#FF8A00] text-white rounded-md text-xs hover:bg-[#e67e00] transition-colors flex items-center"
-                >
-                  Place Bid
-                  <ArrowUpRight size={12} className="ml-1" />
-                </button>
+                <div className="mt-2 flex justify-between items-center">
+                  <div>
+                    <div className="text-xs text-gray-500">
+                      {auction.highestBid ? 'Highest Bid' : 'Base Price'}
+                    </div>
+                    <div className="text-sm font-medium text-[#FF8A00]">
+                      {auction.highestBid || auction.basePrice}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => openBidModal(auction)}
+                    className="px-3 py-1.5 bg-[#FF8A00] text-white rounded-md text-xs hover:bg-[#e67e00] transition-colors flex items-center"
+                  >
+                    Place Bid
+                    <ArrowUpRight size={12} className="ml-1" />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {filteredAuctions.length === 0 && (
+      {!isLoading && !error && filteredAuctions.length === 0 && (
         <div className="bg-white border border-gray-100 rounded-md p-6 text-center">
           <p className="text-gray-500 text-sm">No auctions found matching your criteria.</p>
         </div>
