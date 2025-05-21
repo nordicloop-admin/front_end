@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { createBid, BidCreateData, BidErrorResponse } from '@/services/bid';
+import { getAccessToken, isAuthenticated } from '@/services/auth';
 
 interface Auction {
   id: string;
@@ -17,7 +19,7 @@ interface UseBiddingReturn {
   isModalOpen: boolean;
   openBidModal: (auction: Auction) => void;
   closeBidModal: () => void;
-  submitBid: (bidAmount: string) => Promise<void>;
+  submitBid: (bidAmount: string, bidVolume?: string) => Promise<void>;
 }
 
 export default function useBidding(): UseBiddingReturn {
@@ -33,35 +35,64 @@ export default function useBidding(): UseBiddingReturn {
     setIsModalOpen(false);
   };
 
-  const submitBid = async (bidAmount: string): Promise<void> => {
+  const submitBid = async (bidAmount: string, bidVolume?: string): Promise<void> => {
     if (!selectedAuction) return;
 
     try {
+      // Check if user is authenticated
+      if (!isAuthenticated()) {
+        toast.error('Authentication required', {
+          description: 'You must be logged in to place a bid.',
+          duration: 5000,
+        });
+
+        // Redirect to login page after a short delay
+        setTimeout(() => {
+          window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        }, 2000);
+
+        return;
+      }
+
+      // Get access token for debugging
+      const token = getAccessToken();
+      if (!token) {
+        toast.error('Authentication token missing', {
+          description: 'Please log in again to place a bid.',
+          duration: 5000,
+        });
+        return;
+      }
+
       // Show loading toast
       const loadingToast = toast.loading('Processing your bid...');
 
+      // Prepare bid data
+      const bidData: BidCreateData = {
+        ad_id: parseInt(selectedAuction.id),
+        amount: parseFloat(bidAmount.replace(/,/g, '')),
+      };
+
+      // Add volume if provided
+      if (bidVolume) {
+        bidData.volume = parseFloat(bidVolume);
+      }
+
+      console.log('Submitting bid:', bidData, 'Auth token exists:', !!token);
+
       // Make API call to submit the bid
-      const response = await fetch('/api/bids', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          auctionId: selectedAuction.id,
-          bidAmount: bidAmount.replace(/,/g, ''),
-        }),
-      });
+      const response = await createBid(bidData);
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to place bid');
+      if (response.error) {
+        // Check if it's a specific error from the API
+        if (response.data && 'error' in (response.data as BidErrorResponse)) {
+          throw new Error((response.data as BidErrorResponse).error);
+        }
+        throw new Error(response.error);
       }
-
-      // Parse response data (not currently used but might be needed in the future)
-      await response.json();
 
       // Show success message
       toast.success(`Bid of ${bidAmount} SEK placed successfully`, {
