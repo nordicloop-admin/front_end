@@ -17,9 +17,10 @@ interface PlaceBidModalProps {
     volume: string;
     countryOfOrigin: string;
   };
+  initialBidAmount?: string; // Optional initial bid amount to prefill
 }
 
-export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction }: PlaceBidModalProps) {
+export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, initialBidAmount }: PlaceBidModalProps) {
   const [bidAmount, setBidAmount] = useState('');
   const [bidVolume, setBidVolume] = useState('');
   const [error, setError] = useState('');
@@ -52,8 +53,15 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction }: Pl
   // Set initial bid amount and volume when modal opens
   useEffect(() => {
     if (isOpen) {
-      const minBid = calculateMinimumBid();
-      setBidAmount(formatNumberToPrice(minBid));
+      // Use initialBidAmount if provided, otherwise calculate minimum bid
+      if (initialBidAmount) {
+        // Format the initial bid amount with commas
+        const formattedInitialBid = formatNumberToPrice(parseFloat(initialBidAmount));
+        setBidAmount(formattedInitialBid);
+      } else {
+        const minBid = calculateMinimumBid();
+        setBidAmount(formatNumberToPrice(minBid));
+      }
 
       // Extract volume from auction.volume (e.g., "100 kg" -> "100")
       const volumeValue = extractVolumeValue(auction.volume);
@@ -62,7 +70,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction }: Pl
       setError('');
       setVolumeError('');
     }
-  }, [isOpen, auction, calculateMinimumBid, extractVolumeValue]);
+  }, [isOpen, auction, calculateMinimumBid, extractVolumeValue, initialBidAmount]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

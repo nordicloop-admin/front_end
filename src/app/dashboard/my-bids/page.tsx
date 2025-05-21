@@ -1,12 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Clock, ArrowUpRight, AlertCircle, Loader2 } from 'lucide-react';
+import { Clock, ArrowUpRight, AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getUserBids, UserBidResponse } from '@/services/bid';
+import { getUserBids, getAuctionBids, UserBidResponse } from '@/services/bid';
 import { getAuctionById } from '@/services/auction';
 import { toast } from 'sonner';
+import useBidding from '@/hooks/useBidding';
+import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 
 // Using UserBidResponse from bid service
 
@@ -44,6 +46,7 @@ export default function MyBids() {
   const [bids, setBids] = useState<UserBid[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { selectedAuction, isModalOpen, openBidModal, closeBidModal, submitBid } = useBidding();
 
   // Calculate time left for an auction
   const calculateTimeLeft = (endDate: string, endTime: string) => {
@@ -98,15 +101,41 @@ export default function MyBids() {
 
             const auction = auctionResponse.data;
 
+            // Get the highest bid for this auction
+            let highestBid = auction.base_price;
+            let isHighestBidder = false;
+
+            try {
+              // Fetch bids for this auction to determine if user is highest bidder
+              const bidsResponse = await getAuctionBids(auction.id);
+
+              if (bidsResponse.data && bidsResponse.data.length > 0) {
+                // Sort bids by amount (highest first)
+                const sortedBids = [...bidsResponse.data].sort((a, b) =>
+                  parseFloat(b.amount) - parseFloat(a.amount)
+                );
+
+                // Get the highest bid
+                highestBid = sortedBids[0].amount;
+
+                // Check if the user is the highest bidder
+                isHighestBidder = sortedBids[0].user === bid.username ||
+                                 sortedBids[0].bid_id === bid.bid_id;
+              }
+            } catch (error) {
+              console.error(`Error fetching bids for auction ${auction.id}:`, error);
+              // Continue with default values
+            }
+
             // Create a formatted bid object
             return {
               id: bid.bid_id.toString(),
               auctionId: auction.id.toString(),
               auctionName: auction.item_name,
               category: auction.category || 'Unknown',
-              bidAmount: bid.amount,
-              currentHighestBid: auction.base_price, // This is a placeholder, we don't know the current highest bid
-              isHighestBidder: false, // This is a placeholder, we don't know if user is highest bidder
+              bidAmount: bid.amount, // Original bid amount from API
+              currentHighestBid: highestBid,
+              isHighestBidder: isHighestBidder,
               timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
               bidDate: bid.timestamp,
               image: auction.item_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
@@ -213,12 +242,12 @@ export default function MyBids() {
                   <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <div className="text-xs text-gray-500">Your Bid</div>
-                      <div className="text-sm font-medium">{bid.bidAmount} SEK</div>
+                      <div className="text-sm font-medium">{parseFloat(bid.bidAmount).toLocaleString()} SEK</div>
                     </div>
 
                     <div>
                       <div className="text-xs text-gray-500">Current Highest Bid</div>
-                      <div className="text-sm font-medium">{bid.currentHighestBid} SEK</div>
+                      <div className="text-sm font-medium">{parseFloat(bid.currentHighestBid).toLocaleString()} SEK</div>
                     </div>
 
                     <div>
@@ -239,19 +268,106 @@ export default function MyBids() {
 
                   <div className="mt-4 flex justify-end">
                     {!bid.isHighestBidder && bid.timeLeft !== 'Ended' && (
-                      <Link
-                        href={`/dashboard/auctions/${bid.auctionId}`}
+                      <button
+                        onClick={async () => {
+                          // Show loading toast
+                          const loadingToast = toast.loading('Preparing bid form...');
+
+                          try {
+                            // Fetch the latest auction details
+                            const response = await getAuctionById(bid.auctionId);
+
+                            // Dismiss loading toast
+                            toast.dismiss(loadingToast);
+
+                            if (response.error || !response.data) {
+                              throw new Error(response.error || 'Failed to fetch auction details');
+                            }
+
+                            const auction = response.data;
+
+                            // Get the highest bid amount from the API
+                            let highestBidAmount = auction.base_price;
+
+                            try {
+                              // Fetch the latest bids for this auction
+                              const bidsResponse = await getAuctionBids(auction.id);
+
+                              if (bidsResponse.data && bidsResponse.data.length > 0) {
+                                // Sort bids by amount (highest first)
+                                const sortedBids = [...bidsResponse.data].sort((a, b) =>
+                                  parseFloat(b.amount) - parseFloat(a.amount)
+                                );
+
+                                // Get the highest bid amount
+                                highestBidAmount = sortedBids[0].amount;
+                              }
+                            } catch (error) {
+                              console.error(`Error fetching latest bids for auction ${auction.id}:`, error);
+                              // Fallback to using the bid amount we already have
+                              highestBidAmount = bid.currentHighestBid || auction.base_price;
+                            }
+
+                            // Format the bid amount to match what's shown in the UI (with commas)
+                            const formattedBidAmount = parseFloat(highestBidAmount).toLocaleString('en-US', {
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 0
+                            });
+
+                            // Open bid modal with latest auction details
+                            openBidModal({
+                              id: auction.id.toString(),
+                              name: auction.item_name,
+                              category: auction.category || bid.category,
+                              basePrice: formattedBidAmount,
+                              highestBid: formattedBidAmount,
+                              timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
+                              volume: `${auction.volume} ${auction.unit}`,
+                              countryOfOrigin: auction.country_of_origin,
+                              originalBidAmount: bid.bidAmount // Pass the original bid amount
+                            });
+                          } catch (error) {
+                            // Dismiss loading toast
+                            toast.dismiss(loadingToast);
+
+                            // Show error toast
+                            toast.error('Failed to prepare bid form', {
+                              description: error instanceof Error ? error.message : 'An unexpected error occurred',
+                              duration: 5000,
+                            });
+
+                            // Format the bid amount to match what's shown in the UI (with commas)
+                            const formattedBidAmount = parseFloat(bid.bidAmount).toLocaleString('en-US', {
+                              maximumFractionDigits: 2,
+                              minimumFractionDigits: 0
+                            });
+
+                            // Fallback to using the data we already have
+                            openBidModal({
+                              id: bid.auctionId,
+                              name: bid.auctionName,
+                              category: bid.category,
+                              basePrice: formattedBidAmount,
+                              highestBid: formattedBidAmount,
+                              timeLeft: bid.timeLeft,
+                              volume: '1 kg', // Default value
+                              countryOfOrigin: 'Unknown', // Default value
+                              originalBidAmount: bid.bidAmount // Pass the original bid amount
+                            });
+                          }
+                        }}
                         className="px-3 py-1.5 bg-[#FF8A00] text-white rounded-md text-xs hover:bg-[#e67e00] transition-colors flex items-center"
                       >
                         Place New Bid
                         <ArrowUpRight size={12} className="ml-1" />
-                      </Link>
+                      </button>
                     )}
                     <Link
                       href={`/dashboard/auctions/${bid.auctionId}`}
-                      className="px-3 py-1.5 ml-2 border border-gray-100 text-gray-700 rounded-md text-xs hover:bg-gray-50 transition-colors"
+                      className="px-3 py-1.5 ml-2 border border-gray-100 text-gray-700 rounded-md text-xs hover:bg-gray-50 transition-colors flex items-center"
                     >
                       View Details
+                      <ExternalLink size={12} className="ml-1" />
                     </Link>
                   </div>
                 </div>
@@ -273,6 +389,17 @@ export default function MyBids() {
             </Link>
           </div>
         </div>
+      )}
+
+      {/* Bid Modal */}
+      {selectedAuction && (
+        <PlaceBidModal
+          isOpen={isModalOpen}
+          onClose={closeBidModal}
+          onSubmit={submitBid}
+          auction={selectedAuction}
+          initialBidAmount={selectedAuction.originalBidAmount} // Pass the original bid amount
+        />
       )}
     </div>
   );
