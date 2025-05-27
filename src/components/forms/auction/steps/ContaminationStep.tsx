@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Package, Thermometer } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -10,36 +10,51 @@ interface Props {
 const contaminationLevels = [
   {
     id: 'clean',
-    name: 'Clean/Low Contamination',
-    description: 'Less than 2% contamination',
+    name: 'Clean',
+    description: 'Free from most contaminants, requiring minimal processing before recycling.',
     color: 'green'
   },
   {
-    id: 'moderate',
-    name: 'Moderate Contamination',
-    description: '2-10% contamination',
+    id: 'slightly-contaminated',
+    name: 'Slightly Contaminated',
+    description: 'Contains some contaminants, may require cleaning or further processing.',
     color: 'yellow'
   },
   {
-    id: 'high',
-    name: 'High Contamination',
-    description: 'More than 10% contamination',
+    id: 'heavily-contaminated',
+    name: 'Heavily Contaminated',
+    description: 'High levels of non-plastic materials present, requiring extensive processing.',
     color: 'red'
   }
 ];
 
-const contaminationTypes = [
-  'Labels/Adhesives',
-  'Metal Parts',
-  'Paper/Cardboard',
-  'Other Plastics',
-  'Organic Matter',
-  'Paint/Coatings',
-  'Textile Fibers',
-  'Dirt/Dust',
-  'Moisture',
-  'Chemical Residues',
-  'Unknown Contaminants'
+const additives = [
+  'UV stabilizer',
+  'Antioxidant',
+  'Flame retardants',
+  'Chlorides',
+  'No additives'
+];
+
+const storageConditions = [
+  {
+    id: 'climate-controlled',
+    name: 'Climate Controlled',
+    description: 'Stored in a temperature and humidity-controlled environment.',
+    icon: Thermometer
+  },
+  {
+    id: 'protected-outdoor',
+    name: 'Protected Outdoor',
+    description: 'Covered or partially protected from the elements but outdoors.',
+    icon: Package
+  },
+  {
+    id: 'unprotected-outdoor',
+    name: 'Unprotected Outdoor',
+    description: 'Exposed to environmental conditions without protection.',
+    icon: AlertTriangle
+  }
 ];
 
 export function ContaminationStep({ formData, updateFormData }: Props) {
@@ -56,32 +71,36 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
     handleContaminationUpdate('level', level);
   };
 
-  const toggleContaminationType = (type: string) => {
-    const currentTypes = formData.contamination.types || [];
-    const isSelected = currentTypes.includes(type);
+  const toggleAdditive = (additive: string) => {
+    const currentAdditives = formData.contamination.additives || [];
+    const isSelected = currentAdditives.includes(additive);
     
     if (isSelected) {
-      handleContaminationUpdate('types', currentTypes.filter(t => t !== type));
+      handleContaminationUpdate('additives', currentAdditives.filter(a => a !== additive));
     } else {
-      handleContaminationUpdate('types', [...currentTypes, type]);
+      handleContaminationUpdate('additives', [...currentAdditives, additive]);
     }
+  };
+
+  const handleStorageSelect = (storage: string) => {
+    handleContaminationUpdate('storage', storage);
   };
 
   return (
     <div className="space-y-8">
       <div className="text-center">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          Contamination Assessment
+          Contamination
         </h3>
         <p className="text-gray-600">
-          Assess the contamination level and types in your material
+          Indicate the level of contamination to determine the necessary recycling steps.
         </p>
       </div>
 
       {/* Contamination Level */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
-          Overall Contamination Level *
+          Contamination Level *
         </label>
         <div className="space-y-3">
           {contaminationLevels.map((level) => (
@@ -100,7 +119,7 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
                 }
               `}
             >
-              <div className="flex items-center space-x-3">
+              <div className="flex items-start space-x-3">
                 <div className={`
                   p-2 rounded-md
                   ${formData.contamination.level === level.id
@@ -120,7 +139,7 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
                 </div>
                 <div className="flex-1">
                   <h4 className="font-medium text-gray-900">{level.name}</h4>
-                  <p className="text-sm text-gray-500">{level.description}</p>
+                  <p className="text-sm text-gray-500 mt-1">{level.description}</p>
                 </div>
               </div>
             </button>
@@ -128,44 +147,75 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
-      {/* Contamination Types */}
-      {formData.contamination.level && formData.contamination.level !== 'clean' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-4">
-            Types of Contamination Present
-          </label>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {contaminationTypes.map((type) => (
+      {/* Additives */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          Additives
+        </label>
+        <p className="text-sm text-gray-600 mb-4">
+          Select any additives used to enhance material properties.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {additives.map((additive) => (
+            <button
+              key={additive}
+              onClick={() => toggleAdditive(additive)}
+              className={`
+                p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                ${formData.contamination.additives?.includes(additive)
+                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }
+              `}
+            >
+              {additive}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Storage Conditions */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          Storage Conditions
+        </label>
+        <p className="text-sm text-gray-600 mb-4">
+          Describe the storage conditions of the material.
+        </p>
+        <div className="space-y-3">
+          {storageConditions.map((condition) => {
+            const Icon = condition.icon;
+            return (
               <button
-                key={type}
-                onClick={() => toggleContaminationType(type)}
+                key={condition.id}
+                onClick={() => handleStorageSelect(condition.id)}
                 className={`
-                  p-3 rounded-lg border text-sm text-center transition-all
-                  ${formData.contamination.types?.includes(type)
-                    ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  w-full p-4 rounded-lg border text-left transition-all
+                  ${formData.contamination.storage === condition.id
+                    ? 'border-[#FF8A00] bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
                   }
                 `}
               >
-                {type}
+                <div className="flex items-start space-x-3">
+                  <div className={`
+                    p-2 rounded-md
+                    ${formData.contamination.storage === condition.id
+                      ? 'bg-[#FF8A00] text-white'
+                      : 'bg-gray-100 text-gray-600'
+                    }
+                  `}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{condition.name}</h4>
+                    <p className="text-sm text-gray-500 mt-1">{condition.description}</p>
+                  </div>
+                </div>
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      )}
-
-      {/* Additional Description */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Additional Details (Optional)
-        </label>
-        <textarea
-          rows={4}
-          placeholder="Describe contamination sources, cleaning efforts, or specific details buyers should know..."
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
-          value={formData.contamination.description}
-          onChange={(e) => handleContaminationUpdate('description', e.target.value)}
-        />
       </div>
 
       {/* Contamination Summary */}
@@ -177,31 +227,30 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
               <span className="font-medium text-gray-700">Level:</span> {' '}
               {contaminationLevels.find(l => l.id === formData.contamination.level)?.name}
             </div>
-            {formData.contamination.types && formData.contamination.types.length > 0 && (
+            {formData.contamination.additives && formData.contamination.additives.length > 0 && (
               <div>
-                <span className="font-medium text-gray-700">Types:</span> {' '}
-                {formData.contamination.types.join(', ')}
+                <span className="font-medium text-gray-700">Additives:</span> {' '}
+                {formData.contamination.additives.join(', ')}
+              </div>
+            )}
+            {formData.contamination.storage && (
+              <div>
+                <span className="font-medium text-gray-700">Storage:</span> {' '}
+                {storageConditions.find(s => s.id === formData.contamination.storage)?.name}
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* Information Note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0">
-            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">Quality Impact</h4>
-            <p className="text-sm text-blue-700 mt-1">
-              Honest contamination assessment builds trust with buyers and ensures fair pricing. 
-              Clean materials typically command higher prices and attract more buyers.
-            </p>
-          </div>
+      {/* Validation Message */}
+      {!formData.contamination.level && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+          <p className="text-sm text-yellow-600">
+            Please select a contamination level to continue.
+          </p>
         </div>
-      </div>
+      )}
     </div>
   );
 } 

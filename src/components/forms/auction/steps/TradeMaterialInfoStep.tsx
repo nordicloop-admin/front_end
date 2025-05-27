@@ -144,7 +144,7 @@ export function TradeMaterialInfoStep({ formData, updateFormData }: Props) {
       {formData.materialType && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-4">
-            What specific type of {formData.materialType} are you {formData.tradeType}? *
+            What specific type of {formData.materialType} do you want to {formData.tradeType}? *
           </label>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {availableSubtypes.map((subtype) => (

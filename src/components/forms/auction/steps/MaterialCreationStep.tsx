@@ -89,7 +89,7 @@ export function MaterialCreationStep({ formData, updateFormData }: Props) {
           Create New Material Listing
         </h3>
         <p className="text-gray-600">
-          Let's start by understanding what type of material you want to list and your business type
+          Let&apos;s start by understanding what type of material you want to list and your business type
         </p>
       </div>
 

@@ -42,24 +42,19 @@ export interface FormData {
   
   // Material Origin
   origin: {
-    postIndustrial: boolean;
-    postConsumer: boolean;
     source: string;
-    certifications: string[];
   };
   
   // Contamination
   contamination: {
     level: string;
-    types: string[];
-    description: string;
+    additives?: string[];
+    storage?: string;
   };
   
   // Processing Method
   processing: {
-    method: string;
-    requirements: string[];
-    machinery: string[];
+    methods?: string[];
   };
   
   // Location & Logistics
@@ -106,20 +101,15 @@ const initialFormData: FormData = {
   specificMaterial: '',
   specifications: {},
   origin: {
-    postIndustrial: false,
-    postConsumer: false,
-    source: '',
-    certifications: []
+    source: ''
   },
   contamination: {
     level: '',
-    types: [],
-    description: ''
+    additives: [],
+    storage: ''
   },
   processing: {
-    method: '',
-    requirements: [],
-    machinery: []
+    methods: []
   },
   location: {
     country: '',
@@ -178,6 +168,26 @@ export function AlternativeAuctionForm() {
         return !!(formData.tradeType && formData.materialSubtype);
       case 3:
         return !!(formData.category && formData.subcategory);
+      case 4:
+        // Specifications are optional
+        return true;
+      case 5:
+        return !!(formData.origin.source);
+      case 6:
+        return !!(formData.contamination.level);
+      case 7:
+        return !!(formData.processing.methods && formData.processing.methods.length > 0);
+      case 8:
+        return !!(formData.location.country && formData.location.city);
+      case 9:
+        return !!(formData.quantity.available > 0 && formData.quantity.unit);
+      case 10:
+        return !!(formData.price.basePrice > 0 && formData.price.priceType);
+      case 11:
+        // Images are optional but recommended
+        return true;
+      case 12:
+        return !!(formData.title && formData.description);
       default:
         return true;
     }
@@ -206,7 +216,7 @@ export function AlternativeAuctionForm() {
 
   const handleSubmit = async () => {
     // Handle form submission
-    console.log('Form submitted:', formData);
+    // TODO: Implement actual submission logic
   };
 
   const CurrentStepComponent = steps[currentStep - 1]?.component;

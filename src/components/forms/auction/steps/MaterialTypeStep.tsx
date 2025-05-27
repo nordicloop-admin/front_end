@@ -25,9 +25,8 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
         const response = await fetch('/api/categories'); // We'll need to create this API endpoint
         const data = await response.json();
         setCategories(data.categories || []);
-      } catch (error) {
+      } catch (_error) {
         // Fallback to static data if API fails
-        console.error('Failed to load categories:', error);
         setCategories([
           {
             id: 'plastics',
