@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createBid, BidCreateData, BidErrorResponse } from '@/services/bid';
+import { createBid, updateBid, BidCreateData, BidUpdateData, BidErrorResponse } from '@/services/bid';
 import { getAccessToken, isAuthenticated } from '@/services/auth';
 
 interface Auction {
@@ -13,6 +13,7 @@ interface Auction {
   volume: string;
   countryOfOrigin: string;
   originalBidAmount?: string; // Original bid amount for pre-filling the bid form
+  bidId?: number; // ID of the existing bid if updating
 }
 
 interface UseBiddingReturn {
@@ -68,21 +69,43 @@ export default function useBidding(): UseBiddingReturn {
       // Show loading toast
       const loadingToast = toast.loading('Processing your bid...');
 
-      // Prepare bid data
-      const bidData: BidCreateData = {
-        ad_id: parseInt(selectedAuction.id),
-        amount: parseFloat(bidAmount.replace(/,/g, '')),
-      };
+      // Parse the bid amount
+      const parsedAmount = parseFloat(bidAmount.replace(/,/g, ''));
 
-      // Add volume if provided
-      if (bidVolume) {
-        bidData.volume = parseFloat(bidVolume);
+      // Parse volume if provided
+      const parsedVolume = bidVolume ? parseFloat(bidVolume) : undefined;
+
+      let response;
+
+      // Check if we're updating an existing bid or creating a new one
+      if (selectedAuction.bidId) {
+        // Prepare bid update data
+        const updateData: BidUpdateData = {
+          amount: parsedAmount,
+        };
+
+        // Add volume if provided
+        if (parsedVolume) {
+          updateData.volume = parsedVolume;
+        }
+
+        // Make API call to update the bid
+        response = await updateBid(selectedAuction.bidId, updateData);
+      } else {
+        // Prepare bid creation data
+        const createData: BidCreateData = {
+          ad_id: parseInt(selectedAuction.id),
+          amount: parsedAmount,
+        };
+
+        // Add volume if provided
+        if (parsedVolume) {
+          createData.volume = parsedVolume;
+        }
+
+        // Make API call to create a new bid
+        response = await createBid(createData);
       }
-
-      // Removed console.log for production build
-
-      // Make API call to submit the bid
-      const response = await createBid(bidData);
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);
@@ -96,8 +119,9 @@ export default function useBidding(): UseBiddingReturn {
       }
 
       // Show success message
-      toast.success(`Bid of ${bidAmount} SEK placed successfully`, {
-        description: `Your bid for ${selectedAuction.name} has been recorded.`,
+      const isUpdate = !!selectedAuction.bidId;
+      toast.success(`Bid of ${bidAmount} SEK ${isUpdate ? 'updated' : 'placed'} successfully`, {
+        description: `Your bid for ${selectedAuction.name} has been ${isUpdate ? 'updated' : 'recorded'}.`,
         duration: 5000,
       });
 
@@ -106,7 +130,8 @@ export default function useBidding(): UseBiddingReturn {
 
     } catch (error) {
       // Show error message
-      toast.error('Failed to place bid', {
+      const isUpdate = !!selectedAuction?.bidId;
+      toast.error(`Failed to ${isUpdate ? 'update' : 'place'} bid`, {
         description: error instanceof Error ? error.message : 'An unknown error occurred',
         duration: 5000,
       });

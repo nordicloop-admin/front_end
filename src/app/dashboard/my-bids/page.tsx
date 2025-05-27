@@ -276,7 +276,8 @@ export default function MyBids() {
                     timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
                     volume: `${auction.volume} ${auction.unit}`,
                     countryOfOrigin: auction.country_of_origin,
-                    originalBidAmount: bid.bidAmount // Pass the original bid amount
+                    originalBidAmount: bid.bidAmount, // Pass the original bid amount
+                    bidId: parseInt(bid.id) // Pass the bid ID for updating
                   });
                 } catch (error) {
                   // Dismiss loading toast
@@ -304,7 +305,8 @@ export default function MyBids() {
                     timeLeft: bid.timeLeft,
                     volume: '1 kg', // Default value
                     countryOfOrigin: 'Unknown', // Default value
-                    originalBidAmount: bid.bidAmount // Pass the original bid amount
+                    originalBidAmount: bid.bidAmount, // Pass the original bid amount
+                    bidId: parseInt(bid.id) // Pass the bid ID for updating
                   });
                 }
               }}
