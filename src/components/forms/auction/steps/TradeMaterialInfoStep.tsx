@@ -91,7 +91,7 @@ export function TradeMaterialInfoStep({ formData, updateFormData }: Props) {
           Trade Material Information
         </h3>
         <p className="text-gray-600">
-          Specify whether you're buying or selling, and the type of {formData.materialType} material
+          Specify whether you&apos;re buying or selling, and the type of {formData.materialType} material
         </p>
       </div>
 

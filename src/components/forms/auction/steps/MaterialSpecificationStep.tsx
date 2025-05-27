@@ -97,10 +97,19 @@ export function MaterialSpecificationStep({ formData, updateFormData }: Props) {
     });
   };
 
+  const handleAdditionalSpecsUpdate = (specs: string[]) => {
+    updateFormData({
+      specifications: {
+        ...formData.specifications,
+        additionalSpecs: specs
+      }
+    });
+  };
+
   const addCustomSpecification = () => {
     if (customSpec.trim()) {
       const currentSpecs = formData.specifications.additionalSpecs || [];
-      handleSpecificationUpdate('additionalSpecs', [...currentSpecs, customSpec.trim()]);
+      handleAdditionalSpecsUpdate([...currentSpecs, customSpec.trim()]);
       setCustomSpec('');
     }
   };
@@ -108,7 +117,7 @@ export function MaterialSpecificationStep({ formData, updateFormData }: Props) {
   const removeCustomSpecification = (index: number) => {
     const currentSpecs = formData.specifications.additionalSpecs || [];
     const newSpecs = currentSpecs.filter((_, i) => i !== index);
-    handleSpecificationUpdate('additionalSpecs', newSpecs);
+    handleAdditionalSpecsUpdate(newSpecs);
   };
 
   const availableGrades = materialGrades[formData.materialType as keyof typeof materialGrades] || [];
