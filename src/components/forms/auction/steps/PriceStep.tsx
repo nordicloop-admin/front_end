@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, TrendingUp, Scale, Package, Box } from 'lucide-react';
+import { DollarSign, Scale, Package, Box } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {

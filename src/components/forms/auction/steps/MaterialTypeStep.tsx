@@ -13,45 +13,6 @@ interface Category {
   subcategories: { id: string; name: string; }[];
 }
 
-const materialTypes = [
-  {
-    id: 'plastics',
-    name: 'Plastics',
-    icon: Package,
-    description: 'Plastic materials, polymers, and compounds'
-  },
-  {
-    id: 'metals',
-    name: 'Metals',
-    icon: Factory,
-    description: 'Metal scraps, alloys, and raw materials'
-  },
-  {
-    id: 'paper',
-    name: 'Paper',
-    icon: Package,
-    description: 'Paper, cardboard, and fiber materials'
-  },
-  {
-    id: 'glass',
-    name: 'Glass',
-    icon: Package,
-    description: 'Glass materials and fragments'
-  },
-  {
-    id: 'textiles',
-    name: 'Textiles',
-    icon: Package,
-    description: 'Fabric and textile materials'
-  },
-  {
-    id: 'wood',
-    name: 'Wood',
-    icon: Package,
-    description: 'Wood waste and timber materials'
-  }
-];
-
 const businessTypes = [
   {
     id: 'manufacturer',
@@ -132,6 +93,51 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
               { id: 'paper-newspaper', name: 'Newspaper' },
               { id: 'paper-office', name: 'Office Paper' }
             ]
+          },
+          {
+            id: 'glass',
+            name: 'Glass',
+            subcategories: [
+              { id: 'glass-clear', name: 'Clear Glass' },
+              { id: 'glass-colored', name: 'Colored Glass' },
+              { id: 'glass-bottles', name: 'Glass Bottles' }
+            ]
+          },
+          {
+            id: 'textiles',
+            name: 'Textiles',
+            subcategories: [
+              { id: 'textiles-cotton', name: 'Cotton' },
+              { id: 'textiles-polyester', name: 'Polyester' },
+              { id: 'textiles-mixed', name: 'Mixed Textiles' }
+            ]
+          },
+          {
+            id: 'wood',
+            name: 'Wood',
+            subcategories: [
+              { id: 'wood-clean', name: 'Clean Wood' },
+              { id: 'wood-treated', name: 'Treated Wood' },
+              { id: 'wood-pallets', name: 'Pallets' }
+            ]
+          },
+          {
+            id: 'building-material',
+            name: 'Building Material',
+            subcategories: [
+              { id: 'building-concrete', name: 'Concrete' },
+              { id: 'building-bricks', name: 'Bricks' },
+              { id: 'building-insulation', name: 'Insulation' }
+            ]
+          },
+          {
+            id: 'organic-waste',
+            name: 'Organic Waste',
+            subcategories: [
+              { id: 'organic-food', name: 'Food Waste' },
+              { id: 'organic-garden', name: 'Garden Waste' },
+              { id: 'organic-compost', name: 'Compost' }
+            ]
           }
         ]);
       } finally {
@@ -141,10 +147,6 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
 
     loadCategories();
   }, []);
-
-  const handleMaterialTypeSelect = (materialType: string) => {
-    updateFormData({ materialType });
-  };
 
   const handleBusinessTypeSelect = (businessType: string) => {
     updateFormData({ businessType });
@@ -156,7 +158,8 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
 
   const handleCategorySelect = (category: string) => {
     updateFormData({ 
-      category, 
+      category,
+      materialType: category, // Set materialType to match category
       subcategory: '', // Reset subcategory when category changes
       specificMaterial: '' 
     });
@@ -186,112 +189,6 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
         <p className="text-gray-600">
           Let&apos;s start by understanding what type of material you want to list
         </p>
-      </div>
-
-      {/* Material Type Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-4">
-          What type of material are you listing? *
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {materialTypes.map((type) => {
-            const Icon = type.icon;
-            return (
-              <button
-                key={type.id}
-                onClick={() => handleMaterialTypeSelect(type.id)}
-                className={`
-                  p-4 rounded-lg border-2 transition-all text-left hover:scale-105
-                  ${formData.materialType === type.id
-                    ? 'border-[#FF8A00] bg-orange-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                  }
-                `}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className={`
-                    p-2 rounded-md
-                    ${formData.materialType === type.id
-                      ? 'bg-[#FF8A00] text-white'
-                      : 'bg-gray-100 text-gray-600'
-                    }
-                  `}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{type.name}</h4>
-                    <p className="text-sm text-gray-500 mt-1">{type.description}</p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Business Type Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-4">
-          What type of business are you? *
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {businessTypes.map((type) => {
-            const Icon = type.icon;
-            return (
-              <button
-                key={type.id}
-                onClick={() => handleBusinessTypeSelect(type.id)}
-                className={`
-                  p-4 rounded-lg border-2 transition-all text-left hover:scale-105
-                  ${formData.businessType === type.id
-                    ? 'border-[#FF8A00] bg-orange-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                  }
-                `}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className={`
-                    p-2 rounded-md
-                    ${formData.businessType === type.id
-                      ? 'bg-[#FF8A00] text-white'
-                      : 'bg-gray-100 text-gray-600'
-                    }
-                  `}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium text-gray-900">{type.name}</h4>
-                    <p className="text-sm text-gray-500 mt-1">{type.description}</p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Sell Frequency Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-4">
-          How often do you want to sell this material? *
-        </label>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {sellFrequencies.map((frequency) => (
-            <button
-              key={frequency.id}
-              onClick={() => handleFrequencySelect(frequency.id)}
-              className={`
-                p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                ${formData.sellFrequency === frequency.id
-                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                }
-              `}
-            >
-              {frequency.name}
-            </button>
-          ))}
-        </div>
       </div>
 
       {/* Category Selection */}
@@ -372,8 +269,73 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
         </div>
       )}
 
+      {/* Business Type Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          What type of business are you? *
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {businessTypes.map((type) => {
+            const Icon = type.icon;
+            return (
+              <button
+                key={type.id}
+                onClick={() => handleBusinessTypeSelect(type.id)}
+                className={`
+                  p-4 rounded-lg border-2 transition-all text-left hover:scale-105
+                  ${formData.businessType === type.id
+                    ? 'border-[#FF8A00] bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className={`
+                    p-2 rounded-md
+                    ${formData.businessType === type.id
+                      ? 'bg-[#FF8A00] text-white'
+                      : 'bg-gray-100 text-gray-600'
+                    }
+                  `}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{type.name}</h4>
+                    <p className="text-sm text-gray-500 mt-1">{type.description}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Sell Frequency Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          How often do you want to sell this material? *
+        </label>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {sellFrequencies.map((frequency) => (
+            <button
+              key={frequency.id}
+              onClick={() => handleFrequencySelect(frequency.id)}
+              className={`
+                p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                ${formData.sellFrequency === frequency.id
+                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }
+              `}
+            >
+              {frequency.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Validation Message */}
-      {(!formData.materialType || !formData.businessType || !formData.sellFrequency || !formData.category || !formData.subcategory) && (
+      {(!formData.category || !formData.subcategory || !formData.businessType || !formData.sellFrequency) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
             Please complete all required fields marked with an asterisk (*) to continue.
