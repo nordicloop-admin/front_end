@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, TrendingUp, Handshake } from 'lucide-react';
+import { DollarSign, TrendingUp, Scale, Package, Box } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -7,32 +7,25 @@ interface Props {
   updateFormData: (updates: Partial<FormData>) => void;
 }
 
-const currencies = [
-  'SEK', 'EUR', 'USD', 'GBP', 'NOK', 'DKK'
+const currencies = ['SEK', 'EUR'];
+
+const units = [
+  'kg', 'tons', 'tonnes', 'lbs', 'pounds',
+  'pieces', 'units', 'bales', 'containers',
+  'm³', 'cubic meters', 'liters', 'gallons'
 ];
 
-const priceTypes = [
-  {
-    id: 'auction' as const,
-    name: 'Auction',
-    icon: TrendingUp,
-    description: 'Let buyers bid on your material',
-    color: 'orange'
-  },
-  {
-    id: 'fixed' as const,
-    name: 'Fixed Price',
-    icon: DollarSign,
-    description: 'Set a fixed price for immediate purchase',
-    color: 'green'
-  },
-  {
-    id: 'negotiable' as const,
-    name: 'Negotiable',
-    icon: Handshake,
-    description: 'Allow price negotiations with buyers',
-    color: 'blue'
-  }
+const packagingOptions = [
+  'Bulk (loose)',
+  'Bales',
+  'Bags (25kg)',
+  'Bags (50kg)',
+  'Bags (1000kg/Big bags)',
+  'Containers (20ft)',
+  'Containers (40ft)',
+  'Pallets',
+  'Drums',
+  'Custom packaging'
 ];
 
 export function PriceStep({ formData, updateFormData }: Props) {
@@ -40,6 +33,16 @@ export function PriceStep({ formData, updateFormData }: Props) {
     updateFormData({
       price: {
         ...formData.price,
+        [field]: value,
+        priceType: 'auction' // Always set to auction
+      }
+    });
+  };
+
+  const handleQuantityUpdate = (field: string, value: string | number) => {
+    updateFormData({
+      quantity: {
+        ...formData.quantity,
         [field]: value
       }
     });
@@ -56,141 +59,199 @@ export function PriceStep({ formData, updateFormData }: Props) {
     <div className="space-y-8">
       <div className="text-center">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          Pricing Information
+          Quantity & Pricing
         </h3>
         <p className="text-gray-600">
-          Set your pricing strategy and base price
+          Specify the quantity available and set your auction pricing
         </p>
       </div>
 
-      {/* Price Type Selection */}
+      {/* Quantity Section */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-4">
-          Pricing Type *
-        </label>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {priceTypes.map((type) => {
-            const Icon = type.icon;
-            return (
-              <button
-                key={type.id}
-                onClick={() => handlePriceUpdate('priceType', type.id)}
-                className={`
-                  p-6 rounded-lg border-2 text-left transition-all hover:scale-105
-                  ${formData.price.priceType === type.id
-                    ? 'border-[#FF8A00] bg-orange-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                  }
-                `}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className={`
-                    p-3 rounded-md
-                    ${formData.price.priceType === type.id
-                      ? 'bg-[#FF8A00] text-white'
-                      : 'bg-gray-100 text-gray-600'
-                    }
-                  `}>
-                    <Icon className="w-6 h-6" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-medium text-gray-900">{type.name}</h4>
-                    <p className="text-sm text-gray-500 mt-1">{type.description}</p>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Base Price and Currency */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            {formData.price.priceType === 'auction' ? 'Starting Price' : 'Base Price'} *
-          </label>
-          <div className="relative">
+        <h4 className="text-lg font-medium text-gray-900 mb-4">Quantity Information</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Available Quantity */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              <Scale className="inline w-4 h-4 mr-2" />
+              Available Quantity *
+            </label>
             <input
               type="number"
               min="0"
-              step="0.01"
-              placeholder="0.00"
-              className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
-              value={formData.price.basePrice || ''}
-              onChange={(e) => handlePriceUpdate('basePrice', parseFloat(e.target.value) || 0)}
+              step="0.1"
+              placeholder="e.g., 1000"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+              value={formData.quantity.available || ''}
+              onChange={(e) => handleQuantityUpdate('available', parseFloat(e.target.value) || 0)}
             />
+            <p className="text-xs text-gray-500 mt-1">
+              Total quantity available for auction
+            </p>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Price per {formData.quantity.unit || 'unit'}
-          </p>
-        </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Currency *
-          </label>
-          <select
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
-            value={formData.price.currency}
-            onChange={(e) => handlePriceUpdate('currency', e.target.value)}
-          >
-            {currencies.map(currency => (
-              <option key={currency} value={currency}>{currency}</option>
-            ))}
-          </select>
+          {/* Unit */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Unit of Measurement *
+            </label>
+            <select
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+              value={formData.quantity.unit}
+              onChange={(e) => handleQuantityUpdate('unit', e.target.value)}
+            >
+              <option value="">Select unit...</option>
+              {units.map(unit => (
+                <option key={unit} value={unit}>{unit}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Reserve Price (for auctions) */}
-      {formData.price.priceType === 'auction' && (
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Reserve Price (Optional)
-          </label>
+      {/* Minimum Order Quantity */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          <Package className="inline w-4 h-4 mr-2" />
+          Minimum Order Quantity
+        </label>
+        <div className="flex items-center space-x-4">
           <input
             type="number"
             min="0"
-            step="0.01"
-            placeholder="Minimum acceptable price"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
-            value={formData.price.reservePrice || ''}
-            onChange={(e) => handlePriceUpdate('reservePrice', parseFloat(e.target.value) || 0)}
+            step="0.1"
+            placeholder="e.g., 100"
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+            value={formData.quantity.minimumOrder || ''}
+            onChange={(e) => handleQuantityUpdate('minimumOrder', parseFloat(e.target.value) || 0)}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            If no bids reach this price, the auction will not complete
-          </p>
+          <span className="text-gray-500">{formData.quantity.unit || 'units'}</span>
         </div>
-      )}
+        <p className="text-xs text-gray-500 mt-1">
+          Minimum quantity buyers must purchase (leave 0 for no minimum)
+        </p>
+      </div>
+
+      {/* Packaging */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          <Box className="inline w-4 h-4 mr-2" />
+          Packaging Type
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {packagingOptions.map((packaging) => (
+            <button
+              key={packaging}
+              onClick={() => handleQuantityUpdate('packaging', packaging)}
+              className={`
+                p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
+                ${formData.quantity.packaging === packaging
+                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }
+              `}
+            >
+              {packaging}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Price Section */}
+      <div className="pt-4 border-t border-gray-200">
+        <h4 className="text-lg font-medium text-gray-900 mb-4">Auction Pricing</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Starting Bid Price */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Starting Bid Price *
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                value={formData.price.basePrice || ''}
+                onChange={(e) => handlePriceUpdate('basePrice', parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Initial bid price per {formData.quantity.unit || 'unit'}
+            </p>
+          </div>
+
+          {/* Currency */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Currency *
+            </label>
+            <select
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+              value={formData.price.currency}
+              onChange={(e) => handlePriceUpdate('currency', e.target.value)}
+            >
+              {currencies.map(currency => (
+                <option key={currency} value={currency}>{currency}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Reserve Price */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          Reserve Price (Optional)
+        </label>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          placeholder="Minimum acceptable price"
+          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+          value={formData.price.reservePrice || ''}
+          onChange={(e) => handlePriceUpdate('reservePrice', parseFloat(e.target.value) || 0)}
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          If no bids reach this price, the auction will not complete
+        </p>
+      </div>
 
       {/* Price Summary */}
-      {formData.price.basePrice > 0 && (
+      {formData.price.basePrice > 0 && formData.quantity.available > 0 && (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-3">Price Summary</h4>
+          <h4 className="text-sm font-medium text-gray-900 mb-3">Auction Summary</h4>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">
-                {formData.price.priceType === 'auction' ? 'Starting Price:' : 'Price per unit:'}
+                Starting Price:
               </span>
               <span className="text-lg font-semibold text-gray-900">
-                {formatPrice(formData.price.basePrice)} {formData.price.currency}
+                {formatPrice(formData.price.basePrice)} {formData.price.currency} per {formData.quantity.unit}
               </span>
             </div>
             
-            {formData.quantity.available > 0 && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Value:</span>
-                <span className="text-lg font-semibold text-[#FF8A00]">
-                  {formatPrice(formData.price.basePrice * formData.quantity.available)} {formData.price.currency}
-                </span>
-              </div>
-            )}
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Total Quantity:</span>
+              <span className="text-lg font-semibold text-gray-700">
+                {formatPrice(formData.quantity.available)} {formData.quantity.unit}
+              </span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Total Starting Value:</span>
+              <span className="text-lg font-semibold text-[#FF8A00]">
+                {formatPrice(formData.price.basePrice * formData.quantity.available)} {formData.price.currency}
+              </span>
+            </div>
 
             {formData.price.reservePrice && formData.price.reservePrice > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Reserve Price:</span>
                 <span className="text-sm font-medium text-gray-700">
-                  {formatPrice(formData.price.reservePrice)} {formData.price.currency}
+                  {formatPrice(formData.price.reservePrice)} {formData.price.currency} per {formData.quantity.unit}
                 </span>
               </div>
             )}
@@ -210,19 +271,17 @@ export function PriceStep({ formData, updateFormData }: Props) {
               <p>• Research market prices for similar materials</p>
               <p>• Consider material quality, quantity, and location</p>
               <p>• Factor in logistics and processing costs for buyers</p>
-              {formData.price.priceType === 'auction' && (
-                <p>• Set reserve prices 10-20% below expected market value</p>
-              )}
+              <p>• Set reserve prices 10-20% below expected market value</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Validation Message */}
-      {(!formData.price.basePrice || !formData.price.priceType) && (
+      {(!formData.price.basePrice || !formData.quantity.available || !formData.quantity.unit) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
-            Please select a pricing type and set a base price to continue.
+            Please set a starting price, available quantity, and unit of measurement to continue.
           </p>
         </div>
       )}

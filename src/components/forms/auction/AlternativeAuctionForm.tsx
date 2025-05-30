@@ -5,29 +5,20 @@ import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Import form steps
-import { MaterialCreationStep } from './steps/MaterialCreationStep';
-import { TradeMaterialInfoStep } from './steps/TradeMaterialInfoStep';
 import { MaterialTypeStep } from './steps/MaterialTypeStep';
 import { MaterialSpecificationStep } from './steps/MaterialSpecificationStep';
 import { MaterialOriginStep } from './steps/MaterialOriginStep';
 import { ContaminationStep } from './steps/ContaminationStep';
 import { ProcessingMethodStep } from './steps/ProcessingMethodStep';
 import { LocationLogisticsStep } from './steps/LocationLogisticsStep';
-import { QuantityStep } from './steps/QuantityStep';
 import { PriceStep } from './steps/PriceStep';
 import { ImagesStep } from './steps/ImagesStep';
-import { TitleDescriptionStep } from './steps/TitleDescriptionStep';
 
 export interface FormData {
-  // Material Creation
+  // Material Creation & Type
   materialType: string;
   businessType: string;
-  
-  // Trade Material Info
-  tradeType: 'sell' | 'buy' | '';
-  materialSubtype: string;
-  
-  // Material Type Selection
+  sellFrequency: string;
   category: string;
   subcategory: string;
   specificMaterial: string;
@@ -66,7 +57,7 @@ export interface FormData {
     deliveryOptions: string[];
   };
   
-  // Quantity
+  // Quantity & Price
   quantity: {
     available: number;
     unit: string;
@@ -74,18 +65,15 @@ export interface FormData {
     packaging: string;
   };
   
-  // Price
   price: {
     basePrice: number;
     currency: string;
-    priceType: 'fixed' | 'negotiable' | 'auction';
+    priceType: 'auction';
     reservePrice?: number;
   };
   
-  // Images
+  // Image, Title & Description
   images: File[];
-  
-  // Title & Description
   title: string;
   description: string;
   keywords: string[];
@@ -94,8 +82,7 @@ export interface FormData {
 const initialFormData: FormData = {
   materialType: '',
   businessType: '',
-  tradeType: '',
-  materialSubtype: '',
+  sellFrequency: '',
   category: '',
   subcategory: '',
   specificMaterial: '',
@@ -136,18 +123,14 @@ const initialFormData: FormData = {
 };
 
 const steps = [
-  { id: 1, title: 'Material Creation', component: MaterialCreationStep },
-  { id: 2, title: 'Trade Material Info', component: TradeMaterialInfoStep },
-  { id: 3, title: 'Material Type', component: MaterialTypeStep },
-  { id: 4, title: 'Specifications', component: MaterialSpecificationStep },
-  { id: 5, title: 'Material Origin', component: MaterialOriginStep },
-  { id: 6, title: 'Contamination', component: ContaminationStep },
-  { id: 7, title: 'Processing Method', component: ProcessingMethodStep },
-  { id: 8, title: 'Location & Logistics', component: LocationLogisticsStep },
-  { id: 9, title: 'Quantity', component: QuantityStep },
-  { id: 10, title: 'Price', component: PriceStep },
-  { id: 11, title: 'Images', component: ImagesStep },
-  { id: 12, title: 'Title & Description', component: TitleDescriptionStep }
+  { id: 1, title: 'Material Type', component: MaterialTypeStep },
+  { id: 2, title: 'Specifications', component: MaterialSpecificationStep },
+  { id: 3, title: 'Material Origin', component: MaterialOriginStep },
+  { id: 4, title: 'Contamination', component: ContaminationStep },
+  { id: 5, title: 'Processing Method', component: ProcessingMethodStep },
+  { id: 6, title: 'Location & Logistics', component: LocationLogisticsStep },
+  { id: 7, title: 'Quantity & Price', component: PriceStep },
+  { id: 8, title: 'Image & Description', component: ImagesStep }
 ];
 
 export function AlternativeAuctionForm() {
@@ -163,31 +146,22 @@ export function AlternativeAuctionForm() {
     // Add validation logic for each step
     switch (stepId) {
       case 1:
-        return !!(formData.materialType && formData.businessType);
+        return !!(formData.materialType && formData.businessType && formData.sellFrequency && formData.category && formData.subcategory);
       case 2:
-        return !!(formData.tradeType && formData.materialSubtype);
-      case 3:
-        return !!(formData.category && formData.subcategory);
-      case 4:
         // Specifications are optional
         return true;
-      case 5:
+      case 3:
         return !!(formData.origin.source);
-      case 6:
+      case 4:
         return !!(formData.contamination.level);
-      case 7:
+      case 5:
         return !!(formData.processing.methods && formData.processing.methods.length > 0);
-      case 8:
+      case 6:
         return !!(formData.location.country && formData.location.city);
-      case 9:
-        return !!(formData.quantity.available > 0 && formData.quantity.unit);
-      case 10:
-        return !!(formData.price.basePrice > 0 && formData.price.priceType);
-      case 11:
-        // Images are optional but recommended
-        return true;
-      case 12:
-        return !!(formData.title && formData.description);
+      case 7:
+        return !!(formData.quantity.available > 0 && formData.quantity.unit && formData.price.basePrice > 0);
+      case 8:
+        return !!(formData.images && formData.images.length > 0 && formData.title && formData.description);
       default:
         return true;
     }

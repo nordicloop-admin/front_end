@@ -265,14 +265,14 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
                 key={option.id}
                 onClick={() => toggleDeliveryOption(option.id)}
                 className={`
-                  w-full p-4 rounded-lg border text-left transition-all
+                  w-full p-3 rounded-lg border text-left transition-all
                   ${formData.location.deliveryOptions?.includes(option.id)
                     ? 'border-[#FF8A00] bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
                   }
                 `}
               >
-                <div className="flex items-start space-x-3">
+                <div className="flex items-center space-x-3">
                   <div className={`
                     p-2 rounded-md
                     ${formData.location.deliveryOptions?.includes(option.id)
@@ -283,7 +283,7 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
                     <Icon className="w-4 h-4" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-between">
                       <h4 className="font-medium text-gray-900">{option.name}</h4>
                       {formData.location.deliveryOptions?.includes(option.id) && (
                         <CheckCircle className="w-4 h-4 text-[#FF8A00]" />
@@ -298,53 +298,11 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
-      {/* Location Summary */}
-      {(formData.location.country && formData.location.city) && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Location Summary</h4>
-          <div className="space-y-1 text-sm text-gray-600">
-            <div>
-              <span className="font-medium text-gray-700">Location:</span> {' '}
-              {formData.location.city}
-              {formData.location.region && `, ${formData.location.region}`}
-              {selectedCountry && `, ${selectedCountry.name}`}
-            </div>
-            {formData.location.pickupAvailable && (
-              <div className="text-green-600">✓ Pickup available</div>
-            )}
-            {formData.location.deliveryOptions && formData.location.deliveryOptions.length > 0 && (
-              <div>
-                <span className="font-medium text-gray-700">Delivery:</span> {' '}
-                {formData.location.deliveryOptions.map(option => 
-                  deliveryOptions.find(o => o.id === option)?.name
-                ).join(', ')}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Logistics Guidelines */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex items-start space-x-3">
-          <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">Logistics Guidelines</h4>
-            <div className="text-sm text-blue-700 mt-1 space-y-1">
-              <p>• Accurate location helps buyers calculate transport costs</p>
-              <p>• Offering multiple delivery options increases buyer interest</p>
-              <p>• Consider material weight and volume for shipping options</p>
-              <p>• Local pickup often preferred for large quantities</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Validation Message */}
       {(!formData.location.country || !formData.location.city) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
-            Please specify both country and city to continue.
+            Please specify at least the country and city location.
           </p>
         </div>
       )}
