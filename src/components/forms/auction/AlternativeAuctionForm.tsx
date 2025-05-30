@@ -55,6 +55,7 @@ export interface FormData {
     city: string;
     pickupAvailable: boolean;
     deliveryOptions: string[];
+    fullAddress?: string;
   };
   
   // Quantity & Price
