@@ -16,16 +16,13 @@ const units = [
 ];
 
 const packagingOptions = [
-  'Bulk (loose)',
-  'Bales',
-  'Bags (25kg)',
-  'Bags (50kg)',
-  'Bags (1000kg/Big bags)',
-  'Containers (20ft)',
-  'Containers (40ft)',
-  'Pallets',
-  'Drums',
-  'Custom packaging'
+  'Baled',
+  'Loose',
+  'Big-bag',
+  'Octabin',
+  'Roles',
+  'Container',
+  'Other'
 ];
 
 export function PriceStep({ formData, updateFormData }: Props) {
@@ -136,15 +133,18 @@ export function PriceStep({ formData, updateFormData }: Props) {
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
           <Box className="inline w-4 h-4 mr-2" />
-          Packaging Type
+          Packaging
         </label>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <p className="text-sm text-gray-500 mb-4">
+          Detail the packaging method for the material.
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {packagingOptions.map((packaging) => (
             <button
               key={packaging}
               onClick={() => handleQuantityUpdate('packaging', packaging)}
               className={`
-                p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
+                p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
                 ${formData.quantity.packaging === packaging
                   ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                   : 'border-gray-200 hover:border-gray-300 text-gray-700'

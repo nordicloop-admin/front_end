@@ -42,10 +42,11 @@ const businessTypes = [
 
 const sellFrequencies = [
   { id: 'one-time', name: 'One-time' },
+  { id: 'weekly', name: 'Weekly' },
+  { id: 'bi-weekly', name: 'Bi-weekly' },
   { id: 'monthly', name: 'Monthly' },
   { id: 'quarterly', name: 'Quarterly' },
-  { id: 'yearly', name: 'Yearly' },
-  { id: 'ongoing', name: 'Ongoing' }
+  { id: 'yearly', name: 'Yearly' }
 ];
 
 export function MaterialTypeStep({ formData, updateFormData }: Props) {
@@ -313,9 +314,9 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
       {/* Sell Frequency Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
-          How often do you want to sell this material? *
+          How often do you have this material? *
         </label>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {sellFrequencies.map((frequency) => (
             <button
               key={frequency.id}
