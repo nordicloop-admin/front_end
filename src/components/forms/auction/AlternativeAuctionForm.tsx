@@ -70,6 +70,7 @@ export interface FormData {
     currency: string;
     priceType: 'auction';
     reservePrice?: number;
+    auctionDuration?: string;
   };
   
   // Image, Title & Description
@@ -114,7 +115,8 @@ const initialFormData: FormData = {
   price: {
     basePrice: 0,
     currency: 'SEK',
-    priceType: 'auction'
+    priceType: 'auction',
+    auctionDuration: '7'
   },
   images: [],
   title: '',
@@ -159,7 +161,7 @@ export function AlternativeAuctionForm() {
       case 6:
         return !!(formData.location.country && formData.location.city);
       case 7:
-        return !!(formData.quantity.available > 0 && formData.quantity.unit && formData.price.basePrice > 0);
+        return !!(formData.quantity.available > 0 && formData.quantity.unit && formData.price.basePrice > 0 && formData.price.auctionDuration);
       case 8:
         return !!(formData.images && formData.images.length > 0 && formData.title && formData.description);
       default:

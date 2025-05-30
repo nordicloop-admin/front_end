@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, Scale, Package, Box } from 'lucide-react';
+import { DollarSign, Scale, Package, Box, Clock } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -23,6 +23,14 @@ const packagingOptions = [
   'Roles',
   'Container',
   'Other'
+];
+
+const bidDurationOptions = [
+  { value: '1', label: '1 day' },
+  { value: '3', label: '3 days' },
+  { value: '7', label: '7 days' },
+  { value: '14', label: '14 days' },
+  { value: '30', label: '30 days' }
 ];
 
 export function PriceStep({ formData, updateFormData }: Props) {
@@ -200,6 +208,34 @@ export function PriceStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
+      {/* Bid Duration */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-3">
+          <Clock className="inline w-4 h-4 mr-2" />
+          Auction Duration *
+        </label>
+        <p className="text-sm text-gray-500 mb-4">
+          How long should the auction run?
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          {bidDurationOptions.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => handlePriceUpdate('auctionDuration', option.value)}
+              className={`
+                p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                ${formData.price.auctionDuration === option.value
+                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }
+              `}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Reserve Price */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -247,6 +283,15 @@ export function PriceStep({ formData, updateFormData }: Props) {
               </span>
             </div>
 
+            {formData.price.auctionDuration && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Auction Duration:</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {bidDurationOptions.find(o => o.value === formData.price.auctionDuration)?.label || formData.price.auctionDuration + ' days'}
+                </span>
+              </div>
+            )}
+
             {formData.price.reservePrice && formData.price.reservePrice > 0 && (
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Reserve Price:</span>
@@ -278,10 +323,10 @@ export function PriceStep({ formData, updateFormData }: Props) {
       </div>
 
       {/* Validation Message */}
-      {(!formData.price.basePrice || !formData.quantity.available || !formData.quantity.unit) && (
+      {(!formData.price.basePrice || !formData.quantity.available || !formData.quantity.unit || !formData.price.auctionDuration) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
-            Please set a starting price, available quantity, and unit of measurement to continue.
+            Please set a starting price, available quantity, unit of measurement, and auction duration to continue.
           </p>
         </div>
       )}
