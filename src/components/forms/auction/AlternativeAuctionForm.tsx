@@ -17,11 +17,13 @@ import { ImagesStep } from './steps/ImagesStep';
 export interface FormData {
   // Material Creation & Type
   materialType: string;
+  tradeType: 'sell' | 'buy' | '';
   businessType: string;
   sellFrequency: string;
   category: string;
   subcategory: string;
   specificMaterial: string;
+  materialSubtype: string;
   
   // Material Specification
   specifications: {
@@ -83,11 +85,13 @@ export interface FormData {
 
 const initialFormData: FormData = {
   materialType: '',
+  tradeType: '',
   businessType: '',
   sellFrequency: '',
   category: '',
   subcategory: '',
   specificMaterial: '',
+  materialSubtype: '',
   specifications: {},
   origin: {
     source: ''

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MapPin, Truck, Package, Search, CheckCircle, Globe, MapPinned, Info } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
@@ -51,7 +51,23 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
   
   // Load Google Maps API
   const { isLoaded, loadError } = useGoogleMaps();
-  const { getPlaceDetails } = usePlacesAutocomplete(addressInputRef, isLoaded);
+  const { getPlaceDetails, selectedPlace } = usePlacesAutocomplete(addressInputRef, isLoaded);
+
+  // Watch for changes to selectedPlace and update the form data
+  useEffect(() => {
+    if (selectedPlace) {
+      updateFormData({
+        location: {
+          ...formData.location,
+          country: selectedPlace.countryCode,
+          region: selectedPlace.region,
+          city: selectedPlace.city,
+          fullAddress: selectedPlace.formattedAddress
+        }
+      });
+      setLocationError('');
+    }
+  }, [selectedPlace, formData.location, updateFormData]);
 
   const handleAddressSelect = async () => {
     if (!isLoaded) return;
@@ -134,7 +150,12 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
                   type="text"
                   placeholder="Start typing your address in Sweden..."
                   className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${locationError ? 'border-red-500' : 'border-gray-300'}`}
-                  onChange={(e) => setAddressInput(e.target.value)}
+                  onChange={(e) => {
+                    setAddressInput(e.target.value);
+                    if (locationError) {
+                      setLocationError('');
+                    }
+                  }}
                   disabled={!isLoaded || isSearching}
                 />
                 <button 
