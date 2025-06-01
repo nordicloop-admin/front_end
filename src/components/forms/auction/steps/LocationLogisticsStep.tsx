@@ -1,16 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Truck, Package, Search, CheckCircle } from 'lucide-react';
+'use client';
+
+import React, { useState, useRef } from 'react';
+import { MapPin, Truck, Package, Search, CheckCircle, Globe, MapPinned, Info } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
+import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
 
 interface Props {
   formData: FormData;
   updateFormData: (updates: Partial<FormData>) => void;
-}
-
-interface Country {
-  id: string;
-  name: string;
-  region: string;
 }
 
 const deliveryOptions = [
@@ -46,57 +43,45 @@ const deliveryOptions = [
   }
 ];
 
-const nordicRegions = [
-  'Stockholm County',
-  'Gothenburg',
-  'Malmö',
-  'Uppsala',
-  'Västerås',
-  'Örebro',
-  'Linköping',
-  'Oslo',
-  'Bergen',
-  'Stavanger',
-  'Trondheim',
-  'Helsinki',
-  'Espoo',
-  'Tampere',
-  'Turku',
-  'Copenhagen',
-  'Aarhus',
-  'Odense',
-  'Aalborg',
-  'Reykjavik'
-];
-
 export function LocationLogisticsStep({ formData, updateFormData }: Props) {
-  const [countries, setCountries] = useState<Country[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [addressInput, setAddressInput] = useState('');
+  const [locationError, setLocationError] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement>(null!);
+  
+  // Load Google Maps API
+  const { isLoaded, loadError } = useGoogleMaps();
+  const { getPlaceDetails } = usePlacesAutocomplete(addressInputRef, isLoaded);
 
-  useEffect(() => {
-    // Load countries from locations data
-    const loadCountries = async () => {
-      try {
-        const response = await fetch('/api/locations');
-        const data = await response.json();
-        setCountries(data.countries || []);
-      } catch (_error) {
-        // Fallback to Nordic countries
-        setCountries([
-          { id: 'sweden', name: 'Sweden', region: 'Europe' },
-          { id: 'norway', name: 'Norway', region: 'Europe' },
-          { id: 'finland', name: 'Finland', region: 'Europe' },
-          { id: 'denmark', name: 'Denmark', region: 'Europe' },
-          { id: 'iceland', name: 'Iceland', region: 'Europe' }
-        ]);
-      } finally {
-        setLoading(false);
+  const handleAddressSelect = async () => {
+    if (!isLoaded) return;
+    
+    setIsSearching(true);
+    
+    try {
+      const placeResult = await getPlaceDetails();
+      
+      if (placeResult) {
+        updateFormData({
+          location: {
+            ...formData.location,
+            country: placeResult.countryCode,
+            region: placeResult.region,
+            city: placeResult.city,
+            fullAddress: placeResult.formattedAddress
+          }
+        });
+        setLocationError('');
+      } else {
+        setLocationError('Please select a valid address from the suggestions');
       }
-    };
-
-    loadCountries();
-  }, []);
+    } catch (_error) {
+      // Handle error silently
+      setLocationError('Failed to get location details');
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleLocationUpdate = (field: string, value: any) => {
     updateFormData({
@@ -118,21 +103,6 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
     }
   };
 
-  const filteredCountries = countries.filter(country =>
-    country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    country.region.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const selectedCountry = countries.find(c => c.id === formData.location.country);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF8A00]"></div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -144,95 +114,125 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
         </p>
       </div>
 
-      {/* Country Selection */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-4">
-          <MapPin className="inline w-4 h-4 mr-2" />
-          Country *
-        </label>
-        
-        {/* Search */}
-        <div className="relative mb-4">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-gray-400" />
-          </div>
-          <input
-            type="text"
-            placeholder="Search countries..."
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-          {filteredCountries.map((country) => (
-            <button
-              key={country.id}
-              onClick={() => handleLocationUpdate('country', country.id)}
-              className={`
-                p-2 rounded-lg border text-sm text-left transition-all hover:scale-105
-                ${formData.location.country === country.id
-                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                }
-              `}
-            >
-              {country.name}
-              <div className="text-xs text-gray-500 mt-1">{country.region}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Region/State Selection */}
-      {selectedCountry && (
+      {/* Location Section */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Region/State
-          </label>
-          {['sweden', 'norway', 'finland', 'denmark', 'iceland'].includes(selectedCountry.id) ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {nordicRegions.map((region) => (
-                <button
-                  key={region}
-                  onClick={() => handleLocationUpdate('region', region)}
-                  className={`
-                    p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                    ${formData.location.region === region
-                      ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                      : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                    }
-                  `}
+          <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+            <MapPinned className="mr-2 h-5 w-5 text-[#FF8A00]" />
+            Material Location
+          </h4>
+          
+          {/* Google Maps Autocomplete */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Search Address in Sweden *
+              </label>
+              <div className="relative">
+                <input
+                  ref={addressInputRef}
+                  type="text"
+                  placeholder="Start typing your address in Sweden..."
+                  className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${locationError ? 'border-red-500' : 'border-gray-300'}`}
+                  onChange={(e) => setAddressInput(e.target.value)}
+                  disabled={!isLoaded || isSearching}
+                />
+                <button 
+                  onClick={handleAddressSelect}
+                  disabled={!isLoaded || isSearching || !addressInput}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${!isLoaded || isSearching || !addressInput ? 'text-gray-400 cursor-not-allowed' : 'text-[#FF8A00] hover:bg-orange-50'}`}
                 >
-                  {region}
+                  {isSearching ? (
+                    <div className="animate-spin h-5 w-5 border-2 border-[#FF8A00] border-t-transparent rounded-full"></div>
+                  ) : (
+                    <Search className="h-5 w-5" />
+                  )}
                 </button>
-              ))}
+              </div>
+              {locationError && (
+                <p className="mt-1 text-sm text-red-600">{locationError}</p>
+              )}
+              {!isLoaded && !loadError && (
+                <p className="mt-1 text-sm text-gray-500">Loading Google Maps...</p>
+              )}
+              {loadError && (
+                <p className="mt-1 text-sm text-red-600">Failed to load Google Maps. Please enter location manually.</p>
+              )}
             </div>
-          ) : (
-            <input
-              type="text"
-              placeholder="Enter region or state"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
-              value={formData.location.region}
-              onChange={(e) => handleLocationUpdate('region', e.target.value)}
-            />
-          )}
-        </div>
-      )}
 
-      {/* City */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          City *
-        </label>
-        <input
-          type="text"
-          placeholder="Enter city name"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
-          value={formData.location.city}
-          onChange={(e) => handleLocationUpdate('city', e.target.value)}
-        />
+            {/* Selected Location Summary */}
+            {formData.location.country && formData.location.city && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h5 className="font-medium text-gray-900 mb-2 flex items-center">
+                  <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                  Selected Location
+                </h5>
+                <div className="space-y-2 text-sm">
+                  {formData.location.fullAddress && (
+                    <div className="flex">
+                      <MapPin className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0 mt-1" />
+                      <span className="text-gray-700">{formData.location.fullAddress}</span>
+                    </div>
+                  )}
+                  <div className="flex">
+                    <Globe className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0 mt-1" />
+                    <span className="text-gray-700">
+                      {formData.location.city}
+                      {formData.location.region && `, ${formData.location.region}`}
+                      {formData.location.country && `, ${formData.location.country.toUpperCase()}`}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Manual Location Input (Fallback) */}
+            {loadError && (
+              <div className="space-y-4 mt-4 border-t border-gray-200 pt-4">
+                <h5 className="font-medium text-gray-900">Manual Location Entry</h5>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Country *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter country"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                    value={formData.location.country || ''}
+                    onChange={(e) => handleLocationUpdate('country', e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Region/State
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter region or state"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                    value={formData.location.region || ''}
+                    onChange={(e) => handleLocationUpdate('region', e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    City *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter city"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                    value={formData.location.city || ''}
+                    onChange={(e) => handleLocationUpdate('city', e.target.value)}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Pickup Available */}
@@ -253,20 +253,24 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
 
       {/* Delivery Options */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-4">
-          <Truck className="inline w-4 h-4 mr-2" />
+        <h4 className="text-lg font-medium text-gray-900 mb-4">
           Delivery Options
-        </label>
-        <div className="space-y-3">
+        </h4>
+        <p className="text-sm text-gray-600 mb-4">
+          Select all the delivery options that apply to this material.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {deliveryOptions.map((option) => {
             const Icon = option.icon;
+            const isSelected = formData.location.deliveryOptions?.includes(option.id) || false;
+            
             return (
               <button
                 key={option.id}
                 onClick={() => toggleDeliveryOption(option.id)}
                 className={`
-                  w-full p-4 rounded-lg border text-left transition-all
-                  ${formData.location.deliveryOptions?.includes(option.id)
+                  p-4 rounded-lg border-2 text-left transition-all
+                  ${isSelected
                     ? 'border-[#FF8A00] bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
                   }
@@ -274,19 +278,19 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
               >
                 <div className="flex items-start space-x-3">
                   <div className={`
-                    p-2 rounded-md
-                    ${formData.location.deliveryOptions?.includes(option.id)
+                    p-2 rounded-full
+                    ${isSelected
                       ? 'bg-[#FF8A00] text-white'
                       : 'bg-gray-100 text-gray-600'
                     }
                   `}>
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-5 h-5" />
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="font-medium text-gray-900">{option.name}</h4>
-                      {formData.location.deliveryOptions?.includes(option.id) && (
-                        <CheckCircle className="w-4 h-4 text-[#FF8A00]" />
+                  <div>
+                    <div className="flex items-center">
+                      <h5 className="font-medium text-gray-900">{option.name}</h5>
+                      {isSelected && (
+                        <CheckCircle className="w-4 h-4 ml-2 text-[#FF8A00]" />
                       )}
                     </div>
                     <p className="text-sm text-gray-500 mt-1">{option.description}</p>
@@ -298,43 +302,19 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
-      {/* Location Summary */}
-      {(formData.location.country && formData.location.city) && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Location Summary</h4>
-          <div className="space-y-1 text-sm text-gray-600">
-            <div>
-              <span className="font-medium text-gray-700">Location:</span> {' '}
-              {formData.location.city}
-              {formData.location.region && `, ${formData.location.region}`}
-              {selectedCountry && `, ${selectedCountry.name}`}
-            </div>
-            {formData.location.pickupAvailable && (
-              <div className="text-green-600">✓ Pickup available</div>
-            )}
-            {formData.location.deliveryOptions && formData.location.deliveryOptions.length > 0 && (
-              <div>
-                <span className="font-medium text-gray-700">Delivery:</span> {' '}
-                {formData.location.deliveryOptions.map(option => 
-                  deliveryOptions.find(o => o.id === option)?.name
-                ).join(', ')}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Logistics Guidelines */}
+      {/* Information Box */}
       <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
         <div className="flex items-start space-x-3">
-          <MapPin className="w-5 h-5 text-blue-600 mt-0.5" />
+          <div className="flex-shrink-0">
+            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+          </div>
           <div>
-            <h4 className="text-sm font-medium text-blue-900">Logistics Guidelines</h4>
-            <div className="text-sm text-blue-700 mt-1 space-y-1">
-              <p>• Accurate location helps buyers calculate transport costs</p>
-              <p>• Offering multiple delivery options increases buyer interest</p>
-              <p>• Consider material weight and volume for shipping options</p>
-              <p>• Local pickup often preferred for large quantities</p>
+            <h4 className="text-sm font-medium text-blue-900">Why location matters</h4>
+            <div className="text-sm text-blue-700 mt-1">
+              <p className="mb-1">• Accurate location helps buyers calculate logistics costs</p>
+              <p className="mb-1">• Currently, the Nordic Loop Marketplace only serves locations within Sweden</p>
+              <p className="mb-1">• Specify delivery options to make your listing more attractive</p>
+              <p>• For sensitive materials, you can choose to reveal exact location only to serious buyers</p>
             </div>
           </div>
         </div>
@@ -344,7 +324,7 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
       {(!formData.location.country || !formData.location.city) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
-            Please specify both country and city to continue.
+            Please specify the location (country and city) where the material is available.
           </p>
         </div>
       )}

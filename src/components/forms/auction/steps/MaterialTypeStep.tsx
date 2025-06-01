@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, ChevronDown } from 'lucide-react';
+import { Factory, Package, Recycle, Building2, ChevronDown } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -13,9 +13,44 @@ interface Category {
   subcategories: { id: string; name: string; }[];
 }
 
+const businessTypes = [
+  {
+    id: 'manufacturer',
+    name: 'Manufacturer',
+    icon: Factory,
+    description: 'Manufacturing company with production waste'
+  },
+  {
+    id: 'recycler',
+    name: 'Recycler',
+    icon: Recycle,
+    description: 'Recycling facility or waste processor'
+  },
+  {
+    id: 'distributor',
+    name: 'Distributor',
+    icon: Building2,
+    description: 'Material distributor or trading company'
+  },
+  {
+    id: 'other',
+    name: 'Other',
+    icon: Package,
+    description: 'Other business type'
+  }
+];
+
+const sellFrequencies = [
+  { id: 'one-time', name: 'One-time' },
+  { id: 'weekly', name: 'Weekly' },
+  { id: 'bi-weekly', name: 'Bi-weekly' },
+  { id: 'monthly', name: 'Monthly' },
+  { id: 'quarterly', name: 'Quarterly' },
+  { id: 'yearly', name: 'Yearly' }
+];
+
 export function MaterialTypeStep({ formData, updateFormData }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,6 +94,51 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
               { id: 'paper-newspaper', name: 'Newspaper' },
               { id: 'paper-office', name: 'Office Paper' }
             ]
+          },
+          {
+            id: 'glass',
+            name: 'Glass',
+            subcategories: [
+              { id: 'glass-clear', name: 'Clear Glass' },
+              { id: 'glass-colored', name: 'Colored Glass' },
+              { id: 'glass-bottles', name: 'Glass Bottles' }
+            ]
+          },
+          {
+            id: 'textiles',
+            name: 'Textiles',
+            subcategories: [
+              { id: 'textiles-cotton', name: 'Cotton' },
+              { id: 'textiles-polyester', name: 'Polyester' },
+              { id: 'textiles-mixed', name: 'Mixed Textiles' }
+            ]
+          },
+          {
+            id: 'wood',
+            name: 'Wood',
+            subcategories: [
+              { id: 'wood-clean', name: 'Clean Wood' },
+              { id: 'wood-treated', name: 'Treated Wood' },
+              { id: 'wood-pallets', name: 'Pallets' }
+            ]
+          },
+          {
+            id: 'building-material',
+            name: 'Building Material',
+            subcategories: [
+              { id: 'building-concrete', name: 'Concrete' },
+              { id: 'building-bricks', name: 'Bricks' },
+              { id: 'building-insulation', name: 'Insulation' }
+            ]
+          },
+          {
+            id: 'organic-waste',
+            name: 'Organic Waste',
+            subcategories: [
+              { id: 'organic-food', name: 'Food Waste' },
+              { id: 'organic-garden', name: 'Garden Waste' },
+              { id: 'organic-compost', name: 'Compost' }
+            ]
           }
         ]);
       } finally {
@@ -69,9 +149,18 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
     loadCategories();
   }, []);
 
+  const handleBusinessTypeSelect = (businessType: string) => {
+    updateFormData({ businessType });
+  };
+
+  const handleFrequencySelect = (frequency: string) => {
+    updateFormData({ sellFrequency: frequency });
+  };
+
   const handleCategorySelect = (category: string) => {
     updateFormData({ 
-      category, 
+      category,
+      materialType: category, // Set materialType to match category
       subcategory: '', // Reset subcategory when category changes
       specificMaterial: '' 
     });
@@ -83,13 +172,6 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
 
   const selectedCategory = categories.find(cat => cat.id === formData.category);
   const availableSubcategories = selectedCategory?.subcategories || [];
-
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    category.subcategories.some(sub => 
-      sub.name.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
 
   if (loading) {
     return (
@@ -103,25 +185,11 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
     <div className="space-y-8">
       <div className="text-center">
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
-          Select Material Type
+          Material Information
         </h3>
         <p className="text-gray-600">
-          Choose the specific category and subcategory for your {formData.materialType} material
+          Let&apos;s start by understanding what type of material you want to list
         </p>
-      </div>
-
-      {/* Search */}
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-400" />
-        </div>
-        <input
-          type="text"
-          placeholder="Search categories and materials..."
-          className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       </div>
 
       {/* Category Selection */}
@@ -130,7 +198,7 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
           Main Category *
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredCategories.map((category) => (
+          {categories.map((category) => (
             <button
               key={category.id}
               onClick={() => handleCategorySelect(category.id)}
@@ -202,31 +270,76 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
         </div>
       )}
 
-      {/* Selection Summary */}
-      {(formData.category || formData.subcategory) && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Current Selection</h4>
-          <div className="space-y-1 text-sm text-gray-600">
-            {formData.category && (
-              <div>Category: <span className="font-medium">{selectedCategory?.name}</span></div>
-            )}
-            {formData.subcategory && (
-              <div>Subcategory: <span className="font-medium">
-                {availableSubcategories.find(sub => sub.id === formData.subcategory)?.name}
-              </span></div>
-            )}
-            {formData.specificMaterial && (
-              <div>Specific: <span className="font-medium">{formData.specificMaterial}</span></div>
-            )}
-          </div>
+      {/* Business Type Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          What type of business are you? *
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {businessTypes.map((type) => {
+            const Icon = type.icon;
+            return (
+              <button
+                key={type.id}
+                onClick={() => handleBusinessTypeSelect(type.id)}
+                className={`
+                  p-4 rounded-lg border-2 transition-all text-left hover:scale-105
+                  ${formData.businessType === type.id
+                    ? 'border-[#FF8A00] bg-orange-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                  }
+                `}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className={`
+                    p-2 rounded-md
+                    ${formData.businessType === type.id
+                      ? 'bg-[#FF8A00] text-white'
+                      : 'bg-gray-100 text-gray-600'
+                    }
+                  `}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900">{type.name}</h4>
+                    <p className="text-sm text-gray-500 mt-1">{type.description}</p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
         </div>
-      )}
+      </div>
+
+      {/* Sell Frequency Selection */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-4">
+          How often do you have this material? *
+        </label>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {sellFrequencies.map((frequency) => (
+            <button
+              key={frequency.id}
+              onClick={() => handleFrequencySelect(frequency.id)}
+              className={`
+                p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                ${formData.sellFrequency === frequency.id
+                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                }
+              `}
+            >
+              {frequency.name}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Validation Message */}
-      {(!formData.category || !formData.subcategory) && (
+      {(!formData.category || !formData.subcategory || !formData.businessType || !formData.sellFrequency) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
-            Please select both category and subcategory to continue.
+            Please complete all required fields marked with an asterisk (*) to continue.
           </p>
         </div>
       )}
