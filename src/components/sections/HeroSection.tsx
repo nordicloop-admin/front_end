@@ -72,7 +72,7 @@ const HeroSection = () => {
                     href="/market-place"
                     className="bg-white text-[#FF8A00] px-6 py-3 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center w-full flex items-center justify-center font-medium"
                   >
-                    Our Market Place
+                    Our Marketplace
                   </Link>
                 </div>
               </div>
@@ -127,7 +127,7 @@ const HeroSection = () => {
                   href="/market-place"
                   className="bg-[#F5F5F5] text-[#FF8A00] px-5 py-2.5 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center flex-1 flex items-center justify-center font-medium"
                 >
-                  Our Market Place
+                  Our Marketplace
                 </Link>
               </div>
             </div>
@@ -208,7 +208,7 @@ const HeroSection = () => {
               href="/market-place"
               className="bg-[#F5F5F5] text-[#FF8A00] px-6 py-3 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center w-full flex items-center justify-center font-medium"
             >
-              Our Market Place
+              Our Marketplace
             </Link>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Factory, Package, Recycle, Building2, ChevronDown } from 'lucide-react';
+import { Package, Recycle, ChevronDown, Box } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -13,30 +13,48 @@ interface Category {
   subcategories: { id: string; name: string; }[];
 }
 
-const businessTypes = [
+const packagingOptions = [
   {
-    id: 'manufacturer',
-    name: 'Manufacturer',
-    icon: Factory,
-    description: 'Manufacturing company with production waste'
+    id: 'baled',
+    name: 'Baled',
+    icon: Box,
+    description: 'Material compressed into bales'
   },
   {
-    id: 'recycler',
-    name: 'Recycler',
+    id: 'loose',
+    name: 'Loose',
+    icon: Package,
+    description: 'Loose material without specific packaging'
+  },
+  {
+    id: 'big-bag',
+    name: 'Big-bag',
+    icon: Package,
+    description: 'Material in large industrial bags'
+  },
+  {
+    id: 'octabin',
+    name: 'Octabin',
+    icon: Box,
+    description: 'Octagonal bulk container packaging'
+  },
+  {
+    id: 'roles',
+    name: 'Roles',
     icon: Recycle,
-    description: 'Recycling facility or waste processor'
+    description: 'Material in rolled form'
   },
   {
-    id: 'distributor',
-    name: 'Distributor',
-    icon: Building2,
-    description: 'Material distributor or trading company'
+    id: 'container',
+    name: 'Container',
+    icon: Box,
+    description: 'Material in shipping containers'
   },
   {
     id: 'other',
     name: 'Other',
     icon: Package,
-    description: 'Other business type'
+    description: 'Other packaging type'
   }
 ];
 
@@ -149,8 +167,13 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
     loadCategories();
   }, []);
 
-  const handleBusinessTypeSelect = (businessType: string) => {
-    updateFormData({ businessType });
+  const handlePackagingSelect = (packaging: string) => {
+    updateFormData({ 
+      quantity: {
+        ...formData.quantity,
+        packaging
+      }
+    });
   };
 
   const handleFrequencySelect = (frequency: string) => {
@@ -270,21 +293,21 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
         </div>
       )}
 
-      {/* Business Type Selection */}
+      {/* Packaging Selection */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
-          What type of business are you? *
+          How is the material packaged? *
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {businessTypes.map((type) => {
+          {packagingOptions.map((type) => {
             const Icon = type.icon;
             return (
               <button
                 key={type.id}
-                onClick={() => handleBusinessTypeSelect(type.id)}
+                onClick={() => handlePackagingSelect(type.name)}
                 className={`
                   p-4 rounded-lg border-2 transition-all text-left hover:scale-105
-                  ${formData.businessType === type.id
+                  ${formData.quantity.packaging === type.name
                     ? 'border-[#FF8A00] bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
                   }
@@ -293,7 +316,7 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
                 <div className="flex items-start space-x-3">
                   <div className={`
                     p-2 rounded-md
-                    ${formData.businessType === type.id
+                    ${formData.quantity.packaging === type.name
                       ? 'bg-[#FF8A00] text-white'
                       : 'bg-gray-100 text-gray-600'
                     }
@@ -336,7 +359,7 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
       </div>
 
       {/* Validation Message */}
-      {(!formData.category || !formData.subcategory || !formData.businessType || !formData.sellFrequency) && (
+      {(!formData.category || !formData.subcategory || !formData.quantity.packaging || !formData.sellFrequency) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
             Please complete all required fields marked with an asterisk (*) to continue.
