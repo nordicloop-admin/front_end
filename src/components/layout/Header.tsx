@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '@/contexts/AuthContext';
+import { User } from 'lucide-react';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   // Close menu when clicking outside or on escape key
   useEffect(() => {
@@ -87,13 +90,23 @@ const Header = () => {
             </Link>
           </nav>
 
-          {/* Login Button - Desktop Only */}
-          <Link
-            href="/login"
-            className="hidden md:block bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors font-medium ml-4"
-          >
-            Log In
-          </Link>
+          {/* Login/Dashboard Button - Desktop Only */}
+          {isAuthenticated ? (
+            <Link
+              href="/dashboard"
+              className="hidden md:flex bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors font-medium ml-4 items-center"
+            >
+              <User size={18} className="mr-2" />
+              Dashboard
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="hidden md:block bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors font-medium ml-4"
+            >
+              Log In
+            </Link>
+          )}
 
           {/* Mobile Menu Button */}
           <button
@@ -187,15 +200,26 @@ const Header = () => {
               </nav>
             </div>
 
-            {/* Login Button in Mobile Menu  */}
+            {/* Login/Dashboard Button in Mobile Menu */}
             <div className="p-6 border-t border-gray-700">
-              <Link
-                href="/login"
-                className="bg-[#FF8A00] text-white px-6 py-3 rounded-md hover:bg-[#e67e00] transition-colors font-medium block text-center w-full"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Log In
-              </Link>
+              {isAuthenticated ? (
+                <Link
+                  href="/dashboard"
+                  className="bg-[#FF8A00] text-white px-6 py-3 rounded-md hover:bg-[#e67e00] transition-colors font-medium block text-center w-full flex items-center justify-center"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <User size={18} className="mr-2" />
+                  Dashboard
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  className="bg-[#FF8A00] text-white px-6 py-3 rounded-md hover:bg-[#e67e00] transition-colors font-medium block text-center w-full"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Log In
+                </Link>
+              )}
             </div>
           </div>
         </div>
