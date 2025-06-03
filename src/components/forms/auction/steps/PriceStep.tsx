@@ -1,5 +1,5 @@
-import React from 'react';
-import { DollarSign, Scale, Package, Box, Clock } from 'lucide-react';
+import React, { useState } from 'react';
+import { DollarSign, Scale, Package, Clock, Calendar } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -15,25 +15,19 @@ const units = [
   'm³', 'cubic meters', 'liters', 'gallons'
 ];
 
-const packagingOptions = [
-  'Baled',
-  'Loose',
-  'Big-bag',
-  'Octabin',
-  'Roles',
-  'Container',
-  'Other'
-];
-
 const bidDurationOptions = [
   { value: '1', label: '1 day' },
   { value: '3', label: '3 days' },
   { value: '7', label: '7 days' },
   { value: '14', label: '14 days' },
-  { value: '30', label: '30 days' }
+  { value: '30', label: '30 days' },
+  { value: 'custom', label: 'Custom' }
 ];
 
 export function PriceStep({ formData, updateFormData }: Props) {
+  const [showCustomDuration, setShowCustomDuration] = useState(formData.price.auctionDuration === 'custom');
+  const [customEndDate, setCustomEndDate] = useState('');
+
   const handlePriceUpdate = (field: string, value: string | number) => {
     updateFormData({
       price: {
@@ -59,6 +53,33 @@ export function PriceStep({ formData, updateFormData }: Props) {
       maximumFractionDigits: 2
     });
   };
+
+  const handleDurationSelect = (duration: string) => {
+    handlePriceUpdate('auctionDuration', duration);
+    setShowCustomDuration(duration === 'custom');
+  };
+
+  const handleCustomDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedDate = e.target.value;
+    setCustomEndDate(selectedDate);
+    
+    // Calculate days difference between today and selected date
+    const today = new Date();
+    const endDate = new Date(selectedDate);
+    const diffTime = endDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Store both the custom duration value and the actual end date
+    handlePriceUpdate('customEndDate', selectedDate);
+    handlePriceUpdate('auctionDuration', `${diffDays > 0 ? diffDays : 1}`);
+  };
+
+  // Calculate minimum date (today) for the date picker
+  const today = new Date().toISOString().split('T')[0];
+  // Calculate maximum date (90 days from today) for the date picker
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 90);
+  const maxDateString = maxDate.toISOString().split('T')[0];
 
   return (
     <div className="space-y-8">
@@ -137,34 +158,6 @@ export function PriceStep({ formData, updateFormData }: Props) {
         </p>
       </div>
 
-      {/* Packaging */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-4">
-          <Box className="inline w-4 h-4 mr-2" />
-          Packaging
-        </label>
-        <p className="text-sm text-gray-500 mb-4">
-          Detail the packaging method for the material.
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {packagingOptions.map((packaging) => (
-            <button
-              key={packaging}
-              onClick={() => handleQuantityUpdate('packaging', packaging)}
-              className={`
-                p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                ${formData.quantity.packaging === packaging
-                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                }
-              `}
-            >
-              {packaging}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Price Section */}
       <div className="pt-4 border-t border-gray-200">
         <h4 className="text-lg font-medium text-gray-900 mb-4">Auction Pricing</h4>
@@ -217,14 +210,14 @@ export function PriceStep({ formData, updateFormData }: Props) {
         <p className="text-sm text-gray-500 mb-4">
           How long should the auction run?
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           {bidDurationOptions.map((option) => (
             <button
               key={option.value}
-              onClick={() => handlePriceUpdate('auctionDuration', option.value)}
+              onClick={() => handleDurationSelect(option.value)}
               className={`
                 p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                ${formData.price.auctionDuration === option.value
+                ${formData.price.auctionDuration === option.value || (option.value === 'custom' && showCustomDuration)
                   ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                   : 'border-gray-200 hover:border-gray-300 text-gray-700'
                 }
@@ -234,6 +227,29 @@ export function PriceStep({ formData, updateFormData }: Props) {
             </button>
           ))}
         </div>
+
+        {/* Custom Duration Calendar */}
+        {showCustomDuration && (
+          <div className="mt-4 border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center mb-3">
+              <Calendar className="w-4 h-4 mr-2 text-[#FF8A00]" />
+              <label className="text-sm font-medium text-gray-700">
+                Select End Date
+              </label>
+            </div>
+            <input
+              type="date"
+              min={today}
+              max={maxDateString}
+              value={customEndDate || formData.price.customEndDate || ''}
+              onChange={handleCustomDateChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+            />
+            <p className="text-xs text-gray-500 mt-2">
+              Select a date up to 90 days from today when the auction should end.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Reserve Price */}
@@ -287,7 +303,10 @@ export function PriceStep({ formData, updateFormData }: Props) {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Auction Duration:</span>
                 <span className="text-sm font-medium text-gray-700">
-                  {bidDurationOptions.find(o => o.value === formData.price.auctionDuration)?.label || formData.price.auctionDuration + ' days'}
+                  {formData.price.auctionDuration === 'custom' 
+                    ? `Until ${new Date(formData.price.customEndDate || '').toLocaleDateString()}`
+                    : bidDurationOptions.find(o => o.value === formData.price.auctionDuration)?.label || 
+                      `${formData.price.auctionDuration} days`}
                 </span>
               </div>
             )}
@@ -297,6 +316,15 @@ export function PriceStep({ formData, updateFormData }: Props) {
                 <span className="text-sm text-gray-600">Reserve Price:</span>
                 <span className="text-sm font-medium text-gray-700">
                   {formatPrice(formData.price.reservePrice)} {formData.price.currency} per {formData.quantity.unit}
+                </span>
+              </div>
+            )}
+
+            {formData.quantity.packaging && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Packaging:</span>
+                <span className="text-sm font-medium text-gray-700">
+                  {formData.quantity.packaging}
                 </span>
               </div>
             )}

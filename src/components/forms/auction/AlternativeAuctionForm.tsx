@@ -74,6 +74,7 @@ export interface FormData {
     priceType: 'auction';
     reservePrice?: number;
     auctionDuration?: string;
+    customEndDate?: string;
   };
   
   // Image, Title & Description
@@ -121,7 +122,8 @@ const initialFormData: FormData = {
     basePrice: 0,
     currency: 'SEK',
     priceType: 'auction',
-    auctionDuration: '7'
+    auctionDuration: '7',
+    customEndDate: ''
   },
   images: [],
   title: '',
@@ -153,7 +155,7 @@ export function AlternativeAuctionForm() {
     // Add validation logic for each step
     switch (stepId) {
       case 1:
-        return !!(formData.materialType && formData.businessType && formData.sellFrequency && formData.category && formData.subcategory);
+        return !!(formData.materialType && formData.quantity.packaging && formData.sellFrequency && formData.category && formData.subcategory);
       case 2:
         // Specifications are optional
         return true;

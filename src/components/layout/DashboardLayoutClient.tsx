@@ -166,6 +166,17 @@ export default function DashboardLayoutClient({
         {/* Navigation */}
         <nav className="flex-1 pt-4 overflow-y-auto">
           <Link
+            href="/"
+            className="flex items-center px-4 py-2.5 text-gray-700 hover:text-[#FF8A00]"
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <Home size={18} className="mr-3" />
+            <span>Home</span>
+          </Link>
+          
+          <div className="border-t border-gray-100 my-2"></div>
+          
+          <Link
             href="/dashboard"
             className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
@@ -319,6 +330,15 @@ export default function DashboardLayoutClient({
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4 md:space-x-4">
+            {/* Home Button */}
+            <Link
+              href="/"
+              className="bg-gray-100 text-gray-700 py-2 px-3 md:px-4 rounded-md flex items-center text-sm hover:bg-gray-200 transition-colors"
+            >
+              <Home size={16} className="md:mr-2" />
+              <span className="hidden md:inline">Home</span>
+            </Link>
+            
             {/* Add Auctions Button - Show text only on larger screens */}
             <button
               onClick={() => setIsModalOpen(true)}
