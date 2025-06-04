@@ -4,7 +4,6 @@ import Script from 'next/script';
 import "./globals.css";
 import RootLayoutClient from "../components/layout/RootLayoutClient";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { Toaster } from 'sonner';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,7 +77,7 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Google Analytics */}
-        {/* <Script src="https://www.googletagmanager.com/gtag/js?id=G-MMV2RE5J6S" strategy="afterInteractive" />
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-MMV2RE5J6S" strategy="afterInteractive" />
         <Script id="google-analytics" strategy="afterInteractive">
           {`
             window.dataLayer = window.dataLayer || [];
@@ -86,7 +85,7 @@ export default function RootLayout({
             gtag('js', new Date());
             gtag('config', 'G-MMV2RE5J6S');
           `}
-        </Script> */}
+        </Script>
 
         {/* EmailJS */}
         <Script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js" strategy="beforeInteractive" />
@@ -105,7 +104,6 @@ export default function RootLayout({
       >
         <AuthProvider>
           <RootLayoutClient>
-            <Toaster position="top-right" richColors />
             {children}
           </RootLayoutClient>
         </AuthProvider>

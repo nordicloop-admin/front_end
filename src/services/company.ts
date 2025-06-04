@@ -15,14 +15,9 @@ interface CompanyRegistrationResponse {
   sector: string;
   country: string;
   website: string;
-  primary_first_name: string;
-  primary_last_name: string;
-  primary_email: string;
-  primary_position: string;
-  secondary_first_name?: string;
-  secondary_last_name?: string;
-  secondary_email?: string;
-  secondary_position?: string;
+  contact_name: string;
+  contact_position: string;
+  contact_email: string;
   registration_date: string;
   status: string;
 }
@@ -34,7 +29,7 @@ interface CompanyRegistrationResponse {
  */
 export async function registerCompany(companyData: CompanyRegistration) {
   try {
-    const response = await apiPost<CompanyRegistrationResponse>('/company/create/', companyData);
+    const response = await apiPost<CompanyRegistrationResponse>('/company/companies/create/', companyData);
 
     return response;
   } catch (error) {
