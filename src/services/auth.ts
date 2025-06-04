@@ -10,6 +10,93 @@ const REFRESH_TOKEN_KEY = 'nordic_loop_refresh_token';
 const USER_KEY = 'nordic_loop_user';
 
 /**
+ * Decode JWT token without verification (for expiration check)
+ * @param token The JWT token to decode
+ * @returns The decoded payload or null if invalid
+ */
+function decodeJWT(token: string): { exp?: number } | null {
+  try {
+    const base64Url = token.split('.')[1];
+    if (!base64Url) return null;
+    
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    
+    return JSON.parse(jsonPayload);
+  } catch (_error) {
+    return null;
+  }
+}
+
+/**
+ * Check if a JWT token is expired
+ * @param token The JWT token to check
+ * @returns Whether the token is expired
+ */
+function isTokenExpired(token: string): boolean {
+  const decoded = decodeJWT(token);
+  if (!decoded || !decoded.exp) {
+    return true; // If we can't decode or no expiration, consider it expired
+  }
+  
+  // JWT exp is in seconds, Date.now() is in milliseconds
+  const currentTime = Math.floor(Date.now() / 1000);
+  return decoded.exp < currentTime;
+}
+
+/**
+ * Validate if the current access token is still valid
+ * @returns Whether the access token is valid and not expired
+ */
+function isAccessTokenValid(): boolean {
+  const token = getAccessToken();
+  if (!token) return false;
+  
+  return !isTokenExpired(token);
+}
+
+/**
+ * Get token expiration time
+ * @returns The expiration timestamp in seconds, or null if token is invalid
+ */
+export function getTokenExpiration(): number | null {
+  const token = getAccessToken();
+  if (!token) return null;
+  
+  const decoded = decodeJWT(token);
+  return decoded?.exp || null;
+}
+
+/**
+ * Get time until token expires
+ * @returns Time in seconds until expiration, or 0 if expired/invalid
+ */
+export function getTimeUntilExpiration(): number {
+  const expiration = getTokenExpiration();
+  if (!expiration) return 0;
+  
+  const currentTime = Math.floor(Date.now() / 1000);
+  const timeUntil = expiration - currentTime;
+  return Math.max(0, timeUntil);
+}
+
+/**
+ * Force token expiration for testing purposes
+ * This is for development/testing only
+ */
+export function forceTokenExpiration(): void {
+  // Only allow in development
+  if (process.env.NODE_ENV === 'development') {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
+}
+
+/**
  * Interface for login response
  */
 interface LoginResponse {
@@ -256,6 +343,15 @@ export async function signup(credentials: SignupCredentials) {
  * @returns Whether the user is authenticated
  */
 export function isAuthenticated(): boolean {
-  // Check if we have both an access token and user data
-  return !!getAccessToken() && !!getUser();
+  // Check if we have user data and a valid (non-expired) access token
+  const user = getUser();
+  const hasValidToken = isAccessTokenValid();
+  
+  // If token is expired, clean up the stored data
+  if (!hasValidToken && user) {
+    logout();
+    return false;
+  }
+  
+  return !!user && hasValidToken;
 }

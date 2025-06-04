@@ -3,25 +3,39 @@
 export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
 export interface CompanyRegistration {
-  // Backend API fields
-  official_name?: string;
-  vat_number?: string;
-  contact_name?: string;
-  contact_position?: string;
-  contact_email?: string;
-  status?: ReviewStatus;
-
-  // Frontend form fields
-  companyName?: string;
-  vatNumber?: string;
+  // Backend API fields - new format
+  official_name: string;
+  vat_number: string;
   email?: string;
   website?: string;
-  country: string;
   sector: string;
+  country: string;
+
+  // Primary contact person
+  primary_first_name: string;
+  primary_last_name: string;
+  primary_email: string;
+  primary_position: string;
+
+  // Secondary contact person (optional)
+  secondary_first_name?: string;
+  secondary_last_name?: string;
+  secondary_email?: string;
+  secondary_position?: string;
+
+  status?: ReviewStatus;
+
+  // Legacy fields for backward compatibility
+  companyName?: string;
+  vatNumber?: string;
   contactFirstName?: string;
   contactLastName?: string;
   contactEmail?: string;
   contactPosition?: string;
+  contact2FirstName?: string;
+  contact2LastName?: string;
+  contact2Email?: string;
+  contact2Position?: string;
   reviewStatus?: ReviewStatus;
   createdAt?: string;
 }

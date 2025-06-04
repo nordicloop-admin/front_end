@@ -7,6 +7,22 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import AddAuctionModal, { AuctionFormData } from '@/components/auctions/AddAuctionModal';
+import { createAuction, createAuctionWithImage } from '@/services/auction';
+import {
+  Home,
+  FileText,
+  Package,
+  Bell,
+  MapPin,
+  User,
+  Search,
+  Menu,
+  Plus,
+  LogOut,
+  ChevronDown
+} from 'lucide-react';
 
 export default function DashboardLayoutClient({
   children,
@@ -17,6 +33,7 @@ export default function DashboardLayoutClient({
   const router = useRouter();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -39,6 +56,81 @@ export default function DashboardLayoutClient({
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+
+  const handleAddAuction = async (auctionData: AuctionFormData) => {
+    // Show loading toast
+    const loadingToast = toast.loading('Creating auction...');
+
+    try {
+      // Prepare the data for the API
+      const apiData = {
+        item_name: auctionData.name,
+        category: auctionData.category,
+        subcategory: auctionData.subcategory,
+        description: auctionData.description,
+        base_price: auctionData.basePrice,
+        price_per_partition: auctionData.pricePerPartition,
+        volume: auctionData.volume,
+        unit: auctionData.unit,
+        selling_type: auctionData.sellingType,
+        country_of_origin: auctionData.countryOfOrigin,
+        end_date: auctionData.endDate,
+        end_time: auctionData.endTime
+      };
+
+      // Validate selling type is one of the allowed values
+      if (!['partition', 'whole', 'both'].includes(apiData.selling_type)) {
+        // Invalid selling type detected
+        toast.dismiss(loadingToast);
+        toast.error('Invalid selling type. Please select a valid option.');
+        return;
+      }
+
+      let response;
+
+      // If there's an image, use the createAuctionWithImage function
+      if (auctionData.image) {
+        response = await createAuctionWithImage(apiData, auctionData.image);
+      } else {
+        response = await createAuction(apiData);
+      }
+
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to create auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Show success message
+      toast.success('Auction created successfully', {
+        description: 'Your new auction has been listed.',
+        duration: 3000,
+      });
+
+      // Close the modal
+      setIsModalOpen(false);
+
+      // If we're not already on the My Auctions page, redirect there
+      if (pathname !== '/dashboard/my-auctions') {
+        router.push('/dashboard/my-auctions');
+      }
+    } catch (error) {
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to create auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
   };
 
   return (
@@ -74,92 +166,134 @@ export default function DashboardLayoutClient({
         {/* Navigation */}
         <nav className="flex-1 pt-4 overflow-y-auto">
           <Link
-            href="/dashboard"
-            className={`flex items-center px-4 py-3 ${pathname === '/dashboard' ? 'bg-[#FF8A00] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            href="/"
+            className="flex items-center px-4 py-2.5 text-gray-700 hover:text-[#FF8A00]"
             onClick={isMobile ? toggleSidebar : undefined}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-            </svg>
-            Overview
+            <Home size={18} className="mr-3" />
+            <span>Home</span>
+          </Link>
+          
+          <div className="border-t border-gray-100 my-2"></div>
+          
+          <Link
+            href="/dashboard"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <Home size={18} className="mr-3" />
+            <span>Overview</span>
           </Link>
 
           <Link
             href="/dashboard/my-auctions"
-            className={`flex items-center px-4 py-3 ${pathname === '/dashboard/my-auctions' ? 'bg-[#FF8A00] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/my-auctions' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            My Auctions
-            <span className="ml-auto bg-gray-200 text-gray-800 rounded-full h-5 w-5 flex items-center justify-center text-xs">2</span>
+            <FileText size={18} className="mr-3" />
+            <span>My Auctions</span>
+            <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">2</span>
           </Link>
 
           <Link
             href="/dashboard/auctions"
-            className={`flex items-center px-4 py-3 ${pathname === '/dashboard/auctions' ? 'bg-[#FF8A00] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/auctions' || pathname.startsWith('/dashboard/auctions/') ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            <Package size={18} className="mr-3" />
+            <span>Auctions</span>
+          </Link>
+
+          <Link
+            href="/dashboard/my-bids"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/my-bids' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="mr-3"
+            >
+              <path
+                d="M14 12C14 13.1046 13.1046 14 12 14C10.8954 14 10 13.1046 10 12C10 10.8954 10.8954 10 12 10C13.1046 10 14 10.8954 14 12Z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M3 12H9"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M15 12H21"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M7 5H17"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M7 19H17"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
             </svg>
-            Auctions
+            <span>My Bids</span>
           </Link>
 
           <Link
             href="/dashboard/subscriptions"
-            className={`flex items-center px-4 py-3 ${pathname === '/dashboard/subscriptions' ? 'bg-[#FF8A00] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/subscriptions' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-            </svg>
-            Subscriptions
+            <Bell size={18} className="mr-3" />
+            <span>Subscriptions</span>
           </Link>
 
           <Link
             href="/dashboard/addresses"
-            className={`flex items-center px-4 py-3 ${pathname === '/dashboard/addresses' ? 'bg-[#FF8A00] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/addresses' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            Addresses
+            <MapPin size={18} className="mr-3" />
+            <span>Addresses</span>
           </Link>
 
           <Link
             href="/dashboard/profile"
-            className={`flex items-center px-4 py-3 ${pathname === '/dashboard/profile' ? 'bg-[#FF8A00] text-white' : 'text-gray-700 hover:bg-gray-100'}`}
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/profile' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            Profile
+            <User size={18} className="mr-3" />
+            <span>Profile</span>
           </Link>
         </nav>
 
         {/* Become Vendor Section */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="mb-2 font-medium">Become vendor</div>
-          <p className="text-sm text-gray-600 mb-3">
+        <div className="p-4 border-t border-gray-100">
+          <div className="mb-1.5 text-sm font-medium">Become vendor</div>
+          <p className="text-xs text-gray-500 mb-3">
             Vendors can sell products and manage a store with a vendor dashboard.
           </p>
-          <button className="w-full bg-[#FF8A00] text-white py-2 px-4 rounded hover:bg-[#e67e00] transition-colors mb-4">
+          <button className="w-full bg-[#FF8A00] text-white py-2 px-4 rounded-md hover:bg-[#e67e00] transition-colors mb-4 text-sm">
             Become vendor
           </button>
 
           {/* Logout Button */}
           <button
             onClick={handleLogout}
-            className="w-full border border-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-100 transition-colors flex items-center justify-center"
+            className="w-full border border-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-50 transition-colors flex items-center justify-center text-sm"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
+            <LogOut size={16} className="mr-2" />
             Logout
           </button>
         </div>
@@ -168,16 +302,14 @@ export default function DashboardLayoutClient({
       {/* Main Content */}
       <div className={cn("flex-1", isMobile ? "w-full" : "")}>
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 h-[60px] flex items-center justify-between px-4 md:px-6">
+        <header className="bg-white border-b border-gray-100 h-[60px] flex items-center justify-between px-4 md:px-6">
           {/* Mobile Menu Toggle */}
           {isMobile && (
             <button
               onClick={toggleSidebar}
               className="p-2 mr-2 text-gray-500 hover:text-gray-700"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-              </svg>
+              <Menu size={20} />
             </button>
           )}
 
@@ -187,54 +319,57 @@ export default function DashboardLayoutClient({
             isMobile ? "w-full max-w-[160px]" : "w-[300px]"
           )}>
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
+              <Search size={16} className="text-gray-400" />
             </div>
             <input
               type="text"
               placeholder={isMobile ? "Search" : "Search something"}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-md bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+              className="block w-full pl-10 pr-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
             />
           </div>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4 md:space-x-4">
+            {/* Home Button */}
+            <Link
+              href="/"
+              className="bg-gray-100 text-gray-700 py-2 px-3 md:px-4 rounded-md flex items-center text-sm hover:bg-gray-200 transition-colors"
+            >
+              <Home size={16} className="md:mr-2" />
+              <span className="hidden md:inline">Home</span>
+            </Link>
+            
             {/* Add Auctions Button - Show text only on larger screens */}
-            <button className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded flex items-center ml-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded-md flex items-center ml-3 text-sm"
+            >
+              <Plus size={16} className="md:mr-2" />
               <span className="hidden md:inline">Add auctions</span>
             </button>
 
-            {/* Only show on tablet and desktop */}
-            {!isMobile && (
-              <button className="p-2 text-gray-500 hover:text-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                </svg>
-              </button>
-            )}
-
+            {/* Notification Button */}
             <button className="p-2 text-gray-500 hover:text-gray-700 relative">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
+              <Bell size={18} />
             </button>
 
             <div className="flex items-center">
               {/* Only show name on larger screens */}
-              <span className="hidden md:inline font-medium mr-2">Hello {user?.firstName || user?.username?.split(' ')[0] || 'User'}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+              <span className="hidden md:inline text-sm font-medium mr-2">Hello {user?.firstName || user?.username?.split(' ')[0] || 'User'}</span>
+              <ChevronDown size={16} />
             </div>
           </div>
         </header>
 
         {/* Page Content */}
         {children}
+
+        {/* Add Auction Modal */}
+        <AddAuctionModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleAddAuction}
+        />
       </div>
     </div>
   );

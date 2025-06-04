@@ -1,19 +1,19 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { SlidersHorizontal } from '@/components/ui/Icons';
+import { Loader2, AlertCircle } from 'lucide-react';
+// import { SlidersHorizontal } from '@/components/ui/Icons';
 import { CategoryFilter } from '@/components/marketplace/CategoryFilter';
 import { LocationFilter } from '@/components/marketplace/LocationFilter';
 import { TimeFilter } from '@/components/marketplace/TimeFilter';
 import { FormFilter } from '@/components/marketplace/FormFilter';
 import { QuantityFilter } from '@/components/marketplace/QuantityFilter';
 import { SortDropdown } from '@/components/marketplace/SortDropdown';
-
-
+import { getAuctions, AuctionItem } from '@/services/auction';
 
 // Mock data for marketplace items
-const marketplaceItems = [
+const _marketplaceItems = [
   {
     id: 1,
     category: 'Plastics',
@@ -105,14 +105,14 @@ const marketplaceItems = [
 ];
 
 // Product Card Component
-const ProductCard = ({ item }: { item: typeof marketplaceItems[0] }) => {
+const ProductCard = ({ item }: { item: any }) => {
   const handleItemClick = () => {
-    window.location.href = '/coming-soon';
+    window.location.href = `/dashboard/auctions/${item.id}`;
   };
 
   const handleBidClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the card click event
-    alert('Bidding functionality coming soon!');
+    window.location.href = `/dashboard/auctions/${item.id}`;
   };
 
   return (
@@ -122,7 +122,7 @@ const ProductCard = ({ item }: { item: typeof marketplaceItems[0] }) => {
     >
       <div className="relative h-48 w-full">
         <Image
-          src={item.image}
+          src={item.image || '/images/marketplace/categories/plastics.jpg'}
           alt={item.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -181,6 +181,11 @@ const MarketplacePage = () => {
   const [selectedDateFilter, setSelectedDateFilter] = useState('All time');
   const [minQuantity, setMinQuantity] = useState(0);
   const [maxQuantity, setMaxQuantity] = useState(10000);
+  
+  // State for API auctions
+  const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Helper function to toggle form selection
   const toggleFormSelection = (form: string) => {
@@ -191,6 +196,72 @@ const MarketplacePage = () => {
     }
   };
 
+  // Calculate time left for an auction
+  const calculateTimeLeft = (endDate: string, endTime: string) => {
+    const now = new Date();
+    const end = new Date(`${endDate}T${endTime}`);
+
+    if (end <= now) {
+      return 'Ended';
+    }
+
+    const diffMs = end.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    return `${diffDays}d ${diffHours}h`;
+  };
+
+  // Fetch auctions from API
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await getAuctions();
+
+        if (response.error) {
+          setError(response.error);
+        } else if (response.data) {
+          setApiAuctions(response.data);
+        } else {
+          setError('No auctions found');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch auctions');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAuctions();
+  }, []);
+
+  // Convert API auctions to the format expected by the UI
+  const convertedAuctions = apiAuctions.map(auction => ({
+    id: auction.id.toString(),
+    name: auction.item_name,
+    category: auction.item_name.split(' ')[0], // Temporary category extraction
+    basePrice: auction.base_price,
+    highestBid: null, // API doesn't provide highest bid yet
+    timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
+    volume: `${auction.volume} ${auction.unit}`,
+    countryOfOrigin: auction.country_of_origin,
+    image: auction.item_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+  }));
+
+  // Filter auctions based on search term and category
+  const filteredAuctions = convertedAuctions.filter(auction => {
+    const matchesCategory = selectedCategory === 'All materials' ||
+      (auction.category && auction.category === selectedCategory);
+
+    const matchesLocation = selectedLocation === 'All Locations' ||
+      (auction.countryOfOrigin && auction.countryOfOrigin === selectedLocation);
+
+    return matchesCategory && matchesLocation;
+  });
+
   return (
     <div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
 
@@ -199,9 +270,7 @@ const MarketplacePage = () => {
         <div className="flex items-center mb-4 sm:mb-0">
           <h1 className="text-2xl font-bold">Available Ads</h1>
           <span className="ml-2 bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm">
-            {selectedCategory === 'All materials'
-              ? marketplaceItems.length
-              : marketplaceItems.filter(item => item.category === selectedCategory).length}
+            {filteredAuctions.length}
           </span>
         </div>
 
@@ -210,12 +279,6 @@ const MarketplacePage = () => {
           <div className="relative w-full sm:w-auto">
             <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
           </div>
-
-          {/* Categories Button */}
-          <button className="flex items-center px-4 py-2 bg-gray-100 rounded-md">
-            <SlidersHorizontal size={16} className="mr-2" />
-            <span>Categories</span>
-          </button>
         </div>
       </div>
 
@@ -248,20 +311,59 @@ const MarketplacePage = () => {
             selectedDateFilter={selectedDateFilter}
             setSelectedDateFilter={setSelectedDateFilter}
           />
-
         </div>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="bg-white border border-gray-100 rounded-md p-6 flex justify-center items-center">
+          <Loader2 size={24} className="animate-spin text-[#FF8A00] mr-2" />
+          <p className="text-gray-700">Loading auctions...</p>
+        </div>
+      )}
+
+      {/* Error State */}
+      {!isLoading && error && (
+        <div className="bg-white border border-red-100 rounded-md p-6 text-center">
+          <div className="flex justify-center mb-2">
+            <AlertCircle size={24} className="text-red-500" />
+          </div>
+          <p className="text-red-500 font-medium">Error loading auctions</p>
+          <p className="text-gray-500 text-sm mt-1">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Products Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {marketplaceItems
-          .filter(item => selectedCategory === 'All materials' ? true : item.category === selectedCategory)
-          .map((item) => (
-            <div key={item.id} className="cursor-pointer">
-              <ProductCard item={item} />
+      {!isLoading && !error && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredAuctions.length > 0 ? (
+            filteredAuctions.map((item) => (
+              <ProductCard key={item.id} item={item} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-10">
+              <p className="text-gray-500">No auctions match your filters.</p>
+              <button
+                onClick={() => {
+                  setSelectedCategory('All materials');
+                  setSelectedLocation('All Locations');
+                  setSelectedForms([]);
+                  setSelectedDateFilter('All time');
+                }}
+                className="mt-2 text-[#FF8A00] hover:underline"
+              >
+                Clear filters
+              </button>
             </div>
-          ))}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

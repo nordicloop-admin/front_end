@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { User } from '@/types/auth';
 import {
   login as loginService,
@@ -26,15 +26,51 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authStatus, setAuthStatus] = useState(false);
+
+  // Function to check authentication status
+  const checkAuthStatus = useCallback(() => {
+    const currentAuthStatus = isAuthenticated();
+    const currentUser = getUser();
+    
+    // If authentication status changed, update state
+    if (currentAuthStatus !== authStatus) {
+      setAuthStatus(currentAuthStatus);
+    }
+    
+    // If user data changed, update state
+    if (JSON.stringify(currentUser) !== JSON.stringify(user)) {
+      setUser(currentUser);
+    }
+    
+    return currentAuthStatus;
+  }, [authStatus, user]);
 
   useEffect(() => {
-    // Check if the user is already authenticated
-    const user = getUser();
-    if (user) {
-      setUser(user);
-    }
+    // Initial authentication check
+    checkAuthStatus();
     setIsLoading(false);
-  }, []);
+
+    // Set up periodic token validation (every 30 seconds)
+    const tokenCheckInterval = setInterval(() => {
+      checkAuthStatus();
+    }, 30000);
+
+    // Also check when the page becomes visible (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkAuthStatus();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup
+    return () => {
+      clearInterval(tokenCheckInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [checkAuthStatus]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -54,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
 
         setUser(user);
+        setAuthStatus(true);
         return { success: true };
       }
 
@@ -96,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // If login fails, we'll still set the user from signup
           // but we won't have tokens, so the user will need to login manually
           setUser(tempUser);
+          setAuthStatus(false);
 
           return {
             success: true,
@@ -129,12 +167,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     logoutService();
     setUser(null);
+    setAuthStatus(false);
   };
 
   const value = {
     user,
     isLoading,
-    isAuthenticated: isAuthenticated(),
+    isAuthenticated: authStatus,
     login,
     signup,
     logout,
