@@ -137,15 +137,15 @@ const getFullImageUrl = (imagePath: string | null | undefined): string => {
   
   // If it starts with /media/, construct the full URL
   if (imagePath.startsWith('/media/')) {
-    return `http://127.0.0.1:8000${imagePath}`;
+    return `https://nordic-loop-platform.onrender.com${imagePath}`;
   }
   
   // If it's just a filename, assume it's in the material_images directory
   if (!imagePath.startsWith('/')) {
-    return `http://127.0.0.1:8000/media/material_images/${imagePath}`;
+    return `https://nordic-loop-platform.onrender.com/media/material_images/${imagePath}`;
   }
   
-  return `http://127.0.0.1:8000${imagePath}`;
+  return `https://nordic-loop-platform.onrender.com${imagePath}`;
 };
 
 export default function AuctionDetail() {
