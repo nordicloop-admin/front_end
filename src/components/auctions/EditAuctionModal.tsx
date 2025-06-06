@@ -400,6 +400,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load categories on component mount
@@ -1362,7 +1363,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                 placeholder="0.00"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Minimum price you're willing to accept
+                Minimum price you&apos;re willing to accept
               </p>
             </div>
           </div>

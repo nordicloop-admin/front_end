@@ -145,7 +145,7 @@ export default function Auctions() {
   };
 
   // Calculate time left for an auction
-  const calculateTimeLeft = (endDate: string, endTime: string) => {
+  const _calculateTimeLeft = (endDate: string, endTime: string) => {
     const now = new Date();
     const end = new Date(`${endDate}T${endTime}`);
 

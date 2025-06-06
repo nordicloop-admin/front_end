@@ -30,7 +30,7 @@ export default function MyAuctions() {
   });
 
   // Calculate time left for an auction
-  const calculateTimeLeft = (endDate: string, endTime: string) => {
+  const _calculateTimeLeft = (endDate: string, endTime: string) => {
     const now = new Date();
     const end = new Date(`${endDate}T${endTime}`);
 
@@ -129,7 +129,7 @@ export default function MyAuctions() {
   };
 
   // Handle edit auction submission
-  const handleEditAuction = (updatedAuction: AuctionData) => {
+  const handleEditAuction = async (updatedAuction: AuctionData) => {
     // In a real app, you would send the updated data to an API
     // For now, we'll just update our local state
     const updatedAuctions = auctions.map(auction =>

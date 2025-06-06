@@ -215,6 +215,7 @@ export function AlternativeAuctionForm() {
     }, 2000); // Auto-save after 2 seconds of inactivity
 
     return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, hasUnsavedChanges, adId, isSubmitting, categoriesLoaded]);
 
   const convertFormDataToApiData = (step: number, data: FormData): any => {
