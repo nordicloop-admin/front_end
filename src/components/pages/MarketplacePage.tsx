@@ -191,6 +191,72 @@ const MarketplacePage = () => {
     }
   };
 
+  // Calculate time left for an auction
+  const calculateTimeLeft = (endDate: string, endTime: string) => {
+    const now = new Date();
+    const end = new Date(`${endDate}T${endTime}`);
+
+    if (end <= now) {
+      return 'Ended';
+    }
+
+    const diffMs = end.getTime() - now.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    return `${diffDays}d ${diffHours}h`;
+  };
+
+  // Fetch auctions from API
+  useEffect(() => {
+    const fetchAuctions = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const response = await getAuctions();
+
+        if (response.error) {
+          setError(response.error);
+        } else if (response.data) {
+          setApiAuctions(response.data);
+        } else {
+          setError('No auctions found');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch auctions');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAuctions();
+  }, []);
+
+  // Convert API auctions to the format expected by the UI
+  const convertedAuctions = apiAuctions.map(auction => ({
+    id: auction.id.toString(),
+    name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+    category: auction.category_name,
+    basePrice: auction.starting_bid_price || auction.total_starting_value,
+    highestBid: null, // API doesn't provide highest bid yet
+    timeLeft: 'Available', // API doesn't provide end date/time in this format
+    volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+    countryOfOrigin: auction.location_summary || 'Unknown',
+    image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+  }));
+
+  // Filter auctions based on search term and category
+  const filteredAuctions = convertedAuctions.filter(auction => {
+    const matchesCategory = selectedCategory === 'All materials' ||
+      (auction.category && auction.category === selectedCategory);
+
+    const matchesLocation = selectedLocation === 'All Locations' ||
+      (auction.countryOfOrigin && auction.countryOfOrigin === selectedLocation);
+
+    return matchesCategory && matchesLocation;
+  });
+
   return (
     <div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
 
