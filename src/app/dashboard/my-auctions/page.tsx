@@ -65,19 +65,19 @@ export default function MyAuctions() {
         // Successfully fetched user auctions
         const result = response.data as PaginatedAuctionResult;
 
-        // Convert API auctions to the format expected by the UI
-        const convertedAuctions = result.auctions.map(auction => ({
-          id: auction.id.toString(),
-          name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
-          category: auction.category_name,
-          subcategory: auction.subcategory_name,
-          basePrice: auction.starting_bid_price || auction.total_starting_value,
-          currentBid: '', // API doesn't provide highest bid yet
-          status: auction.is_active ? 'active' : 'inactive',
-          timeLeft: 'Available', // API doesn't provide end date/time in this format
-          volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-          image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
-        }));
+          // Convert API auctions to the format expected by the UI
+          const convertedAuctions = response.data.map(auction => ({
+            id: auction.id.toString(),
+            name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+            category: auction.category_name,
+            subcategory: auction.subcategory_name,
+            basePrice: auction.starting_bid_price || auction.total_starting_value,
+            currentBid: '', // API doesn't provide highest bid yet
+            status: auction.is_active ? 'active' : 'inactive',
+            timeLeft: 'Available', // API doesn't provide end date/time in this format
+            volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+            image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+          }));
 
         // Update the auctions state with the API data
         setAuctions(convertedAuctions);
@@ -106,20 +106,122 @@ export default function MyAuctions() {
     }
   };
 
-  // Initial fetch
-  useEffect(() => {
-    fetchUserAuctions(currentPage, pageSize);
-  }, [currentPage, pageSize]);
+    fetchUserAuctions();
+  }, []);
 
-  // Handle page change
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  const handleAddAuction = async (auctionData: AuctionFormData) => {
+    // Show loading toast
+    const loadingToast = toast.loading('Creating auction...');
 
-  // Handle page size change
-  const handlePageSizeChange = (size: number) => {
-    setPageSize(size);
-    setCurrentPage(1); // Reset to first page when changing page size
+    try {
+      // Prepare the data for the API
+      const apiData = {
+        item_name: auctionData.name,
+        category: auctionData.category,
+        subcategory: auctionData.subcategory,
+        description: auctionData.description,
+        base_price: auctionData.basePrice,
+        price_per_partition: auctionData.pricePerPartition,
+        volume: auctionData.volume,
+        unit: auctionData.unit,
+        selling_type: auctionData.sellingType,
+        country_of_origin: auctionData.countryOfOrigin,
+        end_date: auctionData.endDate,
+        end_time: auctionData.endTime
+      };
+
+      // Preparing auction data for submission
+
+      // Validate selling type is one of the allowed values
+      if (!['partition', 'whole', 'both'].includes(apiData.selling_type)) {
+        // Invalid selling type detected
+        toast.error('Invalid selling type. Please select a valid option.');
+        toast.dismiss(loadingToast);
+        return;
+      }
+
+      let response;
+
+      // If there's an image, use the createAuctionWithImage function
+      if (auctionData.image) {
+        response = await createAuctionWithImage(apiData, auctionData.image);
+      } else {
+        response = await createAuction(apiData);
+      }
+
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to create auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      if (response.data) {
+        // Create a new auction object for the UI
+        const newAuction = {
+          id: response.data.id.toString(),
+          name: response.data.title || `${response.data.category_name} - ${response.data.subcategory_name}`,
+          category: response.data.category_name,
+          subcategory: response.data.subcategory_name,
+          basePrice: response.data.starting_bid_price || response.data.total_starting_value,
+          currentBid: '',
+          status: response.data.is_active ? 'active' : 'inactive',
+          timeLeft: 'Available', // API doesn't provide end date/time in this format
+          volume: response.data.available_quantity ? `${response.data.available_quantity} ${response.data.unit_of_measurement}` : 'N/A',
+          image: response.data.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+        };
+
+        // Add the new auction to the list
+        setAuctions([newAuction, ...auctions]);
+
+        // Close the modal
+        setIsModalOpen(false);
+
+        // Show success message
+        toast.success('Auction created successfully', {
+          description: 'Your new auction has been listed.',
+          duration: 3000,
+        });
+
+        // Refresh the auctions list
+        getUserAuctions().then(response => {
+          if (response.data) {
+            // Convert API auctions to the format expected by the UI
+            const convertedAuctions = response.data.map(auction => ({
+              id: auction.id.toString(),
+              name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+              category: auction.category_name,
+              subcategory: auction.subcategory_name,
+              basePrice: auction.starting_bid_price || auction.total_starting_value,
+              currentBid: '', // API doesn't provide highest bid yet
+              status: auction.is_active ? 'active' : 'inactive',
+              timeLeft: 'Available', // API doesn't provide end date/time in this format
+              volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+              image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+            }));
+
+            // Update the auctions state with the API data
+            setAuctions(convertedAuctions);
+          }
+        }).catch(_err => {
+          // Error handling for auction refresh failures
+        });
+      }
+    } catch (error) {
+      // Dismiss the loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to create auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
   };
 
   // Handle opening the edit modal

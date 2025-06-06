@@ -312,11 +312,14 @@ const MarketplacePage = () => {
     name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
     category: auction.category_name,
     basePrice: auction.starting_bid_price || auction.total_starting_value,
+    name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+    category: auction.category_name,
+    basePrice: auction.starting_bid_price || auction.total_starting_value,
     highestBid: null, // API doesn't provide highest bid yet
     timeLeft: 'Available', // API doesn't provide end date/time in this format
     volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
     countryOfOrigin: auction.location_summary || 'Unknown',
-    image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
+    image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
   }));
 
   // Filter auctions based on search term and category

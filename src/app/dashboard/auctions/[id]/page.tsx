@@ -196,51 +196,26 @@ export default function AuctionDetail() {
             
             // Format enhanced ad data
             const formattedAuction = {
-              id: adData.id.toString(),
-              name: adData.title || `${adData.category_name} - ${adData.subcategory_name}`,
-              category: adData.category_name,
-              subcategory: adData.subcategory_name,
-              basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
+              id: apiAuction.id.toString(),
+              name: apiAuction.title || `${apiAuction.category_name} - ${apiAuction.subcategory_name}`,
+              category: apiAuction.category_name,
+              basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
               highestBid: null, // Will be updated if we fetch bids
-              timeLeft: adData.time_remaining || adData.auction_duration_display,
-              volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
-              seller: adData.posted_by,
-              company: adData.company_name,
-              countryOfOrigin: adData.location_summary || 'Unknown',
-              image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
-              description: adData.description || adData.specific_material || `${adData.category_name} material available for auction`,
-              bidHistory: [],
-              
-              // Enhanced specifications from the detailed endpoint
+              timeLeft: 'Available', // API doesn't provide end date/time in this format
+              volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
+              seller: 'Unknown Seller', // Seller info not available in API response
+              countryOfOrigin: apiAuction.location_summary || 'Unknown',
+              image: apiAuction.material_image || '/images/marketplace/categories/plastics.jpg',
+              description: apiAuction.title || `${apiAuction.category_name} material available for auction`, // No description field in API
+              bidHistory: [], // Will be populated if we fetch bids
               specifications: [
-                { name: 'Material Type', value: adData.category_name },
-                { name: 'Subcategory', value: adData.subcategory_name },
-                { name: 'Specific Material', value: adData.specific_material },
-                { name: 'Packaging', value: adData.packaging_display },
-                { name: 'Material Frequency', value: adData.material_frequency_display },
-                ...(adData.origin_display ? [{ name: 'Origin', value: adData.origin_display }] : []),
-                ...(adData.contamination_display ? [{ name: 'Contamination', value: adData.contamination_display }] : []),
-                ...(adData.additives_display ? [{ name: 'Additives', value: adData.additives_display }] : []),
-                ...(adData.storage_conditions_display ? [{ name: 'Storage Conditions', value: adData.storage_conditions_display }] : []),
-                ...(adData.processing_methods_display.length > 0 ? [{ name: 'Processing Methods', value: adData.processing_methods_display.join(', ') }] : []),
-                { name: 'Quantity', value: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A' },
-                { name: 'Minimum Order', value: `${adData.minimum_order_quantity} ${adData.unit_of_measurement_display}` },
-                { name: 'Currency', value: adData.currency_display },
-                { name: 'Auction Duration', value: adData.auction_duration_display },
-                ...(adData.reserve_price ? [{ name: 'Reserve Price', value: `${adData.reserve_price} ${adData.currency}` }] : []),
-                { name: 'Pickup Available', value: adData.pickup_available ? 'Yes' : 'No' },
-                ...(adData.delivery_options_display.length > 0 ? [{ name: 'Delivery Options', value: adData.delivery_options_display.join(', ') }] : []),
-                { name: 'Status', value: adData.auction_status },
-                { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of 8` }
-              ],
-              
-              // Additional metadata
-              createdAt: adData.created_at,
-              updatedAt: adData.updated_at,
-              isActive: adData.is_active,
-              auctionStatus: adData.auction_status,
-              stepCompletionStatus: adData.step_completion_status,
-              keywords: adData.keywords
+                { name: 'Material Type', value: apiAuction.category_name },
+                { name: 'Subcategory', value: apiAuction.subcategory_name },
+                { name: 'Quantity', value: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A' },
+                { name: 'Location', value: apiAuction.location_summary || 'Unknown' },
+                { name: 'Currency', value: apiAuction.currency },
+                { name: 'Status', value: apiAuction.is_active ? 'Active' : 'Inactive' }
+              ]
             };
 
             setAuction(formattedAuction);

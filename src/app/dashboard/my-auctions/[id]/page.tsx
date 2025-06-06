@@ -136,51 +136,22 @@ export default function AuctionDetail() {
             
             // Format enhanced ad data for my auctions
             const formattedAuction = {
-              id: adData.id.toString(),
-              name: adData.title || `${adData.category_name} - ${adData.subcategory_name}`,
-              category: adData.category_name,
-              subcategory: adData.subcategory_name,
-              basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
+              id: apiAuction.id.toString(),
+              name: apiAuction.title || `${apiAuction.category_name} - ${apiAuction.subcategory_name}`,
+              category: apiAuction.category_name,
+              subcategory: apiAuction.subcategory_name,
+              basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
               currentBid: '', // Will be updated if we fetch bids
-              status: adData.is_active ? 'active' : 'inactive',
-              timeLeft: adData.time_remaining || adData.auction_duration_display,
-              volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
-              image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
-              description: adData.description || adData.specific_material || `${adData.category_name} material available for auction`,
-              createdAt: adData.created_at,
-              bidHistory: [],
-              
-              // Enhanced data
-              company: adData.company_name,
-              seller: adData.posted_by,
-              auctionStatus: adData.auction_status,
-              stepCompletionStatus: adData.step_completion_status,
-              isComplete: adData.is_complete,
-              currentStep: adData.current_step,
-              keywords: adData.keywords,
-              specifications: [
-                { name: 'Material Type', value: adData.category_name },
-                { name: 'Subcategory', value: adData.subcategory_name },
-                { name: 'Specific Material', value: adData.specific_material },
-                { name: 'Packaging', value: adData.packaging_display },
-                { name: 'Material Frequency', value: adData.material_frequency_display },
-                ...(adData.origin_display ? [{ name: 'Origin', value: adData.origin_display }] : []),
-                ...(adData.contamination_display ? [{ name: 'Contamination', value: adData.contamination_display }] : []),
-                ...(adData.additives_display ? [{ name: 'Additives', value: adData.additives_display }] : []),
-                ...(adData.storage_conditions_display ? [{ name: 'Storage Conditions', value: adData.storage_conditions_display }] : []),
-                ...(adData.processing_methods_display.length > 0 ? [{ name: 'Processing Methods', value: adData.processing_methods_display.join(', ') }] : []),
-                { name: 'Quantity', value: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A' },
-                { name: 'Minimum Order', value: `${adData.minimum_order_quantity} ${adData.unit_of_measurement_display}` },
-                { name: 'Currency', value: adData.currency_display },
-                { name: 'Auction Duration', value: adData.auction_duration_display },
-                ...(adData.reserve_price ? [{ name: 'Reserve Price', value: `${adData.reserve_price} ${adData.currency}` }] : []),
-                { name: 'Pickup Available', value: adData.pickup_available ? 'Yes' : 'No' },
-                ...(adData.delivery_options_display.length > 0 ? [{ name: 'Delivery Options', value: adData.delivery_options_display.join(', ') }] : []),
-                { name: 'Status', value: adData.auction_status },
-                { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of 8` }
-              ]
+              status: apiAuction.is_active ? 'active' : 'inactive',
+              timeLeft: 'Available', // API doesn't provide end date/time in this format
+              volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
+              image: apiAuction.material_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
+              description: apiAuction.title || `${apiAuction.category_name} material available for auction`, // No description field in API
+              createdAt: apiAuction.created_at,
+              bidHistory: [] // Will be populated if we fetch bids
             };
 
+            // Set the auction data
             setAuction(formattedAuction);
 
             // Fetch bids for this auction if it's active and complete
@@ -506,28 +477,11 @@ export default function AuctionDetail() {
                 </div>
               </div>
 
-              {/* Progress Status */}
-              {auction.stepCompletionStatus && (
-                <div className="border border-gray-200 rounded-md p-4 mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Completion Progress</span>
-                    <span className="text-sm text-gray-500">
-                      {Object.values(auction.stepCompletionStatus).filter(Boolean).length} of 8 steps
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div 
-                      className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
-                      }}
-                    />
-                  </div>
-                  {!auction.isComplete && (
-                    <div className="text-xs text-gray-500">
-                      Next: Complete step {auction.currentStep}
-                    </div>
-                  )}
+              <div>
+                <div className="text-xs text-gray-500">Status</div>
+                <div className="text-xs font-medium px-2 py-1 bg-green-50 text-green-700 rounded-full inline-flex items-center mt-1">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></span>
+                  {auction.status === 'active' ? 'Active' : 'Inactive'}
                 </div>
               )}
 
