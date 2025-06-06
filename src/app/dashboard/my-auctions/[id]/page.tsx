@@ -109,17 +109,17 @@ export default function AuctionDetail() {
             // Create a formatted auction object
             const formattedAuction = {
               id: apiAuction.id.toString(),
-              name: apiAuction.item_name,
-              category: apiAuction.item_name.split(' ')[0], // Extract category from item name
-              subcategory: '', // Subcategory not available in API response
-              basePrice: apiAuction.base_price,
+              name: apiAuction.title || `${apiAuction.category_name} - ${apiAuction.subcategory_name}`,
+              category: apiAuction.category_name,
+              subcategory: apiAuction.subcategory_name,
+              basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
               currentBid: '', // Will be updated if we fetch bids
-              status: 'active',
-              timeLeft: calculateTimeLeft(apiAuction.end_date, apiAuction.end_time),
-              volume: `${apiAuction.volume} ${apiAuction.unit}`,
-              image: apiAuction.item_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
-              description: apiAuction.description,
-              createdAt: new Date().toISOString(), // API might not provide this
+              status: apiAuction.is_active ? 'active' : 'inactive',
+              timeLeft: 'Available', // API doesn't provide end date/time in this format
+              volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
+              image: apiAuction.material_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
+              description: apiAuction.title || `${apiAuction.category_name} material available for auction`, // No description field in API
+              createdAt: apiAuction.created_at,
               bidHistory: [] // Will be populated if we fetch bids
             };
 
@@ -372,7 +372,7 @@ export default function AuctionDetail() {
                 <div className="text-xs text-gray-500">Status</div>
                 <div className="text-xs font-medium px-2 py-1 bg-green-50 text-green-700 rounded-full inline-flex items-center mt-1">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1"></span>
-                  Active
+                  {auction.status === 'active' ? 'Active' : 'Inactive'}
                 </div>
               </div>
 

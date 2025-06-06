@@ -241,14 +241,14 @@ const MarketplacePage = () => {
   // Convert API auctions to the format expected by the UI
   const convertedAuctions = apiAuctions.map(auction => ({
     id: auction.id.toString(),
-    name: auction.item_name,
-    category: auction.item_name.split(' ')[0], // Temporary category extraction
-    basePrice: auction.base_price,
+    name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+    category: auction.category_name,
+    basePrice: auction.starting_bid_price || auction.total_starting_value,
     highestBid: null, // API doesn't provide highest bid yet
-    timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
-    volume: `${auction.volume} ${auction.unit}`,
-    countryOfOrigin: auction.country_of_origin,
-    image: auction.item_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+    timeLeft: 'Available', // API doesn't provide end date/time in this format
+    volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+    countryOfOrigin: auction.location_summary || 'Unknown',
+    image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
   }));
 
   // Filter auctions based on search term and category

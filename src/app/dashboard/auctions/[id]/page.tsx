@@ -173,21 +173,24 @@ export default function AuctionDetail() {
 
             const formattedAuction = {
               id: apiAuction.id.toString(),
-              name: apiAuction.item_name,
-              category: apiAuction.item_name.split(' ')[0] || 'Unknown', // Extract category from item name
-              basePrice: apiAuction.base_price,
+              name: apiAuction.title || `${apiAuction.category_name} - ${apiAuction.subcategory_name}`,
+              category: apiAuction.category_name,
+              basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
               highestBid: null, // Will be updated if we fetch bids
-              timeLeft: calculateTimeLeft(apiAuction.end_date, apiAuction.end_time),
-              volume: `${apiAuction.volume} ${apiAuction.unit}`,
+              timeLeft: 'Available', // API doesn't provide end date/time in this format
+              volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
               seller: 'Unknown Seller', // Seller info not available in API response
-              countryOfOrigin: apiAuction.country_of_origin,
-              image: apiAuction.item_image || '/images/marketplace/categories/plastics.jpg',
-              description: apiAuction.description,
+              countryOfOrigin: apiAuction.location_summary || 'Unknown',
+              image: apiAuction.material_image || '/images/marketplace/categories/plastics.jpg',
+              description: apiAuction.title || `${apiAuction.category_name} material available for auction`, // No description field in API
               bidHistory: [], // Will be populated if we fetch bids
               specifications: [
-                { name: 'Material Type', value: apiAuction.item_name.split(' ')[0] || 'Unknown' },
-                { name: 'Quantity', value: `${apiAuction.volume} ${apiAuction.unit}` },
-                { name: 'Country of Origin', value: apiAuction.country_of_origin }
+                { name: 'Material Type', value: apiAuction.category_name },
+                { name: 'Subcategory', value: apiAuction.subcategory_name },
+                { name: 'Quantity', value: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A' },
+                { name: 'Location', value: apiAuction.location_summary || 'Unknown' },
+                { name: 'Currency', value: apiAuction.currency },
+                { name: 'Status', value: apiAuction.is_active ? 'Active' : 'Inactive' }
               ]
             };
 

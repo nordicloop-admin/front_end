@@ -156,17 +156,32 @@ export async function getCategories() {
  */
 export interface AuctionItem {
   id: number;
-  item_name: string;
-  description: string;
-  base_price: string;
-  price_per_partition: string;
-  volume: string;
-  unit: string;
-  selling_type: string;
-  country_of_origin: string;
-  end_date: string;
-  end_time: string;
-  item_image: string | null;
+  title: string | null;
+  category_name: string;
+  subcategory_name: string;
+  available_quantity: string | null;
+  unit_of_measurement: string;
+  starting_bid_price: string | null;
+  currency: string;
+  location_summary: string | null;
+  total_starting_value: string;
+  material_image: string | null;
+  created_at: string;
+  is_active: boolean;
+  is_complete: boolean;
+}
+
+/**
+ * Interface for paginated auction response
+ */
+export interface PaginatedAuctionResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AuctionItem[];
+  page_size: number;
+  total_pages: number;
+  current_page: number;
 }
 
 /**
@@ -176,9 +191,24 @@ export interface AuctionItem {
 export async function getAuctions() {
   try {
     // Always require authentication for the /ads/ endpoint
-    const response = await apiGet<AuctionItem[]>('/ads/', true);
+    const response = await apiGet<PaginatedAuctionResponse>('/ads/', true);
 
-    return response;
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Extract the results array from the paginated response
+    const auctions = response.data?.results || [];
+
+    return {
+      data: auctions,
+      error: null,
+      status: response.status
+    };
   } catch (error) {
     return {
       data: null,
@@ -195,9 +225,24 @@ export async function getAuctions() {
 export async function getUserAuctions() {
   try {
     // This endpoint requires authentication
-    const response = await apiGet<AuctionItem[]>('/ads/user/', true);
+    const response = await apiGet<PaginatedAuctionResponse>('/ads/user/', true);
 
-    return response;
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Extract the results array from the paginated response
+    const auctions = response.data?.results || [];
+
+    return {
+      data: auctions,
+      error: null,
+      status: response.status
+    };
   } catch (error) {
     return {
       data: null,

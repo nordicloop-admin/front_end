@@ -60,15 +60,15 @@ export default function MyAuctions() {
           // Convert API auctions to the format expected by the UI
           const convertedAuctions = response.data.map(auction => ({
             id: auction.id.toString(),
-            name: auction.item_name,
-            category: auction.item_name.split(' ')[0], // Temporary category extraction
-            subcategory: '',
-            basePrice: auction.base_price,
+            name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+            category: auction.category_name,
+            subcategory: auction.subcategory_name,
+            basePrice: auction.starting_bid_price || auction.total_starting_value,
             currentBid: '', // API doesn't provide highest bid yet
-            status: 'active',
-            timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
-            volume: `${auction.volume} ${auction.unit}`,
-            image: auction.item_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+            status: auction.is_active ? 'active' : 'inactive',
+            timeLeft: 'Available', // API doesn't provide end date/time in this format
+            volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+            image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
           }));
 
           // Update the auctions state with the API data
@@ -144,15 +144,15 @@ export default function MyAuctions() {
         // Create a new auction object for the UI
         const newAuction = {
           id: response.data.id.toString(),
-          name: response.data.item_name,
-          category: auctionData.category,
-          subcategory: auctionData.subcategory,
-          basePrice: response.data.base_price,
+          name: response.data.title || `${response.data.category_name} - ${response.data.subcategory_name}`,
+          category: response.data.category_name,
+          subcategory: response.data.subcategory_name,
+          basePrice: response.data.starting_bid_price || response.data.total_starting_value,
           currentBid: '',
-          status: 'pending',
-          timeLeft: '7d 0h', // Default to 7 days
-          volume: `${response.data.volume} ${response.data.unit}`,
-          image: response.data.item_image || '/images/marketplace/categories/plastics.jpg'
+          status: response.data.is_active ? 'active' : 'inactive',
+          timeLeft: 'Available', // API doesn't provide end date/time in this format
+          volume: response.data.available_quantity ? `${response.data.available_quantity} ${response.data.unit_of_measurement}` : 'N/A',
+          image: response.data.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
         };
 
         // Add the new auction to the list
@@ -173,15 +173,15 @@ export default function MyAuctions() {
             // Convert API auctions to the format expected by the UI
             const convertedAuctions = response.data.map(auction => ({
               id: auction.id.toString(),
-              name: auction.item_name,
-              category: auction.item_name.split(' ')[0], // Temporary category extraction
-              subcategory: '',
-              basePrice: auction.base_price,
+              name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+              category: auction.category_name,
+              subcategory: auction.subcategory_name,
+              basePrice: auction.starting_bid_price || auction.total_starting_value,
               currentBid: '', // API doesn't provide highest bid yet
-              status: 'active',
-              timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
-              volume: `${auction.volume} ${auction.unit}`,
-              image: auction.item_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+              status: auction.is_active ? 'active' : 'inactive',
+              timeLeft: 'Available', // API doesn't provide end date/time in this format
+              volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+              image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
             }));
 
             // Update the auctions state with the API data
