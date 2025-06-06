@@ -44,7 +44,7 @@ interface UseBiddingReturn {
 export default function useBidding(): UseBiddingReturn {
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [_error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const openBidModal = (auction: Auction) => {
     setSelectedAuction(auction);
@@ -184,47 +184,8 @@ export default function useBidding(): UseBiddingReturn {
       toast.dismiss(loadingToast);
 
       if (response.error) {
-        // Debug: Log the response structure to understand what we're getting
-        console.log('Bid error response:', response);
-        
-        // Handle specific validation errors with better formatting
-        if (response.data && typeof response.data === 'object' && 'details' in response.data) {
-          const details = (response.data as any).details;
-          if (typeof details === 'object') {
-            // Handle non_field_errors specifically (these are general validation errors)
-            if (details.non_field_errors && Array.isArray(details.non_field_errors)) {
-              // For non_field_errors, show the message directly without field prefix
-              const errorMessage = details.non_field_errors.join('. ');
-              
-              // Check if this is a minimum bid error and provide helpful suggestion
-              const minBidInfo = extractMinimumBidFromError(errorMessage);
-              if (minBidInfo) {
-                throw new Error(`${errorMessage}\n\nPlease increase your bid to at least ${minBidInfo.amount.toLocaleString()} ${minBidInfo.currency}.`);
-              }
-              
-              throw new Error(errorMessage);
-            }
-            
-            // Handle field-specific errors with better formatting
-            const errorMessages = Object.entries(details)
-              .filter(([field]) => field !== 'non_field_errors') // Skip non_field_errors as they're handled above
-              .map(([field, messages]) => {
-                const messageArray = Array.isArray(messages) ? messages : [messages];
-                const fieldLabel = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                return `${fieldLabel}: ${messageArray.join(', ')}`;
-              });
-            
-            if (errorMessages.length > 0) {
-              throw new Error(errorMessages.join('\n'));
-            }
-            
-            // If we have details but no recognizable structure, fall back to the main error
-            throw new Error(response.error);
-          }
-        }
-        
-        // If no details or unrecognized structure, use the main error message
-        throw new Error(response.error);
+        setError(response.error);
+        return;
       }
 
       // Extract bid data from response
@@ -296,7 +257,7 @@ export default function useBidding(): UseBiddingReturn {
 
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
-      
+    } finally {
       // Show error message
       const isUpdate = !!selectedAuction?.bidId;
       toast.error(`Failed to ${isUpdate ? 'update' : 'place'} bid`, {

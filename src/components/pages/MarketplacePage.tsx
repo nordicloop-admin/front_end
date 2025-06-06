@@ -123,12 +123,18 @@ const ProductCard = ({ item }: { item: typeof marketplaceItems[0] }) => {
       <div className="relative h-48 w-full">
         <Image
           src={item.image}
+          src={item.image}
           alt={item.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           style={{ objectFit: 'cover' }}
           className="transition-transform duration-300 hover:scale-105"
           priority={item.id <= 4} // Prioritize loading the first 4 images
+          onError={(e) => {
+            // Fallback to category image on error
+            const target = e.target as HTMLImageElement;
+            target.src = getCategoryImage(item.category);
+          }}
           onError={(e) => {
             // Fallback to category image on error
             const target = e.target as HTMLImageElement;
@@ -189,15 +195,15 @@ const getFullImageUrl = (imagePath: string | null | undefined): string => {
   
   // If it starts with /media/, construct the full URL
   if (imagePath.startsWith('/media/')) {
-    return `https://nordic-loop-platform.onrender.com${imagePath}`;
+    return `http://127.0.0.1:8000${imagePath}`;
   }
   
   // If it's just a filename, assume it's in the material_images directory
   if (!imagePath.startsWith('/')) {
-    return `https://nordic-loop-platform.onrender.com/media/material_images/${imagePath}`;
+    return `http://127.0.0.1:8000/media/material_images/${imagePath}`;
   }
   
-  return `https://nordic-loop-platform.onrender.com${imagePath}`;
+  return `http://127.0.0.1:8000${imagePath}`;
 };
 
 // Helper function to get category fallback image
@@ -246,6 +252,7 @@ const MarketplacePage = () => {
   };
 
   // Calculate time left for an auction
+  const _calculateTimeLeft = (endDate: string, endTime: string) => {
   const _calculateTimeLeft = (endDate: string, endTime: string) => {
     const now = new Date();
     const end = new Date(`${endDate}T${endTime}`);
@@ -319,7 +326,7 @@ const MarketplacePage = () => {
     timeLeft: 'Available', // API doesn't provide end date/time in this format
     volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
     countryOfOrigin: auction.location_summary || 'Unknown',
-    image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+    image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
   }));
 
   // Filter auctions based on search term and category
