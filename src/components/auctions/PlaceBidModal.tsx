@@ -296,7 +296,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
                   <div className="ml-2 group relative">
                     <Info size={14} className="text-gray-400 cursor-help" />
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                      We'll bid for you automatically when outbid
+                      We&apos;ll bid for you automatically when outbid
                     </div>
                   </div>
                 </div>
@@ -344,7 +344,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
                     </div>
                   )}
                   <div className="mt-1 text-xs text-gray-500">
-                    We'll stop bidding when this price is reached
+                    We&apos;ll stop bidding when this price is reached
                   </div>
                 </div>
               )}

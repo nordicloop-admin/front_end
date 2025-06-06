@@ -108,7 +108,7 @@ export default function AuctionDetail() {
   };
 
   // Calculate time left for an auction
-  const calculateTimeLeft = (endDate: string, endTime: string) => {
+  const _calculateTimeLeft = (endDate: string, endTime: string) => {
     const now = new Date();
     const end = new Date(`${endDate}T${endTime}`);
 
@@ -187,11 +187,11 @@ export default function AuctionDetail() {
             if (adData.is_active && adData.is_complete) {
               getAuctionBids(adData.id)
                 .then(bidsResponse => {
-                  if (!bidsResponse.error && bidsResponse.data && bidsResponse.data.length > 0) {
-                    const formattedBids = bidsResponse.data.map(bid => ({
-                      bidder: bid.user || 'Anonymous',
-                      amount: bid.amount,
-                      date: bid.timestamp
+                  if (!bidsResponse.error && bidsResponse.data && bidsResponse.data.bids.length > 0) {
+                    const formattedBids = bidsResponse.data.bids.map(bid => ({
+                      bidder: bid.bidder_name || 'Anonymous',
+                      amount: bid.bid_price_per_unit,
+                      date: bid.created_at
                     }));
 
                     setAuction((prevAuction: any) => ({
