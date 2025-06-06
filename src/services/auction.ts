@@ -185,14 +185,45 @@ export interface PaginatedAuctionResponse {
 }
 
 /**
+ * Interface for pagination parameters
+ */
+export interface PaginationParams {
+  page?: number;
+  page_size?: number;
+}
+
+/**
+ * Interface for paginated auction response with extracted data
+ */
+export interface PaginatedAuctionResult {
+  auctions: AuctionItem[];
+  pagination: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    page_size: number;
+    total_pages: number;
+    current_page: number;
+  };
+}
+
+/**
  * Fetch all auctions with pagination
  * @param params Pagination parameters
  * @returns The API response with the auctions and pagination info
  */
 export async function getAuctions(params?: PaginationParams) {
+export async function getAuctions(params?: PaginationParams) {
   try {
-    // Always require authentication for the /ads/ endpoint
-    const response = await apiGet<PaginatedAuctionResponse>('/ads/', true);
+    // Build query string for pagination
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    
+    const endpoint = `/ads/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    // Public endpoint - no authentication required for the /ads/ endpoint
+    const response = await apiGet<PaginatedAuctionResponse>(endpoint, false);
 
     if (response.error) {
       return {
@@ -202,11 +233,21 @@ export async function getAuctions(params?: PaginationParams) {
       };
     }
 
-    // Extract the results array from the paginated response
-    const auctions = response.data?.results || [];
+    // Return both auctions and pagination metadata
+    const result: PaginatedAuctionResult = {
+      auctions: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      }
+    };
 
     return {
-      data: auctions,
+      data: result,
       error: null,
       status: response.status
     };
@@ -223,7 +264,11 @@ export async function getAuctions(params?: PaginationParams) {
  * Fetch auctions created by the current user with pagination
  * @param params Pagination parameters
  * @returns The API response with the user's auctions and pagination info
+ * Fetch auctions created by the current user with pagination
+ * @param params Pagination parameters
+ * @returns The API response with the user's auctions and pagination info
  */
+export async function getUserAuctions(params?: PaginationParams) {
 export async function getUserAuctions(params?: PaginationParams) {
   try {
     // Build query string for pagination
@@ -233,8 +278,15 @@ export async function getUserAuctions(params?: PaginationParams) {
     
     const endpoint = `/ads/user/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
+    // Build query string for pagination
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    
+    const endpoint = `/ads/user/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
     // This endpoint requires authentication
-    const response = await apiGet<PaginatedAuctionResponse>('/ads/user/', true);
+    const response = await apiGet<PaginatedAuctionResponse>(endpoint, true);
 
     if (response.error) {
       return {
@@ -244,11 +296,21 @@ export async function getUserAuctions(params?: PaginationParams) {
       };
     }
 
-    // Extract the results array from the paginated response
-    const auctions = response.data?.results || [];
+    // Return both auctions and pagination metadata
+    const result: PaginatedAuctionResult = {
+      auctions: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      }
+    };
 
     return {
-      data: auctions,
+      data: result,
       error: null,
       status: response.status
     };

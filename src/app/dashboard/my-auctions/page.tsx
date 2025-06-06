@@ -5,9 +5,8 @@ import { Package, Filter, Search, Plus, Loader2, AlertCircle } from 'lucide-reac
 import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
 import MyAuctionCard from '@/components/auctions/MyAuctionCard';
-import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
+import { createAuction, createAuctionWithImage, getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
-import Link from 'next/link';
 
 
 
@@ -17,9 +16,18 @@ export default function MyAuctions() {
   const [selectedAuction, setSelectedAuction] = useState<AuctionData | null>(null);
 
   // State for API auctions and pagination
+  // State for API auctions and pagination
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [paginationData, setPaginationData] = useState({
+    count: 0,
+    totalPages: 1,
+    currentPage: 1,
+    pageSize: 10
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [paginationData, setPaginationData] = useState({
@@ -48,10 +56,16 @@ export default function MyAuctions() {
   // Fetch user auctions from the API
   const fetchUserAuctions = async (page: number = 1, size: number = 10) => {
     setIsLoading(true);
+  const fetchUserAuctions = async (page: number = 1, size: number = 10) => {
+    setIsLoading(true);
 
     try {
       const response = await getUserAuctions({ page, page_size: size });
+    try {
+      const response = await getUserAuctions({ page, page_size: size });
 
+      if (response.error) {
+        // Error handling for user auctions fetch failures
       if (response.error) {
         // Error handling for user auctions fetch failures
 
@@ -64,20 +78,29 @@ export default function MyAuctions() {
       } else if (response.data) {
         // Successfully fetched user auctions
         const result = response.data as PaginatedAuctionResult;
+        // Check if it's an authentication error
+        if (response.status === 401) {
+          setError('Authentication required. Please log in to view your auctions.');
+        } else {
+          setError(response.error);
+        }
+      } else if (response.data) {
+        // Successfully fetched user auctions
+        const result = response.data as PaginatedAuctionResult;
 
-          // Convert API auctions to the format expected by the UI
-          const convertedAuctions = response.data.map(auction => ({
-            id: auction.id.toString(),
-            name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
-            category: auction.category_name,
-            subcategory: auction.subcategory_name,
-            basePrice: auction.starting_bid_price || auction.total_starting_value,
-            currentBid: '', // API doesn't provide highest bid yet
-            status: auction.is_active ? 'active' : 'inactive',
-            timeLeft: 'Available', // API doesn't provide end date/time in this format
-            volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-            image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
-          }));
+        // Convert API auctions to the format expected by the UI
+        const convertedAuctions = result.auctions.map(auction => ({
+          id: auction.id.toString(),
+          name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+          category: auction.category_name,
+          subcategory: auction.subcategory_name,
+          basePrice: auction.starting_bid_price || auction.total_starting_value,
+          currentBid: '', // API doesn't provide highest bid yet
+          status: auction.is_active ? 'active' : 'inactive',
+          timeLeft: 'Available', // API doesn't provide end date/time in this format
+          volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+          image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+        }));
 
         // Update the auctions state with the API data
         setAuctions(convertedAuctions);
@@ -105,9 +128,48 @@ export default function MyAuctions() {
       setIsLoading(false);
     }
   };
+        // Update the auctions state with the API data
+        setAuctions(convertedAuctions);
+        setPaginationData({
+          count: result.pagination.count,
+          totalPages: result.pagination.total_pages,
+          currentPage: result.pagination.current_page,
+          pageSize: result.pagination.page_size
+        });
+      } else {
+        // No user auctions data available
+        // Don't set error here, just keep empty state
+        setAuctions([]);
+        setPaginationData({
+          count: 0,
+          totalPages: 1,
+          currentPage: 1,
+          pageSize: 10
+        });
+      }
+    } catch (err) {
+      // Error handling for overall fetch process
+      setError(err instanceof Error ? err.message : 'Failed to fetch your auctions');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchUserAuctions();
-  }, []);
+  // Initial fetch
+  useEffect(() => {
+    fetchUserAuctions(currentPage, pageSize);
+  }, [currentPage, pageSize]);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   const handleAddAuction = async (auctionData: AuctionFormData) => {
     // Show loading toast
@@ -162,23 +224,6 @@ export default function MyAuctions() {
       }
 
       if (response.data) {
-        // Create a new auction object for the UI
-        const newAuction = {
-          id: response.data.id.toString(),
-          name: response.data.title || `${response.data.category_name} - ${response.data.subcategory_name}`,
-          category: response.data.category_name,
-          subcategory: response.data.subcategory_name,
-          basePrice: response.data.starting_bid_price || response.data.total_starting_value,
-          currentBid: '',
-          status: response.data.is_active ? 'active' : 'inactive',
-          timeLeft: 'Available', // API doesn't provide end date/time in this format
-          volume: response.data.available_quantity ? `${response.data.available_quantity} ${response.data.unit_of_measurement}` : 'N/A',
-          image: response.data.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
-        };
-
-        // Add the new auction to the list
-        setAuctions([newAuction, ...auctions]);
-
         // Close the modal
         setIsModalOpen(false);
 
@@ -189,28 +234,7 @@ export default function MyAuctions() {
         });
 
         // Refresh the auctions list
-        getUserAuctions().then(response => {
-          if (response.data) {
-            // Convert API auctions to the format expected by the UI
-            const convertedAuctions = response.data.map(auction => ({
-              id: auction.id.toString(),
-              name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
-              category: auction.category_name,
-              subcategory: auction.subcategory_name,
-              basePrice: auction.starting_bid_price || auction.total_starting_value,
-              currentBid: '', // API doesn't provide highest bid yet
-              status: auction.is_active ? 'active' : 'inactive',
-              timeLeft: 'Available', // API doesn't provide end date/time in this format
-              volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-              image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
-            }));
-
-            // Update the auctions state with the API data
-            setAuctions(convertedAuctions);
-          }
-        }).catch(_err => {
-          // Error handling for auction refresh failures
-        });
+        await fetchUserAuctions(currentPage, pageSize);
       }
     } catch (error) {
       // Dismiss the loading toast
@@ -249,6 +273,14 @@ export default function MyAuctions() {
       duration: 3000,
     });
   };
+
+  // Filter auctions based on search term
+  const filteredAuctions = auctions.filter(auction =>
+    searchTerm === '' ||
+    auction.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    auction.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (auction.subcategory && auction.subcategory.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   // Filter auctions based on search term
   const filteredAuctions = auctions.filter(auction =>
@@ -312,6 +344,7 @@ export default function MyAuctions() {
           <p className="text-gray-500 text-sm mt-1">{error}</p>
           <button
             onClick={() => fetchUserAuctions(currentPage, pageSize)}
+            onClick={() => fetchUserAuctions(currentPage, pageSize)}
             className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
           >
             Try Again
@@ -323,6 +356,35 @@ export default function MyAuctions() {
       {!isLoading && !error && (
         <div>
           {auctions.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {filteredAuctions.map((auction) => (
+                  <MyAuctionCard
+                    key={auction.id}
+                    id={auction.id}
+                    name={auction.name}
+                    category={auction.category}
+                    volume={auction.volume}
+                    basePrice={auction.basePrice}
+                    timeLeft={auction.timeLeft}
+                    image={auction.image}
+                    onEditClick={() => handleEditClick(auction)}
+                  />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {auctions.length > 0 && (
+                <Pagination
+                  currentPage={paginationData.currentPage}
+                  totalPages={paginationData.totalPages}
+                  totalCount={paginationData.count}
+                  pageSize={paginationData.pageSize}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              )}
+            </>
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {filteredAuctions.map((auction) => (
