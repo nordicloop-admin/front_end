@@ -1,0 +1,640 @@
+/**
+ * Bid service for handling bid creation and management
+ * Based on Nordic Loop Bidding System API
+ */
+import { apiPost, apiGet, apiPut, apiDelete } from './api';
+
+/**
+ * Interface for bid creation data
+ */
+export interface BidCreateData {
+  ad: number;                          // Ad ID (required)
+  bid_price_per_unit: string;          // Bid price per unit (required)
+  volume_requested: string;            // Volume requested (required)
+  volume_type?: 'partial' | 'full';    // Volume type (optional, defaults to "partial")
+  notes?: string;                      // Optional notes
+  max_auto_bid_price?: string;         // Auto-bidding max price (optional)
+}
+
+/**
+ * Interface for bid update data
+ */
+export interface BidUpdateData {
+  bid_price_per_unit?: string;         // New bid price
+  volume_requested?: string;           // New volume (optional)
+  notes?: string;                      // Updated notes (optional)
+  max_auto_bid_price?: string;         // New auto-bid limit (optional)
+}
+
+/**
+ * Interface for pagination parameters
+ */
+export interface BidPaginationParams {
+  page?: number;
+  page_size?: number;
+  status?: string;                     // Filter by bid status
+  ad_id?: number;                      // Filter by specific ad ID
+}
+
+/**
+ * Interface for bid search parameters
+ */
+export interface BidSearchParams extends BidPaginationParams {
+  ad_title?: string;                   // Search by ad title
+  category?: string;                   // Filter by material category
+  min_price?: string;                  // Minimum bid price
+  max_price?: string;                  // Maximum bid price
+  user_id?: number;                    // Specific user's bids
+}
+
+/**
+ * Interface for bid item data (from the API response)
+ */
+export interface BidItem {
+  id: number;
+  bidder_name: string;
+  ad_title: string;
+  bid_price_per_unit: string;
+  volume_requested: string;
+  total_bid_value: string | null;
+  currency: string;
+  unit: string;
+  status: string;
+  is_winning: boolean;
+  rank: number;
+  volume_type?: string;
+  is_auto_bid?: boolean;
+  max_auto_bid_price?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Interface for platform statistics
+ */
+export interface PlatformStatistics {
+  total_bids: number;
+  active_bids: number;
+  total_bidders: number;
+}
+
+/**
+ * Interface for bid statistics (for specific ad)
+ */
+export interface BidStatistics {
+  total_bids: number;
+  highest_bid: number;
+  lowest_bid: number;
+  average_bid: number;
+  total_volume_requested: number;
+  unique_bidders: number;
+  current_highest_bid?: {
+    bid_price_per_unit: number;
+    total_bid_value: number;
+    volume_requested: number;
+    bidder: string;
+    timestamp: string;
+  };
+}
+
+/**
+ * Interface for ad info (in bid responses)
+ */
+export interface AdInfo {
+  id: number;
+  title: string;
+  starting_bid_price: number;
+  reserve_price?: number;
+  available_quantity: number;
+  currency: string;
+  auction_end_date?: string;
+}
+
+/**
+ * Interface for paginated bid response
+ */
+export interface PaginatedBidResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: BidItem[];
+  page_size: number;
+  total_pages: number;
+  current_page: number;
+  platform_statistics?: PlatformStatistics;
+  bid_statistics?: BidStatistics;
+  ad_info?: AdInfo;
+}
+
+/**
+ * Interface for paginated bid result with extracted data
+ */
+export interface PaginatedBidResult {
+  bids: BidItem[];
+  pagination: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    page_size: number;
+    total_pages: number;
+    current_page: number;
+  };
+  statistics?: PlatformStatistics;
+  bidStatistics?: BidStatistics;
+  adInfo?: AdInfo;
+}
+
+/**
+ * Interface for bid creation response
+ */
+export interface BidCreateResponse {
+  message: string;
+  bid: BidItem;
+}
+
+/**
+ * Interface for bid update response
+ */
+export interface BidUpdateResponse {
+  message: string;
+  bid: BidItem;
+}
+
+/**
+ * Interface for bid history entry
+ */
+export interface BidHistoryEntry {
+  id: number;
+  previous_price: string | null;
+  new_price: string;
+  previous_volume: string | null;
+  new_volume: string;
+  change_reason: string;
+  timestamp: string;
+}
+
+/**
+ * Interface for bid error response
+ */
+export interface BidErrorResponse {
+  error: string;
+  details?: Record<string, string[]>;
+}
+
+/**
+ * Utility function to extract minimum bid amount from error message
+ * @param errorMessage The error message from the API
+ * @returns The minimum bid amount if found, null otherwise
+ */
+export function extractMinimumBidFromError(errorMessage: string): { amount: number; currency: string } | null {
+  // Pattern to match "Bid price must be at least X.XX EUR" or similar
+  const pattern = /bid price must be at least ([\d,.]+)\s*([A-Z]{3})/i;
+  const match = errorMessage.match(pattern);
+  
+  if (match) {
+    const amount = parseFloat(match[1].replace(/,/g, ''));
+    const currency = match[2].toUpperCase();
+    return { amount, currency };
+  }
+  
+  return null;
+}
+
+/**
+ * Create a new bid
+ * @param bidData The bid data
+ * @returns The API response with the created bid
+ */
+export async function createBid(bidData: BidCreateData) {
+  try {
+    // Create bid requires authentication
+    const response = await apiPost<BidCreateResponse | BidErrorResponse>('/bids/create/', bidData, true);
+
+    // If the response has an error status, format it properly
+    if (response.error || (response.status && response.status >= 400)) {
+      return {
+        data: response.data,
+        error: response.error || 'Failed to create bid',
+        status: response.status || 500
+      };
+    }
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred during bid creation',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get all bids with pagination (platform-wide)
+ * @param params Pagination and filter parameters
+ * @returns The API response with the bids and pagination info
+ */
+export async function getAllBids(params?: BidPaginationParams) {
+  try {
+    // Build query string for pagination and filters
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    if (params?.status) queryParams.set('status', params.status);
+    if (params?.ad_id) queryParams.set('ad_id', params.ad_id.toString());
+    
+    const endpoint = `/bids/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    // Get bids requires authentication
+    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Return both bids and pagination metadata
+    const result: PaginatedBidResult = {
+      bids: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      },
+      statistics: response.data?.platform_statistics
+    };
+
+    return {
+      data: result,
+      error: null,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching bids',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get all bids for a specific ad
+ * @param adId The ad ID
+ * @param params Optional pagination parameters
+ * @returns The API response with the bids for the ad
+ */
+export async function getAdBids(adId: number, params?: BidPaginationParams) {
+  try {
+    // Build query string for pagination
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    
+    const endpoint = `/bids/ad/${adId}/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    // Get bids requires authentication
+    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Return bids with ad info and bid statistics
+    const result: PaginatedBidResult = {
+      bids: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      },
+      bidStatistics: response.data?.bid_statistics,
+      adInfo: response.data?.ad_info
+    };
+
+    return {
+      data: result,
+      error: null,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching ad bids',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get all bids for the current user with pagination
+ * @param params Pagination parameters
+ * @returns The API response with the user's bids and pagination info
+ */
+export async function getUserBids(params?: BidPaginationParams) {
+  try {
+    // Build query string for pagination and filters
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    if (params?.status) queryParams.set('status', params.status);
+    
+    const endpoint = `/bids/user/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    // Get user bids requires authentication
+    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Return both bids and pagination metadata
+    const result: PaginatedBidResult = {
+      bids: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      },
+      statistics: response.data?.platform_statistics
+    };
+
+    return {
+      data: result,
+      error: null,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching your bids',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get user's winning bids
+ * @param params Optional pagination parameters
+ * @returns The API response with the user's winning bids
+ */
+export async function getUserWinningBids(params?: BidPaginationParams) {
+  try {
+    // Build query string for pagination
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    
+    const endpoint = `/bids/user/winning/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    // Get user winning bids requires authentication
+    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Return both bids and pagination metadata
+    const result: PaginatedBidResult = {
+      bids: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      }
+    };
+
+    return {
+      data: result,
+      error: null,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching your winning bids',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Search bids with filters
+ * @param params Search and filter parameters
+ * @returns The API response with filtered bids
+ */
+export async function searchBids(params: BidSearchParams) {
+  try {
+    // Build query string for search and filters
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.set('page', params.page.toString());
+    if (params.page_size) queryParams.set('page_size', params.page_size.toString());
+    if (params.ad_title) queryParams.set('ad_title', params.ad_title);
+    if (params.category) queryParams.set('category', params.category);
+    if (params.min_price) queryParams.set('min_price', params.min_price);
+    if (params.max_price) queryParams.set('max_price', params.max_price);
+    if (params.status) queryParams.set('status', params.status);
+    if (params.user_id) queryParams.set('user_id', params.user_id.toString());
+    
+    const endpoint = `/bids/search/?${queryParams.toString()}`;
+    
+    // Search bids requires authentication
+    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Return both bids and pagination metadata
+    const result: PaginatedBidResult = {
+      bids: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      }
+    };
+
+    return {
+      data: result,
+      error: null,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while searching bids',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get a specific bid by ID
+ * @param bidId The bid ID
+ * @returns The API response with the bid details
+ */
+export async function getBidById(bidId: number) {
+  try {
+    // Get bid requires authentication
+    const response = await apiGet<BidItem>(`/bids/${bidId}/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching bid details',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Update an existing bid
+ * @param bidId The ID of the bid to update
+ * @param bidData The updated bid data
+ * @returns The API response with the updated bid
+ */
+export async function updateBid(bidId: number, bidData: BidUpdateData) {
+  try {
+    // Update bid requires authentication
+    const response = await apiPut<BidUpdateResponse>(`/bids/${bidId}/update/`, bidData, true);
+
+    // If the response has an error status, format it properly
+    if (response.error || (response.status && response.status >= 400)) {
+      return {
+        data: response.data,
+        error: response.error || 'Failed to update bid',
+        status: response.status || 500
+      };
+    }
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while updating your bid',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Cancel a bid (delete)
+ * @param bidId The ID of the bid to cancel
+ * @returns The API response
+ */
+export async function cancelBid(bidId: number) {
+  try {
+    // Cancel bid requires authentication
+    const response = await apiDelete<{ message: string }>(`/bids/${bidId}/delete/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while cancelling your bid',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get bid history for a specific bid
+ * @param bidId The bid ID
+ * @returns The API response with bid history
+ */
+export async function getBidHistory(bidId: number) {
+  try {
+    // Get bid history requires authentication
+    const response = await apiGet<BidHistoryEntry[]>(`/bids/${bidId}/history/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching bid history',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get bid statistics for a specific ad
+ * @param adId The ad ID
+ * @returns The API response with bid statistics
+ */
+export async function getBidStatistics(adId: number) {
+  try {
+    // Get bid statistics requires authentication
+    const response = await apiGet<BidStatistics>(`/bids/ad/${adId}/stats/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching bid statistics',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Close auction for an ad (ad owners only)
+ * @param adId The ad ID
+ * @returns The API response
+ */
+export async function closeAuction(adId: number) {
+  try {
+    // Close auction requires authentication and ad ownership
+    const response = await apiPost<{ message: string }>(`/bids/ad/${adId}/close/`, {}, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while closing the auction',
+      status: 500
+    };
+  }
+}
+
+// Legacy function for backwards compatibility
+export const getAuctionBids = getAdBids;
+
+
