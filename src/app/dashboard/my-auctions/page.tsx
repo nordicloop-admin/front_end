@@ -5,8 +5,9 @@ import { Package, Filter, Search, Plus, Loader2, AlertCircle } from 'lucide-reac
 import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
 import MyAuctionCard from '@/components/auctions/MyAuctionCard';
-import { createAuction, createAuctionWithImage, getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
+import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
+import Link from 'next/link';
 
 
 
@@ -169,83 +170,6 @@ export default function MyAuctions() {
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
-  };
-
-  const handleAddAuction = async (auctionData: AuctionFormData) => {
-    // Show loading toast
-    const loadingToast = toast.loading('Creating auction...');
-
-    try {
-      // Prepare the data for the API
-      const apiData = {
-        item_name: auctionData.name,
-        category: auctionData.category,
-        subcategory: auctionData.subcategory,
-        description: auctionData.description,
-        base_price: auctionData.basePrice,
-        price_per_partition: auctionData.pricePerPartition,
-        volume: auctionData.volume,
-        unit: auctionData.unit,
-        selling_type: auctionData.sellingType,
-        country_of_origin: auctionData.countryOfOrigin,
-        end_date: auctionData.endDate,
-        end_time: auctionData.endTime
-      };
-
-      // Preparing auction data for submission
-
-      // Validate selling type is one of the allowed values
-      if (!['partition', 'whole', 'both'].includes(apiData.selling_type)) {
-        // Invalid selling type detected
-        toast.error('Invalid selling type. Please select a valid option.');
-        toast.dismiss(loadingToast);
-        return;
-      }
-
-      let response;
-
-      // If there's an image, use the createAuctionWithImage function
-      if (auctionData.image) {
-        response = await createAuctionWithImage(apiData, auctionData.image);
-      } else {
-        response = await createAuction(apiData);
-      }
-
-      // Dismiss the loading toast
-      toast.dismiss(loadingToast);
-
-      if (response.error) {
-        // Show error toast
-        toast.error('Failed to create auction', {
-          description: response.error,
-          duration: 5000,
-        });
-        return;
-      }
-
-      if (response.data) {
-        // Close the modal
-        setIsModalOpen(false);
-
-        // Show success message
-        toast.success('Auction created successfully', {
-          description: 'Your new auction has been listed.',
-          duration: 3000,
-        });
-
-        // Refresh the auctions list
-        await fetchUserAuctions(currentPage, pageSize);
-      }
-    } catch (error) {
-      // Dismiss the loading toast
-      toast.dismiss(loadingToast);
-
-      // Show error toast
-      toast.error('Failed to create auction', {
-        description: error instanceof Error ? error.message : 'An unexpected error occurred',
-        duration: 5000,
-      });
-    }
   };
 
   // Handle opening the edit modal

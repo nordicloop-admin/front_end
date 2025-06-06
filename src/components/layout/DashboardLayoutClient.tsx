@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import {
   Home,
   FileText,
@@ -30,7 +31,6 @@ export default function DashboardLayoutClient({
   const router = useRouter();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -57,6 +57,7 @@ export default function DashboardLayoutClient({
 
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {isMobile && sidebarOpen && (
         <div
@@ -69,12 +70,15 @@ export default function DashboardLayoutClient({
       <div
         className={cn(
           "bg-white border-r border-gray-200 flex flex-col z-50 h-full",
+          "bg-white border-r border-gray-200 flex flex-col z-50 h-full",
           isMobile
             ? `fixed inset-y-0 left-0 w-[250px] transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+            : "w-[190px] flex-shrink-0"
             : "w-[190px] flex-shrink-0"
         )}
       >
         {/* Logo */}
+        <div className="bg-[#0F1A24] text-white flex items-center justify-center h-[60px] flex-shrink-0">
         <div className="bg-[#0F1A24] text-white flex items-center justify-center h-[60px] flex-shrink-0">
           <Image
             src="/nordic logo.png"
@@ -158,6 +162,7 @@ export default function DashboardLayoutClient({
 
         {/* Become Vendor Section */}
         <div className="p-4 border-t border-gray-100 flex-shrink-0">
+        <div className="p-4 border-t border-gray-100 flex-shrink-0">
           <div className="mb-1.5 text-sm font-medium">Become vendor</div>
           <p className="text-xs text-gray-500 mb-3">
             Vendors can sell products and manage a store with a vendor dashboard.
@@ -181,7 +186,9 @@ export default function DashboardLayoutClient({
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
+        <header className="bg-white border-b border-gray-100 h-[60px] flex items-center justify-between px-4 md:px-6 flex-shrink-0">
         <header className="bg-white border-b border-gray-100 h-[60px] flex items-center justify-between px-4 md:px-6 flex-shrink-0">
           {/* Mobile Menu Toggle */}
           {isMobile && (
@@ -218,9 +225,13 @@ export default function DashboardLayoutClient({
             <Link
               href="/dashboard/auctions/create-alternative"
               className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded-md flex items-center ml-3 text-sm hover:bg-[#e67e00] transition-colors"
+            <Link
+              href="/dashboard/auctions/create-alternative"
+              className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded-md flex items-center ml-3 text-sm hover:bg-[#e67e00] transition-colors"
             >
               <Plus size={16} className="md:mr-2" />
               <span className="hidden md:inline">Add auctions</span>
+            </Link>
             </Link>
 
             {/* Notification Button */}
@@ -311,6 +322,10 @@ export default function DashboardLayoutClient({
           </div>
         </header>
 
+        {/* Page Content - This is the scrollable area */}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
         {/* Page Content - This is the scrollable area */}
         <main className="flex-1 overflow-y-auto">
           {children}
