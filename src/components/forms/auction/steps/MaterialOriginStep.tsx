@@ -9,13 +9,13 @@ interface Props {
 
 const materialOrigins = [
   {
-    id: 'post-industrial',
+    id: 'post_industrial',
     name: 'Post-industrial',
     description: 'Clean production waste from manufacturing processes',
     icon: Factory
   },
   {
-    id: 'post-consumer',
+    id: 'post_consumer',
     name: 'Post-consumer',
     description: 'Materials that have been used by consumers',
     icon: Home

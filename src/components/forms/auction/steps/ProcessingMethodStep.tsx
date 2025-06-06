@@ -9,12 +9,12 @@ interface Props {
 
 const processingMethods = [
   {
-    id: 'blow-moulding',
+    id: 'blow_moulding',
     name: 'Blow moulding',
     description: 'Process for creating hollow plastic parts'
   },
   {
-    id: 'injection-moulding',
+    id: 'injection_moulding',
     name: 'Injection moulding',
     description: 'Molten plastic injected into molds'
   },
@@ -29,7 +29,7 @@ const processingMethods = [
     description: 'Process for creating films and sheets'
   },
   {
-    id: 'rotational-moulding',
+    id: 'rotational_moulding',
     name: 'Rotational moulding',
     description: 'Hollow parts formed by rotation during heating'
   },

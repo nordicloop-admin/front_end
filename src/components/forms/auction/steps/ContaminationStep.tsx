@@ -15,13 +15,13 @@ const contaminationLevels = [
     color: 'green'
   },
   {
-    id: 'slightly-contaminated',
+    id: 'slightly_contaminated',
     name: 'Slightly Contaminated',
     description: 'Contains some contaminants, may require cleaning or further processing.',
     color: 'yellow'
   },
   {
-    id: 'heavily-contaminated',
+    id: 'heavily_contaminated',
     name: 'Heavily Contaminated',
     description: 'High levels of non-plastic materials present, requiring extensive processing.',
     color: 'red'
@@ -29,7 +29,7 @@ const contaminationLevels = [
 ];
 
 const additives = [
-  'UV stabilizer',
+  'UV Stabilizer',
   'Antioxidant',
   'Flame retardants',
   'Chlorides',
@@ -38,19 +38,19 @@ const additives = [
 
 const storageConditions = [
   {
-    id: 'climate-controlled',
+    id: 'climate_controlled',
     name: 'Climate Controlled',
     description: 'Stored in a temperature and humidity-controlled environment.',
     icon: Thermometer
   },
   {
-    id: 'protected-outdoor',
+    id: 'protected_outdoor',
     name: 'Protected Outdoor',
     description: 'Covered or partially protected from the elements but outdoors.',
     icon: Package
   },
   {
-    id: 'unprotected-outdoor',
+    id: 'unprotected_outdoor',
     name: 'Unprotected Outdoor',
     description: 'Exposed to environmental conditions without protection.',
     icon: AlertTriangle

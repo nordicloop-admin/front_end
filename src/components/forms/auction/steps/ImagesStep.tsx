@@ -70,11 +70,22 @@ export function ImagesStep({ formData, updateFormData }: Props) {
     return URL.createObjectURL(file);
   };
 
+  // Calculate total keywords text length (as comma-separated string)
+  const getKeywordsTextLength = () => {
+    return formData.keywords.join(', ').length;
+  };
+
   const handleKeywordAdd = (keyword: string) => {
     if (keyword.trim() && !formData.keywords.includes(keyword.trim())) {
-      updateFormData({
-        keywords: [...formData.keywords, keyword.trim()]
-      });
+      const currentKeywordsText = formData.keywords.join(', ');
+      const newKeywordsText = currentKeywordsText ? `${currentKeywordsText}, ${keyword.trim()}` : keyword.trim();
+      
+      // Check if adding this keyword would exceed 500 characters
+      if (newKeywordsText.length <= 500) {
+        updateFormData({
+          keywords: [...formData.keywords, keyword.trim()]
+        });
+      }
     }
   };
 
@@ -95,39 +106,90 @@ export function ImagesStep({ formData, updateFormData }: Props) {
         </p>
       </div>
 
+      {/* Validation Requirements Info */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start">
+          <Info className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
+          <div>
+            <h4 className="font-medium text-blue-900 mb-2">Step 8 Requirements</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• <strong>Title:</strong> Minimum 10 characters, maximum 255 characters</li>
+              <li>• <strong>Description:</strong> Minimum 50 characters (no maximum limit)</li>
+              <li>• <strong>Keywords:</strong> Optional, maximum 500 characters total</li>
+              <li>• <strong>Image:</strong> At least one image is required (JPEG, PNG, WebP, GIF)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       {/* Title */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
           <Type className="inline w-4 h-4 mr-2" />
           Listing Title *
+          <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 10 characters)</span>
         </label>
         <input
           type="text"
           placeholder="e.g., High-Quality HDPE Post-Industrial Pellets - Food Grade"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+          className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
+            formData.title.length > 0 && formData.title.trim().length < 10 
+              ? 'border-red-300 bg-red-50' 
+              : 'border-gray-300'
+          }`}
           value={formData.title}
           onChange={(e) => updateFormData({ title: e.target.value })}
+          maxLength={255}
         />
-        <p className="text-xs text-gray-500 mt-1">
-          {formData.title.length}/100 characters
-        </p>
+        <div className="flex justify-between items-center mt-1">
+          <p className={`text-xs ${
+            formData.title.length > 0 && formData.title.trim().length < 10 
+              ? 'text-red-500' 
+              : 'text-gray-500'
+          }`}>
+            {formData.title.trim().length}/255 characters 
+            {formData.title.length > 0 && formData.title.trim().length < 10 && 
+              ` - Need at least ${10 - formData.title.trim().length} more characters`
+            }
+          </p>
+          {formData.title.trim().length >= 10 && (
+            <span className="text-xs text-green-600">✓ Valid length</span>
+          )}
+        </div>
       </div>
 
       {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Description *
+          <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 50 characters)</span>
         </label>
         <textarea
           rows={6}
           placeholder="Provide detailed information about your material including quality, applications, and any special features..."
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+          className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm ${
+            formData.description.length > 0 && formData.description.trim().length < 50 
+              ? 'border-red-300 bg-red-50' 
+              : 'border-gray-300'
+          }`}
           value={formData.description}
           onChange={(e) => updateFormData({ description: e.target.value })}
         />
-        <p className="text-xs text-gray-500 mt-1">
-          {formData.description.length}/500 characters recommended
-        </p>
+        <div className="flex justify-between items-center mt-1">
+          <p className={`text-xs ${
+            formData.description.length > 0 && formData.description.trim().length < 50 
+              ? 'text-red-500' 
+              : 'text-gray-500'
+          }`}>
+            {formData.description.trim().length} characters 
+            {formData.description.length > 0 && formData.description.trim().length < 50 && 
+              ` - Need at least ${50 - formData.description.trim().length} more characters`
+            }
+          </p>
+          {formData.description.trim().length >= 50 && (
+            <span className="text-xs text-green-600">✓ Valid length</span>
+          )}
+        </div>
       </div>
 
       {/* Keywords */}
@@ -135,6 +197,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
         <label className="block text-sm font-medium text-gray-700 mb-3">
           <Tag className="inline w-4 h-4 mr-2" />
           Keywords (Optional)
+          <span className="text-xs text-gray-500 font-normal ml-2">(Maximum 500 characters total)</span>
         </label>
         <div className="flex flex-wrap gap-2 mb-3">
           {formData.keywords.map((keyword, index) => (
@@ -164,9 +227,14 @@ export function ImagesStep({ formData, updateFormData }: Props) {
             }
           }}
         />
-        <p className="text-xs text-gray-500 mt-1">
-          Press Enter or comma to add keywords. These help buyers find your listing.
-        </p>
+        <div className="flex justify-between items-center mt-1">
+          <p className="text-xs text-gray-500">
+            Press Enter or comma to add keywords. These help buyers find your listing.
+          </p>
+          <p className={`text-xs ${getKeywordsTextLength() > 450 ? 'text-orange-500' : 'text-gray-500'}`}>
+            {getKeywordsTextLength()}/500 characters
+          </p>
+        </div>
       </div>
 
       {/* Upload Area */}
