@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createBid, updateBid, BidCreateData, BidUpdateData, BidCreateResponse, extractMinimumBidFromError } from '@/services/bid';
+import { createBid, updateBid, BidCreateData, BidUpdateData, BidCreateResponse } from '@/services/bid';
 import { getAccessToken, isAuthenticated } from '@/services/auth';
 
 interface Auction {
@@ -44,7 +44,7 @@ interface UseBiddingReturn {
 export default function useBidding(): UseBiddingReturn {
   const [selectedAuction, setSelectedAuction] = useState<Auction | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
 
   const openBidModal = (auction: Auction) => {
     setSelectedAuction(auction);
@@ -257,7 +257,7 @@ export default function useBidding(): UseBiddingReturn {
 
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
-    } finally {
+      
       // Show error message
       const isUpdate = !!selectedAuction?.bidId;
       toast.error(`Failed to ${isUpdate ? 'update' : 'place'} bid`, {
