@@ -112,6 +112,42 @@ const marketplaceAuctions = [
   }
 ];
 
+// Add function to get correct category image before the component
+const getCategoryImage = (category: string): string => {
+  const categoryImages: Record<string, string> = {
+    'Plastics': '/images/marketplace/categories/plastics.jpg',
+    'Metals': '/images/marketplace/categories/metals.jpg',
+    'Paper': '/images/marketplace/categories/paper.jpg',
+    'Glass': '/images/marketplace/categories/glass.jpg',
+    'Textiles': '/images/marketplace/categories/textiles.jpg',
+    'Wood': '/images/marketplace/categories/wood.jpg'
+  };
+  
+  return categoryImages[category] || '/images/marketplace/categories/plastics.jpg';
+};
+
+// Helper function to get full image URL from backend
+const getFullImageUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath) return '';
+  
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // If it starts with /media/, construct the full URL
+  if (imagePath.startsWith('/media/')) {
+    return `http://127.0.0.1:8000${imagePath}`;
+  }
+  
+  // If it's just a filename, assume it's in the material_images directory
+  if (!imagePath.startsWith('/')) {
+    return `http://127.0.0.1:8000/media/material_images/${imagePath}`;
+  }
+  
+  return `http://127.0.0.1:8000${imagePath}`;
+};
+
 export default function AuctionDetail() {
   const params = useParams();
   const router = useRouter();
@@ -132,7 +168,7 @@ export default function AuctionDetail() {
   };
 
   // Calculate time left for an auction
-  const calculateTimeLeft = (endDate: string, endTime: string) => {
+  const _calculateTimeLeft = (endDate: string, endTime: string) => {
     const now = new Date();
     const end = new Date(`${endDate}T${endTime}`);
 
@@ -171,7 +207,7 @@ export default function AuctionDetail() {
               seller: adData.posted_by,
               company: adData.company_name,
               countryOfOrigin: adData.location_summary || 'Unknown',
-              image: adData.material_image || '/images/marketplace/categories/plastics.jpg',
+              image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
               description: adData.description || adData.specific_material || `${adData.category_name} material available for auction`,
               bidHistory: [],
               
@@ -259,7 +295,7 @@ export default function AuctionDetail() {
               volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
               seller: 'Unknown Seller',
               countryOfOrigin: apiAuction.location_summary || 'Unknown',
-              image: apiAuction.material_image || '/images/marketplace/categories/plastics.jpg',
+              image: apiAuction.material_image ? getFullImageUrl(apiAuction.material_image) : '/images/marketplace/categories/plastics.jpg',
               description: apiAuction.title || `${apiAuction.category_name} material available for auction`,
               bidHistory: [],
               specifications: [
@@ -316,171 +352,339 @@ export default function AuctionDetail() {
   }
 
   return (
-    <div className="p-5">
-      <div className="mb-5">
-        <button
-          onClick={() => router.push('/dashboard/auctions')}
-          className="flex items-center text-sm text-gray-500 hover:text-gray-700"
-        >
-          <ArrowLeft size={16} className="mr-1" />
-          Back to Auctions
-        </button>
-      </div>
-
-      <div className="bg-white border border-gray-100 rounded-md overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="relative h-64 md:h-full">
-            <Image
-              src={auction.image}
-              alt={auction.name}
-              fill
-              className="object-cover"
-            />
-            <div className="absolute top-4 left-4 bg-white/90 px-2 py-1 rounded text-xs">
-              {auction.category}
-            </div>
-            <div className="absolute top-4 right-4 bg-black/80 px-2 py-1 rounded text-xs text-white flex items-center">
-              <Clock size={12} className="mr-1" />
-              {auction.timeLeft}
+    <div className="min-h-screen bg-gray-50">
+      {/* Clean Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-full mx-auto px-6 lg:px-12 py-4">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => router.push('/dashboard/auctions')}
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft size={20} className="mr-2" />
+              <span className="font-medium">Back to Auctions</span>
+            </button>
+            
+            <div className="flex items-center space-x-3">
+              <span className={`px-3 py-1 rounded-md text-sm font-medium border ${
+                auction.auctionStatus === 'Active' ? 'bg-green-50 text-green-700 border-green-200' :
+                auction.auctionStatus === 'Draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                'bg-gray-50 text-gray-700 border-gray-200'
+              }`}>
+                {auction.auctionStatus}
+              </span>
             </div>
           </div>
+        </div>
+      </div>
 
-          <div className="p-6">
-            <h1 className="text-xl font-medium text-gray-900">{auction.name}</h1>
-            
-            {/* Enhanced seller information */}
-            {auction.company && (
-              <div className="mt-2 text-sm text-gray-600">
-                Posted by <span className="font-medium">{auction.seller}</span> 
-                {auction.company && <span> from {auction.company}</span>}
+      <div className="max-w-full mx-auto px-6 lg:px-12 py-8">
+        {/* Hero Section */}
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-8">
+          <div className="grid grid-cols-1 xl:grid-cols-5">
+            {/* Image Section - Takes more space */}
+            <div className="relative h-80 xl:h-[500px] xl:col-span-3">
+              <Image
+                src={auction.image}
+                alt={auction.name}
+                fill
+                className="object-cover"
+                onError={(e) => {
+                  // Fallback to category image on error
+                  const target = e.target as HTMLImageElement;
+                  target.src = getCategoryImage(auction.category);
+                }}
+              />
+              <div className="absolute top-4 left-4">
+                <span className="bg-white px-3 py-1 rounded-md text-sm font-medium text-gray-900 shadow-sm">
+                  {auction.category}
+                </span>
               </div>
-            )}
-
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs text-gray-500">
-                  {auction.highestBid ? 'Current Highest Bid' : 'Base Price'}
-                </div>
-                <div className="text-lg font-medium text-[#FF8A00]">
-                  {auction.highestBid || auction.basePrice}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs text-gray-500">Volume</div>
-                <div className="text-sm font-medium flex items-center">
-                  <Package size={14} className="mr-1 text-gray-500" />
-                  {auction.volume}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs text-gray-500">Seller</div>
-                <div className="text-sm font-medium flex items-center">
-                  <Building size={14} className="mr-1 text-gray-500" />
-                  {auction.seller || 'Unknown Seller'}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs text-gray-500">Origin</div>
-                <div className="text-sm font-medium flex items-center">
-                  <MapPin size={14} className="mr-1 text-gray-500" />
-                  {auction.countryOfOrigin}
+              <div className="absolute top-4 right-4">
+                <div className="bg-gray-900 px-3 py-2 rounded-md text-white flex items-center space-x-2">
+                  <Clock size={16} />
+                  <span className="text-sm font-medium">{auction.timeLeft}</span>
                 </div>
               </div>
             </div>
 
-            {/* Enhanced status display */}
-            {auction.auctionStatus && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Status</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${
-                    auction.auctionStatus === 'Active' ? 'bg-green-100 text-green-700' :
-                    auction.auctionStatus === 'Draft' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-gray-100 text-gray-700'
-                  }`}>
-                    {auction.auctionStatus}
-                  </span>
-                </div>
-                {auction.stepCompletionStatus && (
-                  <div className="mt-2 text-xs text-gray-500">
-                    Steps completed: {Object.values(auction.stepCompletionStatus).filter(Boolean).length} of 8
+            {/* Content Section - Takes remaining space */}
+            <div className="p-8 xl:col-span-2">
+              <div className="mb-6">
+                <h1 className="text-2xl font-bold text-gray-900 mb-2">{auction.name}</h1>
+                
+                {auction.company && (
+                  <div className="flex items-center text-gray-600 text-sm">
+                    <Building className="w-4 h-4 mr-2" />
+                    <span>Posted by <span className="font-medium text-gray-900">{auction.seller}</span></span>
+                    {auction.company && <span className="ml-1">from {auction.company}</span>}
                   </div>
                 )}
               </div>
-            )}
 
-            {/* Keywords display */}
-            {auction.keywords && (
-              <div className="mt-4">
-                <div className="text-xs text-gray-500 mb-2">Keywords</div>
-                <div className="flex flex-wrap gap-1">
-                  {auction.keywords.split(',').map((keyword: string, index: number) => (
-                    <span key={index} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                      {keyword.trim()}
-                    </span>
-                  ))}
+              {/* Key Information Grid */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="border border-gray-200 rounded-md p-4">
+                  <div className="text-sm text-gray-500 mb-1">
+                    {auction.highestBid ? 'Current Highest Bid' : 'Starting Price'}
+                  </div>
+                  <div className="text-xl font-bold text-[#FF8A00]">
+                    {auction.highestBid || auction.basePrice}
+                  </div>
+                </div>
+
+                <div className="border border-gray-200 rounded-md p-4">
+                  <div className="text-sm text-gray-500 mb-1 flex items-center">
+                    <Package className="w-4 h-4 mr-1" />
+                    Volume
+                  </div>
+                  <div className="text-xl font-bold text-gray-900">
+                    {auction.volume}
+                  </div>
+                </div>
+
+                <div className="border border-gray-200 rounded-md p-4">
+                  <div className="text-sm text-gray-500 mb-1 flex items-center">
+                    <Building className="w-4 h-4 mr-1" />
+                    Seller
+                  </div>
+                  <div className="text-sm font-medium text-gray-900 truncate">
+                    {auction.seller || 'Unknown Seller'}
+                  </div>
+                </div>
+
+                <div className="border border-gray-200 rounded-md p-4">
+                  <div className="text-sm text-gray-500 mb-1 flex items-center">
+                    <MapPin className="w-4 h-4 mr-1" />
+                    Origin
+                  </div>
+                  <div className="text-sm font-medium text-gray-900">
+                    {auction.countryOfOrigin}
+                  </div>
                 </div>
               </div>
-            )}
 
-            <div className="mt-6">
+              {/* Progress Bar */}
+              {auction.stepCompletionStatus && (
+                <div className="border border-gray-200 rounded-md p-4 mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-700">Completion Progress</span>
+                    <span className="text-sm text-gray-500">
+                      {Object.values(auction.stepCompletionStatus).filter(Boolean).length} of 8 steps
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
+                      style={{ 
+                        width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Keywords */}
+              {auction.keywords && (
+                <div className="mb-6">
+                  <div className="text-sm font-medium text-gray-700 mb-2">Keywords</div>
+                  <div className="flex flex-wrap gap-2">
+                    {auction.keywords.split(',').map((keyword: string, index: number) => (
+                      <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">
+                        {keyword.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Button */}
               <button
                 onClick={() => openBidModal(auction)}
-                className="w-full py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors flex items-center justify-center"
                 disabled={auction.auctionStatus === 'Draft' || !auction.isActive}
+                className={`w-full py-3 rounded-md font-medium transition-all duration-200 flex items-center justify-center space-x-2 ${
+                  auction.auctionStatus === 'Draft' || !auction.isActive
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                    : 'bg-[#FF8A00] text-white hover:bg-[#e67e00] shadow-sm hover:shadow'
+                }`}
               >
-                {auction.auctionStatus === 'Draft' ? 'Draft - Not Available for Bidding' : 'Place Bid'}
-                {auction.auctionStatus !== 'Draft' && <ArrowUpRight size={16} className="ml-1" />}
+                {auction.auctionStatus === 'Draft' ? (
+                  <span>Draft - Not Available for Bidding</span>
+                ) : (
+                  <>
+                    <span>Place Bid</span>
+                    <ArrowUpRight className="w-4 h-4" />
+                  </>
+                )}
               </button>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-gray-100 p-6">
-          <h2 className="text-lg font-medium mb-3">Description</h2>
-          <p className="text-sm text-gray-700">{auction.description}</p>
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="xl:col-span-3 space-y-6">
+            {/* Description */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
+              <p className="text-gray-700 leading-relaxed">{auction.description}</p>
+            </div>
 
-          <h2 className="text-lg font-medium mt-6 mb-3">Specifications</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {auction.specifications.map((spec: any, index: number) => (
-              <div key={index} className="flex justify-between border-b border-gray-100 py-2">
-                <div className="text-sm text-gray-500">{spec.name}</div>
-                <div className="text-sm font-medium">{spec.value}</div>
+            {/* Specifications */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Specifications</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
+                {auction.specifications.map((spec: any, index: number) => (
+                  <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                    <div className="text-gray-600 text-sm">{spec.name}</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{spec.value}</div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Bid History */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Bid History</h2>
+              {auction.bidHistory.length > 0 ? (
+                <div className="overflow-hidden border border-gray-200 rounded-md">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Bidder</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {auction.bidHistory.map((bid: any, index: number) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900">{bid.bidder}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">{bid.amount}</td>
+                          <td className="px-4 py-3 text-sm text-gray-500">{formatDate(bid.date)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 border border-gray-200 rounded-md bg-gray-50">
+                  <Package className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No bids placed yet</p>
+                  <p className="text-gray-400 text-xs mt-1">Be the first to bid on this auction!</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          <h2 className="text-lg font-medium mt-6 mb-3">Bid History</h2>
-          {auction.bidHistory.length > 0 ? (
-            <div className="overflow-hidden border border-gray-100 rounded-md">
-              <table className="min-w-full divide-y divide-gray-100">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bidder</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount (SEK)</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {auction.bidHistory.map((bid: any, index: number) => (
-                    <tr key={index}>
-                      <td className="px-4 py-3 text-sm">{bid.bidder}</td>
-                      <td className="px-4 py-3 text-sm font-medium">{bid.amount}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{formatDate(bid.date)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Sidebar */}
+          <div className="xl:col-span-1 space-y-6">
+            {/* Auction Info */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Auction Details</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Category</span>
+                  <span className="font-medium text-gray-900">{auction.category}</span>
+                </div>
+                {auction.subcategory && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Subcategory</span>
+                    <span className="font-medium text-gray-900">{auction.subcategory}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Volume</span>
+                  <span className="font-medium text-gray-900">{auction.volume}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Time Left</span>
+                  <span className="font-medium text-[#FF8A00]">{auction.timeLeft}</span>
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="text-center py-6 bg-gray-50 rounded-md">
-              <p className="text-sm text-gray-500">No bids have been placed yet.</p>
-              <p className="text-sm text-gray-700 mt-1">Be the first to bid on this auction!</p>
+
+            {/* Seller Info */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Seller Information</h3>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                    <Building className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <div>
+                    <div className="font-medium text-gray-900 text-sm">{auction.seller || 'Unknown Seller'}</div>
+                    {auction.company && (
+                      <div className="text-gray-600 text-xs">{auction.company}</div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2 text-sm">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span className="text-gray-600">{auction.countryOfOrigin}</span>
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Status */}
+            {auction.auctionStatus && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Status</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-600 text-sm">Current Status</span>
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      auction.auctionStatus === 'Active' ? 'bg-green-50 text-green-700' :
+                      auction.auctionStatus === 'Draft' ? 'bg-yellow-50 text-yellow-700' :
+                      'bg-gray-50 text-gray-700'
+                    }`}>
+                      {auction.auctionStatus}
+                    </span>
+                  </div>
+                  {auction.stepCompletionStatus && (
+                    <div>
+                      <div className="text-sm text-gray-600 mb-2">
+                        Completion: {Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8 steps
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div 
+                          className="bg-[#FF8A00] h-1.5 rounded-full transition-all duration-300"
+                          style={{ 
+                            width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Additional Info Card for Better Space Utilization */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+              <div className="space-y-3">
+                <button
+                  onClick={() => openBidModal(auction)}
+                  disabled={auction.auctionStatus === 'Draft' || !auction.isActive}
+                  className={`w-full py-2 rounded-md font-medium transition-colors text-sm ${
+                    auction.auctionStatus === 'Draft' || !auction.isActive
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-[#FF8A00] text-white hover:bg-[#e67e00]'
+                  }`}
+                >
+                  {auction.auctionStatus === 'Draft' ? 'Not Available' : 'Place Bid'}
+                </button>
+                <button className="w-full py-2 bg-gray-50 text-gray-700 rounded-md font-medium hover:bg-gray-100 transition-colors text-sm">
+                  Watch Auction
+                </button>
+                <button className="w-full py-2 bg-gray-50 text-gray-700 rounded-md font-medium hover:bg-gray-100 transition-colors text-sm">
+                  Share
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
