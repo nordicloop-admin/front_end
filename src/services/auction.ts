@@ -389,3 +389,79 @@ export async function deleteAuction(auctionId: string | number) {
     };
   }
 }
+
+/**
+ * Fetch complete ad details by ID (new enhanced endpoint)
+ * @param adId The ID of the ad to fetch
+ * @returns The API response with complete ad details
+ */
+export async function getAdDetails(adId: string | number) {
+  try {
+    // This endpoint requires authentication and provides complete ad details
+    const response = await apiGet<{
+      message: string;
+      data: {
+        id: number;
+        posted_by: string;
+        company_name: string;
+        category_name: string;
+        subcategory_name: string;
+        specific_material: string;
+        packaging: string;
+        packaging_display: string;
+        material_frequency: string;
+        material_frequency_display: string;
+        specification: any;
+        additional_specifications: string | null;
+        origin: string | null;
+        origin_display: string | null;
+        contamination: string | null;
+        contamination_display: string | null;
+        additives: string | null;
+        additives_display: string | null;
+        storage_conditions: string | null;
+        storage_conditions_display: string | null;
+        processing_methods: string[];
+        processing_methods_display: string[];
+        location: any;
+        location_summary: string | null;
+        pickup_available: boolean;
+        delivery_options: string[];
+        delivery_options_display: string[];
+        available_quantity: number | null;
+        unit_of_measurement: string;
+        unit_of_measurement_display: string;
+        minimum_order_quantity: string;
+        starting_bid_price: number | null;
+        currency: string;
+        currency_display: string;
+        auction_duration: number;
+        auction_duration_display: string;
+        reserve_price: number | null;
+        total_starting_value: string;
+        title: string | null;
+        description: string | null;
+        keywords: string | null;
+        material_image: string | null;
+        is_active: boolean;
+        current_step: number;
+        is_complete: boolean;
+        created_at: string;
+        updated_at: string;
+        auction_start_date: string | null;
+        auction_end_date: string | null;
+        step_completion_status: Record<string, boolean>;
+        auction_status: string;
+        time_remaining: string | null;
+      };
+    }>(`/ads/${adId}/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching ad details',
+      status: 500
+    };
+  }
+}
