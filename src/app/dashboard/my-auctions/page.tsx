@@ -3,17 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Filter, Search, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import AddAuctionModal, { AuctionFormData } from '@/components/auctions/AddAuctionModal';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
 import MyAuctionCard from '@/components/auctions/MyAuctionCard';
-import { createAuction, createAuctionWithImage, getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
+import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
+import Link from 'next/link';
 
 
 
 export default function MyAuctions() {
   const [auctions, setAuctions] = useState<AuctionData[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedAuction, setSelectedAuction] = useState<AuctionData | null>(null);
 
@@ -123,83 +122,6 @@ export default function MyAuctions() {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  const handleAddAuction = async (auctionData: AuctionFormData) => {
-    // Show loading toast
-    const loadingToast = toast.loading('Creating auction...');
-
-    try {
-      // Prepare the data for the API
-      const apiData = {
-        item_name: auctionData.name,
-        category: auctionData.category,
-        subcategory: auctionData.subcategory,
-        description: auctionData.description,
-        base_price: auctionData.basePrice,
-        price_per_partition: auctionData.pricePerPartition,
-        volume: auctionData.volume,
-        unit: auctionData.unit,
-        selling_type: auctionData.sellingType,
-        country_of_origin: auctionData.countryOfOrigin,
-        end_date: auctionData.endDate,
-        end_time: auctionData.endTime
-      };
-
-      // Preparing auction data for submission
-
-      // Validate selling type is one of the allowed values
-      if (!['partition', 'whole', 'both'].includes(apiData.selling_type)) {
-        // Invalid selling type detected
-        toast.error('Invalid selling type. Please select a valid option.');
-        toast.dismiss(loadingToast);
-        return;
-      }
-
-      let response;
-
-      // If there's an image, use the createAuctionWithImage function
-      if (auctionData.image) {
-        response = await createAuctionWithImage(apiData, auctionData.image);
-      } else {
-        response = await createAuction(apiData);
-      }
-
-      // Dismiss the loading toast
-      toast.dismiss(loadingToast);
-
-      if (response.error) {
-        // Show error toast
-        toast.error('Failed to create auction', {
-          description: response.error,
-          duration: 5000,
-        });
-        return;
-      }
-
-      if (response.data) {
-        // Close the modal
-        setIsModalOpen(false);
-
-        // Show success message
-        toast.success('Auction created successfully', {
-          description: 'Your new auction has been listed.',
-          duration: 3000,
-        });
-
-        // Refresh the auctions list
-        await fetchUserAuctions(currentPage, pageSize);
-      }
-    } catch (error) {
-      // Dismiss the loading toast
-      toast.dismiss(loadingToast);
-
-      // Show error toast
-      toast.error('Failed to create auction', {
-        description: error instanceof Error ? error.message : 'An unexpected error occurred',
-        duration: 5000,
-      });
-    }
-  };
-
   // Handle opening the edit modal
   const handleEditClick = (auction: AuctionData) => {
     setSelectedAuction(auction);
@@ -235,14 +157,38 @@ export default function MyAuctions() {
   );
 
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">My Auctions</h1>
-      <div className="bg-white p-8 rounded-md border border-gray-200">
-        <div className="text-center py-8">
-          <p className="text-gray-600 mb-4">This page is under development.</p>
-          <Link href="/dashboard" className="text-[#FF8A00] hover:text-[#e67e00]">
-            Return to Dashboard
-          </Link>
+    <div className="p-5">
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-xl font-medium">My Auctions</h1>
+        <Link
+          href="/dashboard/auctions/create-alternative"
+          className="bg-[#FF8A00] text-white py-2 px-4 rounded-md flex items-center text-sm hover:bg-[#e67e00] transition-colors"
+        >
+          <Plus size={16} className="mr-2" />
+          New Auction
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col md:flex-row gap-3 mb-5">
+        <div className="relative flex-grow">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={16} className="text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search auctions..."
+            className="block w-full pl-10 pr-3 py-2 border border-gray-100 rounded-md bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        <div className="flex items-center">
+          <button className="flex items-center px-4 py-2 border border-gray-100 rounded-md bg-white text-sm">
+            <Filter size={16} className="mr-2 text-gray-500" />
+            Filter
+          </button>
         </div>
       </div>
 
@@ -309,13 +255,13 @@ export default function MyAuctions() {
               <Package size={32} className="mx-auto mb-3 text-gray-300" />
               <h2 className="text-base font-medium text-gray-800 mb-2">No auctions yet</h2>
               <p className="text-sm text-gray-500 mb-4">You haven&apos;t created any auctions yet. Click the &quot;New Auction&quot; button to get started.</p>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-[#FF8A00] text-white py-2 px-4 rounded-md inline-flex items-center text-sm"
+              <Link
+                href="/dashboard/auctions/create-alternative"
+                className="bg-[#FF8A00] text-white py-2 px-4 rounded-md inline-flex items-center text-sm hover:bg-[#e67e00] transition-colors"
               >
                 <Plus size={16} className="mr-2" />
                 Create Your First Auction
-              </button>
+              </Link>
             </div>
           )}
         </div>

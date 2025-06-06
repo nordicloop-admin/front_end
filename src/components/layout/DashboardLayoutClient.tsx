@@ -7,6 +7,20 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import {
+  Home,
+  FileText,
+  Package,
+  Bell,
+  MapPin,
+  User,
+  Search,
+  Menu,
+  Plus,
+  LogOut,
+  ChevronDown
+} from 'lucide-react';
 
 export default function DashboardLayoutClient({
   children,
@@ -42,7 +56,7 @@ export default function DashboardLayoutClient({
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 overflow-hidden">
       {/* Mobile Sidebar Overlay */}
       {isMobile && sidebarOpen && (
         <div
@@ -54,14 +68,14 @@ export default function DashboardLayoutClient({
       {/* Sidebar */}
       <div
         className={cn(
-          "bg-white border-r border-gray-200 flex flex-col z-50",
+          "bg-white border-r border-gray-200 flex flex-col z-50 h-full",
           isMobile
             ? `fixed inset-y-0 left-0 w-[250px] transform transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
-            : "w-[190px]"
+            : "w-[190px] flex-shrink-0"
         )}
       >
         {/* Logo */}
-        <div className="bg-[#0F1A24] text-white flex items-center justify-center h-[60px]">
+        <div className="bg-[#0F1A24] text-white flex items-center justify-center h-[60px] flex-shrink-0">
           <Image
             src="/nordic logo.png"
             alt="Nordic Loop"
@@ -143,9 +157,9 @@ export default function DashboardLayoutClient({
         </nav>
 
         {/* Become Vendor Section */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="mb-2 font-medium">Become vendor</div>
-          <p className="text-sm text-gray-600 mb-3">
+        <div className="p-4 border-t border-gray-100 flex-shrink-0">
+          <div className="mb-1.5 text-sm font-medium">Become vendor</div>
+          <p className="text-xs text-gray-500 mb-3">
             Vendors can sell products and manage a store with a vendor dashboard.
           </p>
           <button className="w-full bg-[#FF8A00] text-white py-2 px-4 rounded hover:bg-[#e67e00] transition-colors mb-4">
@@ -166,9 +180,9 @@ export default function DashboardLayoutClient({
       </div>
 
       {/* Main Content */}
-      <div className={cn("flex-1", isMobile ? "w-full" : "")}>
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 h-[60px] flex items-center justify-between px-4 md:px-6">
+        <header className="bg-white border-b border-gray-100 h-[60px] flex items-center justify-between px-4 md:px-6 flex-shrink-0">
           {/* Mobile Menu Toggle */}
           {isMobile && (
             <button
@@ -201,22 +215,15 @@ export default function DashboardLayoutClient({
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4 md:space-x-4">
             {/* Add Auctions Button - Show text only on larger screens */}
-            <button className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded flex items-center ml-3">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 md:mr-2" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-              </svg>
+            <Link
+              href="/dashboard/auctions/create-alternative"
+              className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded-md flex items-center ml-3 text-sm hover:bg-[#e67e00] transition-colors"
+            >
+              <Plus size={16} className="md:mr-2" />
               <span className="hidden md:inline">Add auctions</span>
-            </button>
+            </Link>
 
-            {/* Only show on tablet and desktop */}
-            {!isMobile && (
-              <button className="p-2 text-gray-500 hover:text-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                </svg>
-              </button>
-            )}
-
+            {/* Notification Button */}
             <button className="p-2 text-gray-500 hover:text-gray-700 relative">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
@@ -233,8 +240,10 @@ export default function DashboardLayoutClient({
           </div>
         </header>
 
-        {/* Page Content */}
-        {children}
+        {/* Page Content - This is the scrollable area */}
+        <main className="flex-1 overflow-y-auto">
+          {children}
+        </main>
       </div>
     </div>
   );
