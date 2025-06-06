@@ -2,10 +2,18 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
+import { X, ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
 
 interface PlaceBidModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (data: {
+    bidAmount: string;
+    bidVolume?: string;
+    volumeType?: 'partial' | 'full';
+    notes?: string;
+    maxAutoBidPrice?: string;
+  }) => void;
   onSubmit: (data: {
     bidAmount: string;
     bidVolume?: string;
@@ -33,8 +41,13 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
   const [notes, setNotes] = useState('');
   const [maxAutoBidPrice, setMaxAutoBidPrice] = useState('');
   const [isAutoBidEnabled, setIsAutoBidEnabled] = useState(false);
+  const [volumeType, setVolumeType] = useState<'partial' | 'full'>('partial');
+  const [notes, setNotes] = useState('');
+  const [maxAutoBidPrice, setMaxAutoBidPrice] = useState('');
+  const [isAutoBidEnabled, setIsAutoBidEnabled] = useState(false);
   const [error, setError] = useState('');
   const [volumeError, setVolumeError] = useState('');
+  const [autoBidError, setAutoBidError] = useState('');
   const [autoBidError, setAutoBidError] = useState('');
 
   // Format price string to number (remove commas)
@@ -67,6 +80,12 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
     return parts.length > 1 ? parts[1] : 'units';
   }, []);
 
+  // Extract unit from auction.volume (e.g., "100 kg" -> "kg")
+  const extractVolumeUnit = useCallback((volumeString: string): string => {
+    const parts = volumeString.split(' ');
+    return parts.length > 1 ? parts[1] : 'units';
+  }, []);
+
   // Set initial bid amount and volume when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -89,8 +108,14 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
       setNotes('');
       setMaxAutoBidPrice('');
       setIsAutoBidEnabled(false);
+      // Reset all form states
+      setVolumeType('partial');
+      setNotes('');
+      setMaxAutoBidPrice('');
+      setIsAutoBidEnabled(false);
       setError('');
       setVolumeError('');
+      setAutoBidError('');
       setAutoBidError('');
     }
   }, [isOpen, auction, calculateMinimumBid, extractVolumeValue, initialBidAmount]);
@@ -110,6 +135,9 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
     } else if (currentBid <= 0) {
       setError('Bid amount must be greater than 0');
       hasError = true;
+    } else if (currentBid <= 0) {
+      setError('Bid amount must be greater than 0');
+      hasError = true;
     }
 
     // Validate bid volume
@@ -117,14 +145,30 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
       const volumeValue = parseFloat(bidVolume);
       const maxVolume = parseFloat(extractVolumeValue(auction.volume));
       const volumeUnit = extractVolumeUnit(auction.volume);
+      const volumeUnit = extractVolumeUnit(auction.volume);
 
       if (isNaN(volumeValue) || volumeValue <= 0) {
         setVolumeError('Volume must be a positive number');
         hasError = true;
       } else if (volumeValue > maxVolume) {
         setVolumeError(`Volume cannot exceed ${maxVolume} ${volumeUnit}`);
+        setVolumeError(`Volume cannot exceed ${maxVolume} ${volumeUnit}`);
         hasError = true;
       }
+    }
+
+    // Validate auto-bid price if enabled
+    if (isAutoBidEnabled && maxAutoBidPrice) {
+      const autoBidPrice = formatPrice(maxAutoBidPrice);
+      const currentBidPrice = formatPrice(bidAmount);
+
+      if (autoBidPrice <= currentBidPrice) {
+        setAutoBidError('Auto-bid maximum must be higher than your current bid');
+        hasError = true;
+      }
+    } else if (isAutoBidEnabled && !maxAutoBidPrice) {
+      setAutoBidError('Please enter a maximum auto-bid price');
+      hasError = true;
     }
 
     // Validate auto-bid price if enabled
@@ -153,6 +197,14 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
       notes: notes.trim() || undefined,
       maxAutoBidPrice: isAutoBidEnabled ? maxAutoBidPrice : undefined,
     });
+    // Submit the bid with all the data
+    onSubmit({
+      bidAmount,
+      bidVolume: bidVolume || undefined,
+      volumeType,
+      notes: notes.trim() || undefined,
+      maxAutoBidPrice: isAutoBidEnabled ? maxAutoBidPrice : undefined,
+    });
   };
 
   if (!isOpen) return null;
@@ -161,9 +213,12 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
   const currentPrice = auction.highestBid || auction.basePrice;
   const volumeUnit = extractVolumeUnit(auction.volume);
   const maxVolume = extractVolumeValue(auction.volume);
+  const volumeUnit = extractVolumeUnit(auction.volume);
+  const maxVolume = extractVolumeValue(auction.volume);
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-md max-w-lg w-full max-h-[90vh] overflow-y-auto">
       <div className="bg-white rounded-md max-w-lg w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-5 border-b border-gray-100">
           <h2 className="text-lg font-medium">Place a Bid</h2>
@@ -184,6 +239,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
           </div>
 
           <div className="flex justify-between items-center mb-6 p-3 bg-gray-50 rounded-md">
+          <div className="flex justify-between items-center mb-6 p-3 bg-gray-50 rounded-md">
             <div>
               <div className="text-xs text-gray-500">
                 {auction.highestBid ? 'Current highest bid' : 'Base price'}
@@ -197,6 +253,68 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
           </div>
 
           <form onSubmit={handleSubmit}>
+            {/* Bid Amount */}
+            <div className="mb-4">
+              <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                Your Bid Amount
+              </label>
+              <input
+                type="text"
+                id="bidAmount"
+                value={bidAmount}
+                onChange={(e) => {
+                  // Only allow numbers and commas
+                  const value = e.target.value.replace(/[^\d,]/g, '');
+                  setBidAmount(value);
+                  setError('');
+                }}
+                className={`w-full px-3 py-2 border ${error ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
+                required
+              />
+              {error && (
+                <div className="mt-1 text-xs text-red-500 flex items-start">
+                  <AlertCircle size={12} className="mr-1 mt-0.5 flex-shrink-0" />
+                  <div className="whitespace-pre-line">{error}</div>
+                </div>
+              )}
+              <div className="mt-1 text-xs text-gray-500">
+                Minimum bid: {minBid} (price per unit)
+              </div>
+            </div>
+
+            {/* Volume Section */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Volume Requested
+              </label>
+              
+              {/* Volume Type Toggle */}
+              <div className="flex items-center space-x-4 mb-2">
+                <button
+                  type="button"
+                  onClick={() => setVolumeType('partial')}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    volumeType === 'partial'
+                      ? 'bg-[#FF8A00] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Partial
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVolumeType('full');
+                    setBidVolume(maxVolume);
+                  }}
+                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${
+                    volumeType === 'full'
+                      ? 'bg-[#FF8A00] text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Full Volume
+                </button>
             {/* Bid Amount */}
             <div className="mb-4">
               <label htmlFor="bidAmount" className="block text-sm font-medium text-gray-700 mb-1">
@@ -296,7 +414,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
                   <div className="ml-2 group relative">
                     <Info size={14} className="text-gray-400 cursor-help" />
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                      We&apos;ll bid for you automatically when outbid
+                      We'll bid for you automatically when outbid
                     </div>
                   </div>
                 </div>
@@ -344,9 +462,28 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
                     </div>
                   )}
                   <div className="mt-1 text-xs text-gray-500">
-                    We&apos;ll stop bidding when this price is reached
+                    We'll stop bidding when this price is reached
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* Notes Section */}
+            <div className="mb-6">
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                Notes (Optional)
+              </label>
+              <textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Add any notes about your bid..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm resize-none"
+                maxLength={500}
+              />
+              <div className="mt-1 text-xs text-gray-500">
+                {notes.length}/500 characters
               )}
             </div>
 
@@ -371,6 +508,8 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
 
             {/* Submit Buttons */}
             <div className="flex justify-end space-x-3">
+            {/* Submit Buttons */}
+            <div className="flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={onClose}
@@ -390,6 +529,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
           </form>
 
           {/* Terms Notice */}
+          {/* Terms Notice */}
           <div className="mt-4 p-3 bg-blue-50 rounded-md">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -397,6 +537,8 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
               </div>
               <div className="ml-3">
                 <div className="text-xs text-blue-700">
+                  By placing a bid, you agree to the terms and conditions of Nordic Loop&apos;s auction system. 
+                  Your bid is binding and subject to the auction rules.
                   By placing a bid, you agree to the terms and conditions of Nordic Loop&apos;s auction system. 
                   Your bid is binding and subject to the auction rules.
                 </div>
