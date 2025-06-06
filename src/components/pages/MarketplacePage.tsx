@@ -129,6 +129,11 @@ const ProductCard = ({ item }: { item: typeof marketplaceItems[0] }) => {
           style={{ objectFit: 'cover' }}
           className="transition-transform duration-300 hover:scale-105"
           priority={item.id <= 4} // Prioritize loading the first 4 images
+          onError={(e) => {
+            // Fallback to category image on error
+            const target = e.target as HTMLImageElement;
+            target.src = getCategoryImage(item.category);
+          }}
         />
         <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs font-medium">
           {item.category}
@@ -173,6 +178,42 @@ const ProductCard = ({ item }: { item: typeof marketplaceItems[0] }) => {
   );
 };
 
+// Helper function to get full image URL from backend
+const getFullImageUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath) return '';
+  
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // If it starts with /media/, construct the full URL
+  if (imagePath.startsWith('/media/')) {
+    return `http://127.0.0.1:8000${imagePath}`;
+  }
+  
+  // If it's just a filename, assume it's in the material_images directory
+  if (!imagePath.startsWith('/')) {
+    return `http://127.0.0.1:8000/media/material_images/${imagePath}`;
+  }
+  
+  return `http://127.0.0.1:8000${imagePath}`;
+};
+
+// Helper function to get category fallback image
+const getCategoryImage = (category: string): string => {
+  const categoryImages: Record<string, string> = {
+    'Plastics': '/images/marketplace/categories/plastics.jpg',
+    'Metals': '/images/marketplace/categories/metals.jpg',
+    'Paper': '/images/marketplace/categories/paper.jpg',
+    'Glass': '/images/marketplace/categories/glass.jpg',
+    'Textiles': '/images/marketplace/categories/textiles.jpg',
+    'Wood': '/images/marketplace/categories/wood.jpg'
+  };
+  
+  return categoryImages[category] || '/images/marketplace/categories/plastics.jpg';
+};
+
 const MarketplacePage = () => {
   const [sortOption, setSortOption] = useState('Recently');
   const [selectedCategory, setSelectedCategory] = useState('All materials');
@@ -205,7 +246,7 @@ const MarketplacePage = () => {
   };
 
   // Calculate time left for an auction
-  const calculateTimeLeft = (endDate: string, endTime: string) => {
+  const _calculateTimeLeft = (endDate: string, endTime: string) => {
     const now = new Date();
     const end = new Date(`${endDate}T${endTime}`);
 
@@ -275,7 +316,7 @@ const MarketplacePage = () => {
     timeLeft: 'Available', // API doesn't provide end date/time in this format
     volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
     countryOfOrigin: auction.location_summary || 'Unknown',
-    image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+    image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
   }));
 
   // Filter auctions based on search term and category
