@@ -303,3 +303,80 @@ export async function apiDelete<T>(
     };
   }
 }
+
+/**
+ * Make a PUT request with FormData (for file uploads)
+ * @param endpoint The API endpoint to call
+ * @param formData The FormData object containing files and form fields
+ * @param requiresAuth Whether the request requires authentication
+ * @param token Optional authentication token
+ * @returns The API response
+ */
+export async function apiPutFormData<T>(
+  endpoint: string,
+  formData: FormData,
+  requiresAuth: boolean = true,
+  token?: string
+): Promise<ApiResponse<T>> {
+  try {
+    // For FormData, we don't set Content-Type header as the browser will set it with boundary
+    const headers: HeadersInit = {};
+    
+    if (requiresAuth) {
+      const authToken = token || getAccessToken();
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+    }
+
+    const url = `${API_BASE_URL}${endpoint}`;
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: formData, // Send FormData directly
+    });
+
+    let data;
+    const contentType = response.headers.get('content-type');
+
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      
+      try {
+        data = JSON.parse(text);
+      } catch (_e) {
+        return {
+          data: null,
+          error: `Server returned non-JSON response: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`,
+          status: response.status,
+        };
+      }
+    }
+
+    if (!response.ok) {
+      const errorMessage = data.message || data.error || data.detail ||
+                          (typeof data === 'string' ? data : 'An error occurred');
+
+      return {
+        data: data,
+        error: errorMessage,
+        status: response.status,
+      };
+    }
+
+    return {
+      data: data,
+      error: null,
+      status: response.status,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred',
+      status: 500,
+    };
+  }
+}
