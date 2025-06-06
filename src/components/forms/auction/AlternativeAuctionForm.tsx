@@ -2,7 +2,13 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Check, Save } from 'lucide-react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Check, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
+import { adCreationService } from '@/services/ads';
+import { getCategories, Category } from '@/services/auction';
+import { validateStepData, convertLabelToValue } from '@/utils/adValidation';
 import { toast } from 'sonner';
 import { adCreationService } from '@/services/ads';
 import { getCategories, Category } from '@/services/auction';
@@ -200,9 +206,60 @@ export function AlternativeAuctionForm() {
     }
     return subcategory?.id || 1; // Default to 1 if not found
   };
+  
+  // ADS Integration state
+  const [adId, setAdId] = useState<number | null>(null);
+  const [apiCompletedSteps, setApiCompletedSteps] = useState<Record<string, boolean>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Categories state for mapping names to IDs
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+
+  // Load categories on component mount
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await getCategories();
+        if (response.data) {
+          setCategories(response.data);
+        }
+      } catch (_error) {
+        toast.error('Failed to load categories');
+      } finally {
+        setCategoriesLoaded(true);
+      }
+    };
+
+    loadCategories();
+  }, []);
+
+  const findCategoryId = (categoryName: string): number => {
+    const category = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+    if (!category && categoryName) {
+      toast.warning(`Category "${categoryName}" not found, using default`);
+    }
+    return category?.id || 1; // Default to 1 if not found
+  };
+
+  const findSubcategoryId = (categoryName: string, subcategoryName: string): number => {
+    const category = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
+    if (!category) {
+      return 1;
+    }
+    
+    const subcategory = category.subcategories.find(sub => sub.name.toLowerCase() === subcategoryName.toLowerCase());
+    if (!subcategory && subcategoryName) {
+      toast.warning(`Subcategory "${subcategoryName}" not found, using default`);
+    }
+    return subcategory?.id || 1; // Default to 1 if not found
+  };
 
   const updateFormData = useCallback((updates: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
+    setHasUnsavedChanges(true);
     setHasUnsavedChanges(true);
   }, []);
 
@@ -215,7 +272,6 @@ export function AlternativeAuctionForm() {
     }, 2000); // Auto-save after 2 seconds of inactivity
 
     return () => clearTimeout(timeoutId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData, hasUnsavedChanges, adId, isSubmitting, categoriesLoaded]);
 
   const convertFormDataToApiData = (step: number, data: FormData): any => {
@@ -386,11 +442,121 @@ export function AlternativeAuctionForm() {
         const descriptionValid = formData.description && formData.description.trim().length >= 50;
         const imagesValid = formData.images && formData.images.length > 0;
         return !!(titleValid && descriptionValid && imagesValid);
+        // Step 8 validation according to STEP_8_VALIDATION_GUIDE.md
+        const titleValid = formData.title && formData.title.trim().length >= 10;
+        const descriptionValid = formData.description && formData.description.trim().length >= 50;
+        const imagesValid = formData.images && formData.images.length > 0;
+        return !!(titleValid && descriptionValid && imagesValid);
       default:
         return true;
     }
   };
 
+  const handleNext = async () => {
+    if (!validateStep(currentStep)) {
+      // Special handling for Step 8 to show detailed validation errors
+      if (currentStep === 8) {
+        const validation = validateStep8Detailed();
+        toast.error('Please fix the following issues:', {
+          description: validation.errors.join(', ')
+        });
+      } else {
+        toast.error('Please fill in all required fields');
+      }
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      if (currentStep === 1) {
+        // Step 1: Create new ad
+        const stepData = convertFormDataToApiData(1, formData);
+        
+        // Validate step data before sending
+        const validation = validateStepData(1, stepData);
+        if (!validation.isValid) {
+          toast.error('Invalid data format', {
+            description: validation.errors.join(', ')
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        
+        const result = await adCreationService.createAdStep1(stepData);
+
+        if (result.success && result.data) {
+          setAdId(result.adId);
+          setApiCompletedSteps(result.data.step_completion_status);
+          setCompletedSteps(prev => new Set([...prev, currentStep]));
+          setCurrentStep(currentStep + 1);
+          setHasUnsavedChanges(false);
+          toast.success('Ad created successfully!');
+        } else {
+          toast.error('Failed to create ad', {
+            description: result.error || 'Please check your data and try again'
+          });
+        }
+      } else {
+        // Steps 2-8: Update existing ad
+        if (currentStep === 8) {
+          // Step 8: Handle file uploads with FormData
+          const result = await adCreationService.updateAdStep8WithFiles(
+            formData.title,
+            formData.description,
+            formData.keywords.join(', '),
+            formData.images
+          );
+
+          if (result.success && result.data) {
+            setApiCompletedSteps(result.data.step_completion_status);
+            setCompletedSteps(prev => new Set([...prev, currentStep]));
+            setHasUnsavedChanges(false);
+            toast.success(`Step ${currentStep} completed!`);
+          } else {
+            toast.error(`Failed to update step ${currentStep}`, {
+              description: result.error || 'Please check your data and try again'
+            });
+          }
+        } else {
+          // Steps 2-7: Regular JSON updates
+          const stepData = convertFormDataToApiData(currentStep, formData);
+          
+          // Validate step data before sending (skip step 2 as it has different validation)
+          if (currentStep !== 2) {
+            const validation = validateStepData(currentStep, stepData);
+            if (!validation.isValid) {
+              toast.error('Invalid data format', {
+                description: validation.errors.join(', ')
+              });
+              setIsSubmitting(false);
+              return;
+            }
+          }
+          
+          const result = await adCreationService.updateAdStep(currentStep, stepData);
+
+          if (result.success && result.data) {
+            setApiCompletedSteps(result.data.step_completion_status);
+            setCompletedSteps(prev => new Set([...prev, currentStep]));
+            if (currentStep < steps.length) {
+              setCurrentStep(currentStep + 1);
+            }
+            setHasUnsavedChanges(false);
+            toast.success(`Step ${currentStep} completed!`);
+          } else {
+            toast.error(`Failed to update step ${currentStep}`, {
+              description: result.error || 'Please check your data and try again'
+            });
+          }
+        }
+      }
+    } catch (error) {
+      toast.error('Something went wrong', {
+        description: error instanceof Error ? error.message : 'Please try again'
+      });
+    } finally {
+      setIsSubmitting(false);
   const handleNext = async () => {
     if (!validateStep(currentStep)) {
       // Special handling for Step 8 to show detailed validation errors
@@ -508,11 +674,57 @@ export function AlternativeAuctionForm() {
   const handleStepClick = (stepId: number) => {
     // Allow navigation to completed steps or current step
     if (stepId <= currentStep || completedSteps.has(stepId) || apiCompletedSteps[stepId.toString()]) {
+    // Allow navigation to completed steps or current step
+    if (stepId <= currentStep || completedSteps.has(stepId) || apiCompletedSteps[stepId.toString()]) {
       setCurrentStep(stepId);
     }
   };
 
   const handleSubmit = async () => {
+    if (!validateStep(8)) {
+      const validation = validateStep8Detailed();
+      toast.error('Please fix the following issues:', {
+        description: validation.errors.join(', ')
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Submit final step (Step 8) with file uploads
+      const result = await adCreationService.updateAdStep8WithFiles(
+        formData.title,
+        formData.description,
+        formData.keywords.join(', '),
+        formData.images
+      );
+
+      if (result.success && result.data) {
+        if (result.data.is_complete) {
+          toast.success('Auction created successfully!', {
+            description: 'Your material is now listed for auction.'
+          });
+          
+          // Redirect to the auction or listing page
+          window.location.href = '/dashboard/my-auctions';
+        } else {
+          toast.warning('Ad updated but not complete', {
+            description: 'Please complete all required steps.'
+          });
+        }
+      } else {
+        toast.error('Failed to create auction', {
+          description: result.error || 'Please try again'
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to create auction', {
+        description: error instanceof Error ? error.message : 'Please try again'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
     if (!validateStep(8)) {
       const validation = validateStep8Detailed();
       toast.error('Please fix the following issues:', {
@@ -580,6 +792,17 @@ export function AlternativeAuctionForm() {
               {Math.round((currentStep / steps.length) * 100)}% Complete
             </span>
           </div>
+          <div className="flex items-center gap-3">
+            {isAutoSaving && (
+              <div className="flex items-center text-sm text-gray-500">
+                <Save className="w-4 h-4 mr-1 animate-pulse" />
+                Auto-saving...
+              </div>
+            )}
+            <span className="text-sm text-gray-500">
+              {Math.round((currentStep / steps.length) * 100)}% Complete
+            </span>
+          </div>
         </div>
         
         {/* Progress Bar */}
@@ -594,6 +817,35 @@ export function AlternativeAuctionForm() {
       {/* Step Navigation */}
       <div className="px-6 py-4 border-b border-gray-100">
         <div className="flex flex-wrap gap-2">
+          {steps.map((step) => {
+            const isApiCompleted = apiCompletedSteps[step.id.toString()] || false;
+            const isLocalCompleted = completedSteps.has(step.id);
+            const isCompleted = isApiCompleted || isLocalCompleted;
+            
+            return (
+              <button
+                key={step.id}
+                onClick={() => handleStepClick(step.id)}
+                className={`
+                  px-3 py-1.5 rounded-md text-xs font-medium transition-all
+                  ${step.id === currentStep 
+                    ? 'bg-[#FF8A00] text-white' 
+                    : isCompleted
+                    ? 'bg-green-100 text-green-700'
+                    : step.id < currentStep
+                    ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-gray-50 text-gray-400 cursor-not-allowed'
+                  }
+                `}
+                disabled={step.id > currentStep && !isCompleted}
+              >
+                {isCompleted && (
+                  <Check className="inline w-3 h-3 mr-1" />
+                )}
+                {step.title}
+              </button>
+            );
+          })}
           {steps.map((step) => {
             const isApiCompleted = apiCompletedSteps[step.id.toString()] || false;
             const isLocalCompleted = completedSteps.has(step.id);
@@ -642,6 +894,7 @@ export function AlternativeAuctionForm() {
           variant="outline"
           onClick={handlePrevious}
           disabled={currentStep === 1 || isSubmitting}
+          disabled={currentStep === 1 || isSubmitting}
           className="flex items-center gap-2"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -652,8 +905,20 @@ export function AlternativeAuctionForm() {
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
+            disabled={isSubmitting}
             className="bg-[#FF8A00] hover:bg-[#e67700] text-white flex items-center gap-2"
           >
+            {isSubmitting ? (
+              <>
+                <Save className="w-4 h-4 animate-spin" />
+                Creating Auction...
+              </>
+            ) : (
+              <>
+                Create Auction
+                <Check className="w-4 h-4" />
+              </>
+            )}
             {isSubmitting ? (
               <>
                 <Save className="w-4 h-4 animate-spin" />
@@ -670,8 +935,20 @@ export function AlternativeAuctionForm() {
           <Button
             onClick={handleNext}
             disabled={isSubmitting}
+            disabled={isSubmitting}
             className="bg-[#FF8A00] hover:bg-[#e67700] text-white flex items-center gap-2"
           >
+            {isSubmitting ? (
+              <>
+                <Save className="w-4 h-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </>
+            )}
             {isSubmitting ? (
               <>
                 <Save className="w-4 h-4 animate-spin" />
