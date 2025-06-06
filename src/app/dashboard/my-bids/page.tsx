@@ -1,175 +1,189 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, Loader2, Trophy, Clock, TrendingUp, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { getUserBids, getAuctionBids, UserBidResponse } from '@/services/bid';
-import { getAuctionById } from '@/services/auction';
+import { getUserBids, getUserWinningBids, cancelBid, BidItem, PaginatedBidResult, BidPaginationParams } from '@/services/bid';
 import { toast } from 'sonner';
 import useBidding from '@/hooks/useBidding';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
-import MyBidCard from '@/components/auctions/MyBidCard';
+import Pagination from '@/components/ui/Pagination';
 
-// Using UserBidResponse from bid service
-
-// Interface for auction data
-interface _AuctionData { // Prefixed with underscore to indicate it's not used
-  id: number;
-  item_name: string;
-  category?: string;
-  description: string;
-  base_price: string;
-  volume: string;
-  unit: string;
-  country_of_origin: string;
-  end_date: string;
-  end_time: string;
-  item_image: string | null;
-}
-
-// Interface for combined bid and auction data
-interface UserBid {
-  id: string;
-  auctionId: string;
-  auctionName: string;
-  category: string;
-  bidAmount: string;
-  currentHighestBid: string;
-  isHighestBidder: boolean;
-  timeLeft: string;
-  bidDate: string;
-  image: string;
-  username: string;
-}
+// Interface for tab selection
+type TabType = 'all' | 'active' | 'winning' | 'outbid' | 'won' | 'lost' | 'cancelled';
 
 export default function MyBids() {
-  const [bids, setBids] = useState<UserBid[]>([]);
+  const [bids, setBids] = useState<BidItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabType>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [paginationData, setPaginationData] = useState({
+    count: 0,
+    totalPages: 1,
+    currentPage: 1,
+    pageSize: 10
+  });
+  const [statistics, setStatistics] = useState({
+    total_bids: 0,
+    active_bids: 0,
+    total_bidders: 0
+  });
   const { selectedAuction, isModalOpen, openBidModal, closeBidModal, submitBid } = useBidding();
 
-  // Calculate time left for an auction
-  const calculateTimeLeft = (endDate: string, endTime: string) => {
-    const now = new Date();
-    const end = new Date(`${endDate}T${endTime}`);
+  // Tab configuration
+  const tabs = [
+    { key: 'all' as TabType, label: 'All Bids', icon: null },
+    { key: 'active' as TabType, label: 'Active', icon: Clock },
+    { key: 'winning' as TabType, label: 'Winning', icon: Trophy },
+    { key: 'outbid' as TabType, label: 'Outbid', icon: TrendingUp },
+    { key: 'won' as TabType, label: 'Won', icon: Trophy },
+    { key: 'lost' as TabType, label: 'Lost', icon: null },
+    { key: 'cancelled' as TabType, label: 'Cancelled', icon: null }
+  ];
 
-    if (end <= now) {
-      return 'Ended';
+  // Fetch user bids from API with pagination and filtering
+  const fetchUserBids = async (page: number = 1, size: number = 10, status?: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const params: BidPaginationParams = { page, page_size: size };
+      if (status && status !== 'all') {
+        params.status = status;
+      }
+
+      // Special case for winning bids
+      const bidsResponse = status === 'winning' 
+        ? await getUserWinningBids(params)
+        : await getUserBids(params);
+
+      if (bidsResponse.error) {
+        setError(bidsResponse.error);
+        return;
+      }
+
+      if (!bidsResponse.data || bidsResponse.data.bids.length === 0) {
+        setBids([]);
+        setPaginationData({
+          count: 0,
+          totalPages: 1,
+          currentPage: 1,
+          pageSize: size
+        });
+        setStatistics({
+          total_bids: 0,
+          active_bids: 0,
+          total_bidders: 0
+        });
+        return;
+      }
+
+      const result = bidsResponse.data as PaginatedBidResult;
+      
+      // Update pagination data
+      setPaginationData({
+        count: result.pagination.count,
+        totalPages: result.pagination.total_pages,
+        currentPage: result.pagination.current_page,
+        pageSize: result.pagination.page_size
+      });
+
+      // Update statistics
+      if (result.statistics) {
+        setStatistics(result.statistics);
+      }
+
+      setBids(result.bids);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
     }
-
-    const diffMs = end.getTime() - now.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-    return `${diffDays}d ${diffHours}h`;
   };
 
-  // Fetch user bids from API
+  // Initial fetch and refetch when tab or pagination changes
   useEffect(() => {
-    const fetchUserBids = async () => {
-      setIsLoading(true);
-      setError(null);
+    const status = activeTab === 'all' ? undefined : activeTab;
+    fetchUserBids(currentPage, pageSize, status);
+  }, [activeTab, currentPage, pageSize]);
 
-      try {
-        // Get user bids
-        const bidsResponse = await getUserBids();
+  // Handle tab change
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    setCurrentPage(1); // Reset to first page when changing tabs
+  };
 
-        if (bidsResponse.error) {
-          // Error handling for user bids fetch failures
-          setError(bidsResponse.error);
-          setIsLoading(false);
-          return;
-        }
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-        if (!bidsResponse.data || bidsResponse.data.length === 0) {
-          // No bids found
-          setBids([]);
-          setIsLoading(false);
-          return;
-        }
+  // Handle page size change
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
-        // Process each bid to get auction details
-        const userBidsPromises = bidsResponse.data.map(async (bid: UserBidResponse) => {
-          try {
-            // Get auction details for this bid
-            const auctionResponse = await getAuctionById(bid.ad_id);
+  // Handle bid cancellation
+  const handleCancelBid = async (bidId: number) => {
+    if (!confirm('Are you sure you want to cancel this bid?')) {
+      return;
+    }
 
-            if (auctionResponse.error || !auctionResponse.data) {
-              // Error handling for auction fetch failures
-              return null;
-            }
+    const loadingToast = toast.loading('Cancelling bid...');
 
-            const auction = auctionResponse.data;
+    try {
+      const response = await cancelBid(bidId);
 
-            // Get the highest bid for this auction
-            let highestBid = auction.base_price;
-            let isHighestBidder = false;
+      toast.dismiss(loadingToast);
 
-            try {
-              // Fetch bids for this auction to determine if user is highest bidder
-              const bidsResponse = await getAuctionBids(auction.id);
-
-              if (bidsResponse.data && bidsResponse.data.length > 0) {
-                // Sort bids by amount (highest first)
-                const sortedBids = [...bidsResponse.data].sort((a, b) =>
-                  parseFloat(b.amount) - parseFloat(a.amount)
-                );
-
-                // Get the highest bid
-                highestBid = sortedBids[0].amount;
-
-                // Check if the user is the highest bidder
-                isHighestBidder = sortedBids[0].user === bid.username ||
-                                 sortedBids[0].id === bid.bid_id; // Using 'id' instead of 'bid_id'
-              }
-            } catch (_error) {
-              // Error handling for auction bids fetch failures
-              // Continue with default values
-            }
-
-            // Create a formatted bid object
-            return {
-              id: bid.bid_id.toString(),
-              auctionId: auction.id.toString(),
-              auctionName: auction.item_name,
-              category: auction.item_name.split(' ')[0] || 'Unknown', // Extract category from item name
-              bidAmount: bid.amount, // Original bid amount from API
-              currentHighestBid: highestBid,
-              isHighestBidder: isHighestBidder,
-              timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
-              bidDate: bid.timestamp,
-              image: auction.item_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
-              username: bid.username
-            };
-          } catch (_error) {
-            // Error handling for bid processing failures
-            return null;
-          }
+      if (response.error) {
+        toast.error('Failed to cancel bid', {
+          description: response.error,
+          duration: 5000,
         });
-
-        // Wait for all promises to resolve
-        const userBids = await Promise.all(userBidsPromises);
-
-        // Filter out null values (failed auction fetches)
-        const validBids = userBids.filter(bid => bid !== null) as UserBid[];
-
-        // Sort bids by date (newest first)
-        validBids.sort((a, b) => new Date(b.bidDate).getTime() - new Date(a.bidDate).getTime());
-
-        setBids(validBids);
-      } catch (error) {
-        // Error handling for overall fetch process
-        setError(error instanceof Error ? error.message : 'An unexpected error occurred');
-      } finally {
-        setIsLoading(false);
+        return;
       }
-    };
 
-    fetchUserBids();
-  }, []);
+      // Show success message
+      toast.success('Bid cancelled successfully', {
+        description: 'Your bid has been cancelled.',
+        duration: 3000,
+      });
 
-  // Format date to readable string (not used in this component but kept for future use)
-  const _formatDate = (dateString: string) => {
+      // Refresh the bids list
+      const status = activeTab === 'all' ? undefined : activeTab;
+      await fetchUserBids(currentPage, pageSize, status);
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Failed to cancel bid', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
+  };
+
+  // Handle bid update
+  const handleUpdateBid = (bid: BidItem) => {
+    // Open bid modal with current bid data
+    openBidModal({
+      id: bid.id.toString(),
+      name: bid.ad_title,
+      category: bid.ad_title.split(' ')[0] || 'Unknown',
+      basePrice: bid.bid_price_per_unit,
+      highestBid: bid.bid_price_per_unit,
+      timeLeft: 'Available',
+      volume: `${bid.volume_requested} ${bid.unit}`,
+      countryOfOrigin: 'Unknown',
+      originalBidAmount: bid.bid_price_per_unit,
+      bidId: bid.id
+    });
+  };
+
+  // Format date to readable string
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-GB', {
       day: 'numeric',
@@ -180,145 +194,226 @@ export default function MyBids() {
     });
   };
 
+  // Get status display info
+  const getStatusInfo = (status: string, isWinning: boolean) => {
+    const statusMap = {
+      'active': { color: 'bg-blue-100 text-blue-800', label: 'Active' },
+      'winning': { color: 'bg-green-100 text-green-800', label: 'Winning' },
+      'Highest_bid': { color: 'bg-green-100 text-green-800', label: 'Highest Bid' },
+      'outbid': { color: 'bg-red-100 text-red-800', label: 'Outbid' },
+      'Outbid': { color: 'bg-red-100 text-red-800', label: 'Outbid' },
+      'won': { color: 'bg-emerald-100 text-emerald-800', label: 'Won' },
+      'lost': { color: 'bg-gray-100 text-gray-800', label: 'Lost' },
+      'cancelled': { color: 'bg-gray-100 text-gray-800', label: 'Cancelled' }
+    };
+
+    const normalizedStatus = status.toLowerCase();
+    return statusMap[normalizedStatus as keyof typeof statusMap] || 
+           { color: 'bg-gray-100 text-gray-800', label: status };
+  };
+
   return (
     <div className="p-5">
-      <h1 className="text-xl font-medium mb-5">My Bids</h1>
-
-      {isLoading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="flex flex-col items-center">
-            <Loader2 size={24} className="animate-spin text-[#FF8A00] mb-2" />
-            <p className="text-gray-500">Loading your bids...</p>
+      <div className="flex justify-between items-center mb-5">
+        <h1 className="text-xl font-medium">My Bids</h1>
+        {/* Statistics */}
+        {statistics.total_bids > 0 && (
+          <div className="flex gap-4 text-sm text-gray-600">
+            <div>Total: <span className="font-medium">{statistics.total_bids}</span></div>
+            <div>Active: <span className="font-medium">{statistics.active_bids}</span></div>
           </div>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8 overflow-x-auto">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => handleTabChange(tab.key)}
+                className={`whitespace-nowrap flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.key
+                    ? 'border-[#FF8A00] text-[#FF8A00]'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {Icon && <Icon size={16} className="mr-1" />}
+                {tab.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Refresh Button */}
+      <div className="flex justify-end mb-4">
+        <button
+          onClick={() => {
+            const status = activeTab === 'all' ? undefined : activeTab;
+            fetchUserBids(currentPage, pageSize, status);
+          }}
+          className="flex items-center px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+        >
+          <RefreshCw size={14} className="mr-1" />
+          Refresh
+        </button>
+      </div>
+
+      {/* Loading State */}
+      {isLoading ? (
+        <div className="bg-white border border-gray-100 rounded-md p-6 flex justify-center items-center">
+          <Loader2 size={24} className="animate-spin text-[#FF8A00] mr-2" />
+          <p className="text-gray-700">Loading your bids...</p>
         </div>
       ) : error ? (
         <div className="bg-white border border-red-100 rounded-md p-6 text-center">
-          <div className="flex flex-col items-center">
-            <AlertCircle size={24} className="text-red-500 mb-2" />
-            <h3 className="text-base font-medium text-red-500">Error loading bids</h3>
-            <p className="text-gray-500 text-sm mt-1">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
-            >
-              Try Again
-            </button>
+          <div className="flex justify-center mb-2">
+            <AlertCircle size={24} className="text-red-500" />
           </div>
+          <p className="text-red-500 font-medium">Error loading bids</p>
+          <p className="text-gray-500 text-sm mt-1">{error}</p>
+          <button
+            onClick={() => {
+              const status = activeTab === 'all' ? undefined : activeTab;
+              fetchUserBids(currentPage, pageSize, status);
+            }}
+            className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
+          >
+            Try Again
+          </button>
         </div>
       ) : bids.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {bids.map((bid) => (
-            <MyBidCard
-              key={bid.id}
-              id={bid.id}
-              auctionId={bid.auctionId}
-              auctionName={bid.auctionName}
-              category={bid.category}
-              bidAmount={parseFloat(bid.bidAmount).toLocaleString()}
-              currentHighestBid={parseFloat(bid.currentHighestBid).toLocaleString()}
-              isHighestBidder={bid.isHighestBidder}
-              timeLeft={bid.timeLeft}
-              bidDate={bid.bidDate}
-              username={bid.username}
-              image={bid.image}
-              onPlaceBidClick={async () => {
-                // Show loading toast
-                const loadingToast = toast.loading('Preparing bid form...');
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {bids.map((bid) => {
+              const statusInfo = getStatusInfo(bid.status, bid.is_winning);
+              return (
+                <div key={bid.id} className="bg-white border border-gray-100 rounded-md overflow-hidden hover:shadow-sm transition-shadow">
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className="font-medium text-gray-900 line-clamp-2 flex-1 mr-2">{bid.ad_title}</h3>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap ${statusInfo.color}`}>
+                        {statusInfo.label}
+                      </span>
+                    </div>
 
-                try {
-                  // Fetch the latest auction details
-                  const response = await getAuctionById(bid.auctionId);
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Your Bid:</span>
+                        <span className="font-medium text-[#FF8A00]">
+                          {parseFloat(bid.bid_price_per_unit).toLocaleString()} {bid.currency}
+                        </span>
+                      </div>
+                      {bid.total_bid_value && (
+                        <div className="flex justify-between">
+                          <span>Total Value:</span>
+                          <span className="font-medium">
+                            {parseFloat(bid.total_bid_value).toLocaleString()} {bid.currency}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Volume:</span>
+                        <span>{bid.volume_requested} {bid.unit}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Rank:</span>
+                        <span className={`font-medium ${bid.rank === 1 ? 'text-green-600' : 'text-gray-600'}`}>
+                          #{bid.rank}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Bid Date:</span>
+                        <span>{formatDate(bid.created_at)}</span>
+                      </div>
+                      {bid.volume_type && (
+                        <div className="flex justify-between">
+                          <span>Type:</span>
+                          <span className="capitalize">{bid.volume_type}</span>
+                        </div>
+                      )}
+                      {bid.is_auto_bid && (
+                        <div className="flex justify-between">
+                          <span>Auto-bid:</span>
+                          <span className="text-blue-600">Active</span>
+                        </div>
+                      )}
+                      {bid.max_auto_bid_price && (
+                        <div className="flex justify-between">
+                          <span>Max Auto:</span>
+                          <span>{parseFloat(bid.max_auto_bid_price).toLocaleString()} {bid.currency}</span>
+                        </div>
+                      )}
+                    </div>
 
-                  // Dismiss loading toast
-                  toast.dismiss(loadingToast);
+                    {bid.is_winning && (
+                      <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800">
+                        🎉 You are currently the highest bidder!
+                      </div>
+                    )}
 
-                  if (response.error || !response.data) {
-                    throw new Error(response.error || 'Failed to fetch auction details');
-                  }
+                    {bid.notes && (
+                      <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                        <strong>Note:</strong> {bid.notes}
+                      </div>
+                    )}
 
-                  const auction = response.data;
+                    <div className="mt-4 flex gap-2">
+                      <Link
+                        href={`/dashboard/auctions/${bid.id}`}
+                        className="flex-1 text-center px-3 py-2 border border-gray-200 text-gray-700 rounded text-xs hover:bg-gray-50 transition-colors"
+                      >
+                        View Ad
+                      </Link>
+                      {(bid.status === 'active' || bid.status === 'winning' || bid.status === 'Highest_bid') && (
+                        <>
+                          <button
+                            onClick={() => handleUpdateBid(bid)}
+                            className="flex-1 px-3 py-2 bg-[#FF8A00] text-white rounded text-xs hover:bg-[#e67e00] transition-colors"
+                          >
+                            Update Bid
+                          </button>
+                          <button
+                            onClick={() => handleCancelBid(bid.id)}
+                            className="px-3 py-2 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
-                  // Get the highest bid amount from the API
-                  let highestBidAmount = auction.base_price;
-
-                  try {
-                    // Fetch the latest bids for this auction
-                    const bidsResponse = await getAuctionBids(auction.id);
-
-                    if (bidsResponse.data && bidsResponse.data.length > 0) {
-                      // Sort bids by amount (highest first)
-                      const sortedBids = [...bidsResponse.data].sort((a, b) =>
-                        parseFloat(b.amount) - parseFloat(a.amount)
-                      );
-
-                      // Get the highest bid amount
-                      highestBidAmount = sortedBids[0].amount;
-                    }
-                  } catch (_error) {
-                    // Error handling for latest bids fetch failures
-                    // Fallback to using the bid amount we already have
-                    highestBidAmount = bid.currentHighestBid || auction.base_price;
-                  }
-
-                  // Format the bid amount to match what's shown in the UI (with commas)
-                  const formattedBidAmount = parseFloat(highestBidAmount).toLocaleString('en-US', {
-                    maximumFractionDigits: 2,
-                    minimumFractionDigits: 0
-                  });
-
-                  // Open bid modal with latest auction details
-                  openBidModal({
-                    id: auction.id.toString(),
-                    name: auction.item_name,
-                    category: auction.item_name.split(' ')[0] || bid.category, // Extract category from item name
-                    basePrice: formattedBidAmount,
-                    highestBid: formattedBidAmount,
-                    timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
-                    volume: `${auction.volume} ${auction.unit}`,
-                    countryOfOrigin: auction.country_of_origin,
-                    originalBidAmount: bid.bidAmount, // Pass the original bid amount
-                    bidId: parseInt(bid.id) // Pass the bid ID for updating
-                  });
-                } catch (error) {
-                  // Dismiss loading toast
-                  toast.dismiss(loadingToast);
-
-                  // Show error toast
-                  toast.error('Failed to prepare bid form', {
-                    description: error instanceof Error ? error.message : 'An unexpected error occurred',
-                    duration: 5000,
-                  });
-
-                  // Format the bid amount to match what's shown in the UI (with commas)
-                  const formattedBidAmount = parseFloat(bid.bidAmount).toLocaleString('en-US', {
-                    maximumFractionDigits: 2,
-                    minimumFractionDigits: 0
-                  });
-
-                  // Fallback to using the data we already have
-                  openBidModal({
-                    id: bid.auctionId,
-                    name: bid.auctionName,
-                    category: bid.category,
-                    basePrice: formattedBidAmount,
-                    highestBid: formattedBidAmount,
-                    timeLeft: bid.timeLeft,
-                    volume: '1 kg', // Default value
-                    countryOfOrigin: 'Unknown', // Default value
-                    originalBidAmount: bid.bidAmount, // Pass the original bid amount
-                    bidId: parseInt(bid.id) // Pass the bid ID for updating
-                  });
-                }
-              }}
-            />
-          ))}
-        </div>
+          {/* Pagination */}
+          <Pagination
+            currentPage={paginationData.currentPage}
+            totalPages={paginationData.totalPages}
+            totalCount={paginationData.count}
+            pageSize={paginationData.pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        </>
       ) : (
         <div className="bg-white border border-gray-100 rounded-md p-6 text-center">
           <div className="flex flex-col items-center">
             <AlertCircle size={24} className="text-gray-400 mb-2" />
-            <h3 className="text-base font-medium text-gray-900">No bids yet</h3>
-            <p className="text-gray-500 text-sm mt-1">You haven&apos;t placed any bids on auctions yet.</p>
+            <h3 className="text-base font-medium text-gray-900">
+              {activeTab === 'all' ? 'No bids yet' : `No ${activeTab} bids`}
+            </h3>
+            <p className="text-gray-500 text-sm mt-1">
+              {activeTab === 'all' 
+                ? "You haven't placed any bids on auctions yet." 
+                : `You don't have any ${activeTab} bids at the moment.`
+              }
+            </p>
             <Link
               href="/dashboard/auctions"
               className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
@@ -336,7 +431,7 @@ export default function MyBids() {
           onClose={closeBidModal}
           onSubmit={submitBid}
           auction={selectedAuction}
-          initialBidAmount={selectedAuction.originalBidAmount} // Pass the original bid amount
+          initialBidAmount={selectedAuction.originalBidAmount}
         />
       )}
     </div>

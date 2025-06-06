@@ -85,12 +85,13 @@ export async function apiGet<T>(
     }
 
     if (!response.ok) {
-      // For error responses, try to extract a meaningful error message
+      // For error responses, preserve the full error structure
+      // This ensures validation details are available
       const errorMessage = data.message || data.error || data.detail ||
                           (typeof data === 'string' ? data : 'An error occurred');
 
       return {
-        data: null,
+        data: data, // Preserve the full error response data
         error: errorMessage,
         status: response.status,
       };
@@ -168,12 +169,13 @@ export async function apiPost<T>(
     // console.log(`Parsed data from ${url}:`, data);
 
     if (!response.ok) {
-      // For error responses, try to extract a meaningful error message
+      // For error responses, preserve the full error structure
+      // This ensures validation details are available
       const errorMessage = data.message || data.error || data.detail ||
                           (typeof data === 'string' ? data : 'An error occurred');
 
       return {
-        data: null,
+        data: data, // Preserve the full error response data
         error: errorMessage,
         status: response.status,
       };
@@ -212,18 +214,51 @@ export async function apiPut<T>(
 ): Promise<ApiResponse<T>> {
   try {
     const headers = getHeaders(requiresAuth, token);
+    const url = `${API_BASE_URL}${endpoint}`;
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const response = await fetch(url, {
       method: 'PUT',
       headers,
       body: JSON.stringify(body),
     });
 
-    const data = await response.json();
+    let data;
+    const contentType = response.headers.get('content-type');
+
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      
+      try {
+        // Try to parse it anyway in case the content-type header is wrong
+        data = JSON.parse(text);
+      } catch (_e) {
+        // If it's not JSON, create an error message
+        return {
+          data: null,
+          error: `Server returned non-JSON response: ${text.substring(0, 100)}${text.length > 100 ? '...' : ''}`,
+          status: response.status,
+        };
+      }
+    }
+
+    if (!response.ok) {
+      // For error responses, preserve the full error structure
+      // This ensures validation details are available
+      const errorMessage = data.message || data.error || data.detail ||
+                          (typeof data === 'string' ? data : 'An error occurred');
+
+      return {
+        data: data, // Preserve the full error response data
+        error: errorMessage,
+        status: response.status,
+      };
+    }
 
     return {
-      data: response.ok ? data : null,
-      error: response.ok ? null : data.message || 'An error occurred',
+      data: data,
+      error: null,
       status: response.status,
     };
   } catch (error) {

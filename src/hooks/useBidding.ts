@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { createBid, updateBid, BidCreateData, BidUpdateData, BidErrorResponse } from '@/services/bid';
+import { createBid, updateBid, BidCreateData, BidUpdateData, BidCreateResponse, extractMinimumBidFromError } from '@/services/bid';
 import { getAccessToken, isAuthenticated } from '@/services/auth';
 
 interface Auction {
@@ -16,12 +16,20 @@ interface Auction {
   bidId?: number; // ID of the existing bid if updating
 }
 
+interface BidSubmissionData {
+  bidAmount: string;
+  bidVolume?: string;
+  volumeType?: 'partial' | 'full';
+  notes?: string;
+  maxAutoBidPrice?: string;
+}
+
 interface UseBiddingReturn {
   selectedAuction: Auction | null;
   isModalOpen: boolean;
   openBidModal: (auction: Auction) => void;
   closeBidModal: () => void;
-  submitBid: (bidAmount: string, bidVolume?: string) => Promise<void>;
+  submitBid: (data: BidSubmissionData) => Promise<void>;
 }
 
 export default function useBidding(): UseBiddingReturn {
@@ -37,7 +45,7 @@ export default function useBidding(): UseBiddingReturn {
     setIsModalOpen(false);
   };
 
-  const submitBid = async (bidAmount: string, bidVolume?: string): Promise<void> => {
+  const submitBid = async (data: BidSubmissionData): Promise<void> => {
     if (!selectedAuction) return;
 
     try {
@@ -69,38 +77,59 @@ export default function useBidding(): UseBiddingReturn {
       // Show loading toast
       const loadingToast = toast.loading('Processing your bid...');
 
-      // Parse the bid amount
-      const parsedAmount = parseFloat(bidAmount.replace(/,/g, ''));
+      // Parse the bid amount (remove commas)
+      const parsedAmount = data.bidAmount.replace(/,/g, '');
 
       // Parse volume if provided
-      const parsedVolume = bidVolume ? parseFloat(bidVolume) : undefined;
+      const parsedVolume = data.bidVolume || '';
 
       let response;
 
       // Check if we're updating an existing bid or creating a new one
       if (selectedAuction.bidId) {
-        // Prepare bid update data
+        // Prepare bid update data using new API structure
         const updateData: BidUpdateData = {
-          amount: parsedAmount,
+          bid_price_per_unit: parsedAmount,
         };
 
         // Add volume if provided
         if (parsedVolume) {
-          updateData.volume = parsedVolume;
+          updateData.volume_requested = parsedVolume;
+        }
+
+        // Add notes if provided
+        if (data.notes) {
+          updateData.notes = data.notes;
+        }
+
+        // Add auto-bid max price if provided
+        if (data.maxAutoBidPrice) {
+          updateData.max_auto_bid_price = data.maxAutoBidPrice.replace(/,/g, '');
         }
 
         // Make API call to update the bid
         response = await updateBid(selectedAuction.bidId, updateData);
       } else {
-        // Prepare bid creation data
+        // Prepare bid creation data using new API structure
         const createData: BidCreateData = {
-          ad_id: parseInt(selectedAuction.id),
-          amount: parsedAmount,
+          ad: parseInt(selectedAuction.id),
+          bid_price_per_unit: parsedAmount,
+          volume_requested: parsedVolume || '1', // Default to 1 if not provided
         };
 
-        // Add volume if provided
-        if (parsedVolume) {
-          createData.volume = parsedVolume;
+        // Add volume type if provided
+        if (data.volumeType) {
+          createData.volume_type = data.volumeType;
+        }
+
+        // Add notes if provided
+        if (data.notes) {
+          createData.notes = data.notes;
+        }
+
+        // Add auto-bid max price if provided
+        if (data.maxAutoBidPrice) {
+          createData.max_auto_bid_price = data.maxAutoBidPrice.replace(/,/g, '');
         }
 
         // Make API call to create a new bid
@@ -111,22 +140,88 @@ export default function useBidding(): UseBiddingReturn {
       toast.dismiss(loadingToast);
 
       if (response.error) {
-        // Check if it's a specific error from the API
-        if (response.data && 'error' in (response.data as BidErrorResponse)) {
-          throw new Error((response.data as BidErrorResponse).error);
+        // Debug: Log the response structure to understand what we're getting
+        console.log('Bid error response:', response);
+        
+        // Handle specific validation errors with better formatting
+        if (response.data && typeof response.data === 'object' && 'details' in response.data) {
+          const details = (response.data as any).details;
+          if (typeof details === 'object') {
+            // Handle non_field_errors specifically (these are general validation errors)
+            if (details.non_field_errors && Array.isArray(details.non_field_errors)) {
+              // For non_field_errors, show the message directly without field prefix
+              const errorMessage = details.non_field_errors.join('. ');
+              
+              // Check if this is a minimum bid error and provide helpful suggestion
+              const minBidInfo = extractMinimumBidFromError(errorMessage);
+              if (minBidInfo) {
+                throw new Error(`${errorMessage}\n\nPlease increase your bid to at least ${minBidInfo.amount.toLocaleString()} ${minBidInfo.currency}.`);
+              }
+              
+              throw new Error(errorMessage);
+            }
+            
+            // Handle field-specific errors with better formatting
+            const errorMessages = Object.entries(details)
+              .filter(([field]) => field !== 'non_field_errors') // Skip non_field_errors as they're handled above
+              .map(([field, messages]) => {
+                const messageArray = Array.isArray(messages) ? messages : [messages];
+                const fieldLabel = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                return `${fieldLabel}: ${messageArray.join(', ')}`;
+              });
+            
+            if (errorMessages.length > 0) {
+              throw new Error(errorMessages.join('\n'));
+            }
+            
+            // If we have details but no recognizable structure, fall back to the main error
+            throw new Error(response.error);
+          }
         }
+        
+        // If no details or unrecognized structure, use the main error message
         throw new Error(response.error);
       }
 
+      // Extract bid data from response
+      const bidResponse = response.data as BidCreateResponse;
+      const bidData = bidResponse?.bid;
+
       // Show success message
       const isUpdate = !!selectedAuction.bidId;
-      toast.success(`Bid of ${bidAmount} SEK ${isUpdate ? 'updated' : 'placed'} successfully`, {
+      const currency = bidData?.currency || 'EUR';
+      const formatAmount = parseFloat(parsedAmount).toLocaleString();
+
+      toast.success(`Bid of ${formatAmount} ${currency} ${isUpdate ? 'updated' : 'placed'} successfully`, {
         description: `Your bid for ${selectedAuction.name} has been ${isUpdate ? 'updated' : 'recorded'}.`,
         duration: 5000,
       });
 
+      // Show additional info if auto-bidding is enabled
+      if (data.maxAutoBidPrice && bidData?.is_auto_bid) {
+        const maxAmount = parseFloat(data.maxAutoBidPrice.replace(/,/g, '')).toLocaleString();
+        toast.info(`Auto-bidding enabled up to ${maxAmount} ${currency}`, {
+          description: 'We will automatically bid for you when outbid.',
+          duration: 3000,
+        });
+      }
+
+      // Show rank information if available
+      if (bidData?.rank) {
+        const rankMessage = bidData.rank === 1 
+          ? 'You are currently the highest bidder!' 
+          : `You are ranked #${bidData.rank}`;
+        
+        toast.info(rankMessage, {
+          duration: 3000,
+        });
+      }
+
       // Close the modal
       setIsModalOpen(false);
+
+      // Refresh the page to show updated data
+      window.location.reload();
 
     } catch (error) {
       // Show error message
