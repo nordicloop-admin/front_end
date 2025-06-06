@@ -4,8 +4,8 @@
 import { getAccessToken } from '@/services/auth';
 
 // Base URL for the API
-// const API_BASE_URL = 'https://nordic-loop-platform.onrender.com/api';
-const API_BASE_URL = 'http://127.0.0.1:8000/api';
+const API_BASE_URL = 'https://nordic-loop-platform.onrender.com/api';
+// const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
 /**
  * Interface for API response

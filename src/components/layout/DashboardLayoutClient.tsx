@@ -31,6 +31,7 @@ export default function DashboardLayoutClient({
   const router = useRouter();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -230,12 +231,83 @@ export default function DashboardLayoutClient({
               </svg>
             </button>
 
-            <div className="flex items-center">
-              {/* Only show name on larger screens */}
-              <span className="hidden md:inline font-medium mr-2">Hello {user?.firstName || user?.username?.split(' ')[0] || 'User'}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
+            <div className="flex items-center relative">
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="flex items-center hover:bg-gray-50 rounded-md px-2 py-1 transition-colors"
+              >
+                {/* Only show name on larger screens */}
+                <span className="hidden md:inline text-sm font-medium mr-2">Hello {user?.firstName || user?.username?.split(' ')[0] || 'User'}</span>
+                <ChevronDown size={16} className={`transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* User Dropdown Menu */}
+              {userDropdownOpen && (
+                <>
+                  {/* Backdrop to close dropdown when clicking outside */}
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setUserDropdownOpen(false)}
+                  />
+                  
+                  {/* Dropdown Content */}
+                  <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+                    <div className="p-3 border-b border-gray-100">
+                      <div className="text-sm font-medium text-gray-900">
+                        {user?.firstName && user?.lastName 
+                          ? `${user.firstName} ${user.lastName}`
+                          : user?.username || 'User'
+                        }
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        {user?.email || 'No email provided'}
+                      </div>
+                    </div>
+                    
+                    <div className="py-1">
+                      <Link
+                        href="/dashboard/profile"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <User size={16} className="mr-3" />
+                        Profile Settings
+                      </Link>
+                      
+                      <Link
+                        href="/dashboard/addresses"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <MapPin size={16} className="mr-3" />
+                        My Addresses
+                      </Link>
+                      
+                      <Link
+                        href="/dashboard/subscriptions"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Bell size={16} className="mr-3" />
+                        Subscriptions
+                      </Link>
+                    </div>
+                    
+                    <div className="border-t border-gray-100 py-1">
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          handleLogout();
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut size={16} className="mr-3" />
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
