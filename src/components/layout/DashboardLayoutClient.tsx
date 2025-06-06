@@ -31,6 +31,7 @@ export default function DashboardLayoutClient({
   const router = useRouter();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
