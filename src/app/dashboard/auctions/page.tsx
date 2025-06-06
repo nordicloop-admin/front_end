@@ -5,7 +5,8 @@ import { Search, Filter, Clock, ArrowUpRight, AlertCircle, Loader2 } from 'lucid
 import Image from 'next/image';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 import useBidding from '@/hooks/useBidding';
-import { getAuctions, AuctionItem } from '@/services/auction';
+import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
+import Pagination from '@/components/ui/Pagination';
 
 // Mock data for marketplace auctions
 const marketplaceAuctions = [
@@ -75,46 +76,73 @@ export default function Auctions() {
   const [searchTerm, setSearchTerm] = useState('');
   const { selectedAuction, isModalOpen, openBidModal, closeBidModal, submitBid } = useBidding();
 
-  // State for API auctions
+  // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [paginationData, setPaginationData] = useState({
+    count: 0,
+    totalPages: 1,
+    currentPage: 1,
+    pageSize: 10
+  });
 
   // Fetch auctions from API
-  useEffect(() => {
-    const fetchAuctions = async () => {
-      setIsLoading(true);
-      setError(null);
+  const fetchAuctions = async (page: number = 1, size: number = 10) => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        const response = await getAuctions();
+    try {
+      const response = await getAuctions({ page, page_size: size });
 
-        if (response.error) {
-          // Error handling for auction fetch failures
+      if (response.error) {
+        // Error handling for auction fetch failures
 
-          // Check if it's an authentication error
-          if (response.status === 401) {
-            setError('Authentication required. Please log in to view auctions.');
-          } else {
-            setError(response.error);
-          }
-        } else if (response.data) {
-          // Successfully fetched auctions
-          setApiAuctions(response.data);
+        // Check if it's an authentication error
+        if (response.status === 401) {
+          setError('Authentication required. Please log in to view auctions.');
         } else {
-          // No auction data available
-          setError('No auctions found');
+          setError(response.error);
         }
-      } catch (err) {
-        // Handle unexpected errors
-        setError(err instanceof Error ? err.message : 'Failed to fetch auctions');
-      } finally {
-        setIsLoading(false);
+      } else if (response.data) {
+        // Successfully fetched auctions
+        const result = response.data as PaginatedAuctionResult;
+        setApiAuctions(result.auctions);
+        setPaginationData({
+          count: result.pagination.count,
+          totalPages: result.pagination.total_pages,
+          currentPage: result.pagination.current_page,
+          pageSize: result.pagination.page_size
+        });
+      } else {
+        // No auction data available
+        setError('No auctions found');
       }
-    };
+    } catch (err) {
+      // Handle unexpected errors
+      setError(err instanceof Error ? err.message : 'Failed to fetch auctions');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchAuctions();
-  }, []);
+  // Initial fetch
+  useEffect(() => {
+    fetchAuctions(currentPage, pageSize);
+  }, [currentPage, pageSize]);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   // Calculate time left for an auction
   const calculateTimeLeft = (endDate: string, endTime: string) => {
@@ -233,7 +261,7 @@ export default function Auctions() {
           <p className="text-red-500 font-medium">Error loading auctions</p>
           <p className="text-gray-500 text-sm mt-1">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => fetchAuctions(currentPage, pageSize)}
             className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
           >
             Try Again
@@ -243,55 +271,69 @@ export default function Auctions() {
 
       {/* Auctions Grid */}
       {!isLoading && !error && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredAuctions.map((auction) => (
-            <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden">
-              <div className="relative h-40 w-full">
-                <Image
-                  src={auction.image}
-                  alt={auction.name}
-                  fill
-                  className="object-cover"
-                />
-                <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs">
-                  {auction.category}
-                </div>
-                <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white flex items-center">
-                  <Clock size={12} className="mr-1" />
-                  {auction.timeLeft}
-                </div>
-              </div>
-
-              <div className="p-3">
-                <h2 className="text-sm font-medium text-gray-900 line-clamp-1">{auction.name}</h2>
-
-                <div className="mt-2 flex justify-between text-xs text-gray-500">
-                  <div>Origin: {auction.countryOfOrigin}</div>
-                  <div>Volume: {auction.volume}</div>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+            {filteredAuctions.map((auction) => (
+              <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden">
+                <div className="relative h-40 w-full">
+                  <Image
+                    src={auction.image}
+                    alt={auction.name}
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs">
+                    {auction.category}
+                  </div>
+                  <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white flex items-center">
+                    <Clock size={12} className="mr-1" />
+                    {auction.timeLeft}
+                  </div>
                 </div>
 
-                <div className="mt-2 flex justify-between items-center">
-                  <div>
-                    <div className="text-xs text-gray-500">
-                      {auction.highestBid ? 'Highest Bid' : 'Base Price'}
-                    </div>
-                    <div className="text-sm font-medium text-[#FF8A00]">
-                      {auction.highestBid || auction.basePrice}
-                    </div>
+                <div className="p-3">
+                  <h2 className="text-sm font-medium text-gray-900 line-clamp-1">{auction.name}</h2>
+
+                  <div className="mt-2 flex justify-between text-xs text-gray-500">
+                    <div>Origin: {auction.countryOfOrigin}</div>
+                    <div>Volume: {auction.volume}</div>
                   </div>
 
-                  <button
-                    onClick={() => openBidModal(auction)}
-                    className="px-3 py-1.5 bg-[#FF8A00] text-white rounded-md text-xs hover:bg-[#e67e00] transition-colors flex items-center"
-                  >
-                    Place Bid
-                    <ArrowUpRight size={12} className="ml-1" />
-                  </button>
+                  <div className="mt-2 flex justify-between items-center">
+                    <div>
+                      <div className="text-xs text-gray-500">
+                        {auction.highestBid ? 'Highest Bid' : 'Base Price'}
+                      </div>
+                      <div className="text-sm font-medium text-[#FF8A00]">
+                        {auction.highestBid || auction.basePrice}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => openBidModal(auction)}
+                      className="px-3 py-1.5 bg-[#FF8A00] text-white rounded-md text-xs hover:bg-[#e67e00] transition-colors flex items-center"
+                    >
+                      Place Bid
+                      <ArrowUpRight size={12} className="ml-1" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {apiAuctions.length > 0 && (
+            <Pagination
+              currentPage={paginationData.currentPage}
+              totalPages={paginationData.totalPages}
+              totalCount={paginationData.count}
+              pageSize={paginationData.pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          )}
+        </>
       )}
 
       {!isLoading && !error && filteredAuctions.length === 0 && (
