@@ -7,6 +7,7 @@ import { ArrowLeft, Clock, Building, MapPin, Package, ArrowUpRight, AlertCircle 
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 import useBidding from '@/hooks/useBidding';
 import { getAuctionById, getAdDetails } from '@/services/auction';
+import { getAuctionById, getAdDetails } from '@/services/auction';
 import { getAuctionBids } from '@/services/bid';
 
 // Mock data for marketplace auctions
@@ -190,32 +191,59 @@ export default function AuctionDetail() {
 
       // Try to fetch enhanced ad details first
       getAdDetails(params.id as string)
+      // Try to fetch enhanced ad details first
+      getAdDetails(params.id as string)
         .then(response => {
           if (!response.error && response.data) {
             const adData = response.data.data;
             
             // Format enhanced ad data
             const formattedAuction = {
-              id: apiAuction.id.toString(),
-              name: apiAuction.title || `${apiAuction.category_name} - ${apiAuction.subcategory_name}`,
-              category: apiAuction.category_name,
-              basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
+              id: adData.id.toString(),
+              name: adData.title || `${adData.category_name} - ${adData.subcategory_name}`,
+              category: adData.category_name,
+              subcategory: adData.subcategory_name,
+              basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
               highestBid: null, // Will be updated if we fetch bids
-              timeLeft: 'Available', // API doesn't provide end date/time in this format
-              volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
-              seller: 'Unknown Seller', // Seller info not available in API response
-              countryOfOrigin: apiAuction.location_summary || 'Unknown',
-              image: apiAuction.material_image || '/images/marketplace/categories/plastics.jpg',
-              description: apiAuction.title || `${apiAuction.category_name} material available for auction`, // No description field in API
-              bidHistory: [], // Will be populated if we fetch bids
+              timeLeft: adData.time_remaining || adData.auction_duration_display,
+              volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
+              seller: adData.posted_by,
+              company: adData.company_name,
+              countryOfOrigin: adData.location_summary || 'Unknown',
+              image: adData.material_image || '/images/marketplace/categories/plastics.jpg',
+              description: adData.description || adData.specific_material || `${adData.category_name} material available for auction`,
+              bidHistory: [],
+              
+              // Enhanced specifications from the detailed endpoint
               specifications: [
-                { name: 'Material Type', value: apiAuction.category_name },
-                { name: 'Subcategory', value: apiAuction.subcategory_name },
-                { name: 'Quantity', value: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A' },
-                { name: 'Location', value: apiAuction.location_summary || 'Unknown' },
-                { name: 'Currency', value: apiAuction.currency },
-                { name: 'Status', value: apiAuction.is_active ? 'Active' : 'Inactive' }
-              ]
+                { name: 'Material Type', value: adData.category_name },
+                { name: 'Subcategory', value: adData.subcategory_name },
+                { name: 'Specific Material', value: adData.specific_material },
+                { name: 'Packaging', value: adData.packaging_display },
+                { name: 'Material Frequency', value: adData.material_frequency_display },
+                ...(adData.origin_display ? [{ name: 'Origin', value: adData.origin_display }] : []),
+                ...(adData.contamination_display ? [{ name: 'Contamination', value: adData.contamination_display }] : []),
+                ...(adData.additives_display ? [{ name: 'Additives', value: adData.additives_display }] : []),
+                ...(adData.storage_conditions_display ? [{ name: 'Storage Conditions', value: adData.storage_conditions_display }] : []),
+                ...(adData.processing_methods_display.length > 0 ? [{ name: 'Processing Methods', value: adData.processing_methods_display.join(', ') }] : []),
+                { name: 'Quantity', value: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A' },
+                { name: 'Minimum Order', value: `${adData.minimum_order_quantity} ${adData.unit_of_measurement_display}` },
+                { name: 'Currency', value: adData.currency_display },
+                { name: 'Auction Duration', value: adData.auction_duration_display },
+                ...(adData.reserve_price ? [{ name: 'Reserve Price', value: `${adData.reserve_price} ${adData.currency}` }] : []),
+                { name: 'Pickup Available', value: adData.pickup_available ? 'Yes' : 'No' },
+                ...(adData.delivery_options_display.length > 0 ? [{ name: 'Delivery Options', value: adData.delivery_options_display.join(', ') }] : []),
+                { name: 'Status', value: adData.auction_status },
+                { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of 8` }
+              ],
+              
+              // Additional metadata
+              createdAt: adData.created_at,
+              updatedAt: adData.updated_at,
+              isActive: adData.is_active,
+              auctionStatus: adData.auction_status,
+              stepCompletionStatus: adData.step_completion_status,
+              keywords: adData.keywords
             };
 
             setAuction(formattedAuction);
@@ -224,11 +252,11 @@ export default function AuctionDetail() {
             if (adData.is_active && adData.is_complete) {
               getAuctionBids(adData.id)
                 .then(bidsResponse => {
-                  if (!bidsResponse.error && bidsResponse.data && bidsResponse.data.bids.length > 0) {
-                    const formattedBids = bidsResponse.data.bids.map(bid => ({
-                      bidder: bid.bidder_name || 'Anonymous',
-                      amount: bid.bid_price_per_unit,
-                      date: bid.created_at
+                  if (!bidsResponse.error && bidsResponse.data && bidsResponse.data.length > 0) {
+                    const formattedBids = bidsResponse.data.map(bid => ({
+                      bidder: bid.user || 'Anonymous',
+                      amount: bid.amount,
+                      date: bid.timestamp
                     }));
 
                     setAuction((prevAuction: any) => ({
@@ -270,7 +298,7 @@ export default function AuctionDetail() {
               volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
               seller: 'Unknown Seller',
               countryOfOrigin: apiAuction.location_summary || 'Unknown',
-              image: apiAuction.material_image ? getFullImageUrl(apiAuction.material_image) : '/images/marketplace/categories/plastics.jpg',
+              image: apiAuction.material_image || '/images/marketplace/categories/plastics.jpg',
               description: apiAuction.title || `${apiAuction.category_name} material available for auction`,
               bidHistory: [],
               specifications: [
@@ -286,6 +314,7 @@ export default function AuctionDetail() {
           }
         })
         .catch(_error => {
+          // All attempts failed, try mock data as last resort
           // All attempts failed, try mock data as last resort
           const foundAuction = marketplaceAuctions.find(a => a.id === params.id);
           if (foundAuction) {
@@ -397,25 +426,24 @@ export default function AuctionDetail() {
                 )}
               </div>
 
-              {/* Key Information Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="border border-gray-200 rounded-md p-4">
-                  <div className="text-sm text-gray-500 mb-1">
-                    {auction.highestBid ? 'Current Highest Bid' : 'Starting Price'}
-                  </div>
-                  <div className="text-xl font-bold text-[#FF8A00]">
-                    {auction.highestBid || auction.basePrice}
-                  </div>
-                </div>
+          <div className="p-6">
+            <h1 className="text-xl font-medium text-gray-900">{auction.name}</h1>
+            
+            {/* Enhanced seller information */}
+            {auction.company && (
+              <div className="mt-2 text-sm text-gray-600">
+                Posted by <span className="font-medium">{auction.seller}</span> 
+                {auction.company && <span> from {auction.company}</span>}
+              </div>
+            )}
 
-                <div className="border border-gray-200 rounded-md p-4">
-                  <div className="text-sm text-gray-500 mb-1 flex items-center">
-                    <Package className="w-4 h-4 mr-1" />
-                    Volume
-                  </div>
-                  <div className="text-xl font-bold text-gray-900">
-                    {auction.volume}
-                  </div>
+            <div className="mt-4 grid grid-cols-2 gap-4">
+              <div>
+                <div className="text-xs text-gray-500">
+                  {auction.highestBid ? 'Current Highest Bid' : 'Base Price'}
+                </div>
+                <div className="text-lg font-medium text-[#FF8A00]">
+                  {auction.highestBid || auction.basePrice}
                 </div>
 
                 <div className="border border-gray-200 rounded-md p-4">
@@ -427,15 +455,13 @@ export default function AuctionDetail() {
                     {auction.seller || 'Unknown Seller'}
                   </div>
                 </div>
+              </div>
 
-                <div className="border border-gray-200 rounded-md p-4">
-                  <div className="text-sm text-gray-500 mb-1 flex items-center">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    Origin
-                  </div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {auction.countryOfOrigin}
-                  </div>
+              <div>
+                <div className="text-xs text-gray-500">Seller</div>
+                <div className="text-sm font-medium flex items-center">
+                  <Building size={14} className="mr-1 text-gray-500" />
+                  {auction.seller || 'Unknown Seller'}
                 </div>
               </div>
 
@@ -457,40 +483,52 @@ export default function AuctionDetail() {
                     />
                   </div>
                 </div>
-              )}
+              </div>
+            </div>
 
-              {/* Keywords */}
-              {auction.keywords && (
-                <div className="mb-6">
-                  <div className="text-sm font-medium text-gray-700 mb-2">Keywords</div>
-                  <div className="flex flex-wrap gap-2">
-                    {auction.keywords.split(',').map((keyword: string, index: number) => (
-                      <span key={index} className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">
-                        {keyword.trim()}
-                      </span>
-                    ))}
-                  </div>
+            {/* Enhanced status display */}
+            {auction.auctionStatus && (
+              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Status</span>
+                  <span className={`text-xs px-2 py-1 rounded-full ${
+                    auction.auctionStatus === 'Active' ? 'bg-green-100 text-green-700' :
+                    auction.auctionStatus === 'Draft' ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {auction.auctionStatus}
+                  </span>
                 </div>
-              )}
+                {auction.stepCompletionStatus && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    Steps completed: {Object.values(auction.stepCompletionStatus).filter(Boolean).length} of 8
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Keywords display */}
+            {auction.keywords && (
+              <div className="mt-4">
+                <div className="text-xs text-gray-500 mb-2">Keywords</div>
+                <div className="flex flex-wrap gap-1">
+                  {auction.keywords.split(',').map((keyword: string, index: number) => (
+                    <span key={index} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded">
+                      {keyword.trim()}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
               {/* Action Button */}
               <button
                 onClick={() => openBidModal(auction)}
+                className="w-full py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors flex items-center justify-center"
                 disabled={auction.auctionStatus === 'Draft' || !auction.isActive}
-                className={`w-full py-3 rounded-md font-medium transition-all duration-200 flex items-center justify-center space-x-2 ${
-                  auction.auctionStatus === 'Draft' || !auction.isActive
-                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
-                    : 'bg-[#FF8A00] text-white hover:bg-[#e67e00] shadow-sm hover:shadow'
-                }`}
               >
-                {auction.auctionStatus === 'Draft' ? (
-                  <span>Draft - Not Available for Bidding</span>
-                ) : (
-                  <>
-                    <span>Place Bid</span>
-                    <ArrowUpRight className="w-4 h-4" />
-                  </>
-                )}
+                {auction.auctionStatus === 'Draft' ? 'Draft - Not Available for Bidding' : 'Place Bid'}
+                {auction.auctionStatus !== 'Draft' && <ArrowUpRight size={16} className="ml-1" />}
               </button>
             </div>
           </div>
