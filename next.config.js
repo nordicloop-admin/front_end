@@ -24,7 +24,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'nordic-loop-platform.onrender.com',
-        pathname: '/media/**',
+        pathname: '/**',
       },
     ],
     unoptimized: false,

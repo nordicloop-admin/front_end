@@ -67,7 +67,7 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
       });
       setLocationError('');
     }
-  }, [selectedPlace, formData.location, updateFormData]);
+  }, [selectedPlace, updateFormData]);
 
   const handleAddressSelect = async () => {
     if (!isLoaded) return;
