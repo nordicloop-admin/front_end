@@ -67,6 +67,7 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
       });
       setLocationError('');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlace, updateFormData]);
 
   const handleAddressSelect = async () => {

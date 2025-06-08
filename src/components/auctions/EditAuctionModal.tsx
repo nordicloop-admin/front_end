@@ -399,11 +399,70 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       
       const basePriceValue = parseFloat(auction.basePrice.replace(/[^0-9.]/g, '')) || 0;
       
+      // Extract specifications from auction.specifications array
+      let grade = '';
+      let color = '';
+      let form = '';
+      const additionalSpecs: string[] = [];
+      
+      if (auction.specifications && Array.isArray(auction.specifications)) {
+        // Map common specification names to our form fields
+        auction.specifications.forEach(spec => {
+          const name = spec.name.toLowerCase();
+          if (name.includes('grade') || name.includes('quality')) {
+            grade = spec.value;
+          } else if (name.includes('color') || name.includes('colour')) {
+            color = spec.value;
+          } else if (name.includes('form') || name.includes('shape') || name.includes('type')) {
+            form = spec.value;
+          } else if (name.includes('additional specifications')) {
+            // Parse additional specifications string back into individual specs
+            const additionalSpecsStr = spec.value;
+            if (additionalSpecsStr) {
+              // Split by comma and extract grade, color, form if they exist
+              const specsArray = additionalSpecsStr.split(',').map(s => s.trim());
+              specsArray.forEach(specItem => {
+                const lowerSpec = specItem.toLowerCase();
+                if (lowerSpec.startsWith('grade:') && !grade) {
+                  grade = specItem.split(':')[1]?.trim() || '';
+                } else if (lowerSpec.startsWith('color:') && !color) {
+                  color = specItem.split(':')[1]?.trim() || '';
+                } else if (lowerSpec.startsWith('form:') && !form) {
+                  form = specItem.split(':')[1]?.trim() || '';
+                } else {
+                  // Keep as additional spec if it's not grade/color/form
+                  additionalSpecs.push(specItem);
+                }
+              });
+            }
+          } else {
+            // Add other specifications to additional specs
+            additionalSpecs.push(`${spec.name}: ${spec.value}`);
+          }
+        });
+      }
+      
+      // Also check if there's a description or other fields that might contain specifications
+      // This handles cases where the backend might return specifications in different formats
+      if (auction.description && auction.description.length > 0) {
+        // Look for common specification patterns in the description
+        const desc = auction.description.toLowerCase();
+        if (!grade && (desc.includes('grade') || desc.includes('quality'))) {
+          // Try to extract grade information from description if available
+        }
+      }
+      
       setStepData({
         // Step 1
         category: auction.category,
         subcategory: auction.subcategory,
         materialType: auction.category.toLowerCase(),
+        
+        // Step 2: Initialize specifications data
+        grade: grade || '',
+        color: color || '',
+        form: form || '',
+        additionalSpecs: additionalSpecs,
         
         // Step 7
         availableQuantity: volumeValue,
@@ -492,9 +551,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           );
           
           if (!response.success) {
-            throw new Error(response.error);
+            throw new Error(response.error || `Failed to update step ${activeStep}`);
           }
         }
+      } else {
+        throw new Error(`No data to update for step ${activeStep}`);
       }
 
       // Convert step data back to auction format for the parent component
@@ -539,10 +600,30 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         };
         
       case 2:
-        // Specifications step - match creation form structure
+        // Specifications step - match creation form structure exactly
+        // Backend expects only: specification_id and additional_specifications
+        // Combine all step 2 form fields into additional_specifications
+        const specs: string[] = [];
+        
+        // Add grade, color, form if selected
+        if (stepData.grade) {
+          specs.push(`Grade: ${stepData.grade}`);
+        }
+        if (stepData.color) {
+          specs.push(`Color: ${stepData.color}`);
+        }
+        if (stepData.form) {
+          specs.push(`Form: ${stepData.form}`);
+        }
+        
+        // Add any additional specs from the form
+        if (stepData.additionalSpecs && stepData.additionalSpecs.length > 0) {
+          specs.push(...stepData.additionalSpecs.filter(spec => spec.trim()));
+        }
+        
         return {
           specification_id: null,
-          additional_specifications: stepData.additionalSpecs?.join(', ') || ''
+          additional_specifications: specs.join(', ')
         };
         
       case 3:
