@@ -1,6 +1,15 @@
 import logger from './logger';
 
 /**
+ * Email service using EmailJS
+ * 
+ * Required environment variables (these MUST have NEXT_PUBLIC_ prefix):
+ * - NEXT_PUBLIC_EMAILJS_SERVICE_ID_REGISTRATION
+ * - NEXT_PUBLIC_EMAILJS_TEMPLATE_ID_INVITATION  
+ * - NEXT_PUBLIC_EMAILJS_PUBLIC_KEY
+ */
+
+/**
  * Send an invitation email to a new user
  * @param recipientEmail The email address of the recipient
  * @param recipientName The name of the recipient

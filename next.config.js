@@ -17,6 +17,12 @@ const nextConfig = {
       },
       {
         protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '8000',
+        pathname: '/images/**',
+      },
+      {
+        protocol: 'http',
         hostname: 'localhost',
         port: '8000',
         pathname: '/media/**',
@@ -24,7 +30,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'nordic-loop-platform.onrender.com',
-        pathname: '/media/**',
+        pathname: '/**',
       },
     ],
     unoptimized: false,

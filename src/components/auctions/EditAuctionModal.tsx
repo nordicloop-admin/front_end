@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
 import { adUpdateService } from '@/services/ads';
+import { getFullImageUrl } from '@/utils/imageUtils';
+import { getCategoryImage } from '@/utils/categoryImages';
 
 // Import comprehensive data from the auction creation form
 const packagingOptions = [
@@ -259,20 +261,6 @@ const bidDurationOptions = [
   { value: '30', label: '30 days' }
 ];
 
-// Default fallback images based on category
-const getCategoryImage = (category: string): string => {
-  const categoryImages: Record<string, string> = {
-    'Plastics': '/images/marketplace/categories/plastics.jpg',
-    'Metals': '/images/marketplace/categories/metals.jpg',
-    'Paper': '/images/marketplace/categories/paper.jpg',
-    'Glass': '/images/marketplace/categories/glass.jpg',
-    'Textiles': '/images/marketplace/categories/textiles.jpg',
-    'Wood': '/images/marketplace/categories/wood.jpg'
-  };
-  
-  return categoryImages[category] || '/images/marketplace/categories/plastics.jpg';
-};
-
 export interface AuctionData {
   id: string;
   name: string;
@@ -340,6 +328,7 @@ interface StepData {
     city?: string;
     pickupAvailable?: boolean;
     deliveryOptions?: string[];
+    fullAddress?: string;
   };
   
   // Step 7: Quantity & Price
@@ -370,28 +359,6 @@ const steps = [
   { id: 8, title: 'Title & Description', description: 'Final details and images' }
 ];
 
-// Helper function to get full image URL from backend
-const getFullImageUrl = (imagePath: string | null | undefined): string => {
-  if (!imagePath) return '';
-  
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith('http')) {
-    return imagePath;
-  }
-  
-  // If it starts with /media/, construct the full URL
-  if (imagePath.startsWith('/media/')) {
-    return `https://nordic-loop-platform.onrender.com${imagePath}`;
-  }
-  
-  // If it's just a filename, assume it's in the material_images directory
-  if (!imagePath.startsWith('/')) {
-    return `https://nordic-loop-platform.onrender.com/media/material_images/${imagePath}`;
-  }
-  
-  return `https://nordic-loop-platform.onrender.com${imagePath}`;
-};
-
 export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }: EditAuctionModalProps) {
   const [activeStep, setActiveStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -408,72 +375,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
     const loadCategories = async () => {
       try {
         const response = await getCategories();
-        if (response.data) {
+        if (response.data && response.data.length > 0) {
           setCategories(response.data);
+        } else {
+          setError('No categories available. Please try again later.');
         }
       } catch (_error) {
-        // Fallback to static categories
-        setCategories([
-          {
-            id: 1,
-            name: 'Plastics',
-            subcategories: [
-              { id: 1, name: 'HDPE' },
-              { id: 2, name: 'LDPE' },
-              { id: 3, name: 'PET' },
-              { id: 4, name: 'PP' },
-              { id: 5, name: 'PS' },
-              { id: 6, name: 'PVC' },
-              { id: 7, name: 'ABS' }
-            ]
-          },
-          {
-            id: 2,
-            name: 'Metals',
-            subcategories: [
-              { id: 8, name: 'Aluminum' },
-              { id: 9, name: 'Steel' },
-              { id: 10, name: 'Copper' },
-              { id: 11, name: 'Brass' }
-            ]
-          },
-          {
-            id: 3,
-            name: 'Paper',
-            subcategories: [
-              { id: 12, name: 'Cardboard' },
-              { id: 13, name: 'Newspaper' },
-              { id: 14, name: 'Office Paper' }
-            ]
-          },
-          {
-            id: 4,
-            name: 'Glass',
-            subcategories: [
-              { id: 15, name: 'Clear Glass' },
-              { id: 16, name: 'Colored Glass' },
-              { id: 17, name: 'Glass Bottles' }
-            ]
-          },
-          {
-            id: 5,
-            name: 'Textiles',
-            subcategories: [
-              { id: 18, name: 'Cotton' },
-              { id: 19, name: 'Polyester' },
-              { id: 20, name: 'Mixed Textiles' }
-            ]
-          },
-          {
-            id: 6,
-            name: 'Wood',
-            subcategories: [
-              { id: 21, name: 'Clean Wood' },
-              { id: 22, name: 'Treated Wood' },
-              { id: 23, name: 'Pallets' }
-            ]
-          }
-        ]);
+        setError('Failed to load categories. Please check your connection and try again.');
       } finally {
         setCategoriesLoaded(true);
       }
@@ -491,11 +399,70 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       
       const basePriceValue = parseFloat(auction.basePrice.replace(/[^0-9.]/g, '')) || 0;
       
+      // Extract specifications from auction.specifications array
+      let grade = '';
+      let color = '';
+      let form = '';
+      const additionalSpecs: string[] = [];
+      
+      if (auction.specifications && Array.isArray(auction.specifications)) {
+        // Map common specification names to our form fields
+        auction.specifications.forEach(spec => {
+          const name = spec.name.toLowerCase();
+          if (name.includes('grade') || name.includes('quality')) {
+            grade = spec.value;
+          } else if (name.includes('color') || name.includes('colour')) {
+            color = spec.value;
+          } else if (name.includes('form') || name.includes('shape') || name.includes('type')) {
+            form = spec.value;
+          } else if (name.includes('additional specifications')) {
+            // Parse additional specifications string back into individual specs
+            const additionalSpecsStr = spec.value;
+            if (additionalSpecsStr) {
+              // Split by comma and extract grade, color, form if they exist
+              const specsArray = additionalSpecsStr.split(',').map(s => s.trim());
+              specsArray.forEach(specItem => {
+                const lowerSpec = specItem.toLowerCase();
+                if (lowerSpec.startsWith('grade:') && !grade) {
+                  grade = specItem.split(':')[1]?.trim() || '';
+                } else if (lowerSpec.startsWith('color:') && !color) {
+                  color = specItem.split(':')[1]?.trim() || '';
+                } else if (lowerSpec.startsWith('form:') && !form) {
+                  form = specItem.split(':')[1]?.trim() || '';
+                } else {
+                  // Keep as additional spec if it's not grade/color/form
+                  additionalSpecs.push(specItem);
+                }
+              });
+            }
+          } else {
+            // Add other specifications to additional specs
+            additionalSpecs.push(`${spec.name}: ${spec.value}`);
+          }
+        });
+      }
+      
+      // Also check if there's a description or other fields that might contain specifications
+      // This handles cases where the backend might return specifications in different formats
+      if (auction.description && auction.description.length > 0) {
+        // Look for common specification patterns in the description
+        const desc = auction.description.toLowerCase();
+        if (!grade && (desc.includes('grade') || desc.includes('quality'))) {
+          // Try to extract grade information from description if available
+        }
+      }
+      
       setStepData({
         // Step 1
         category: auction.category,
         subcategory: auction.subcategory,
         materialType: auction.category.toLowerCase(),
+        
+        // Step 2: Initialize specifications data
+        grade: grade || '',
+        color: color || '',
+        form: form || '',
+        additionalSpecs: additionalSpecs,
         
         // Step 7
         availableQuantity: volumeValue,
@@ -558,84 +525,37 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Determine if we need to use FormData (for image uploads) or JSON
-      const hasImageUpload = stepData.images && stepData.images.length > 0;
+      // Determine which step we're updating based on the current active step
+      const currentStepData = getCurrentStepData();
       
-      if (hasImageUpload) {
-        // Use FormData for image upload (PUT request to step 8)
-        const response = await adUpdateService.updateAdStep8WithImage(
-          parseInt(auction.id),
-          stepData.title || auction.name,
-          stepData.description || auction.description || '',
-          stepData.keywords?.join(', ') || '',
-          stepData.images![0]
-        );
-        
-        if (!response.success) {
-          throw new Error(response.error);
-        }
-      } else {
-        // Use PATCH for partial updates without image
-        const updateData: any = {};
-        
-        if (stepData.title && stepData.title !== auction.name) {
-          updateData.title = stepData.title;
-        }
-        
-        if (stepData.description && stepData.description !== auction.description) {
-          updateData.description = stepData.description;
-        }
-        
-        if (stepData.keywords && stepData.keywords.join(', ') !== auction.keywords) {
-          updateData.keywords = stepData.keywords.join(', ');
-        }
-        
-        if (stepData.category && stepData.category !== auction.category) {
-          // Find category ID
-          const selectedCategory = categories.find(cat => cat.name === stepData.category);
-          if (selectedCategory) {
-            updateData.category = selectedCategory.id;
-          }
-        }
-        
-        if (stepData.subcategory && stepData.subcategory !== auction.subcategory) {
-          // Find subcategory ID
-          const selectedCategory = categories.find(cat => cat.name === stepData.category);
-          const selectedSubcategory = selectedCategory?.subcategories.find(sub => sub.name === stepData.subcategory);
-          if (selectedSubcategory) {
-            updateData.subcategory = selectedSubcategory.id;
-          }
-        }
-        
-        if (stepData.startingPrice && stepData.startingPrice !== parseFloat(auction.basePrice.replace(/[^0-9.]/g, ''))) {
-          updateData.starting_bid_price = stepData.startingPrice;
-        }
-        
-        if (stepData.currency && stepData.currency !== 'SEK') {
-          updateData.currency = stepData.currency;
-        }
-        
-        if (stepData.availableQuantity && stepData.unit) {
-          const currentVolume = parseFloat(auction.volume.split(' ')[0]);
-          const currentUnit = auction.volume.split(' ')[1];
-          
-          if (stepData.availableQuantity !== currentVolume) {
-            updateData.available_quantity = stepData.availableQuantity;
-          }
-          
-          if (stepData.unit !== currentUnit) {
-            updateData.unit_of_measurement = stepData.unit;
-          }
-        }
-        
-        // Only make the request if there are changes
-        if (Object.keys(updateData).length > 0) {
-          const response = await adUpdateService.updatePartialAd(parseInt(auction.id), updateData);
+      if (currentStepData) {
+        if (activeStep === 8) {
+          // Step 8: Handle title, description, keywords, and image
+          const response = await adUpdateService.updateAdStep8WithImage(
+            parseInt(auction.id),
+            stepData.title || auction.name,
+            stepData.description || auction.description || '',
+            stepData.keywords?.join(', ') || '',
+            stepData.images && stepData.images.length > 0 ? stepData.images[0] : undefined
+          );
           
           if (!response.success) {
             throw new Error(response.error);
           }
+        } else {
+          // Steps 1-7: Use step-specific update endpoint
+          const response = await adUpdateService.updateAdStep(
+            parseInt(auction.id),
+            activeStep,
+            currentStepData
+          );
+          
+          if (!response.success) {
+            throw new Error(response.error || `Failed to update step ${activeStep}`);
+          }
         }
+      } else {
+        throw new Error(`No data to update for step ${activeStep}`);
       }
 
       // Convert step data back to auction format for the parent component
@@ -652,10 +572,207 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
       await onSubmit(updatedAuction);
       setHasChanges(false);
+      
+      // Reset loading state on success
+      setIsSubmitting(false);
     } catch (error) {
       setIsSubmitting(false);
       setError(error instanceof Error ? error.message : 'Failed to save changes');
     }
+  };
+
+  // Helper function to get current step data based on active step
+  const getCurrentStepData = () => {
+    switch (activeStep) {
+      case 1:
+        // Material Type step - match creation form structure exactly
+        if (!stepData.category) return null;
+        
+        const selectedCategory = categories.find(cat => cat.name === stepData.category);
+        const selectedSubcategory = selectedCategory?.subcategories.find(sub => sub.name === stepData.subcategory);
+        
+        return {
+          category_id: selectedCategory?.id,
+          subcategory_id: selectedSubcategory?.id,
+          specific_material: stepData.specificMaterial || '',
+          packaging: convertLabelToValue('packaging', stepData.packaging || ''),
+          material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency || '')
+        };
+        
+      case 2:
+        // Specifications step - match creation form structure exactly
+        // Backend expects only: specification_id and additional_specifications
+        // Combine all step 2 form fields into additional_specifications
+        const specs: string[] = [];
+        
+        // Add grade, color, form if selected
+        if (stepData.grade) {
+          specs.push(`Grade: ${stepData.grade}`);
+        }
+        if (stepData.color) {
+          specs.push(`Color: ${stepData.color}`);
+        }
+        if (stepData.form) {
+          specs.push(`Form: ${stepData.form}`);
+        }
+        
+        // Add any additional specs from the form
+        if (stepData.additionalSpecs && stepData.additionalSpecs.length > 0) {
+          specs.push(...stepData.additionalSpecs.filter(spec => spec.trim()));
+        }
+        
+        return {
+          specification_id: null,
+          additional_specifications: specs.join(', ')
+        };
+        
+      case 3:
+        // Material Origin step - match creation form structure
+        return {
+          origin: convertLabelToValue('origin', stepData.origin || '')
+        };
+        
+      case 4:
+        // Contamination step - match creation form structure
+        return {
+          contamination: convertLabelToValue('contamination', stepData.contaminationLevel || ''),
+          additives: stepData.additives?.[0] ? convertLabelToValue('additives', stepData.additives[0]) : 'no_additives',
+          storage_conditions: stepData.storageConditions ? convertLabelToValue('storage_conditions', stepData.storageConditions) : 'climate_controlled'
+        };
+        
+      case 5:
+        // Processing Methods step - match creation form structure
+        return {
+          processing_methods: Array.isArray(stepData.processingMethods) 
+            ? stepData.processingMethods.map(method => convertLabelToValue('processing_methods', method))
+            : (stepData.processingMethods ? [convertLabelToValue('processing_methods', stepData.processingMethods)] : [])
+        };
+        
+      case 6:
+        // Location & Logistics step - match creation form structure
+        return {
+          location_data: {
+            country: stepData.location?.country || '',
+            state_province: stepData.location?.region || undefined,
+            city: stepData.location?.city || '',
+            address_line: stepData.location?.fullAddress || undefined,
+            postal_code: ''
+          },
+          pickup_available: Boolean(stepData.location?.pickupAvailable),
+          delivery_options: Array.isArray(stepData.location?.deliveryOptions) 
+            ? stepData.location.deliveryOptions.map(option => convertLabelToValue('delivery_options', option))
+            : (stepData.location?.deliveryOptions ? [convertLabelToValue('delivery_options', stepData.location.deliveryOptions)] : [])
+        };
+        
+      case 7:
+        // Quantity & Price step - match creation form structure exactly
+        return {
+          available_quantity: Number(stepData.availableQuantity || 0),
+          unit_of_measurement: convertLabelToValue('unit_of_measurement', stepData.unit || ''),
+          minimum_order_quantity: Number(stepData.minimumOrder || 0),
+          starting_bid_price: Number(stepData.startingPrice || 0),
+          currency: stepData.currency || 'SEK',
+          auction_duration: parseInt(stepData.auctionDuration || '7'),
+          reserve_price: stepData.reservePrice ? Number(stepData.reservePrice) : undefined
+        };
+        
+      case 8:
+        // Title & Description step - handled separately above
+        return null;
+        
+      default:
+        return null;
+    }
+  };
+
+  // Helper function to convert label to backend value (matching creation form)
+  const convertLabelToValue = (field: string, label: string): string => {
+    // This should match the convertLabelToValue function from the creation form
+    const mappings: Record<string, Record<string, string>> = {
+      packaging: {
+        'Baled': 'baled',
+        'Loose': 'loose',
+        'Big-bag': 'big_bag',
+        'Octabin': 'octabin',
+        'Roles': 'roles',
+        'Container': 'container',
+        'Other': 'other'
+      },
+      material_frequency: {
+        'One-time': 'one_time',
+        'Weekly': 'weekly',
+        'Bi-weekly': 'bi_weekly',
+        'Monthly': 'monthly',
+        'Quarterly': 'quarterly',
+        'Yearly': 'yearly'
+      },
+      origin: {
+        'Post-industrial': 'post_industrial',
+        'Post-consumer': 'post_consumer',
+        'Mix': 'mix'
+      },
+      contamination: {
+        'Clean': 'clean',
+        'Slightly Contaminated': 'slightly_contaminated',
+        'Heavily Contaminated': 'heavily_contaminated'
+      },
+      additives: {
+        'UV Stabilizer': 'uv_stabilizer',
+        'Antioxidant': 'antioxidant',
+        'Flame retardants': 'flame_retardants',
+        'Chlorides': 'chlorides',
+        'No additives': 'no_additives'
+      },
+      storage_conditions: {
+        'Climate Controlled': 'climate_controlled',
+        'Protected Outdoor': 'protected_outdoor',
+        'Unprotected Outdoor': 'unprotected_outdoor'
+      },
+      processing_methods: {
+        'Blow moulding': 'blow_moulding',
+        'Injection moulding': 'injection_moulding',
+        'Extrusion': 'extrusion',
+        'Calendering': 'calendering',
+        'Rotational moulding': 'rotational_moulding',
+        'Sintering': 'sintering',
+        'Thermoforming': 'thermoforming',
+        'Sorting': 'sorting',
+        'Cleaning': 'cleaning',
+        'Shredding': 'shredding',
+        'Melting': 'melting',
+        'Granulation': 'granulation'
+      },
+      delivery_options: {
+        'Pickup Only': 'pickup_only',
+        'Local Delivery': 'local_delivery',
+        'National Shipping': 'national_shipping',
+        'International Shipping': 'international_shipping',
+        'Freight Forwarding': 'freight_forwarding'
+      },
+      unit_of_measurement: {
+        'kg': 'kg',
+        'tons': 'tons',
+        'tonnes': 'tons', // Map both tons and tonnes to 'tons'
+        'lbs': 'lb',
+        'pounds': 'lb',
+        'pieces': 'pieces',
+        'units': 'units',
+        'bales': 'bales',
+        'containers': 'containers',
+        'm³': 'm3',
+        'cubic meters': 'm3',
+        'liters': 'liters',
+        'gallons': 'gallons'
+      }
+    };
+    
+    const fieldMappings = mappings[field];
+    if (fieldMappings && fieldMappings[label]) {
+      return fieldMappings[label];
+    }
+    
+    // Return lowercase version as fallback
+    return label.toLowerCase().replace(/[^a-z0-9]/g, '_');
   };
 
   const getStepStatus = (stepNumber: number): 'completed' | 'current' | 'pending' => {
@@ -676,136 +793,153 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       case 1:
         return (
           <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Category *
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => handleStepDataChange({ 
-                      category: category.name,
-                      materialType: category.name.toLowerCase(),
-                      subcategory: '', // Reset subcategory when category changes
-                      specificMaterial: ''
-                    })}
-                    className={`
-                      p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
-                      ${stepData.category === category.name
-                        ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }
-                    `}
-                  >
-                    {category.name}
-                  </button>
-                ))}
+            {!categoriesLoaded ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="w-6 h-6 border-2 border-[#FF8A00] border-t-transparent rounded-full animate-spin mr-3" />
+                <span className="text-gray-600">Loading categories...</span>
               </div>
-            </div>
-            
-            {selectedCategory && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Subcategory *
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {availableSubcategories.map((subcategory) => (
-                    <button
-                      key={subcategory.id}
-                      onClick={() => handleStepDataChange({ subcategory: subcategory.name })}
-                      className={`
-                        p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
-                        ${stepData.subcategory === subcategory.name
-                          ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                        }
-                      `}
-                    >
-                      {subcategory.name}
-                    </button>
-                  ))}
+            ) : categories.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="mb-4">
+                  <AlertCircle className="w-8 h-8 text-gray-400 mx-auto" />
                 </div>
+                <p className="text-gray-600 mb-2">No categories available</p>
+                <p className="text-sm text-gray-500">Please try refreshing the page or contact support.</p>
               </div>
-            )}
-
-            {stepData.subcategory && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Specific Material (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={stepData.specificMaterial || ''}
-                  onChange={(e) => handleStepDataChange({ specificMaterial: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc."
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                How is the material packaged? *
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {packagingOptions.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <button
-                      key={type.id}
-                      onClick={() => handleStepDataChange({ packaging: type.name })}
-                      className={`
-                        p-4 rounded-lg border-2 transition-all text-left hover:scale-105
-                        ${stepData.packaging === type.name
-                          ? 'border-[#FF8A00] bg-orange-50'
-                          : 'border-gray-200 hover:border-gray-300'
-                        }
-                      `}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className={`
-                          p-2 rounded-md
-                          ${stepData.packaging === type.name
-                            ? 'bg-[#FF8A00] text-white'
-                            : 'bg-gray-100 text-gray-600'
+            ) : (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Category *
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {categories.filter(cat => cat.name !== 'All materials').map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => handleStepDataChange({ 
+                          category: category.name,
+                          materialType: category.name.toLowerCase(),
+                          subcategory: '', // Reset subcategory when category changes
+                          specificMaterial: ''
+                        })}
+                        className={`
+                          p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
+                          ${stepData.category === category.name
+                            ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
                           }
-                        `}>
-                          <Icon className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{type.name}</h4>
-                          <p className="text-sm text-gray-500 mt-1">{type.description}</p>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                        `}
+                      >
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {selectedCategory && selectedCategory.subcategories.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Subcategory *
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {availableSubcategories.map((subcategory) => (
+                        <button
+                          key={subcategory.id}
+                          onClick={() => handleStepDataChange({ subcategory: subcategory.name })}
+                          className={`
+                            p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
+                            ${stepData.subcategory === subcategory.name
+                              ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                              : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            }
+                          `}
+                        >
+                          {subcategory.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                How often do you have this material? *
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {sellFrequencies.map((frequency) => (
-                  <button
-                    key={frequency.id}
-                    onClick={() => handleStepDataChange({ materialFrequency: frequency.id })}
-                    className={`
-                      p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                      ${stepData.materialFrequency === frequency.id
-                        ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }
-                    `}
-                  >
-                    {frequency.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+                {stepData.subcategory && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Specific Material (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={stepData.specificMaterial || ''}
+                      onChange={(e) => handleStepDataChange({ specificMaterial: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc."
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    How is the material packaged? *
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {packagingOptions.map((type) => {
+                      const Icon = type.icon;
+                      return (
+                        <button
+                          key={type.id}
+                          onClick={() => handleStepDataChange({ packaging: type.name })}
+                          className={`
+                            p-4 rounded-lg border-2 transition-all text-left hover:scale-105
+                            ${stepData.packaging === type.name
+                              ? 'border-[#FF8A00] bg-orange-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                            }
+                          `}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className={`
+                              p-2 rounded-md
+                              ${stepData.packaging === type.name
+                                ? 'bg-[#FF8A00] text-white'
+                                : 'bg-gray-100 text-gray-600'
+                              }
+                            `}>
+                              <Icon className="w-5 h-5" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-gray-900">{type.name}</h4>
+                              <p className="text-sm text-gray-500 mt-1">{type.description}</p>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    How often do you have this material? *
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {sellFrequencies.map((frequency) => (
+                      <button
+                        key={frequency.id}
+                        onClick={() => handleStepDataChange({ materialFrequency: frequency.id })}
+                        className={`
+                          p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                          ${stepData.materialFrequency === frequency.id
+                            ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                          }
+                        `}
+                      >
+                        {frequency.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         );
 

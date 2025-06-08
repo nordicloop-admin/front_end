@@ -5,7 +5,7 @@ import { Package, Filter, Search, Plus, Loader2, AlertCircle } from 'lucide-reac
 import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
 import MyAuctionCard from '@/components/auctions/MyAuctionCard';
-import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
+import { getUserAuctions, PaginatedAuctionResult, getAdDetails } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
 import Link from 'next/link';
 
@@ -76,7 +76,23 @@ export default function MyAuctions() {
           status: auction.is_active ? 'active' : 'inactive',
           timeLeft: 'Available', // API doesn't provide end date/time in this format
           volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-          image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+          image: auction.material_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
+          
+          // Additional properties for edit modal functionality
+          description: auction.title || '',
+          keywords: '',
+          material_image: auction.material_image || undefined,
+          
+          // Add step completion data for edit modal
+          stepCompletionStatus: auction.is_complete ? {
+            '1': true, '2': true, '3': true, '4': true, 
+            '5': true, '6': true, '7': true, '8': true
+          } : {
+            '1': false, '2': false, '3': false, '4': false, 
+            '5': false, '6': false, '7': false, '8': false
+          },
+          currentStep: auction.is_complete ? 8 : 1,
+          isComplete: auction.is_complete
         }));
 
         // Update the auctions state with the API data
@@ -123,8 +139,45 @@ export default function MyAuctions() {
   };
 
   // Handle opening the edit modal
-  const handleEditClick = (auction: AuctionData) => {
-    setSelectedAuction(auction);
+  const handleEditClick = async (auction: AuctionData) => {
+    try {
+      // Fetch detailed auction data to get accurate step completion status
+      const detailedResponse = await getAdDetails(auction.id);
+      
+      if (!detailedResponse.error && detailedResponse.data) {
+        const adData = detailedResponse.data.data;
+        
+        // Create enhanced auction data with proper step completion status
+        const enhancedAuction: AuctionData = {
+          ...auction,
+          stepCompletionStatus: adData.step_completion_status || auction.stepCompletionStatus,
+          isComplete: adData.is_complete,
+          currentStep: adData.current_step,
+          specifications: [
+            { name: 'Material Type', value: adData.category_name },
+            { name: 'Subcategory', value: adData.subcategory_name },
+            { name: 'Specific Material', value: adData.specific_material },
+            { name: 'Packaging', value: adData.packaging_display },
+            { name: 'Material Frequency', value: adData.material_frequency_display },
+            ...(adData.origin_display ? [{ name: 'Origin', value: adData.origin_display }] : []),
+            ...(adData.contamination_display ? [{ name: 'Contamination', value: adData.contamination_display }] : []),
+            ...(adData.additives_display ? [{ name: 'Additives', value: adData.additives_display }] : []),
+            ...(adData.storage_conditions_display ? [{ name: 'Storage Conditions', value: adData.storage_conditions_display }] : []),
+            ...(adData.processing_methods_display.length > 0 ? [{ name: 'Processing Methods', value: adData.processing_methods_display.join(', ') }] : []),
+            { name: 'Additional Specifications', value: adData.additional_specifications || '' }
+          ]
+        };
+        
+        setSelectedAuction(enhancedAuction);
+      } else {
+        // Fallback to original auction data if detailed fetch fails
+        setSelectedAuction(auction);
+      }
+    } catch (_error) {
+      // Fallback to original auction data on error
+      setSelectedAuction(auction);
+    }
+    
     setIsEditModalOpen(true);
   };
 
