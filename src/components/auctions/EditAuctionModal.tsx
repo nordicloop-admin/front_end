@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
 import { adUpdateService } from '@/services/ads';
 import { getFullImageUrl } from '@/utils/imageUtils';
+import { getCategoryImage } from '@/utils/categoryImages';
 
 // Import comprehensive data from the auction creation form
 const packagingOptions = [
@@ -259,20 +260,6 @@ const bidDurationOptions = [
   { value: '14', label: '14 days' },
   { value: '30', label: '30 days' }
 ];
-
-// Default fallback images based on category
-const getCategoryImage = (category: string): string => {
-  const categoryImages: Record<string, string> = {
-    'Plastics': '/images/marketplace/categories/plastics.jpg',
-    'Metals': '/images/marketplace/categories/metals.jpg',
-    'Paper': '/images/marketplace/categories/paper.jpg',
-    'Glass': '/images/marketplace/categories/glass.jpg',
-    'Textiles': '/images/marketplace/categories/textiles.jpg',
-    'Wood': '/images/marketplace/categories/wood.jpg'
-  };
-  
-  return categoryImages[category] || '/images/marketplace/categories/plastics.jpg';
-};
 
 export interface AuctionData {
   id: string;
