@@ -12,6 +12,7 @@ import { QuantityFilter } from '@/components/marketplace/QuantityFilter';
 import { SortDropdown } from '@/components/marketplace/SortDropdown';
 import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 // Mock data for marketplace items
 const _marketplaceItems = [
@@ -177,28 +178,6 @@ const ProductCard = ({ item }: { item: any }) => {
       </div>
     </div>
   );
-};
-
-// Helper function to get full image URL from backend
-const getFullImageUrl = (imagePath: string | null | undefined): string => {
-  if (!imagePath) return '';
-  
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith('http')) {
-    return imagePath;
-  }
-  
-  // If it starts with /media/, construct the full URL
-  if (imagePath.startsWith('/media/')) {
-    return `https://nordic-loop-platform.onrender.com${imagePath}`;
-  }
-  
-  // If it's just a filename, assume it's in the material_images directory
-  if (!imagePath.startsWith('/')) {
-    return `https://nordic-loop-platform.onrender.com/media/material_images/${imagePath}`;
-  }
-  
-  return `https://nordic-loop-platform.onrender.com${imagePath}`;
 };
 
 // Helper function to get category fallback image
