@@ -340,6 +340,7 @@ interface StepData {
     city?: string;
     pickupAvailable?: boolean;
     deliveryOptions?: string[];
+    fullAddress?: string;
   };
   
   // Step 7: Quantity & Price
@@ -558,79 +559,30 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      // Determine if we need to use FormData (for image uploads) or JSON
-      const hasImageUpload = stepData.images && stepData.images.length > 0;
+      // Determine which step we're updating based on the current active step
+      const currentStepData = getCurrentStepData();
       
-      if (hasImageUpload) {
-        // Use FormData for image upload (PUT request to step 8)
-        const response = await adUpdateService.updateAdStep8WithImage(
-          parseInt(auction.id),
-          stepData.title || auction.name,
-          stepData.description || auction.description || '',
-          stepData.keywords?.join(', ') || '',
-          stepData.images![0]
-        );
-        
-        if (!response.success) {
-          throw new Error(response.error);
-        }
-      } else {
-        // Use PATCH for partial updates without image
-        const updateData: any = {};
-        
-        if (stepData.title && stepData.title !== auction.name) {
-          updateData.title = stepData.title;
-        }
-        
-        if (stepData.description && stepData.description !== auction.description) {
-          updateData.description = stepData.description;
-        }
-        
-        if (stepData.keywords && stepData.keywords.join(', ') !== auction.keywords) {
-          updateData.keywords = stepData.keywords.join(', ');
-        }
-        
-        if (stepData.category && stepData.category !== auction.category) {
-          // Find category ID
-          const selectedCategory = categories.find(cat => cat.name === stepData.category);
-          if (selectedCategory) {
-            updateData.category = selectedCategory.id;
-          }
-        }
-        
-        if (stepData.subcategory && stepData.subcategory !== auction.subcategory) {
-          // Find subcategory ID
-          const selectedCategory = categories.find(cat => cat.name === stepData.category);
-          const selectedSubcategory = selectedCategory?.subcategories.find(sub => sub.name === stepData.subcategory);
-          if (selectedSubcategory) {
-            updateData.subcategory = selectedSubcategory.id;
-          }
-        }
-        
-        if (stepData.startingPrice && stepData.startingPrice !== parseFloat(auction.basePrice.replace(/[^0-9.]/g, ''))) {
-          updateData.starting_bid_price = stepData.startingPrice;
-        }
-        
-        if (stepData.currency && stepData.currency !== 'SEK') {
-          updateData.currency = stepData.currency;
-        }
-        
-        if (stepData.availableQuantity && stepData.unit) {
-          const currentVolume = parseFloat(auction.volume.split(' ')[0]);
-          const currentUnit = auction.volume.split(' ')[1];
+      if (currentStepData) {
+        if (activeStep === 8) {
+          // Step 8: Handle title, description, keywords, and image
+          const response = await adUpdateService.updateAdStep8WithImage(
+            parseInt(auction.id),
+            stepData.title || auction.name,
+            stepData.description || auction.description || '',
+            stepData.keywords?.join(', ') || '',
+            stepData.images && stepData.images.length > 0 ? stepData.images[0] : undefined
+          );
           
-          if (stepData.availableQuantity !== currentVolume) {
-            updateData.available_quantity = stepData.availableQuantity;
+          if (!response.success) {
+            throw new Error(response.error);
           }
-          
-          if (stepData.unit !== currentUnit) {
-            updateData.unit_of_measurement = stepData.unit;
-          }
-        }
-        
-        // Only make the request if there are changes
-        if (Object.keys(updateData).length > 0) {
-          const response = await adUpdateService.updatePartialAd(parseInt(auction.id), updateData);
+        } else {
+          // Steps 1-7: Use step-specific update endpoint
+          const response = await adUpdateService.updateAdStep(
+            parseInt(auction.id),
+            activeStep,
+            currentStepData
+          );
           
           if (!response.success) {
             throw new Error(response.error);
@@ -656,6 +608,180 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       setIsSubmitting(false);
       setError(error instanceof Error ? error.message : 'Failed to save changes');
     }
+  };
+
+  // Helper function to get current step data based on active step
+  const getCurrentStepData = () => {
+    switch (activeStep) {
+      case 1:
+        // Material Type step - match creation form structure exactly
+        if (!stepData.category) return null;
+        
+        const selectedCategory = categories.find(cat => cat.name === stepData.category);
+        const selectedSubcategory = selectedCategory?.subcategories.find(sub => sub.name === stepData.subcategory);
+        
+        return {
+          category_id: selectedCategory?.id,
+          subcategory_id: selectedSubcategory?.id,
+          specific_material: stepData.specificMaterial || '',
+          packaging: convertLabelToValue('packaging', stepData.packaging || ''),
+          material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency || '')
+        };
+        
+      case 2:
+        // Specifications step - match creation form structure
+        return {
+          specification_id: null,
+          additional_specifications: stepData.additionalSpecs?.join(', ') || ''
+        };
+        
+      case 3:
+        // Material Origin step - match creation form structure
+        return {
+          origin: convertLabelToValue('origin', stepData.origin || '')
+        };
+        
+      case 4:
+        // Contamination step - match creation form structure
+        return {
+          contamination: convertLabelToValue('contamination', stepData.contaminationLevel || ''),
+          additives: stepData.additives?.[0] ? convertLabelToValue('additives', stepData.additives[0]) : 'no_additives',
+          storage_conditions: stepData.storageConditions ? convertLabelToValue('storage_conditions', stepData.storageConditions) : 'climate_controlled'
+        };
+        
+      case 5:
+        // Processing Methods step - match creation form structure
+        return {
+          processing_methods: Array.isArray(stepData.processingMethods) 
+            ? stepData.processingMethods.map(method => convertLabelToValue('processing_methods', method))
+            : (stepData.processingMethods ? [convertLabelToValue('processing_methods', stepData.processingMethods)] : [])
+        };
+        
+      case 6:
+        // Location & Logistics step - match creation form structure
+        return {
+          location_data: {
+            country: stepData.location?.country || '',
+            state_province: stepData.location?.region || undefined,
+            city: stepData.location?.city || '',
+            address_line: stepData.location?.fullAddress || undefined,
+            postal_code: ''
+          },
+          pickup_available: Boolean(stepData.location?.pickupAvailable),
+          delivery_options: Array.isArray(stepData.location?.deliveryOptions) 
+            ? stepData.location.deliveryOptions.map(option => convertLabelToValue('delivery_options', option))
+            : (stepData.location?.deliveryOptions ? [convertLabelToValue('delivery_options', stepData.location.deliveryOptions)] : [])
+        };
+        
+      case 7:
+        // Quantity & Price step - match creation form structure exactly
+        return {
+          available_quantity: Number(stepData.availableQuantity || 0),
+          unit_of_measurement: convertLabelToValue('unit_of_measurement', stepData.unit || ''),
+          minimum_order_quantity: Number(stepData.minimumOrder || 0),
+          starting_bid_price: Number(stepData.startingPrice || 0),
+          currency: stepData.currency || 'SEK',
+          auction_duration: parseInt(stepData.auctionDuration || '7'),
+          reserve_price: stepData.reservePrice ? Number(stepData.reservePrice) : undefined
+        };
+        
+      case 8:
+        // Title & Description step - handled separately above
+        return null;
+        
+      default:
+        return null;
+    }
+  };
+
+  // Helper function to convert label to backend value (matching creation form)
+  const convertLabelToValue = (field: string, label: string): string => {
+    // This should match the convertLabelToValue function from the creation form
+    const mappings: Record<string, Record<string, string>> = {
+      packaging: {
+        'Baled': 'baled',
+        'Loose': 'loose',
+        'Big-bag': 'big_bag',
+        'Octabin': 'octabin',
+        'Roles': 'roles',
+        'Container': 'container',
+        'Other': 'other'
+      },
+      material_frequency: {
+        'One-time': 'one_time',
+        'Weekly': 'weekly',
+        'Bi-weekly': 'bi_weekly',
+        'Monthly': 'monthly',
+        'Quarterly': 'quarterly',
+        'Yearly': 'yearly'
+      },
+      origin: {
+        'Post-industrial': 'post_industrial',
+        'Post-consumer': 'post_consumer',
+        'Mix': 'mix'
+      },
+      contamination: {
+        'Clean': 'clean',
+        'Slightly Contaminated': 'slightly_contaminated',
+        'Heavily Contaminated': 'heavily_contaminated'
+      },
+      additives: {
+        'UV Stabilizer': 'uv_stabilizer',
+        'Antioxidant': 'antioxidant',
+        'Flame retardants': 'flame_retardants',
+        'Chlorides': 'chlorides',
+        'No additives': 'no_additives'
+      },
+      storage_conditions: {
+        'Climate Controlled': 'climate_controlled',
+        'Protected Outdoor': 'protected_outdoor',
+        'Unprotected Outdoor': 'unprotected_outdoor'
+      },
+      processing_methods: {
+        'Blow moulding': 'blow_moulding',
+        'Injection moulding': 'injection_moulding',
+        'Extrusion': 'extrusion',
+        'Calendering': 'calendering',
+        'Rotational moulding': 'rotational_moulding',
+        'Sintering': 'sintering',
+        'Thermoforming': 'thermoforming',
+        'Sorting': 'sorting',
+        'Cleaning': 'cleaning',
+        'Shredding': 'shredding',
+        'Melting': 'melting',
+        'Granulation': 'granulation'
+      },
+      delivery_options: {
+        'Pickup Only': 'pickup_only',
+        'Local Delivery': 'local_delivery',
+        'National Shipping': 'national_shipping',
+        'International Shipping': 'international_shipping',
+        'Freight Forwarding': 'freight_forwarding'
+      },
+      unit_of_measurement: {
+        'kg': 'kg',
+        'tons': 'tons',
+        'tonnes': 'tons', // Map both tons and tonnes to 'tons'
+        'lbs': 'lb',
+        'pounds': 'lb',
+        'pieces': 'pieces',
+        'units': 'units',
+        'bales': 'bales',
+        'containers': 'containers',
+        'm³': 'm3',
+        'cubic meters': 'm3',
+        'liters': 'liters',
+        'gallons': 'gallons'
+      }
+    };
+    
+    const fieldMappings = mappings[field];
+    if (fieldMappings && fieldMappings[label]) {
+      return fieldMappings[label];
+    }
+    
+    // Return lowercase version as fallback
+    return label.toLowerCase().replace(/[^a-z0-9]/g, '_');
   };
 
   const getStepStatus = (stepNumber: number): 'completed' | 'current' | 'pending' => {
