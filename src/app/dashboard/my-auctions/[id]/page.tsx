@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { ArrowLeft, Clock, Package, User, Calendar, AlertCircle, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
-import { getAuctionById, updateAuction, deleteAuction, getAdDetails } from '@/services/auction';
+import { getAuctionById, deleteAuction, getAdDetails } from '@/services/auction';
 import { getAuctionBids } from '@/services/bid';
 
 // Mock data for auctions (not used but kept for reference)
@@ -246,43 +246,10 @@ export default function AuctionDetail() {
     }
   }, [params.id, router]);
 
-  // Handle edit auction
+  // Handle edit auction - Updated to only handle local state since EditAuctionModal handles API calls
   const handleEditAuction = async (updatedAuction: AuctionData) => {
-    // Show loading toast
-    const loadingToast = toast.loading('Updating auction...');
-
     try {
-      // Extract volume and unit from the volume string
-      const volumeParts = updatedAuction.volume.split(' ');
-      const volumeValue = volumeParts[0];
-      const volumeUnit = volumeParts[1];
-
-      // Prepare data for API
-      const apiData = {
-        item_name: updatedAuction.name,
-        category: updatedAuction.category,
-        subcategory: updatedAuction.subcategory,
-        base_price: updatedAuction.basePrice.replace(/,/g, ''), // Remove commas
-        volume: volumeValue,
-        unit: volumeUnit
-      };
-
-      // Send update to API
-      const response = await updateAuction(params.id as string, apiData);
-
-      // Dismiss loading toast
-      toast.dismiss(loadingToast);
-
-      if (response.error) {
-        // Show error toast
-        toast.error('Failed to update auction', {
-          description: response.error,
-          duration: 5000,
-        });
-        return;
-      }
-
-      // Update local state
+      // Update local state with the new data
       setAuction({
         ...auction,
         ...updatedAuction
@@ -296,10 +263,11 @@ export default function AuctionDetail() {
         description: 'Your changes have been saved.',
         duration: 3000,
       });
-    } catch (error) {
-      // Dismiss loading toast
-      toast.dismiss(loadingToast);
 
+      // Optionally refresh the auction data from backend to ensure consistency
+      // You can uncomment this if you want to fetch fresh data after edit
+      // await loadAuctionData();
+    } catch (error) {
       // Show error toast
       toast.error('Failed to update auction', {
         description: error instanceof Error ? error.message : 'An unexpected error occurred',

@@ -76,7 +76,23 @@ export default function MyAuctions() {
           status: auction.is_active ? 'active' : 'inactive',
           timeLeft: 'Available', // API doesn't provide end date/time in this format
           volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-          image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+          image: auction.material_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
+          
+          // Additional properties for edit modal functionality
+          description: auction.title || '',
+          keywords: '',
+          material_image: auction.material_image || undefined,
+          
+          // Add step completion data for edit modal
+          stepCompletionStatus: auction.is_complete ? {
+            '1': true, '2': true, '3': true, '4': true, 
+            '5': true, '6': true, '7': true, '8': true
+          } : {
+            '1': false, '2': false, '3': false, '4': false, 
+            '5': false, '6': false, '7': false, '8': false
+          },
+          currentStep: auction.is_complete ? 8 : 1,
+          isComplete: auction.is_complete
         }));
 
         // Update the auctions state with the API data
