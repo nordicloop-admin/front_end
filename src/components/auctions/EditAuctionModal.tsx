@@ -604,6 +604,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
       await onSubmit(updatedAuction);
       setHasChanges(false);
+      
+      // Reset loading state on success
+      setIsSubmitting(false);
     } catch (error) {
       setIsSubmitting(false);
       setError(error instanceof Error ? error.message : 'Failed to save changes');
