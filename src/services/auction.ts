@@ -152,6 +152,14 @@ export async function getCategories() {
 }
 
 /**
+ * Fetch categories for public use (same as getCategories but explicit about being public)
+ * @returns The API response with categories and subcategories
+ */
+export async function getCategoriesPublic() {
+  return getCategories();
+}
+
+/**
  * Interface for auction item data
  */
 export interface AuctionItem {

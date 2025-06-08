@@ -13,6 +13,7 @@ import { SortDropdown } from '@/components/marketplace/SortDropdown';
 import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
 import { getFullImageUrl } from '@/utils/imageUtils';
+import { getCategoryImage } from '@/utils/categoryImages';
 
 // Mock data for marketplace items
 const _marketplaceItems = [
@@ -178,20 +179,6 @@ const ProductCard = ({ item }: { item: any }) => {
       </div>
     </div>
   );
-};
-
-// Helper function to get category fallback image
-const getCategoryImage = (category: string): string => {
-  const categoryImages: Record<string, string> = {
-    'Plastics': '/images/marketplace/categories/plastics.jpg',
-    'Metals': '/images/marketplace/categories/metals.jpg',
-    'Paper': '/images/marketplace/categories/paper.jpg',
-    'Glass': '/images/marketplace/categories/glass.jpg',
-    'Textiles': '/images/marketplace/categories/textiles.jpg',
-    'Wood': '/images/marketplace/categories/wood.jpg'
-  };
-  
-  return categoryImages[category] || '/images/marketplace/categories/plastics.jpg';
 };
 
 const MarketplacePage = () => {

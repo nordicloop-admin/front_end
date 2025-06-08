@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
 import { getAuctionById, deleteAuction, getAdDetails } from '@/services/auction';
 import { getAuctionBids } from '@/services/bid';
+import { getCategoryImage } from '@/utils/categoryImages';
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 // Mock data for auctions (not used but kept for reference)
 const _myAuctions = [
@@ -50,42 +52,6 @@ const _myAuctions = [
     ]
   }
 ];
-
-// Add function to get correct category image before the component  
-const getCategoryImage = (category: string): string => {
-  const categoryImages: Record<string, string> = {
-    'Plastics': '/images/marketplace/categories/plastics.jpg',
-    'Metals': '/images/marketplace/categories/metals.jpg',
-    'Paper': '/images/marketplace/categories/paper.jpg', 
-    'Glass': '/images/marketplace/categories/glass.jpg',
-    'Textiles': '/images/marketplace/categories/textiles.jpg',
-    'Wood': '/images/marketplace/categories/wood.jpg'
-  };
-  
-  return categoryImages[category] || '/images/marketplace/categories/plastics.jpg';
-};
-
-// Helper function to get full image URL from backend
-const getFullImageUrl = (imagePath: string | null | undefined): string => {
-  if (!imagePath) return '';
-  
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith('http')) {
-    return imagePath;
-  }
-  
-  // If it starts with /media/, construct the full URL
-  if (imagePath.startsWith('/media/')) {
-    return `https://nordic-loop-platform.onrender.com${imagePath}`;
-  }
-  
-  // If it's just a filename, assume it's in the material_images directory
-  if (!imagePath.startsWith('/')) {
-    return `https://nordic-loop-platform.onrender.com/media/material_images/${imagePath}`;
-  }
-  
-  return `https://nordic-loop-platform.onrender.com${imagePath}`;
-};
 
 export default function AuctionDetail() {
   const params = useParams();
