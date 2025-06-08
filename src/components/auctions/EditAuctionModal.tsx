@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
 import { adUpdateService } from '@/services/ads';
+import { getFullImageUrl } from '@/utils/imageUtils';
 
 // Import comprehensive data from the auction creation form
 const packagingOptions = [
@@ -370,28 +371,6 @@ const steps = [
   { id: 7, title: 'Quantity & Price', description: 'Pricing and quantity details' },
   { id: 8, title: 'Title & Description', description: 'Final details and images' }
 ];
-
-// Helper function to get full image URL from backend
-const getFullImageUrl = (imagePath: string | null | undefined): string => {
-  if (!imagePath) return '';
-  
-  // If it's already a full URL, return as is
-  if (imagePath.startsWith('http')) {
-    return imagePath;
-  }
-  
-  // If it starts with /media/, construct the full URL
-  if (imagePath.startsWith('/media/')) {
-    return `https://nordic-loop-platform.onrender.com${imagePath}`;
-  }
-  
-  // If it's just a filename, assume it's in the material_images directory
-  if (!imagePath.startsWith('/')) {
-    return `https://nordic-loop-platform.onrender.com/media/material_images/${imagePath}`;
-  }
-  
-  return `https://nordic-loop-platform.onrender.com${imagePath}`;
-};
 
 export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }: EditAuctionModalProps) {
   const [activeStep, setActiveStep] = useState(1);
