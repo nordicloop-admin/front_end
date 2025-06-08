@@ -173,7 +173,7 @@ export default function MyAuctions() {
         // Fallback to original auction data if detailed fetch fails
         setSelectedAuction(auction);
       }
-    } catch (error) {
+    } catch (_error) {
       // Fallback to original auction data on error
       setSelectedAuction(auction);
     }
