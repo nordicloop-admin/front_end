@@ -27,77 +27,6 @@ export interface AuctionFormData {
   image: File | null;
 }
 
-// Categories with subcategories
-const categoryOptions = {
-  'Plastics': [
-    'PET (Polyethylene Terephthalate)',
-    'HDPE (High-Density Polyethylene)',
-    'PVC (Polyvinyl Chloride)',
-    'LDPE (Low-Density Polyethylene)',
-    'PP (Polypropylene)',
-    'PS (Polystyrene)',
-    'Other Plastics'
-  ],
-  'Metals': [
-    'Aluminum',
-    'Steel',
-    'Copper',
-    'Brass',
-    'Iron',
-    'Stainless Steel',
-    'Other Metals'
-  ],
-  'Paper': [
-    'Cardboard',
-    'Office Paper',
-    'Newspaper',
-    'Magazines',
-    'Mixed Paper',
-    'Other Paper'
-  ],
-  'Glass': [
-    'Clear Glass',
-    'Green Glass',
-    'Brown Glass',
-    'Mixed Glass',
-    'Other Glass'
-  ],
-  'Wood': [
-    'Hardwood',
-    'Softwood',
-    'Plywood',
-    'MDF',
-    'Particleboard',
-    'Other Wood'
-  ],
-  'Textiles': [
-    'Cotton',
-    'Polyester',
-    'Wool',
-    'Nylon',
-    'Mixed Textiles',
-    'Other Textiles'
-  ],
-  'Electronics': [
-    'Computers',
-    'Smartphones',
-    'Batteries',
-    'Circuit Boards',
-    'Cables',
-    'Other Electronics'
-  ],
-  'Other': [
-    'Rubber',
-    'Ceramics',
-    'Composites',
-    'Mixed Materials',
-    'Other Materials'
-  ]
-};
-
-// Get just the main categories for the dropdown
-const categories = Object.keys(categoryOptions);
-
 // Unit choices from backend
 const units = [
   { value: 'kg', label: 'Kilogram' },
@@ -145,11 +74,6 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get subcategories based on selected category (fallback to hardcoded if API fails)
-  const subcategories = formData.category && categoryOptions[formData.category as keyof typeof categoryOptions]
-    ? categoryOptions[formData.category as keyof typeof categoryOptions]
-    : [];
-
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Fetch categories from API when modal opens
@@ -163,14 +87,11 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
           const response = await getCategories();
 
           if (response.error) {
-            // Error handling for category fetch failures
             setError(response.error);
-          } else if (response.data) {
-            // Successfully fetched categories
+          } else if (response.data && response.data.length > 0) {
             setApiCategories(response.data);
           } else {
-            // No categories data available
-            setError('No categories found');
+            setError('No categories available. Please try again later.');
           }
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to fetch categories');
@@ -280,47 +201,33 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                       <div className="animate-spin h-4 w-4 border-2 border-[#FF8A00] border-t-transparent rounded-full mr-2"></div>
                       Loading categories...
                     </div>
+                  ) : error ? (
+                    <div className="w-full px-3 py-2 border border-red-200 rounded-md bg-red-50 text-red-600 text-sm flex items-center">
+                      <AlertCircle size={16} className="mr-2" />
+                      {error}
+                    </div>
                   ) : (
                     <select
                       id="category"
                       name="category"
                       value={formData.category}
                       onChange={(e) => {
-                        // Reset subcategory when category changes
                         const newCategory = e.target.value;
-
-
                         setFormData({
                           ...formData,
                           category: newCategory,
                           subcategory: ''
                         });
-
-                        // Category changed, subcategories will be updated in the useEffect
                       }}
                       className="w-full px-3 py-2 border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm"
                       required
+                      disabled={apiCategories.length === 0}
                     >
                       <option value="">Select a category</option>
-                      {/* Use API categories if available, otherwise fall back to hardcoded */}
-                      {apiCategories && apiCategories.length > 0 ? (
-                        apiCategories.map(category => (
-                          <option key={category.id} value={category.name}>{category.name}</option>
-                        ))
-                      ) : (
-                        categories && categories.length > 0 ? (
-                          categories.map(category => (
-                            <option key={category} value={category}>{category}</option>
-                          ))
-                        ) : null
-                      )}
+                      {apiCategories.filter(cat => cat.name !== 'All materials').map(category => (
+                        <option key={category.id} value={category.name}>{category.name}</option>
+                      ))}
                     </select>
-                  )}
-                  {error && (
-                    <div className="mt-1 text-xs text-red-500 flex items-center">
-                      <AlertCircle size={12} className="mr-1" />
-                      {error}
-                    </div>
                   )}
                 </div>
 
@@ -335,21 +242,12 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
                     onChange={handleChange}
                     className="w-full px-3 py-2 border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm"
                     required
-                    disabled={!formData.category || isLoading}
+                    disabled={!formData.category || isLoading || error !== null}
                   >
                     <option value="">Select a subcategory</option>
-                    {/* Use API subcategories if available, otherwise fall back to hardcoded */}
-                    {apiSubcategories && apiSubcategories.length > 0 ? (
-                      apiSubcategories.map(subcategory => (
-                        <option key={subcategory.id} value={subcategory.name}>{subcategory.name}</option>
-                      ))
-                    ) : (
-                      subcategories && subcategories.length > 0 ? (
-                        subcategories.map(subcategory => (
-                          <option key={subcategory} value={subcategory}>{subcategory}</option>
-                        ))
-                      ) : null
-                    )}
+                    {apiSubcategories.map(subcategory => (
+                      <option key={subcategory.id} value={subcategory.name}>{subcategory.name}</option>
+                    ))}
                   </select>
                 </div>
               </div>

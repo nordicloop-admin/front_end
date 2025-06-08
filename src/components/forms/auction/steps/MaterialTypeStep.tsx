@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Recycle, ChevronDown, Box } from 'lucide-react';
+import { Package, Recycle, ChevronDown, Box, AlertCircle } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
+import { getCategories, Category } from '@/services/auction';
 
 interface Props {
   formData: FormData;
   updateFormData: (updates: Partial<FormData>) => void;
-}
-
-interface Category {
-  id: string;
-  name: string;
-  subcategories: { id: string; name: string; }[];
 }
 
 const packagingOptions = [
@@ -70,95 +65,20 @@ const sellFrequencies = [
 export function MaterialTypeStep({ formData, updateFormData }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load categories from the data file
+    // Load categories from the correct API endpoint
     const loadCategories = async () => {
       try {
-        const response = await fetch('/api/categories'); // We'll need to create this API endpoint
-        const data = await response.json();
-        setCategories(data.categories || []);
+        const response = await getCategories();
+        if (response.data && response.data.length > 0) {
+          setCategories(response.data);
+        } else {
+          setError('No categories available. Please try again later.');
+        }
       } catch (_error) {
-        // Fallback to static data if API fails
-        setCategories([
-          {
-            id: 'plastics',
-            name: 'Plastics',
-            subcategories: [
-              { id: 'plastics-hdpe', name: 'HDPE' },
-              { id: 'plastics-ldpe', name: 'LDPE' },
-              { id: 'plastics-pet', name: 'PET' },
-              { id: 'plastics-pp', name: 'PP' },
-              { id: 'plastics-ps', name: 'PS' },
-              { id: 'plastics-pvc', name: 'PVC' },
-              { id: 'plastics-abs', name: 'ABS' }
-            ]
-          },
-          {
-            id: 'metals',
-            name: 'Metals',
-            subcategories: [
-              { id: 'metals-aluminum', name: 'Aluminum' },
-              { id: 'metals-steel', name: 'Steel' },
-              { id: 'metals-copper', name: 'Copper' },
-              { id: 'metals-brass', name: 'Brass' }
-            ]
-          },
-          {
-            id: 'paper',
-            name: 'Paper',
-            subcategories: [
-              { id: 'paper-cardboard', name: 'Cardboard' },
-              { id: 'paper-newspaper', name: 'Newspaper' },
-              { id: 'paper-office', name: 'Office Paper' }
-            ]
-          },
-          {
-            id: 'glass',
-            name: 'Glass',
-            subcategories: [
-              { id: 'glass-clear', name: 'Clear Glass' },
-              { id: 'glass-colored', name: 'Colored Glass' },
-              { id: 'glass-bottles', name: 'Glass Bottles' }
-            ]
-          },
-          {
-            id: 'textiles',
-            name: 'Textiles',
-            subcategories: [
-              { id: 'textiles-cotton', name: 'Cotton' },
-              { id: 'textiles-polyester', name: 'Polyester' },
-              { id: 'textiles-mixed', name: 'Mixed Textiles' }
-            ]
-          },
-          {
-            id: 'wood',
-            name: 'Wood',
-            subcategories: [
-              { id: 'wood-clean', name: 'Clean Wood' },
-              { id: 'wood-treated', name: 'Treated Wood' },
-              { id: 'wood-pallets', name: 'Pallets' }
-            ]
-          },
-          {
-            id: 'building-material',
-            name: 'Building Material',
-            subcategories: [
-              { id: 'building-concrete', name: 'Concrete' },
-              { id: 'building-bricks', name: 'Bricks' },
-              { id: 'building-insulation', name: 'Insulation' }
-            ]
-          },
-          {
-            id: 'organic-waste',
-            name: 'Organic Waste',
-            subcategories: [
-              { id: 'organic-food', name: 'Food Waste' },
-              { id: 'organic-garden', name: 'Garden Waste' },
-              { id: 'organic-compost', name: 'Compost' }
-            ]
-          }
-        ]);
+        setError('Failed to load categories. Please check your connection and try again.');
       } finally {
         setLoading(false);
       }
@@ -180,26 +100,45 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
     updateFormData({ sellFrequency: frequency });
   };
 
-  const handleCategorySelect = (category: string) => {
+  const handleCategorySelect = (categoryId: number, categoryName: string) => {
     updateFormData({ 
-      category,
-      materialType: category, // Set materialType to match category
+      category: categoryName, // Store the name for backend compatibility
+      materialType: categoryName, // Set materialType to match category name
       subcategory: '', // Reset subcategory when category changes
       specificMaterial: '' 
     });
   };
 
-  const handleSubcategorySelect = (subcategory: string) => {
-    updateFormData({ subcategory, specificMaterial: '' });
+  const handleSubcategorySelect = (subcategoryName: string) => {
+    updateFormData({ subcategory: subcategoryName, specificMaterial: '' });
   };
 
-  const selectedCategory = categories.find(cat => cat.id === formData.category);
+  // Find selected category by name (since formData.category stores the name)
+  const selectedCategory = categories.find(cat => cat.name === formData.category);
   const availableSubcategories = selectedCategory?.subcategories || [];
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF8A00]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="text-red-500 mb-4">
+          <AlertCircle className="w-8 h-8 mx-auto" />
+        </div>
+        <p className="text-gray-600 mb-2">Failed to load categories</p>
+        <p className="text-sm text-gray-500">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
+        >
+          Refresh Page
+        </button>
       </div>
     );
   }
@@ -221,13 +160,13 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
           Main Category *
         </label>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((category) => (
+          {categories.filter(cat => cat.name !== 'All materials').map((category) => (
             <button
               key={category.id}
-              onClick={() => handleCategorySelect(category.id)}
+              onClick={() => handleCategorySelect(category.id, category.name)}
               className={`
                 p-4 rounded-lg border-2 text-left transition-all hover:scale-105
-                ${formData.category === category.id
+                ${formData.category === category.name
                   ? 'border-[#FF8A00] bg-orange-50'
                   : 'border-gray-200 hover:border-gray-300'
                 }
@@ -237,7 +176,7 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
                 <h4 className="font-medium text-gray-900">{category.name}</h4>
                 <ChevronDown className={`
                   w-4 h-4 transition-transform
-                  ${formData.category === category.id ? 'text-[#FF8A00] rotate-180' : 'text-gray-400'}
+                  ${formData.category === category.name ? 'text-[#FF8A00] rotate-180' : 'text-gray-400'}
                 `} />
               </div>
               <p className="text-sm text-gray-500 mt-1">
@@ -249,7 +188,7 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
       </div>
 
       {/* Subcategory Selection */}
-      {selectedCategory && (
+      {selectedCategory && selectedCategory.subcategories.length > 0 && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-4">
             Subcategory *
@@ -258,10 +197,10 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
             {availableSubcategories.map((subcategory) => (
               <button
                 key={subcategory.id}
-                onClick={() => handleSubcategorySelect(subcategory.id)}
+                onClick={() => handleSubcategorySelect(subcategory.name)}
                 className={`
                   p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
-                  ${formData.subcategory === subcategory.id
+                  ${formData.subcategory === subcategory.name
                     ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                     : 'border-gray-200 hover:border-gray-300 text-gray-700'
                   }
