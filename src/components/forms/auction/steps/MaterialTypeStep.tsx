@@ -27,7 +27,7 @@ const packagingOptions = [
     description: 'Loose material without specific packaging'
   },
   {
-    id: 'big-bag',
+    id: 'big_bag',
     name: 'Big-bag',
     icon: Package,
     description: 'Material in large industrial bags'
@@ -59,9 +59,9 @@ const packagingOptions = [
 ];
 
 const sellFrequencies = [
-  { id: 'one-time', name: 'One-time' },
+  { id: 'one_time', name: 'One-time' },
   { id: 'weekly', name: 'Weekly' },
-  { id: 'bi-weekly', name: 'Bi-weekly' },
+  { id: 'bi_weekly', name: 'Bi-weekly' },
   { id: 'monthly', name: 'Monthly' },
   { id: 'quarterly', name: 'Quarterly' },
   { id: 'yearly', name: 'Yearly' }

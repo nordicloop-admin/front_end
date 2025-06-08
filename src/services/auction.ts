@@ -156,29 +156,100 @@ export async function getCategories() {
  */
 export interface AuctionItem {
   id: number;
-  item_name: string;
-  description: string;
-  base_price: string;
-  price_per_partition: string;
-  volume: string;
-  unit: string;
-  selling_type: string;
-  country_of_origin: string;
-  end_date: string;
-  end_time: string;
-  item_image: string | null;
+  title: string | null;
+  category_name: string;
+  subcategory_name: string;
+  available_quantity: string | null;
+  unit_of_measurement: string;
+  starting_bid_price: string | null;
+  currency: string;
+  location_summary: string | null;
+  total_starting_value: string;
+  material_image: string | null;
+  created_at: string;
+  is_active: boolean;
+  is_complete: boolean;
 }
 
 /**
- * Fetch all auctions
- * @returns The API response with the auctions
+ * Interface for paginated auction response
  */
-export async function getAuctions() {
-  try {
-    // Always require authentication for the /ads/ endpoint
-    const response = await apiGet<AuctionItem[]>('/ads/', true);
+export interface PaginatedAuctionResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: AuctionItem[];
+  page_size: number;
+  total_pages: number;
+  current_page: number;
+}
 
-    return response;
+/**
+ * Interface for pagination parameters
+ */
+export interface PaginationParams {
+  page?: number;
+  page_size?: number;
+}
+
+/**
+ * Interface for paginated auction response with extracted data
+ */
+export interface PaginatedAuctionResult {
+  auctions: AuctionItem[];
+  pagination: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    page_size: number;
+    total_pages: number;
+    current_page: number;
+  };
+}
+
+/**
+ * Fetch all auctions with pagination
+ * @param params Pagination parameters
+ * @returns The API response with the auctions and pagination info
+ */
+export async function getAuctions(params?: PaginationParams) {
+  try {
+    // Build query string for pagination
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    
+    const endpoint = `/ads/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
+    // Public endpoint - no authentication required for the /ads/ endpoint
+    const response = await apiGet<PaginatedAuctionResponse>(endpoint, false);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Return both auctions and pagination metadata
+    const result: PaginatedAuctionResult = {
+      auctions: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      }
+    };
+
+    return {
+      data: result,
+      error: null,
+      status: response.status
+    };
   } catch (error) {
     return {
       data: null,
@@ -189,15 +260,48 @@ export async function getAuctions() {
 }
 
 /**
- * Fetch auctions created by the current user
- * @returns The API response with the user's auctions
+ * Fetch auctions created by the current user with pagination
+ * @param params Pagination parameters
+ * @returns The API response with the user's auctions and pagination info
  */
-export async function getUserAuctions() {
+export async function getUserAuctions(params?: PaginationParams) {
   try {
+    // Build query string for pagination
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.set('page', params.page.toString());
+    if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    
+    const endpoint = `/ads/user/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    
     // This endpoint requires authentication
-    const response = await apiGet<AuctionItem[]>('/ads/user/', true);
+    const response = await apiGet<PaginatedAuctionResponse>(endpoint, true);
 
-    return response;
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    // Return both auctions and pagination metadata
+    const result: PaginatedAuctionResult = {
+      auctions: response.data?.results || [],
+      pagination: {
+        count: response.data?.count || 0,
+        next: response.data?.next || null,
+        previous: response.data?.previous || null,
+        page_size: response.data?.page_size || 10,
+        total_pages: response.data?.total_pages || 1,
+        current_page: response.data?.current_page || 1
+      }
+    };
+
+    return {
+      data: result,
+      error: null,
+      status: response.status
+    };
   } catch (error) {
     return {
       data: null,
@@ -281,6 +385,82 @@ export async function deleteAuction(auctionId: string | number) {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while deleting the auction',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Fetch complete ad details by ID (new enhanced endpoint)
+ * @param adId The ID of the ad to fetch
+ * @returns The API response with complete ad details
+ */
+export async function getAdDetails(adId: string | number) {
+  try {
+    // This endpoint requires authentication and provides complete ad details
+    const response = await apiGet<{
+      message: string;
+      data: {
+        id: number;
+        posted_by: string;
+        company_name: string;
+        category_name: string;
+        subcategory_name: string;
+        specific_material: string;
+        packaging: string;
+        packaging_display: string;
+        material_frequency: string;
+        material_frequency_display: string;
+        specification: any;
+        additional_specifications: string | null;
+        origin: string | null;
+        origin_display: string | null;
+        contamination: string | null;
+        contamination_display: string | null;
+        additives: string | null;
+        additives_display: string | null;
+        storage_conditions: string | null;
+        storage_conditions_display: string | null;
+        processing_methods: string[];
+        processing_methods_display: string[];
+        location: any;
+        location_summary: string | null;
+        pickup_available: boolean;
+        delivery_options: string[];
+        delivery_options_display: string[];
+        available_quantity: number | null;
+        unit_of_measurement: string;
+        unit_of_measurement_display: string;
+        minimum_order_quantity: string;
+        starting_bid_price: number | null;
+        currency: string;
+        currency_display: string;
+        auction_duration: number;
+        auction_duration_display: string;
+        reserve_price: number | null;
+        total_starting_value: string;
+        title: string | null;
+        description: string | null;
+        keywords: string | null;
+        material_image: string | null;
+        is_active: boolean;
+        current_step: number;
+        is_complete: boolean;
+        created_at: string;
+        updated_at: string;
+        auction_start_date: string | null;
+        auction_end_date: string | null;
+        step_completion_status: Record<string, boolean>;
+        auction_status: string;
+        time_remaining: string | null;
+      };
+    }>(`/ads/${adId}/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching ad details',
       status: 500
     };
   }

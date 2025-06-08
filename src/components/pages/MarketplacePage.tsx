@@ -10,7 +10,8 @@ import { TimeFilter } from '@/components/marketplace/TimeFilter';
 import { FormFilter } from '@/components/marketplace/FormFilter';
 import { QuantityFilter } from '@/components/marketplace/QuantityFilter';
 import { SortDropdown } from '@/components/marketplace/SortDropdown';
-import { getAuctions, AuctionItem } from '@/services/auction';
+import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
+import Pagination from '@/components/ui/Pagination';
 
 // Mock data for marketplace items
 const _marketplaceItems = [
@@ -122,13 +123,18 @@ const ProductCard = ({ item }: { item: any }) => {
     >
       <div className="relative h-48 w-full">
         <Image
-          src={item.image || '/images/marketplace/categories/plastics.jpg'}
+          src={item.image}
           alt={item.name}
           fill
           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           style={{ objectFit: 'cover' }}
           className="transition-transform duration-300 hover:scale-105"
           priority={item.id <= 4} // Prioritize loading the first 4 images
+          onError={(e) => {
+            // Fallback to category image on error
+            const target = e.target as HTMLImageElement;
+            target.src = getCategoryImage(item.category);
+          }}
         />
         <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs font-medium">
           {item.category}
@@ -173,6 +179,42 @@ const ProductCard = ({ item }: { item: any }) => {
   );
 };
 
+// Helper function to get full image URL from backend
+const getFullImageUrl = (imagePath: string | null | undefined): string => {
+  if (!imagePath) return '';
+  
+  // If it's already a full URL, return as is
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // If it starts with /media/, construct the full URL
+  if (imagePath.startsWith('/media/')) {
+    return `https://nordic-loop-platform.onrender.com${imagePath}`;
+  }
+  
+  // If it's just a filename, assume it's in the material_images directory
+  if (!imagePath.startsWith('/')) {
+    return `https://nordic-loop-platform.onrender.com/media/material_images/${imagePath}`;
+  }
+  
+  return `https://nordic-loop-platform.onrender.com${imagePath}`;
+};
+
+// Helper function to get category fallback image
+const getCategoryImage = (category: string): string => {
+  const categoryImages: Record<string, string> = {
+    'Plastics': '/images/marketplace/categories/plastics.jpg',
+    'Metals': '/images/marketplace/categories/metals.jpg',
+    'Paper': '/images/marketplace/categories/paper.jpg',
+    'Glass': '/images/marketplace/categories/glass.jpg',
+    'Textiles': '/images/marketplace/categories/textiles.jpg',
+    'Wood': '/images/marketplace/categories/wood.jpg'
+  };
+  
+  return categoryImages[category] || '/images/marketplace/categories/plastics.jpg';
+};
+
 const MarketplacePage = () => {
   const [sortOption, setSortOption] = useState('Recently');
   const [selectedCategory, setSelectedCategory] = useState('All materials');
@@ -182,10 +224,18 @@ const MarketplacePage = () => {
   const [minQuantity, setMinQuantity] = useState(0);
   const [maxQuantity, setMaxQuantity] = useState(10000);
   
-  // State for API auctions
+  // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12); // Show more items per page for marketplace
+  const [paginationData, setPaginationData] = useState({
+    count: 0,
+    totalPages: 1,
+    currentPage: 1,
+    pageSize: 12
+  });
 
   // Helper function to toggle form selection
   const toggleFormSelection = (form: string) => {
@@ -197,7 +247,7 @@ const MarketplacePage = () => {
   };
 
   // Calculate time left for an auction
-  const calculateTimeLeft = (endDate: string, endTime: string) => {
+  const _calculateTimeLeft = (endDate: string, endTime: string) => {
     const now = new Date();
     const end = new Date(`${endDate}T${endTime}`);
 
@@ -213,42 +263,61 @@ const MarketplacePage = () => {
   };
 
   // Fetch auctions from API
-  useEffect(() => {
-    const fetchAuctions = async () => {
-      setIsLoading(true);
-      setError(null);
+  const fetchAuctions = async (page: number = 1, size: number = 12) => {
+    setIsLoading(true);
+    setError(null);
 
-      try {
-        const response = await getAuctions();
+    try {
+      const response = await getAuctions({ page, page_size: size });
 
-        if (response.error) {
-          setError(response.error);
-        } else if (response.data) {
-          setApiAuctions(response.data);
-        } else {
-          setError('No auctions found');
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch auctions');
-      } finally {
-        setIsLoading(false);
+      if (response.error) {
+        setError(response.error);
+      } else if (response.data) {
+        const result = response.data as PaginatedAuctionResult;
+        setApiAuctions(result.auctions);
+        setPaginationData({
+          count: result.pagination.count,
+          totalPages: result.pagination.total_pages,
+          currentPage: result.pagination.current_page,
+          pageSize: result.pagination.page_size
+        });
+      } else {
+        setError('No auctions found');
       }
-    };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch auctions');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchAuctions();
-  }, []);
+  // Initial fetch
+  useEffect(() => {
+    fetchAuctions(currentPage, pageSize);
+  }, [currentPage, pageSize]);
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
 
   // Convert API auctions to the format expected by the UI
   const convertedAuctions = apiAuctions.map(auction => ({
     id: auction.id.toString(),
-    name: auction.item_name,
-    category: auction.item_name.split(' ')[0], // Temporary category extraction
-    basePrice: auction.base_price,
+    name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+    category: auction.category_name,
+    basePrice: auction.starting_bid_price || auction.total_starting_value,
     highestBid: null, // API doesn't provide highest bid yet
-    timeLeft: calculateTimeLeft(auction.end_date, auction.end_time),
-    volume: `${auction.volume} ${auction.unit}`,
-    countryOfOrigin: auction.country_of_origin,
-    image: auction.item_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
+    timeLeft: 'Available', // API doesn't provide end date/time in this format
+    volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+    countryOfOrigin: auction.location_summary || 'Unknown',
+    image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
   }));
 
   // Filter auctions based on search term and category
@@ -270,7 +339,7 @@ const MarketplacePage = () => {
         <div className="flex items-center mb-4 sm:mb-0">
           <h1 className="text-2xl font-bold">Available Ads</h1>
           <span className="ml-2 bg-gray-100 text-gray-700 px-2 py-1 rounded-md text-sm">
-            {filteredAuctions.length}
+            {paginationData.count}
           </span>
         </div>
 
@@ -331,7 +400,7 @@ const MarketplacePage = () => {
           <p className="text-red-500 font-medium">Error loading auctions</p>
           <p className="text-gray-500 text-sm mt-1">{error}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => fetchAuctions(currentPage, pageSize)}
             className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
           >
             Try Again
@@ -341,28 +410,42 @@ const MarketplacePage = () => {
 
       {/* Products Grid */}
       {!isLoading && !error && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredAuctions.length > 0 ? (
-            filteredAuctions.map((item) => (
-              <ProductCard key={item.id} item={item} />
-            ))
-          ) : (
-            <div className="col-span-full text-center py-10">
-              <p className="text-gray-500">No auctions match your filters.</p>
-              <button
-                onClick={() => {
-                  setSelectedCategory('All materials');
-                  setSelectedLocation('All Locations');
-                  setSelectedForms([]);
-                  setSelectedDateFilter('All time');
-                }}
-                className="mt-2 text-[#FF8A00] hover:underline"
-              >
-                Clear filters
-              </button>
-            </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+            {filteredAuctions.length > 0 ? (
+              filteredAuctions.map((item) => (
+                <ProductCard key={item.id} item={item} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-10">
+                <p className="text-gray-500">No auctions match your filters.</p>
+                <button
+                  onClick={() => {
+                    setSelectedCategory('All materials');
+                    setSelectedLocation('All Locations');
+                    setSelectedForms([]);
+                    setSelectedDateFilter('All time');
+                  }}
+                  className="mt-2 text-[#FF8A00] hover:underline"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Pagination */}
+          {apiAuctions.length > 0 && (
+            <Pagination
+              currentPage={paginationData.currentPage}
+              totalPages={paginationData.totalPages}
+              totalCount={paginationData.count}
+              pageSize={paginationData.pageSize}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
           )}
-        </div>
+        </>
       )}
     </div>
   );
