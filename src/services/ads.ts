@@ -2,7 +2,7 @@
  * ADS (Ad Creation) service for handling 8-step ad creation workflow
  * Based on ADS_FRONTEND_INTEGRATION_GUIDE.md
  */
-import { apiPost, apiPut, apiGet, apiPutFormData, apiPatch } from './api';
+import { apiPost, apiPut, apiGet, apiPutFormData, apiPatch, apiDelete } from './api';
 
 // Interfaces based on the API specification
 export interface Step1Data {
@@ -52,6 +52,7 @@ export interface Step7Data {
   currency: string;
   auction_duration: number;
   reserve_price?: number;
+  custom_auction_duration?: number;
 }
 
 export interface Step8Data {
@@ -255,7 +256,15 @@ export class AdCreationService {
     }
 
     try {
-      const response = await apiGet<{ message: string }>(`/ads/${id}/`, true);
+      // Use DELETE method with /ads/{id}/ endpoint as per API specification
+      // API now returns JSON response with message and deleted_ad details
+      const response = await apiDelete<{
+        message: string;
+        deleted_ad: {
+          id: number;
+          title: string;
+        };
+      }>(`/ads/${id}/`, true);
 
       if (response.error) {
         return {
@@ -269,9 +278,11 @@ export class AdCreationService {
         this.currentAdId = null;
       }
 
+      // Success: Return the response data
       return {
         success: true,
-        message: response.data?.message || 'Ad deleted successfully'
+        message: response.data?.message || 'Ad deleted successfully',
+        deletedAd: response.data?.deleted_ad
       };
     } catch (error) {
       return {
@@ -340,22 +351,19 @@ export class AdCreationService {
       // Create FormData object
       const formData = new FormData();
       
-      // Add text fields
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('keywords', keywords);
+      // Add text fields with proper trimming
+      const trimmedTitle = title.trim();
+      const trimmedDescription = description.trim();
+      const trimmedKeywords = keywords.trim();
+      
+      formData.append('title', trimmedTitle);
+      formData.append('description', trimmedDescription);
+      formData.append('keywords', trimmedKeywords);
       
       // Add image files - backend expects 'material_image' field
       if (images && images.length > 0) {
-        // For now, send the first image as 'material_image'
+        // Send only the first image as 'material_image' - backend expects single image
         formData.append('material_image', images[0]);
-        
-        // If there are multiple images, append them with indexed names
-        images.forEach((image, index) => {
-          if (index > 0) { // Skip first image as it's already added as 'material_image'
-            formData.append(`additional_image_${index}`, image);
-          }
-        });
       }
 
       const response = await apiPutFormData<AdCreationResponse | AdErrorResponse>(`/ads/${this.currentAdId}/step/8/`, formData, true);
@@ -376,6 +384,43 @@ export class AdCreationService {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update step 8',
+        details: null
+      };
+    }
+  }
+
+  async updateAdStep8WithImage(adId: number, title: string, description: string, keywords: string, imageFile?: File) {
+    try {
+      // Create FormData object - only for step 8 fields
+      const formData = new FormData();
+      
+      // Add ONLY step 8 fields explicitly with proper trimming
+      formData.append('title', title.trim());
+      formData.append('description', description.trim());
+      formData.append('keywords', keywords.trim());
+      
+      if (imageFile) {
+        formData.append('material_image', imageFile);
+      }
+
+      const response = await apiPutFormData<AdCreationResponse | AdErrorResponse>(`/ads/${adId}/step/8/`, formData, true);
+      
+      if (response.error) {
+        return {
+          success: false,
+          error: response.error,
+          details: (response.data as AdErrorResponse)?.details
+        };
+      }
+
+      return {
+        success: true,
+        data: response.data as AdCreationResponse
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update step 8 with image',
         details: null
       };
     }
@@ -667,10 +712,13 @@ export class AdUpdateService {
    */
   async updateAdStep8WithImage(adId: number, title: string, description: string, keywords: string, imageFile?: File) {
     try {
+      // Create FormData object - only for step 8 fields
       const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('keywords', keywords);
+      
+      // Add ONLY step 8 fields explicitly with proper trimming
+      formData.append('title', title.trim());
+      formData.append('description', description.trim());
+      formData.append('keywords', keywords.trim());
       
       if (imageFile) {
         formData.append('material_image', imageFile);

@@ -332,6 +332,16 @@ export async function apiPutFormData<T>(
 
     const url = `${API_BASE_URL}${endpoint}`;
 
+    // Debug: Log FormData contents properly (FormData can't be JSON.stringified)
+    // eslint-disable-next-line no-console
+    console.log('apiPutFormData - Endpoint:', endpoint);
+    // eslint-disable-next-line no-console
+    console.log('apiPutFormData - FormData contents:');
+    for (const [key, value] of formData.entries()) {
+      // eslint-disable-next-line no-console
+      console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size}b)` : value);
+    }
+
     const response = await fetch(url, {
       method: 'PUT',
       headers,

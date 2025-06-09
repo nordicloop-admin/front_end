@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Check, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Save, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { adCreationService } from '@/services/ads';
@@ -79,6 +79,7 @@ export interface FormData {
     reservePrice?: number;
     auctionDuration?: string;
     customEndDate?: string;
+    customAuctionDuration?: number;
   };
   
   // Image, Title & Description
@@ -127,7 +128,8 @@ const initialFormData: FormData = {
     currency: 'SEK',
     priceType: 'auction',
     auctionDuration: '7',
-    customEndDate: ''
+    customEndDate: '',
+    customAuctionDuration: 0
   },
   images: [],
   title: '',
@@ -161,6 +163,10 @@ export function AlternativeAuctionForm() {
   // Categories state for mapping names to IDs
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+
+  // NEW: Validation state for better UX
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   // Load categories on component mount
   useEffect(() => {
@@ -204,7 +210,61 @@ export function AlternativeAuctionForm() {
   const updateFormData = useCallback((updates: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
     setHasUnsavedChanges(true);
-  }, []);
+    
+    // Clear validation errors when user starts fixing them
+    if (showValidationErrors) {
+      const clearedErrors = { ...validationErrors };
+      let hasChanges = false;
+      
+      // Clear errors for fields being updated
+      Object.keys(updates).forEach(field => {
+        if (clearedErrors[field]) {
+          delete clearedErrors[field];
+          hasChanges = true;
+        }
+      });
+      
+      if (hasChanges) {
+        setValidationErrors(clearedErrors);
+        if (Object.keys(clearedErrors).length === 0) {
+          setShowValidationErrors(false);
+        }
+      }
+    }
+  }, [showValidationErrors, validationErrors]);
+
+  const handleAutoSave = useCallback(async () => {
+    if (!adId || currentStep === 1) return; // Skip auto-save for step 1 and if no ad exists
+
+    setIsAutoSaving(true);
+    try {
+      const stepData = convertFormDataToApiData(currentStep, formData);
+      
+      // Validate step data before auto-saving (skip step 2 and 8 as they have different validation)
+      if (currentStep !== 2 && currentStep !== 8) {
+        const validation = validateStepData(currentStep, stepData);
+        if (!validation.isValid) {
+          // Silent failure for auto-save with invalid data - don't disrupt user
+          setIsAutoSaving(false);
+          return;
+        }
+      }
+      
+      const result = await adCreationService.updateAdStep(currentStep, stepData);
+      
+      if (result.success) {
+        setHasUnsavedChanges(false);
+        if (result.data) {
+          setApiCompletedSteps(result.data.step_completion_status);
+        }
+      }
+    } catch (_error) {
+      // Silent failure for auto-save - don't show error to user
+      // Error is handled gracefully without disrupting the user experience
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [adId, currentStep, formData]);
 
   // Auto-save functionality
   useEffect(() => {
@@ -215,8 +275,7 @@ export function AlternativeAuctionForm() {
     }, 2000); // Auto-save after 2 seconds of inactivity
 
     return () => clearTimeout(timeoutId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, hasUnsavedChanges, adId, isSubmitting, categoriesLoaded]);
+  }, [hasUnsavedChanges, adId, isSubmitting, categoriesLoaded, handleAutoSave]);
 
   const convertFormDataToApiData = (step: number, data: FormData): any => {
     switch (step) {
@@ -231,21 +290,7 @@ export function AlternativeAuctionForm() {
         
         // Debug logging for Step 1 data
         if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.log('Step 1 data being sent to backend:', step1Data);
-          // eslint-disable-next-line no-console
-          console.log('Form data used:', {
-            category: data.category,
-            subcategory: data.subcategory,
-            specificMaterial: data.specificMaterial,
-            packaging: data.quantity.packaging,
-            sellFrequency: data.sellFrequency
-          });
-          // eslint-disable-next-line no-console
-          console.log('Converted values:', {
-            packagingConverted: convertLabelToValue('packaging', data.quantity.packaging),
-            frequencyConverted: convertLabelToValue('material_frequency', data.sellFrequency)
-          });
+          // Debug information is processed but not logged to console in production
         }
         
         return step1Data;
@@ -285,15 +330,27 @@ export function AlternativeAuctionForm() {
             : (data.location.deliveryOptions ? [convertLabelToValue('delivery_options', data.location.deliveryOptions)] : [])
         };
       case 7:
-        return {
+        // Handle custom auction duration properly
+        const isCustomDuration = data.price.auctionDuration === 'custom';
+        const auctionDurationValue = isCustomDuration ? 0 : parseInt(data.price.auctionDuration || '7');
+        const customDurationValue = isCustomDuration && data.price.customAuctionDuration ? data.price.customAuctionDuration : undefined;
+        
+        const step7Data: any = {
           available_quantity: Number(data.quantity.available),
           unit_of_measurement: convertLabelToValue('unit_of_measurement', data.quantity.unit),
           minimum_order_quantity: Number(data.quantity.minimumOrder),
           starting_bid_price: Number(data.price.basePrice),
           currency: data.price.currency,
-          auction_duration: parseInt(data.price.auctionDuration || '7'),
+          auction_duration: auctionDurationValue,
           reserve_price: data.price.reservePrice ? Number(data.price.reservePrice) : undefined
         };
+        
+        // Add custom auction duration if applicable
+        if (customDurationValue) {
+          step7Data.custom_auction_duration = customDurationValue;
+        }
+        
+        return step7Data;
       case 8:
         return {
           title: data.title,
@@ -305,57 +362,153 @@ export function AlternativeAuctionForm() {
     }
   };
 
-  const handleAutoSave = async () => {
-    if (!adId || currentStep === 1) return; // Skip auto-save for step 1 and if no ad exists
-
-    setIsAutoSaving(true);
-    try {
-      const stepData = convertFormDataToApiData(currentStep, formData);
-      
-      // Validate step data before auto-saving (skip step 2 and 8 as they have different validation)
-      if (currentStep !== 2 && currentStep !== 8) {
-        const validation = validateStepData(currentStep, stepData);
-        if (!validation.isValid) {
-          // Silent failure for auto-save with invalid data - don't disrupt user
-          setIsAutoSaving(false);
-          return;
-        }
-      }
-      
-      const result = await adCreationService.updateAdStep(currentStep, stepData);
-      
-      if (result.success) {
-        setHasUnsavedChanges(false);
-        if (result.data) {
-          setApiCompletedSteps(result.data.step_completion_status);
-        }
-      }
-    } catch (_error) {
-      // Silent failure for auto-save - don't show error to user
-      // Error is handled gracefully without disrupting the user experience
-    } finally {
-      setIsAutoSaving(false);
-    }
-  };
-
   const validateStep8Detailed = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
+    const fieldErrors: Record<string, string[]> = {};
     
     // Title validation (minimum 10 characters)
     if (!formData.title || formData.title.trim().length < 10) {
-      errors.push('Title must be at least 10 characters long');
+      const titleError = 'Title must be at least 10 characters long';
+      errors.push(titleError);
+      fieldErrors.title = [titleError];
+    } else if (formData.title.length > 255) {
+      const titleError = 'Title must not exceed 255 characters';
+      errors.push(titleError);
+      fieldErrors.title = [titleError];
     }
     
     // Description validation (minimum 50 characters)
     if (!formData.description || formData.description.trim().length < 50) {
-      errors.push('Description must be at least 50 characters long');
+      const descError = 'Description must be at least 50 characters long';
+      errors.push(descError);
+      fieldErrors.description = [descError];
     }
     
-    // Image validation (at least one image required)
-    if (!formData.images || formData.images.length === 0) {
-      errors.push('At least one image is required');
+    // Keywords validation (optional, but if provided, max 500 chars total)
+    const keywordsText = formData.keywords.join(', ');
+    if (keywordsText.length > 500) {
+      const keywordsError = 'Keywords must not exceed 500 characters total';
+      errors.push(keywordsError);
+      fieldErrors.keywords = [keywordsError];
     }
     
+    // Update validation state
+    setValidationErrors(fieldErrors);
+    setShowValidationErrors(errors.length > 0);
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const validateCurrentStepDetailed = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    const fieldErrors: Record<string, string[]> = {};
+
+    switch (currentStep) {
+      case 1:
+        if (!formData.materialType) {
+          const error = 'Material type is required';
+          errors.push(error);
+          fieldErrors.materialType = [error];
+        }
+        if (!formData.quantity.packaging) {
+          const error = 'Packaging type is required';
+          errors.push(error);
+          fieldErrors.packaging = [error];
+        }
+        if (!formData.sellFrequency) {
+          const error = 'Material frequency is required';
+          errors.push(error);
+          fieldErrors.sellFrequency = [error];
+        }
+        if (!formData.category) {
+          const error = 'Category is required';
+          errors.push(error);
+          fieldErrors.category = [error];
+        }
+        if (!formData.subcategory) {
+          const error = 'Subcategory is required';
+          errors.push(error);
+          fieldErrors.subcategory = [error];
+        }
+        break;
+
+      case 3:
+        if (!formData.origin.source) {
+          const error = 'Material origin is required';
+          errors.push(error);
+          fieldErrors.origin = [error];
+        }
+        break;
+
+      case 4:
+        if (!formData.contamination.level) {
+          const error = 'Contamination level is required';
+          errors.push(error);
+          fieldErrors.contamination = [error];
+        }
+        break;
+
+      case 5:
+        if (!formData.processing.methods || formData.processing.methods.length === 0) {
+          const error = 'At least one processing method is required';
+          errors.push(error);
+          fieldErrors.processing = [error];
+        }
+        break;
+
+      case 6:
+        if (!formData.location.country) {
+          const error = 'Country is required';
+          errors.push(error);
+          fieldErrors.country = [error];
+        }
+        if (!formData.location.city) {
+          const error = 'City is required';
+          errors.push(error);
+          fieldErrors.city = [error];
+        }
+        break;
+
+      case 7:
+        if (!formData.quantity.available || formData.quantity.available <= 0) {
+          const error = 'Available quantity must be greater than 0';
+          errors.push(error);
+          fieldErrors.quantity = [error];
+        }
+        if (!formData.quantity.unit) {
+          const error = 'Unit of measurement is required';
+          errors.push(error);
+          fieldErrors.unit = [error];
+        }
+        if (!formData.price.basePrice || formData.price.basePrice <= 0) {
+          const error = 'Base price must be greater than 0';
+          errors.push(error);
+          fieldErrors.basePrice = [error];
+        }
+        const hasValidAuctionDuration = formData.price.auctionDuration && 
+          (formData.price.auctionDuration !== 'custom' || 
+           (formData.price.auctionDuration === 'custom' && formData.price.customAuctionDuration && formData.price.customAuctionDuration > 0));
+        if (!hasValidAuctionDuration) {
+          const error = 'Valid auction duration is required';
+          errors.push(error);
+          fieldErrors.auctionDuration = [error];
+        }
+        break;
+
+      case 8:
+        return validateStep8Detailed();
+
+      default:
+        break;
+    }
+
+    // Update validation state
+    setValidationErrors(fieldErrors);
+    setShowValidationErrors(errors.length > 0);
+
     return {
       isValid: errors.length === 0,
       errors
@@ -379,29 +532,31 @@ export function AlternativeAuctionForm() {
       case 6:
         return !!(formData.location.country && formData.location.city);
       case 7:
-        return !!(formData.quantity.available > 0 && formData.quantity.unit && formData.price.basePrice > 0 && formData.price.auctionDuration);
+        const hasValidAuctionDuration = formData.price.auctionDuration && 
+          (formData.price.auctionDuration !== 'custom' || 
+           (formData.price.auctionDuration === 'custom' && formData.price.customAuctionDuration && formData.price.customAuctionDuration > 0));
+        return !!(formData.quantity.available > 0 && formData.quantity.unit && formData.price.basePrice > 0 && hasValidAuctionDuration);
       case 8:
         // Step 8 validation according to STEP_8_VALIDATION_GUIDE.md
         const titleValid = formData.title && formData.title.trim().length >= 10;
         const descriptionValid = formData.description && formData.description.trim().length >= 50;
-        const imagesValid = formData.images && formData.images.length > 0;
-        return !!(titleValid && descriptionValid && imagesValid);
+        // Images are OPTIONAL according to backend requirements
+        return !!(titleValid && descriptionValid);
       default:
         return true;
     }
   };
 
   const handleNext = async () => {
+    // Clear previous validation errors
+    setValidationErrors({});
+    setShowValidationErrors(false);
+
     if (!validateStep(currentStep)) {
-      // Special handling for Step 8 to show detailed validation errors
-      if (currentStep === 8) {
-        const validation = validateStep8Detailed();
-        toast.error('Please fix the following issues:', {
-          description: validation.errors.join(', ')
-        });
-      } else {
-        toast.error('Please fill in all required fields');
-      }
+      const validation = validateCurrentStepDetailed();
+      toast.error('Please fix the validation errors', {
+        description: validation.errors.join(', ')
+      });
       return;
     }
 
@@ -513,9 +668,13 @@ export function AlternativeAuctionForm() {
   };
 
   const handleSubmit = async () => {
+    // Clear previous validation errors
+    setValidationErrors({});
+    setShowValidationErrors(false);
+
     if (!validateStep(8)) {
       const validation = validateStep8Detailed();
-      toast.error('Please fix the following issues:', {
+      toast.error('Please fix the validation errors highlighted below', {
         description: validation.errors.join(', ')
       });
       return;
@@ -628,10 +787,29 @@ export function AlternativeAuctionForm() {
 
       {/* Form Content */}
       <div className="px-6 py-8">
+        {/* Validation Errors Summary for non-step-8 components */}
+        {showValidationErrors && validationErrors && Object.keys(validationErrors).length > 0 && currentStep !== 8 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-red-900 mb-2">Please fix the following validation errors:</h4>
+                <ul className="text-sm text-red-800 space-y-1">
+                  {Object.entries(validationErrors).map(([field, errors]) => (
+                    <li key={field}>• <strong>{field.charAt(0).toUpperCase() + field.slice(1)}:</strong> {errors[0]}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         {CurrentStepComponent && (
           <CurrentStepComponent 
             formData={formData}
             updateFormData={updateFormData}
+            validationErrors={validationErrors}
+            showValidationErrors={showValidationErrors}
           />
         )}
       </div>
