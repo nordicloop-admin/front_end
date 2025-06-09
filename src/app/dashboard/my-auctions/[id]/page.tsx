@@ -254,6 +254,20 @@ export default function AuctionDetail() {
       // Dismiss loading toast
       toast.dismiss(loadingToast);
 
+      // Check for successful deletion
+      if (!response.error && response.data?.success) {
+        // Show success message with details from backend
+        const deletedTitle = response.data.deletedAd?.title || auction.name;
+        toast.success(response.data.message || 'Auction deleted successfully', {
+          description: `"${deletedTitle}" has been removed from your listings.`,
+          duration: 3000,
+        });
+
+        // Redirect to auctions list
+        router.push('/dashboard/my-auctions');
+        return;
+      }
+
       if (response.error) {
         // Show error toast
         toast.error('Failed to delete auction', {
@@ -263,14 +277,12 @@ export default function AuctionDetail() {
         return;
       }
 
-      // Show success message
-      toast.success('Auction deleted successfully', {
-        description: 'The auction has been removed from your listings.',
-        duration: 3000,
+      // Fallback error (shouldn't reach here)
+      toast.error('Failed to delete auction', {
+        description: 'An unexpected error occurred',
+        duration: 5000,
       });
 
-      // Redirect to auctions list
-      router.push('/dashboard/my-auctions');
     } catch (error) {
       // Dismiss loading toast
       toast.dismiss(loadingToast);

@@ -386,9 +386,34 @@ export async function updateAuction(auctionId: string | number, auctionData: Auc
 export async function deleteAuction(auctionId: string | number) {
   try {
     // Delete auction requires authentication
-    const response = await apiDelete<{ success: boolean }>(`/ads/${auctionId}/delete/`, true);
+    // Use /ads/{id}/ with DELETE method as per API specification
+    // API now returns JSON response with message and deleted_ad details
+    const response = await apiDelete<{
+      message: string;
+      deleted_ad: {
+        id: number;
+        title: string;
+      };
+    }>(`/ads/${auctionId}/`, true);
 
-    return response;
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status || 500
+      };
+    }
+
+    // Success: Return the response data with success flag
+    return {
+      data: { 
+        success: true, 
+        message: response.data?.message || 'Ad deleted successfully',
+        deletedAd: response.data?.deleted_ad
+      },
+      error: null,
+      status: response.status || 200
+    };
   } catch (error) {
     return {
       data: null,

@@ -2,7 +2,7 @@
  * ADS (Ad Creation) service for handling 8-step ad creation workflow
  * Based on ADS_FRONTEND_INTEGRATION_GUIDE.md
  */
-import { apiPost, apiPut, apiGet, apiPutFormData, apiPatch } from './api';
+import { apiPost, apiPut, apiGet, apiPutFormData, apiPatch, apiDelete } from './api';
 
 // Interfaces based on the API specification
 export interface Step1Data {
@@ -256,7 +256,15 @@ export class AdCreationService {
     }
 
     try {
-      const response = await apiGet<{ message: string }>(`/ads/${id}/`, true);
+      // Use DELETE method with /ads/{id}/ endpoint as per API specification
+      // API now returns JSON response with message and deleted_ad details
+      const response = await apiDelete<{
+        message: string;
+        deleted_ad: {
+          id: number;
+          title: string;
+        };
+      }>(`/ads/${id}/`, true);
 
       if (response.error) {
         return {
@@ -270,9 +278,11 @@ export class AdCreationService {
         this.currentAdId = null;
       }
 
+      // Success: Return the response data
       return {
         success: true,
-        message: response.data?.message || 'Ad deleted successfully'
+        message: response.data?.message || 'Ad deleted successfully',
+        deletedAd: response.data?.deleted_ad
       };
     } catch (error) {
       return {
