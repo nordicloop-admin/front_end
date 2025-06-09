@@ -356,35 +356,9 @@ export class AdCreationService {
         formData.append('material_image', images[0]);
       }
 
-      // Comprehensive debugging
-      // eslint-disable-next-line no-console
-      console.log('=== STEP 8 DEBUG INFO ===');
-      // eslint-disable-next-line no-console
-      console.log('Current Ad ID:', this.currentAdId);
-      // eslint-disable-next-line no-console
-      console.log('Title (length):', trimmedTitle, `(${trimmedTitle.length} chars)`);
-      // eslint-disable-next-line no-console
-      console.log('Description (length):', trimmedDescription, `(${trimmedDescription.length} chars)`);
-      // eslint-disable-next-line no-console
-      console.log('Keywords (length):', trimmedKeywords, `(${trimmedKeywords.length} chars)`);
-      // eslint-disable-next-line no-console
-      console.log('Images count:', images?.length || 0);
-      if (images && images.length > 0) {
-        // eslint-disable-next-line no-console
-        console.log('Image file:', images[0].name, images[0].type, `${(images[0].size / 1024 / 1024).toFixed(2)}MB`);
-      }
-      // eslint-disable-next-line no-console
-      console.log('FormData keys:', Array.from(formData.keys()));
-      // eslint-disable-next-line no-console
-      console.log('Endpoint:', `/ads/${this.currentAdId}/step/8/`);
-      // eslint-disable-next-line no-console
-      console.log('========================');
-
       const response = await apiPutFormData<AdCreationResponse | AdErrorResponse>(`/ads/${this.currentAdId}/step/8/`, formData, true);
 
       if (response.error) {
-        // eslint-disable-next-line no-console
-        console.error('API Error Response:', response);
         return {
           success: false,
           error: response.error,
@@ -392,15 +366,11 @@ export class AdCreationService {
         };
       }
 
-      // eslint-disable-next-line no-console
-      console.log('API Success Response:', response.data);
       return {
         success: true,
         data: response.data as AdCreationResponse
       };
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Service Error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to update step 8',
@@ -422,12 +392,6 @@ export class AdCreationService {
       if (imageFile) {
         formData.append('material_image', imageFile);
       }
-
-      // Temporary debug log to help track the exact request being sent
-      // eslint-disable-next-line no-console
-      console.log('Step 8 Update - Endpoint:', `/ads/${adId}/step/8/`);
-      // eslint-disable-next-line no-console  
-      console.log('Step 8 Update - FormData fields:', Array.from(formData.keys()));
 
       const response = await apiPutFormData<AdCreationResponse | AdErrorResponse>(`/ads/${adId}/step/8/`, formData, true);
       
@@ -749,12 +713,6 @@ export class AdUpdateService {
       if (imageFile) {
         formData.append('material_image', imageFile);
       }
-
-      // Temporary debug log to help track the exact request being sent
-      // eslint-disable-next-line no-console
-      console.log('Step 8 Update - Endpoint:', `/ads/${adId}/step/8/`);
-      // eslint-disable-next-line no-console  
-      console.log('Step 8 Update - FormData fields:', Array.from(formData.keys()));
 
       const response = await apiPutFormData<AdCreationResponse | AdErrorResponse>(`/ads/${adId}/step/8/`, formData, true);
       

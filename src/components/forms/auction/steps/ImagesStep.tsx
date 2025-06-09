@@ -1,14 +1,16 @@
 import React, { useState, useRef } from 'react';
-import { Upload, X, Type, Tag, Info } from 'lucide-react';
+import { Upload, X, Type, Tag, Info, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
   formData: FormData;
   updateFormData: (updates: Partial<FormData>) => void;
+  validationErrors?: Record<string, string[]>;
+  showValidationErrors?: boolean;
 }
 
-export function ImagesStep({ formData, updateFormData }: Props) {
+export function ImagesStep({ formData, updateFormData, validationErrors, showValidationErrors }: Props) {
   const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -135,6 +137,23 @@ export function ImagesStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
+      {/* Validation Errors Summary */}
+      {showValidationErrors && validationErrors && Object.keys(validationErrors).length > 0 && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h4 className="font-medium text-red-900 mb-2">Please fix the following validation errors:</h4>
+              <ul className="text-sm text-red-800 space-y-1">
+                {Object.entries(validationErrors).map(([field, errors]) => (
+                  <li key={field}>• <strong>{field.charAt(0).toUpperCase() + field.slice(1)}:</strong> {errors[0]}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Title */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -146,7 +165,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
           type="text"
           placeholder="e.g., High-Quality HDPE Post-Industrial Pellets - Food Grade"
           className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
-            formData.title.length > 0 && !isTitleValid()
+            (formData.title.length > 0 && !isTitleValid()) || (showValidationErrors && validationErrors?.title)
               ? 'border-red-300 bg-red-50' 
               : 'border-gray-300'
           }`}
@@ -154,10 +173,17 @@ export function ImagesStep({ formData, updateFormData }: Props) {
           onChange={(e) => updateFormData({ title: e.target.value })}
           maxLength={255}
         />
+        {/* Validation Error Message */}
+        {showValidationErrors && validationErrors?.title && (
+          <div className="flex items-center mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+            <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+            <span className="text-sm font-medium text-red-700">{validationErrors.title[0]}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center mt-1">
           <p className={`text-xs ${
-            formData.title.length > 0 && !isTitleValid()
-              ? 'text-red-500' 
+            (formData.title.length > 0 && !isTitleValid()) || (showValidationErrors && validationErrors?.title)
+              ? 'text-red-600 font-medium' 
               : 'text-gray-500'
           }`}>
             {formData.title.trim().length}/255 characters 
@@ -165,7 +191,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
               ` - Need at least ${10 - formData.title.trim().length} more characters`
             }
           </p>
-          {isTitleValid() && (
+          {isTitleValid() && !validationErrors?.title && (
             <span className="text-xs text-green-600">✓ Valid length</span>
           )}
         </div>
@@ -180,7 +206,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
         <textarea
           placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 50 characters)"
           className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] resize-vertical min-h-[120px] ${
-            formData.description.length > 0 && !isDescriptionValid()
+            (formData.description.length > 0 && !isDescriptionValid()) || (showValidationErrors && validationErrors?.description)
               ? 'border-red-300 bg-red-50' 
               : 'border-gray-300'
           }`}
@@ -188,10 +214,17 @@ export function ImagesStep({ formData, updateFormData }: Props) {
           onChange={(e) => updateFormData({ description: e.target.value })}
           rows={4}
         />
+        {/* Validation Error Message */}
+        {showValidationErrors && validationErrors?.description && (
+          <div className="flex items-center mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+            <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+            <span className="text-sm font-medium text-red-700">{validationErrors.description[0]}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center mt-1">
           <p className={`text-xs ${
-            formData.description.length > 0 && !isDescriptionValid()
-              ? 'text-red-500' 
+            (formData.description.length > 0 && !isDescriptionValid()) || (showValidationErrors && validationErrors?.description)
+              ? 'text-red-600 font-medium' 
               : 'text-gray-500'
           }`}>
             {formData.description.trim().length} characters 
@@ -199,7 +232,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
               ` - Need at least ${50 - formData.description.trim().length} more characters`
             }
           </p>
-          {isDescriptionValid() && (
+          {isDescriptionValid() && !validationErrors?.description && (
             <span className="text-xs text-green-600">✓ Valid length</span>
           )}
         </div>
@@ -229,7 +262,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
           type="text"
           placeholder="Add keywords separated by commas (e.g., HDPE, recycling, food grade)"
           className={`w-full px-4 py-2 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm ${
-            !areKeywordsValid() ? 'border-red-300 bg-red-50' : 'border-gray-300'
+            !areKeywordsValid() || (showValidationErrors && validationErrors?.keywords) ? 'border-red-300 bg-red-50' : 'border-gray-300'
           }`}
           disabled={!areKeywordsValid()}
           onKeyPress={(e) => {
@@ -243,16 +276,23 @@ export function ImagesStep({ formData, updateFormData }: Props) {
             }
           }}
         />
+        {/* Validation Error Message */}
+        {showValidationErrors && validationErrors?.keywords && (
+          <div className="flex items-center mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+            <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+            <span className="text-sm font-medium text-red-700">{validationErrors.keywords[0]}</span>
+          </div>
+        )}
         <div className="flex justify-between items-center mt-1">
           <p className={`text-xs ${
-            !areKeywordsValid() ? 'text-red-500' : 'text-gray-500'
+            !areKeywordsValid() || (showValidationErrors && validationErrors?.keywords) ? 'text-red-600 font-medium' : 'text-gray-500'
           }`}>
             {getKeywordsTextLength()}/500 characters total
             {!areKeywordsValid() && 
               ` - Exceeded by ${getKeywordsTextLength() - 500} characters`
             }
           </p>
-          {areKeywordsValid() && getKeywordsTextLength() > 0 && (
+          {areKeywordsValid() && getKeywordsTextLength() > 0 && !validationErrors?.keywords && (
             <span className="text-xs text-green-600">✓ Valid length</span>
           )}
         </div>

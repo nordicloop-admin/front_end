@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Check, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Save, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { adCreationService } from '@/services/ads';
@@ -164,6 +164,10 @@ export function AlternativeAuctionForm() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
 
+  // NEW: Validation state for better UX
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
+
   // Load categories on component mount
   useEffect(() => {
     const loadCategories = async () => {
@@ -206,7 +210,28 @@ export function AlternativeAuctionForm() {
   const updateFormData = useCallback((updates: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
     setHasUnsavedChanges(true);
-  }, []);
+    
+    // Clear validation errors when user starts fixing them
+    if (showValidationErrors) {
+      const clearedErrors = { ...validationErrors };
+      let hasChanges = false;
+      
+      // Clear errors for fields being updated
+      Object.keys(updates).forEach(field => {
+        if (clearedErrors[field]) {
+          delete clearedErrors[field];
+          hasChanges = true;
+        }
+      });
+      
+      if (hasChanges) {
+        setValidationErrors(clearedErrors);
+        if (Object.keys(clearedErrors).length === 0) {
+          setShowValidationErrors(false);
+        }
+      }
+    }
+  }, [showValidationErrors, validationErrors]);
 
   const handleAutoSave = useCallback(async () => {
     if (!adId || currentStep === 1) return; // Skip auto-save for step 1 and if no ad exists
@@ -339,28 +364,151 @@ export function AlternativeAuctionForm() {
 
   const validateStep8Detailed = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
+    const fieldErrors: Record<string, string[]> = {};
     
     // Title validation (minimum 10 characters)
     if (!formData.title || formData.title.trim().length < 10) {
-      errors.push('Title must be at least 10 characters long');
+      const titleError = 'Title must be at least 10 characters long';
+      errors.push(titleError);
+      fieldErrors.title = [titleError];
     } else if (formData.title.length > 255) {
-      errors.push('Title must not exceed 255 characters');
+      const titleError = 'Title must not exceed 255 characters';
+      errors.push(titleError);
+      fieldErrors.title = [titleError];
     }
     
     // Description validation (minimum 50 characters)
     if (!formData.description || formData.description.trim().length < 50) {
-      errors.push('Description must be at least 50 characters long');
+      const descError = 'Description must be at least 50 characters long';
+      errors.push(descError);
+      fieldErrors.description = [descError];
     }
     
     // Keywords validation (optional, but if provided, max 500 chars total)
     const keywordsText = formData.keywords.join(', ');
     if (keywordsText.length > 500) {
-      errors.push('Keywords must not exceed 500 characters total');
+      const keywordsError = 'Keywords must not exceed 500 characters total';
+      errors.push(keywordsError);
+      fieldErrors.keywords = [keywordsError];
     }
     
-    // Image validation - OPTIONAL (according to backend requirements)
-    // Removed the required image validation since backend says it's optional
+    // Update validation state
+    setValidationErrors(fieldErrors);
+    setShowValidationErrors(errors.length > 0);
     
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const validateCurrentStepDetailed = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    const fieldErrors: Record<string, string[]> = {};
+
+    switch (currentStep) {
+      case 1:
+        if (!formData.materialType) {
+          const error = 'Material type is required';
+          errors.push(error);
+          fieldErrors.materialType = [error];
+        }
+        if (!formData.quantity.packaging) {
+          const error = 'Packaging type is required';
+          errors.push(error);
+          fieldErrors.packaging = [error];
+        }
+        if (!formData.sellFrequency) {
+          const error = 'Material frequency is required';
+          errors.push(error);
+          fieldErrors.sellFrequency = [error];
+        }
+        if (!formData.category) {
+          const error = 'Category is required';
+          errors.push(error);
+          fieldErrors.category = [error];
+        }
+        if (!formData.subcategory) {
+          const error = 'Subcategory is required';
+          errors.push(error);
+          fieldErrors.subcategory = [error];
+        }
+        break;
+
+      case 3:
+        if (!formData.origin.source) {
+          const error = 'Material origin is required';
+          errors.push(error);
+          fieldErrors.origin = [error];
+        }
+        break;
+
+      case 4:
+        if (!formData.contamination.level) {
+          const error = 'Contamination level is required';
+          errors.push(error);
+          fieldErrors.contamination = [error];
+        }
+        break;
+
+      case 5:
+        if (!formData.processing.methods || formData.processing.methods.length === 0) {
+          const error = 'At least one processing method is required';
+          errors.push(error);
+          fieldErrors.processing = [error];
+        }
+        break;
+
+      case 6:
+        if (!formData.location.country) {
+          const error = 'Country is required';
+          errors.push(error);
+          fieldErrors.country = [error];
+        }
+        if (!formData.location.city) {
+          const error = 'City is required';
+          errors.push(error);
+          fieldErrors.city = [error];
+        }
+        break;
+
+      case 7:
+        if (!formData.quantity.available || formData.quantity.available <= 0) {
+          const error = 'Available quantity must be greater than 0';
+          errors.push(error);
+          fieldErrors.quantity = [error];
+        }
+        if (!formData.quantity.unit) {
+          const error = 'Unit of measurement is required';
+          errors.push(error);
+          fieldErrors.unit = [error];
+        }
+        if (!formData.price.basePrice || formData.price.basePrice <= 0) {
+          const error = 'Base price must be greater than 0';
+          errors.push(error);
+          fieldErrors.basePrice = [error];
+        }
+        const hasValidAuctionDuration = formData.price.auctionDuration && 
+          (formData.price.auctionDuration !== 'custom' || 
+           (formData.price.auctionDuration === 'custom' && formData.price.customAuctionDuration && formData.price.customAuctionDuration > 0));
+        if (!hasValidAuctionDuration) {
+          const error = 'Valid auction duration is required';
+          errors.push(error);
+          fieldErrors.auctionDuration = [error];
+        }
+        break;
+
+      case 8:
+        return validateStep8Detailed();
+
+      default:
+        break;
+    }
+
+    // Update validation state
+    setValidationErrors(fieldErrors);
+    setShowValidationErrors(errors.length > 0);
+
     return {
       isValid: errors.length === 0,
       errors
@@ -400,16 +548,15 @@ export function AlternativeAuctionForm() {
   };
 
   const handleNext = async () => {
+    // Clear previous validation errors
+    setValidationErrors({});
+    setShowValidationErrors(false);
+
     if (!validateStep(currentStep)) {
-      // Special handling for Step 8 to show detailed validation errors
-      if (currentStep === 8) {
-        const validation = validateStep8Detailed();
-        toast.error('Please fix the following issues:', {
-          description: validation.errors.join(', ')
-        });
-      } else {
-        toast.error('Please fill in all required fields');
-      }
+      const validation = validateCurrentStepDetailed();
+      toast.error('Please fix the validation errors', {
+        description: validation.errors.join(', ')
+      });
       return;
     }
 
@@ -448,21 +595,6 @@ export function AlternativeAuctionForm() {
         // Steps 2-8: Update existing ad
         if (currentStep === 8) {
           // Step 8: Handle file uploads with FormData
-          // eslint-disable-next-line no-console
-          console.log('=== FORM SUBMISSION DEBUG ===');
-          // eslint-disable-next-line no-console
-          console.log('Form Data - Title:', formData.title);
-          // eslint-disable-next-line no-console
-          console.log('Form Data - Description:', formData.description);
-          // eslint-disable-next-line no-console
-          console.log('Form Data - Keywords:', formData.keywords);
-          // eslint-disable-next-line no-console
-          console.log('Form Data - Images:', formData.images);
-          // eslint-disable-next-line no-console
-          console.log('Keywords joined:', formData.keywords.join(', '));
-          // eslint-disable-next-line no-console
-          console.log('==============================');
-
           const result = await adCreationService.updateAdStep8WithFiles(
             formData.title,
             formData.description,
@@ -536,9 +668,13 @@ export function AlternativeAuctionForm() {
   };
 
   const handleSubmit = async () => {
+    // Clear previous validation errors
+    setValidationErrors({});
+    setShowValidationErrors(false);
+
     if (!validateStep(8)) {
       const validation = validateStep8Detailed();
-      toast.error('Please fix the following issues:', {
+      toast.error('Please fix the validation errors highlighted below', {
         description: validation.errors.join(', ')
       });
       return;
@@ -651,10 +787,29 @@ export function AlternativeAuctionForm() {
 
       {/* Form Content */}
       <div className="px-6 py-8">
+        {/* Validation Errors Summary for non-step-8 components */}
+        {showValidationErrors && validationErrors && Object.keys(validationErrors).length > 0 && currentStep !== 8 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+              <div>
+                <h4 className="font-medium text-red-900 mb-2">Please fix the following validation errors:</h4>
+                <ul className="text-sm text-red-800 space-y-1">
+                  {Object.entries(validationErrors).map(([field, errors]) => (
+                    <li key={field}>• <strong>{field.charAt(0).toUpperCase() + field.slice(1)}:</strong> {errors[0]}</li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
         {CurrentStepComponent && (
           <CurrentStepComponent 
             formData={formData}
             updateFormData={updateFormData}
+            validationErrors={validationErrors}
+            showValidationErrors={showValidationErrors}
           />
         )}
       </div>
