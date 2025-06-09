@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, Clock, Package, User, Calendar, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Clock, Package, User, Calendar, AlertCircle, Edit, Trash2, Play, Pause } from 'lucide-react';
 import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
-import { getAuctionById, deleteAuction, getAdDetails } from '@/services/auction';
+import { getAuctionById, deleteAuction, getAdDetails, activateAd, deactivateAd } from '@/services/auction';
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -295,6 +295,120 @@ export default function AuctionDetail() {
     }
   };
 
+  // Handle activate/publish auction
+  const handleActivateAuction = async () => {
+    // Show loading toast
+    const loadingToast = toast.loading('Publishing auction...');
+
+    try {
+      // Send activate request to API
+      const response = await activateAd(params.id as string);
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Check for successful activation
+      if (!response.error && response.data) {
+        // Update local auction state
+        setAuction((prevAuction: any) => ({
+          ...prevAuction,
+          status: 'active',
+          auctionStatus: 'Active',
+          timeLeft: response.data!.ad.auction_duration_display
+        }));
+
+        // Show success message
+        toast.success(response.data.message || 'Auction published successfully', {
+          description: 'Your auction is now live and visible to buyers.',
+          duration: 3000,
+        });
+        return;
+      }
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to publish auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Fallback error
+      toast.error('Failed to publish auction', {
+        description: 'An unexpected error occurred',
+        duration: 5000,
+      });
+
+    } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to publish auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
+  };
+
+  // Handle deactivate/unpublish auction
+  const handleDeactivateAuction = async () => {
+    // Show loading toast
+    const loadingToast = toast.loading('Unpublishing auction...');
+
+    try {
+      // Send deactivate request to API
+      const response = await deactivateAd(params.id as string);
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Check for successful deactivation
+      if (!response.error && response.data) {
+        // Update local auction state
+        setAuction((prevAuction: any) => ({
+          ...prevAuction,
+          status: 'inactive',
+          auctionStatus: 'Draft',
+          timeLeft: 'Not Started'
+        }));
+
+        // Show success message
+        toast.success(response.data.message || 'Auction unpublished successfully', {
+          description: 'Your auction is no longer visible to buyers.',
+          duration: 3000,
+        });
+        return;
+      }
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to unpublish auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Fallback error
+      toast.error('Failed to unpublish auction', {
+        description: 'An unexpected error occurred',
+        duration: 5000,
+      });
+
+    } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to unpublish auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-5 flex justify-center items-center h-64">
@@ -508,6 +622,42 @@ export default function AuctionDetail() {
                   <span>Delete</span>
                 </button>
               </div>
+
+              {/* Publish/Unpublish Action - Show below edit/delete buttons if auction is complete */}
+              {auction.isComplete && (
+                <div className="mt-3">
+                  {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
+                    <button
+                      onClick={handleActivateAuction}
+                      className="w-full py-3 px-4 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <Play className="w-4 h-4" />
+                      <span>🚀 Publish Auction</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleDeactivateAuction}
+                      className="w-full py-3 px-4 bg-orange-600 text-white rounded-md font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
+                    >
+                      <Pause className="w-4 h-4" />
+                      <span>⏸️ Unpublish Auction</span>
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Incomplete Auction Notice */}
+              {!auction.isComplete && (
+                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-4 h-4 text-yellow-600" />
+                    <span className="text-sm font-medium text-yellow-800">Complete all 8 steps to publish</span>
+                  </div>
+                  <p className="text-xs text-yellow-700 mt-1">
+                    Only completed auctions can be published and made visible to buyers.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -647,6 +797,30 @@ export default function AuctionDetail() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Management</h3>
               <div className="space-y-3">
+                {/* Primary Action - Publish/Unpublish (only for complete auctions) */}
+                {auction.isComplete && (
+                  <>
+                    {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
+                      <button
+                        onClick={handleActivateAuction}
+                        className="w-full py-3 bg-green-50 text-green-700 rounded-md font-medium hover:bg-green-100 transition-colors flex items-center justify-center space-x-2 border border-green-200"
+                      >
+                        <Play className="w-4 h-4" />
+                        <span>🚀 Publish Auction</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleDeactivateAuction}
+                        className="w-full py-3 bg-orange-50 text-orange-700 rounded-md font-medium hover:bg-orange-100 transition-colors flex items-center justify-center space-x-2 border border-orange-200"
+                      >
+                        <Pause className="w-4 h-4" />
+                        <span>⏸️ Unpublish Auction</span>
+                      </button>
+                    )}
+                  </>
+                )}
+
+                {/* Secondary Actions */}
                 <button
                   onClick={() => setIsEditModalOpen(true)}
                   className="w-full py-3 bg-gray-50 text-gray-700 rounded-md font-medium hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2"
@@ -661,10 +835,25 @@ export default function AuctionDetail() {
                   <Trash2 className="w-4 h-4" />
                   <span>Delete Auction</span>
                 </button>
+                
+                {/* Continue Setup for incomplete auctions */}
                 {!auction.isComplete && (
                   <button className="w-full py-3 bg-orange-50 text-[#FF8A00] rounded-md font-medium hover:bg-orange-100 transition-colors">
                     Continue Setup
                   </button>
+                )}
+
+                {/* Completion Status Info */}
+                {!auction.isComplete && (
+                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <AlertCircle className="w-3 h-3 text-yellow-600" />
+                      <span className="text-xs font-medium text-yellow-800">Incomplete</span>
+                    </div>
+                    <p className="text-xs text-yellow-700">
+                      Complete all 8 steps to publish your auction.
+                    </p>
+                  </div>
                 )}
               </div>
             </div>

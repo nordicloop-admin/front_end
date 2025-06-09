@@ -498,3 +498,88 @@ export async function getAdDetails(adId: string | number) {
     };
   }
 }
+
+/**
+ * Activate/publish an ad to make it visible and available for bidding
+ * @param adId The ID of the ad to activate
+ * @returns The API response
+ */
+export async function activateAd(adId: string | number) {
+  try {
+    // Activate ad requires authentication
+    const response = await apiPost<{
+      message: string;
+      ad: {
+        id: number;
+        title: string;
+        is_active: boolean;
+        is_complete: boolean;
+        auction_start_date: string;
+        auction_end_date: string;
+        auction_duration_display: string;
+      };
+    }>(`/ads/${adId}/activate/`, {}, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status || 500
+      };
+    }
+
+    // Success: Return the response data
+    return {
+      data: response.data,
+      error: null,
+      status: response.status || 200
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while activating the ad',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Deactivate/unpublish an ad to make it invisible and stop bidding
+ * @param adId The ID of the ad to deactivate
+ * @returns The API response
+ */
+export async function deactivateAd(adId: string | number) {
+  try {
+    // Deactivate ad requires authentication
+    const response = await apiPost<{
+      message: string;
+      ad: {
+        id: number;
+        title: string;
+        is_active: boolean;
+        is_complete: boolean;
+      };
+    }>(`/ads/${adId}/deactivate/`, {}, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status || 500
+      };
+    }
+
+    // Success: Return the response data
+    return {
+      data: response.data,
+      error: null,
+      status: response.status || 200
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while deactivating the ad',
+      status: 500
+    };
+  }
+}
