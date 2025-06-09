@@ -341,26 +341,96 @@ export class AdCreationService {
       // Create FormData object
       const formData = new FormData();
       
-      // Add text fields
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('keywords', keywords);
+      // Add text fields with proper trimming
+      const trimmedTitle = title.trim();
+      const trimmedDescription = description.trim();
+      const trimmedKeywords = keywords.trim();
+      
+      formData.append('title', trimmedTitle);
+      formData.append('description', trimmedDescription);
+      formData.append('keywords', trimmedKeywords);
       
       // Add image files - backend expects 'material_image' field
       if (images && images.length > 0) {
-        // For now, send the first image as 'material_image'
+        // Send only the first image as 'material_image' - backend expects single image
         formData.append('material_image', images[0]);
-        
-        // If there are multiple images, append them with indexed names
-        images.forEach((image, index) => {
-          if (index > 0) { // Skip first image as it's already added as 'material_image'
-            formData.append(`additional_image_${index}`, image);
-          }
-        });
       }
+
+      // Comprehensive debugging
+      // eslint-disable-next-line no-console
+      console.log('=== STEP 8 DEBUG INFO ===');
+      // eslint-disable-next-line no-console
+      console.log('Current Ad ID:', this.currentAdId);
+      // eslint-disable-next-line no-console
+      console.log('Title (length):', trimmedTitle, `(${trimmedTitle.length} chars)`);
+      // eslint-disable-next-line no-console
+      console.log('Description (length):', trimmedDescription, `(${trimmedDescription.length} chars)`);
+      // eslint-disable-next-line no-console
+      console.log('Keywords (length):', trimmedKeywords, `(${trimmedKeywords.length} chars)`);
+      // eslint-disable-next-line no-console
+      console.log('Images count:', images?.length || 0);
+      if (images && images.length > 0) {
+        // eslint-disable-next-line no-console
+        console.log('Image file:', images[0].name, images[0].type, `${(images[0].size / 1024 / 1024).toFixed(2)}MB`);
+      }
+      // eslint-disable-next-line no-console
+      console.log('FormData keys:', Array.from(formData.keys()));
+      // eslint-disable-next-line no-console
+      console.log('Endpoint:', `/ads/${this.currentAdId}/step/8/`);
+      // eslint-disable-next-line no-console
+      console.log('========================');
 
       const response = await apiPutFormData<AdCreationResponse | AdErrorResponse>(`/ads/${this.currentAdId}/step/8/`, formData, true);
 
+      if (response.error) {
+        // eslint-disable-next-line no-console
+        console.error('API Error Response:', response);
+        return {
+          success: false,
+          error: response.error,
+          details: (response.data as AdErrorResponse)?.details
+        };
+      }
+
+      // eslint-disable-next-line no-console
+      console.log('API Success Response:', response.data);
+      return {
+        success: true,
+        data: response.data as AdCreationResponse
+      };
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Service Error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update step 8',
+        details: null
+      };
+    }
+  }
+
+  async updateAdStep8WithImage(adId: number, title: string, description: string, keywords: string, imageFile?: File) {
+    try {
+      // Create FormData object - only for step 8 fields
+      const formData = new FormData();
+      
+      // Add ONLY step 8 fields explicitly with proper trimming
+      formData.append('title', title.trim());
+      formData.append('description', description.trim());
+      formData.append('keywords', keywords.trim());
+      
+      if (imageFile) {
+        formData.append('material_image', imageFile);
+      }
+
+      // Temporary debug log to help track the exact request being sent
+      // eslint-disable-next-line no-console
+      console.log('Step 8 Update - Endpoint:', `/ads/${adId}/step/8/`);
+      // eslint-disable-next-line no-console  
+      console.log('Step 8 Update - FormData fields:', Array.from(formData.keys()));
+
+      const response = await apiPutFormData<AdCreationResponse | AdErrorResponse>(`/ads/${adId}/step/8/`, formData, true);
+      
       if (response.error) {
         return {
           success: false,
@@ -376,7 +446,7 @@ export class AdCreationService {
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to update step 8',
+        error: error instanceof Error ? error.message : 'Failed to update step 8 with image',
         details: null
       };
     }
@@ -668,14 +738,23 @@ export class AdUpdateService {
    */
   async updateAdStep8WithImage(adId: number, title: string, description: string, keywords: string, imageFile?: File) {
     try {
+      // Create FormData object - only for step 8 fields
       const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('keywords', keywords);
+      
+      // Add ONLY step 8 fields explicitly with proper trimming
+      formData.append('title', title.trim());
+      formData.append('description', description.trim());
+      formData.append('keywords', keywords.trim());
       
       if (imageFile) {
         formData.append('material_image', imageFile);
       }
+
+      // Temporary debug log to help track the exact request being sent
+      // eslint-disable-next-line no-console
+      console.log('Step 8 Update - Endpoint:', `/ads/${adId}/step/8/`);
+      // eslint-disable-next-line no-console  
+      console.log('Step 8 Update - FormData fields:', Array.from(formData.keys()));
 
       const response = await apiPutFormData<AdCreationResponse | AdErrorResponse>(`/ads/${adId}/step/8/`, formData, true);
       

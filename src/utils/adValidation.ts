@@ -319,9 +319,23 @@ export const validateStepData = (step: number, data: any): { isValid: boolean; e
         errors.push('Description must be at least 50 characters long');
       }
 
-      if (data.keywords && typeof data.keywords === 'string' && data.keywords.length > 500) {
-        errors.push('Keywords must not exceed 500 characters');
+      // Keywords validation - optional but if provided, check total length
+      if (data.keywords) {
+        let keywordsText = '';
+        if (Array.isArray(data.keywords)) {
+          keywordsText = data.keywords.join(', ');
+        } else if (typeof data.keywords === 'string') {
+          keywordsText = data.keywords;
+        }
+        
+        if (keywordsText.length > 500) {
+          errors.push('Keywords must not exceed 500 characters total');
+        }
       }
+      
+      // Image validation - OPTIONAL according to backend
+      // No image validation required as per STEP_8_VALIDATION_GUIDE.md
+      
       break;
   }
 

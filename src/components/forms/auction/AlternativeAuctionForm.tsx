@@ -343,6 +343,8 @@ export function AlternativeAuctionForm() {
     // Title validation (minimum 10 characters)
     if (!formData.title || formData.title.trim().length < 10) {
       errors.push('Title must be at least 10 characters long');
+    } else if (formData.title.length > 255) {
+      errors.push('Title must not exceed 255 characters');
     }
     
     // Description validation (minimum 50 characters)
@@ -350,10 +352,14 @@ export function AlternativeAuctionForm() {
       errors.push('Description must be at least 50 characters long');
     }
     
-    // Image validation (at least one image required)
-    if (!formData.images || formData.images.length === 0) {
-      errors.push('At least one image is required');
+    // Keywords validation (optional, but if provided, max 500 chars total)
+    const keywordsText = formData.keywords.join(', ');
+    if (keywordsText.length > 500) {
+      errors.push('Keywords must not exceed 500 characters total');
     }
+    
+    // Image validation - OPTIONAL (according to backend requirements)
+    // Removed the required image validation since backend says it's optional
     
     return {
       isValid: errors.length === 0,
@@ -386,8 +392,8 @@ export function AlternativeAuctionForm() {
         // Step 8 validation according to STEP_8_VALIDATION_GUIDE.md
         const titleValid = formData.title && formData.title.trim().length >= 10;
         const descriptionValid = formData.description && formData.description.trim().length >= 50;
-        const imagesValid = formData.images && formData.images.length > 0;
-        return !!(titleValid && descriptionValid && imagesValid);
+        // Images are OPTIONAL according to backend requirements
+        return !!(titleValid && descriptionValid);
       default:
         return true;
     }
@@ -442,6 +448,21 @@ export function AlternativeAuctionForm() {
         // Steps 2-8: Update existing ad
         if (currentStep === 8) {
           // Step 8: Handle file uploads with FormData
+          // eslint-disable-next-line no-console
+          console.log('=== FORM SUBMISSION DEBUG ===');
+          // eslint-disable-next-line no-console
+          console.log('Form Data - Title:', formData.title);
+          // eslint-disable-next-line no-console
+          console.log('Form Data - Description:', formData.description);
+          // eslint-disable-next-line no-console
+          console.log('Form Data - Keywords:', formData.keywords);
+          // eslint-disable-next-line no-console
+          console.log('Form Data - Images:', formData.images);
+          // eslint-disable-next-line no-console
+          console.log('Keywords joined:', formData.keywords.join(', '));
+          // eslint-disable-next-line no-console
+          console.log('==============================');
+
           const result = await adCreationService.updateAdStep8WithFiles(
             formData.title,
             formData.description,

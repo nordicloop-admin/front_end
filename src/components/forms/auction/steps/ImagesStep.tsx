@@ -75,6 +75,19 @@ export function ImagesStep({ formData, updateFormData }: Props) {
     return formData.keywords.join(', ').length;
   };
 
+  // Validation helpers
+  const isTitleValid = () => {
+    return formData.title.trim().length >= 10 && formData.title.length <= 255;
+  };
+
+  const isDescriptionValid = () => {
+    return formData.description.trim().length >= 50;
+  };
+
+  const areKeywordsValid = () => {
+    return getKeywordsTextLength() <= 500;
+  };
+
   const handleKeywordAdd = (keyword: string) => {
     if (keyword.trim() && !formData.keywords.includes(keyword.trim())) {
       const currentKeywordsText = formData.keywords.join(', ');
@@ -116,7 +129,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
               <li>• <strong>Title:</strong> Minimum 10 characters, maximum 255 characters</li>
               <li>• <strong>Description:</strong> Minimum 50 characters (no maximum limit)</li>
               <li>• <strong>Keywords:</strong> Optional, maximum 500 characters total</li>
-              <li>• <strong>Image:</strong> At least one image is required (JPEG, PNG, WebP, GIF)</li>
+              <li>• <strong>Image:</strong> Optional (but recommended) - JPEG, PNG, WebP, GIF</li>
             </ul>
           </div>
         </div>
@@ -133,7 +146,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
           type="text"
           placeholder="e.g., High-Quality HDPE Post-Industrial Pellets - Food Grade"
           className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
-            formData.title.length > 0 && formData.title.trim().length < 10 
+            formData.title.length > 0 && !isTitleValid()
               ? 'border-red-300 bg-red-50' 
               : 'border-gray-300'
           }`}
@@ -143,7 +156,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
         />
         <div className="flex justify-between items-center mt-1">
           <p className={`text-xs ${
-            formData.title.length > 0 && formData.title.trim().length < 10 
+            formData.title.length > 0 && !isTitleValid()
               ? 'text-red-500' 
               : 'text-gray-500'
           }`}>
@@ -152,7 +165,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
               ` - Need at least ${10 - formData.title.trim().length} more characters`
             }
           </p>
-          {formData.title.trim().length >= 10 && (
+          {isTitleValid() && (
             <span className="text-xs text-green-600">✓ Valid length</span>
           )}
         </div>
@@ -165,19 +178,19 @@ export function ImagesStep({ formData, updateFormData }: Props) {
           <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 50 characters)</span>
         </label>
         <textarea
-          rows={6}
-          placeholder="Provide detailed information about your material including quality, applications, and any special features..."
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm ${
-            formData.description.length > 0 && formData.description.trim().length < 50 
+          placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 50 characters)"
+          className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] resize-vertical min-h-[120px] ${
+            formData.description.length > 0 && !isDescriptionValid()
               ? 'border-red-300 bg-red-50' 
               : 'border-gray-300'
           }`}
           value={formData.description}
           onChange={(e) => updateFormData({ description: e.target.value })}
+          rows={4}
         />
         <div className="flex justify-between items-center mt-1">
           <p className={`text-xs ${
-            formData.description.length > 0 && formData.description.trim().length < 50 
+            formData.description.length > 0 && !isDescriptionValid()
               ? 'text-red-500' 
               : 'text-gray-500'
           }`}>
@@ -186,7 +199,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
               ` - Need at least ${50 - formData.description.trim().length} more characters`
             }
           </p>
-          {formData.description.trim().length >= 50 && (
+          {isDescriptionValid() && (
             <span className="text-xs text-green-600">✓ Valid length</span>
           )}
         </div>
@@ -201,10 +214,7 @@ export function ImagesStep({ formData, updateFormData }: Props) {
         </label>
         <div className="flex flex-wrap gap-2 mb-3">
           {formData.keywords.map((keyword, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#FF8A00] text-white"
-            >
+            <span key={index} className="inline-flex items-center px-3 py-1 bg-[#FF8A00] text-white text-sm rounded-full">
               {keyword}
               <button
                 onClick={() => handleKeywordRemove(index)}
@@ -217,30 +227,41 @@ export function ImagesStep({ formData, updateFormData }: Props) {
         </div>
         <input
           type="text"
-          placeholder="Add keywords separated by commas"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+          placeholder="Add keywords separated by commas (e.g., HDPE, recycling, food grade)"
+          className={`w-full px-4 py-2 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm ${
+            !areKeywordsValid() ? 'border-red-300 bg-red-50' : 'border-gray-300'
+          }`}
+          disabled={!areKeywordsValid()}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ',') {
               e.preventDefault();
-              handleKeywordAdd(e.currentTarget.value);
-              e.currentTarget.value = '';
+              const input = e.currentTarget;
+              if (input.value.trim()) {
+                handleKeywordAdd(input.value.trim());
+                input.value = '';
+              }
             }
           }}
         />
         <div className="flex justify-between items-center mt-1">
-          <p className="text-xs text-gray-500">
-            Press Enter or comma to add keywords. These help buyers find your listing.
+          <p className={`text-xs ${
+            !areKeywordsValid() ? 'text-red-500' : 'text-gray-500'
+          }`}>
+            {getKeywordsTextLength()}/500 characters total
+            {!areKeywordsValid() && 
+              ` - Exceeded by ${getKeywordsTextLength() - 500} characters`
+            }
           </p>
-          <p className={`text-xs ${getKeywordsTextLength() > 450 ? 'text-orange-500' : 'text-gray-500'}`}>
-            {getKeywordsTextLength()}/500 characters
-          </p>
+          {areKeywordsValid() && getKeywordsTextLength() > 0 && (
+            <span className="text-xs text-green-600">✓ Valid length</span>
+          )}
         </div>
       </div>
 
       {/* Upload Area */}
       <div className="pt-4 border-t border-gray-200">
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Material Image *
+          Material Image (Optional but Recommended)
         </label>
         {formData.images && formData.images.length > 0 ? (
           <div className="relative">
@@ -339,10 +360,10 @@ export function ImagesStep({ formData, updateFormData }: Props) {
       </div>
 
       {/* Validation */}
-      {(!formData.images || formData.images.length === 0 || !formData.title || !formData.description) && (
+      {(!formData.title || !formData.description) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
-            Please provide a title, description, and image for your listing.
+            Please provide a title and description for your listing. Image is optional but recommended.
           </p>
         </div>
       )}

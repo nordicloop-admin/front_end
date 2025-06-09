@@ -530,31 +530,29 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       // Determine which step we're updating based on the current active step
       const currentStepData = getCurrentStepData();
       
-      if (currentStepData) {
-        if (activeStep === 8) {
-          // Step 8: Handle title, description, keywords, and image
-          const response = await adUpdateService.updateAdStep8WithImage(
-            parseInt(auction.id),
-            stepData.title || auction.name,
-            stepData.description || auction.description || '',
-            stepData.keywords?.join(', ') || '',
-            stepData.images && stepData.images.length > 0 ? stepData.images[0] : undefined
-          );
-          
-          if (!response.success) {
-            throw new Error(response.error);
-          }
-        } else {
-          // Steps 1-7: Use step-specific update endpoint
-          const response = await adUpdateService.updateAdStep(
-            parseInt(auction.id),
-            activeStep,
-            currentStepData
-          );
-          
-          if (!response.success) {
-            throw new Error(response.error || `Failed to update step ${activeStep}`);
-          }
+      if (activeStep === 8) {
+        // Step 8: Handle title, description, keywords, and image using the update service for single image
+        const response = await adUpdateService.updateAdStep8WithImage(
+          parseInt(auction.id),
+          stepData.title || auction.name,
+          stepData.description || auction.description || '',
+          stepData.keywords?.join(', ') || '',
+          stepData.images && stepData.images.length > 0 ? stepData.images[0] : undefined
+        );
+        
+        if (!response.success) {
+          throw new Error(response.error);
+        }
+      } else if (currentStepData) {
+        // Steps 1-7: Use step-specific update endpoint
+        const response = await adUpdateService.updateAdStep(
+          parseInt(auction.id),
+          activeStep,
+          currentStepData
+        );
+        
+        if (!response.success) {
+          throw new Error(response.error || `Failed to update step ${activeStep}`);
         }
       } else {
         throw new Error(`No data to update for step ${activeStep}`);
