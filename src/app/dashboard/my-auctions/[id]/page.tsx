@@ -458,22 +458,68 @@ export default function AuctionDetail() {
                 {auction.auctionStatus || (auction.status === 'active' ? 'Active' : 'Inactive')}
               </span>
               
-              {/* Action buttons */}
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="p-2 text-gray-500 hover:text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-all"
-                  title="Edit auction"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="p-2 text-gray-500 hover:text-red-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-all"
-                  title="Delete auction"
-                >
-                  <Trash2 size={16} />
-                </button>
+              {/* Clean Action Layout */}
+              <div className="space-y-4">
+                {/* Primary Action Only */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-2 h-2 rounded-full ${
+                      auction.status === 'active' || auction.auctionStatus === 'Active' 
+                        ? 'bg-emerald-400 animate-pulse' 
+                        : auction.isComplete 
+                          ? 'bg-amber-400' 
+                          : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-sm font-medium text-gray-600">
+                      {auction.status === 'active' || auction.auctionStatus === 'Active' 
+                        ? 'Live' 
+                        : auction.isComplete 
+                          ? 'Ready to Publish' 
+                          : 'Draft'
+                      }
+                    </span>
+                  </div>
+
+                  {/* Primary Action Button - Added proper spacing */}
+                  <div className="flex items-center ml-6">
+                    {auction.isComplete && (
+                      <>
+                        {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
+                          <button
+                            onClick={handleActivateAuction}
+                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            <span>Publish</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleDeactivateAuction}
+                            className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5"
+                          >
+                            <Pause className="w-3.5 h-3.5" />
+                            <span>Hide</span>
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {/* Continue Setup Button (for incomplete auctions) */}
+                    {!auction.isComplete && (
+                      <button className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Continue Setup</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Setup Progress (for incomplete auctions) */}
+                {!auction.isComplete && auction.stepCompletionStatus && (
+                  <div className="text-xs text-gray-500">
+                    Progress: {Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8 steps completed
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -605,59 +651,26 @@ export default function AuctionDetail() {
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="py-3 px-4 bg-[#FF8A00] text-white rounded-md font-medium hover:bg-[#e67e00] transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="py-3 px-4 bg-white text-red-600 border border-red-200 rounded-md font-medium hover:bg-red-50 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete</span>
-                </button>
+              {/* Management Actions - Subtle & Elegant */}
+              <div className="mb-6">
+                <div className="flex items-center space-x-4 text-sm">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="text-gray-500 hover:text-gray-700 transition-colors flex items-center space-x-1.5"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    className="text-gray-500 hover:text-red-500 transition-colors flex items-center space-x-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
-
-              {/* Publish/Unpublish Action - Show below edit/delete buttons if auction is complete */}
-              {auction.isComplete && (
-                <div className="mt-3">
-                  {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
-                    <button
-                      onClick={handleActivateAuction}
-                      className="w-full py-3 px-4 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors flex items-center justify-center space-x-2"
-                    >
-                      <Play className="w-4 h-4" />
-                      <span>🚀 Publish Auction</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleDeactivateAuction}
-                      className="w-full py-3 px-4 bg-orange-600 text-white rounded-md font-medium hover:bg-orange-700 transition-colors flex items-center justify-center space-x-2"
-                    >
-                      <Pause className="w-4 h-4" />
-                      <span>⏸️ Unpublish Auction</span>
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Incomplete Auction Notice */}
-              {!auction.isComplete && (
-                <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <div className="flex items-center space-x-2">
-                    <AlertCircle className="w-4 h-4 text-yellow-600" />
-                    <span className="text-sm font-medium text-yellow-800">Complete all 8 steps to publish</span>
-                  </div>
-                  <p className="text-xs text-yellow-700 mt-1">
-                    Only completed auctions can be published and made visible to buyers.
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -726,6 +739,57 @@ export default function AuctionDetail() {
 
           {/* Sidebar */}
           <div className="xl:col-span-1 space-y-6">
+            {/* Quick Actions - Minimal Sidebar */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Status</h3>
+              
+              <div className="space-y-4">
+                {/* Status Indicator */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      auction.status === 'active' || auction.auctionStatus === 'Active' 
+                        ? 'bg-emerald-400 animate-pulse' 
+                        : auction.isComplete 
+                          ? 'bg-amber-400' 
+                          : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-sm font-medium text-gray-700">
+                      {auction.status === 'active' || auction.auctionStatus === 'Active' 
+                        ? 'Live' 
+                        : auction.isComplete 
+                          ? 'Ready' 
+                          : 'Draft'
+                      }
+                    </span>
+                  </div>
+                  {auction.isComplete && (
+                    <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-md">
+                      Complete
+                    </span>
+                  )}
+                </div>
+
+                {/* Progress for incomplete auctions */}
+                {!auction.isComplete && auction.stepCompletionStatus && (
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-2">
+                      <span>Progress</span>
+                      <span>{Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-amber-400 h-1.5 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Auction Info */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Auction Details</h3>
@@ -788,71 +852,6 @@ export default function AuctionDetail() {
                         }}
                       />
                     </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Management Actions */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Management</h3>
-              <div className="space-y-3">
-                {/* Primary Action - Publish/Unpublish (only for complete auctions) */}
-                {auction.isComplete && (
-                  <>
-                    {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
-                      <button
-                        onClick={handleActivateAuction}
-                        className="w-full py-3 bg-green-50 text-green-700 rounded-md font-medium hover:bg-green-100 transition-colors flex items-center justify-center space-x-2 border border-green-200"
-                      >
-                        <Play className="w-4 h-4" />
-                        <span>🚀 Publish Auction</span>
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleDeactivateAuction}
-                        className="w-full py-3 bg-orange-50 text-orange-700 rounded-md font-medium hover:bg-orange-100 transition-colors flex items-center justify-center space-x-2 border border-orange-200"
-                      >
-                        <Pause className="w-4 h-4" />
-                        <span>⏸️ Unpublish Auction</span>
-                      </button>
-                    )}
-                  </>
-                )}
-
-                {/* Secondary Actions */}
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="w-full py-3 bg-gray-50 text-gray-700 rounded-md font-medium hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit Details</span>
-                </button>
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="w-full py-3 bg-red-50 text-red-700 rounded-md font-medium hover:bg-red-100 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete Auction</span>
-                </button>
-                
-                {/* Continue Setup for incomplete auctions */}
-                {!auction.isComplete && (
-                  <button className="w-full py-3 bg-orange-50 text-[#FF8A00] rounded-md font-medium hover:bg-orange-100 transition-colors">
-                    Continue Setup
-                  </button>
-                )}
-
-                {/* Completion Status Info */}
-                {!auction.isComplete && (
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <AlertCircle className="w-3 h-3 text-yellow-600" />
-                      <span className="text-xs font-medium text-yellow-800">Incomplete</span>
-                    </div>
-                    <p className="text-xs text-yellow-700">
-                      Complete all 8 steps to publish your auction.
-                    </p>
                   </div>
                 )}
               </div>
