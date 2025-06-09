@@ -79,6 +79,7 @@ export interface FormData {
     reservePrice?: number;
     auctionDuration?: string;
     customEndDate?: string;
+    customAuctionDuration?: number;
   };
   
   // Image, Title & Description
@@ -127,7 +128,8 @@ const initialFormData: FormData = {
     currency: 'SEK',
     priceType: 'auction',
     auctionDuration: '7',
-    customEndDate: ''
+    customEndDate: '',
+    customAuctionDuration: 0
   },
   images: [],
   title: '',
@@ -206,6 +208,39 @@ export function AlternativeAuctionForm() {
     setHasUnsavedChanges(true);
   }, []);
 
+  const handleAutoSave = useCallback(async () => {
+    if (!adId || currentStep === 1) return; // Skip auto-save for step 1 and if no ad exists
+
+    setIsAutoSaving(true);
+    try {
+      const stepData = convertFormDataToApiData(currentStep, formData);
+      
+      // Validate step data before auto-saving (skip step 2 and 8 as they have different validation)
+      if (currentStep !== 2 && currentStep !== 8) {
+        const validation = validateStepData(currentStep, stepData);
+        if (!validation.isValid) {
+          // Silent failure for auto-save with invalid data - don't disrupt user
+          setIsAutoSaving(false);
+          return;
+        }
+      }
+      
+      const result = await adCreationService.updateAdStep(currentStep, stepData);
+      
+      if (result.success) {
+        setHasUnsavedChanges(false);
+        if (result.data) {
+          setApiCompletedSteps(result.data.step_completion_status);
+        }
+      }
+    } catch (_error) {
+      // Silent failure for auto-save - don't show error to user
+      // Error is handled gracefully without disrupting the user experience
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [adId, currentStep, formData]);
+
   // Auto-save functionality
   useEffect(() => {
     if (!hasUnsavedChanges || !adId || isSubmitting || !categoriesLoaded) return;
@@ -215,8 +250,7 @@ export function AlternativeAuctionForm() {
     }, 2000); // Auto-save after 2 seconds of inactivity
 
     return () => clearTimeout(timeoutId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [formData, hasUnsavedChanges, adId, isSubmitting, categoriesLoaded]);
+  }, [hasUnsavedChanges, adId, isSubmitting, categoriesLoaded, handleAutoSave]);
 
   const convertFormDataToApiData = (step: number, data: FormData): any => {
     switch (step) {
@@ -231,21 +265,7 @@ export function AlternativeAuctionForm() {
         
         // Debug logging for Step 1 data
         if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.log('Step 1 data being sent to backend:', step1Data);
-          // eslint-disable-next-line no-console
-          console.log('Form data used:', {
-            category: data.category,
-            subcategory: data.subcategory,
-            specificMaterial: data.specificMaterial,
-            packaging: data.quantity.packaging,
-            sellFrequency: data.sellFrequency
-          });
-          // eslint-disable-next-line no-console
-          console.log('Converted values:', {
-            packagingConverted: convertLabelToValue('packaging', data.quantity.packaging),
-            frequencyConverted: convertLabelToValue('material_frequency', data.sellFrequency)
-          });
+          // Debug information is processed but not logged to console in production
         }
         
         return step1Data;
@@ -285,15 +305,27 @@ export function AlternativeAuctionForm() {
             : (data.location.deliveryOptions ? [convertLabelToValue('delivery_options', data.location.deliveryOptions)] : [])
         };
       case 7:
-        return {
+        // Handle custom auction duration properly
+        const isCustomDuration = data.price.auctionDuration === 'custom';
+        const auctionDurationValue = isCustomDuration ? 0 : parseInt(data.price.auctionDuration || '7');
+        const customDurationValue = isCustomDuration && data.price.customAuctionDuration ? data.price.customAuctionDuration : undefined;
+        
+        const step7Data: any = {
           available_quantity: Number(data.quantity.available),
           unit_of_measurement: convertLabelToValue('unit_of_measurement', data.quantity.unit),
           minimum_order_quantity: Number(data.quantity.minimumOrder),
           starting_bid_price: Number(data.price.basePrice),
           currency: data.price.currency,
-          auction_duration: parseInt(data.price.auctionDuration || '7'),
+          auction_duration: auctionDurationValue,
           reserve_price: data.price.reservePrice ? Number(data.price.reservePrice) : undefined
         };
+        
+        // Add custom auction duration if applicable
+        if (customDurationValue) {
+          step7Data.custom_auction_duration = customDurationValue;
+        }
+        
+        return step7Data;
       case 8:
         return {
           title: data.title,
@@ -302,39 +334,6 @@ export function AlternativeAuctionForm() {
         };
       default:
         return {};
-    }
-  };
-
-  const handleAutoSave = async () => {
-    if (!adId || currentStep === 1) return; // Skip auto-save for step 1 and if no ad exists
-
-    setIsAutoSaving(true);
-    try {
-      const stepData = convertFormDataToApiData(currentStep, formData);
-      
-      // Validate step data before auto-saving (skip step 2 and 8 as they have different validation)
-      if (currentStep !== 2 && currentStep !== 8) {
-        const validation = validateStepData(currentStep, stepData);
-        if (!validation.isValid) {
-          // Silent failure for auto-save with invalid data - don't disrupt user
-          setIsAutoSaving(false);
-          return;
-        }
-      }
-      
-      const result = await adCreationService.updateAdStep(currentStep, stepData);
-      
-      if (result.success) {
-        setHasUnsavedChanges(false);
-        if (result.data) {
-          setApiCompletedSteps(result.data.step_completion_status);
-        }
-      }
-    } catch (_error) {
-      // Silent failure for auto-save - don't show error to user
-      // Error is handled gracefully without disrupting the user experience
-    } finally {
-      setIsAutoSaving(false);
     }
   };
 
@@ -379,7 +378,10 @@ export function AlternativeAuctionForm() {
       case 6:
         return !!(formData.location.country && formData.location.city);
       case 7:
-        return !!(formData.quantity.available > 0 && formData.quantity.unit && formData.price.basePrice > 0 && formData.price.auctionDuration);
+        const hasValidAuctionDuration = formData.price.auctionDuration && 
+          (formData.price.auctionDuration !== 'custom' || 
+           (formData.price.auctionDuration === 'custom' && formData.price.customAuctionDuration && formData.price.customAuctionDuration > 0));
+        return !!(formData.quantity.available > 0 && formData.quantity.unit && formData.price.basePrice > 0 && hasValidAuctionDuration);
       case 8:
         // Step 8 validation according to STEP_8_VALIDATION_GUIDE.md
         const titleValid = formData.title && formData.title.trim().length >= 10;

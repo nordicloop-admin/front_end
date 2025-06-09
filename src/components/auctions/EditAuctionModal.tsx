@@ -258,7 +258,8 @@ const bidDurationOptions = [
   { value: '3', label: '3 days' },
   { value: '7', label: '7 days' },
   { value: '14', label: '14 days' },
-  { value: '30', label: '30 days' }
+  { value: '30', label: '30 days' },
+  { value: 'custom', label: 'Custom' }
 ];
 
 export interface AuctionData {
@@ -339,6 +340,7 @@ interface StepData {
   currency?: string;
   auctionDuration?: string;
   reservePrice?: number;
+  customAuctionDuration?: number;
   
   // Step 8: Details with image handling
   title?: string;
@@ -666,15 +668,26 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         
       case 7:
         // Quantity & Price step - match creation form structure exactly
-        return {
+        // Handle custom auction duration properly
+        const isCustomDuration = stepData.auctionDuration === 'custom';
+        const auctionDurationValue = isCustomDuration ? 0 : parseInt(stepData.auctionDuration || '7');
+        
+        const step7Data: any = {
           available_quantity: Number(stepData.availableQuantity || 0),
           unit_of_measurement: convertLabelToValue('unit_of_measurement', stepData.unit || ''),
           minimum_order_quantity: Number(stepData.minimumOrder || 0),
           starting_bid_price: Number(stepData.startingPrice || 0),
           currency: stepData.currency || 'SEK',
-          auction_duration: parseInt(stepData.auctionDuration || '7'),
+          auction_duration: auctionDurationValue,
           reserve_price: stepData.reservePrice ? Number(stepData.reservePrice) : undefined
         };
+        
+        // Add custom auction duration if applicable
+        if (isCustomDuration && stepData.customAuctionDuration) {
+          step7Data.custom_auction_duration = stepData.customAuctionDuration;
+        }
+        
+        return step7Data;
         
       case 8:
         // Title & Description step - handled separately above
@@ -1474,13 +1487,56 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               </label>
               <select
                 value={stepData.auctionDuration || '7'}
-                onChange={(e) => handleStepDataChange({ auctionDuration: e.target.value })}
+                onChange={(e) => {
+                  const duration = e.target.value;
+                  handleStepDataChange({ auctionDuration: duration });
+                  // Clear custom duration fields if switching away from custom
+                  if (duration !== 'custom') {
+                    handleStepDataChange({ customAuctionDuration: 0 });
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               >
                 {bidDurationOptions.map(option => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
+              
+              {/* Custom Duration Date Picker */}
+              {stepData.auctionDuration === 'custom' && (
+                <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select End Date
+                  </label>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split('T')[0]}
+                    max={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                    onChange={(e) => {
+                      const selectedDate = e.target.value;
+                      if (selectedDate) {
+                        // Calculate days difference
+                        const today = new Date();
+                        const endDate = new Date(selectedDate);
+                        const diffTime = endDate.getTime() - today.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        handleStepDataChange({ 
+                          customAuctionDuration: diffDays > 0 ? diffDays : 1 
+                        });
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select a date up to 90 days from today when the auction should end.
+                  </p>
+                  {stepData.customAuctionDuration && stepData.customAuctionDuration > 0 && (
+                    <p className="text-xs text-[#FF8A00] mt-1">
+                      Auction will run for {stepData.customAuctionDuration} days
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             
             <div>

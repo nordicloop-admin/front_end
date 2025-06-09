@@ -52,6 +52,7 @@ export interface Step7Data {
   currency: string;
   auction_duration: number;
   reserve_price?: number;
+  custom_auction_duration?: number;
 }
 
 export interface Step8Data {
