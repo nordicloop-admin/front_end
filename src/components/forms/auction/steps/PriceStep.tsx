@@ -57,6 +57,12 @@ export function PriceStep({ formData, updateFormData }: Props) {
   const handleDurationSelect = (duration: string) => {
     handlePriceUpdate('auctionDuration', duration);
     setShowCustomDuration(duration === 'custom');
+    
+    // If switching away from custom, clear custom fields
+    if (duration !== 'custom') {
+      handlePriceUpdate('customEndDate', '');
+      handlePriceUpdate('customAuctionDuration', 0);
+    }
   };
 
   const handleCustomDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,9 +75,10 @@ export function PriceStep({ formData, updateFormData }: Props) {
     const diffTime = endDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    // Store both the custom duration value and the actual end date
+    // Store the custom duration value and end date
     handlePriceUpdate('customEndDate', selectedDate);
-    handlePriceUpdate('auctionDuration', `${diffDays > 0 ? diffDays : 1}`);
+    handlePriceUpdate('customAuctionDuration', diffDays > 0 ? diffDays : 1);
+    // Keep auctionDuration as 'custom' - don't set it to the number of days
   };
 
   // Calculate minimum date (today) for the date picker
@@ -304,7 +311,9 @@ export function PriceStep({ formData, updateFormData }: Props) {
                 <span className="text-sm text-gray-600">Auction Duration:</span>
                 <span className="text-sm font-medium text-gray-700">
                   {formData.price.auctionDuration === 'custom' 
-                    ? `Until ${new Date(formData.price.customEndDate || '').toLocaleDateString()}`
+                    ? (formData.price.customAuctionDuration 
+                        ? `${formData.price.customAuctionDuration} days` 
+                        : 'Custom duration')
                     : bidDurationOptions.find(o => o.value === formData.price.auctionDuration)?.label || 
                       `${formData.price.auctionDuration} days`}
                 </span>

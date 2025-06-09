@@ -8,6 +8,8 @@ import { getCategories, Category } from '@/services/auction';
 import { adUpdateService } from '@/services/ads';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { getCategoryImage } from '@/utils/categoryImages';
+import { convertLabelToValue } from '@/utils/adValidation';
+import { toast } from 'sonner';
 
 // Import comprehensive data from the auction creation form
 const packagingOptions = [
@@ -258,7 +260,8 @@ const bidDurationOptions = [
   { value: '3', label: '3 days' },
   { value: '7', label: '7 days' },
   { value: '14', label: '14 days' },
-  { value: '30', label: '30 days' }
+  { value: '30', label: '30 days' },
+  { value: 'custom', label: 'Custom' }
 ];
 
 export interface AuctionData {
@@ -339,6 +342,7 @@ interface StepData {
   currency?: string;
   auctionDuration?: string;
   reservePrice?: number;
+  customAuctionDuration?: number;
   
   // Step 8: Details with image handling
   title?: string;
@@ -369,6 +373,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [_error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // NEW: Validation state for better UX (synchronized with AlternativeAuctionForm)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+  const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   // Load categories on component mount
   useEffect(() => {
@@ -483,6 +491,27 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   const handleStepDataChange = (updates: Partial<StepData>) => {
     setStepData(prev => ({ ...prev, ...updates }));
     setHasChanges(true);
+    
+    // Clear validation errors when user starts fixing them (synchronized with AlternativeAuctionForm)
+    if (showValidationErrors) {
+      const clearedErrors = { ...validationErrors };
+      let hasChanges = false;
+      
+      // Clear errors for fields being updated
+      Object.keys(updates).forEach(field => {
+        if (clearedErrors[field]) {
+          delete clearedErrors[field];
+          hasChanges = true;
+        }
+      });
+      
+      if (hasChanges) {
+        setValidationErrors(clearedErrors);
+        if (Object.keys(clearedErrors).length === 0) {
+          setShowValidationErrors(false);
+        }
+      }
+    }
   };
 
   // Handle image file upload
@@ -523,36 +552,46 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
   // Submit changes to backend
   const handleSubmit = async () => {
+    // Clear previous validation errors
+    setValidationErrors({});
+    setShowValidationErrors(false);
+
+    if (!validateStep(activeStep)) {
+      const validation = validateCurrentStepDetailed();
+      toast.error('Please fix the validation errors', {
+        description: validation.errors.join(', ')
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Determine which step we're updating based on the current active step
       const currentStepData = getCurrentStepData();
       
-      if (currentStepData) {
-        if (activeStep === 8) {
-          // Step 8: Handle title, description, keywords, and image
-          const response = await adUpdateService.updateAdStep8WithImage(
-            parseInt(auction.id),
-            stepData.title || auction.name,
-            stepData.description || auction.description || '',
-            stepData.keywords?.join(', ') || '',
-            stepData.images && stepData.images.length > 0 ? stepData.images[0] : undefined
-          );
-          
-          if (!response.success) {
-            throw new Error(response.error);
-          }
-        } else {
-          // Steps 1-7: Use step-specific update endpoint
-          const response = await adUpdateService.updateAdStep(
-            parseInt(auction.id),
-            activeStep,
-            currentStepData
-          );
-          
-          if (!response.success) {
-            throw new Error(response.error || `Failed to update step ${activeStep}`);
-          }
+      if (activeStep === 8) {
+        // Step 8: Handle title, description, keywords, and image using the update service for single image
+        const response = await adUpdateService.updateAdStep8WithImage(
+          parseInt(auction.id),
+          stepData.title || auction.name,
+          stepData.description || auction.description || '',
+          stepData.keywords?.join(', ') || '',
+          stepData.images && stepData.images.length > 0 ? stepData.images[0] : undefined
+        );
+        
+        if (!response.success) {
+          throw new Error(response.error);
+        }
+      } else if (currentStepData) {
+        // Steps 1-7: Use step-specific update endpoint
+        const response = await adUpdateService.updateAdStep(
+          parseInt(auction.id),
+          activeStep,
+          currentStepData
+        );
+        
+        if (!response.success) {
+          throw new Error(response.error || `Failed to update step ${activeStep}`);
         }
       } else {
         throw new Error(`No data to update for step ${activeStep}`);
@@ -578,6 +617,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
     } catch (error) {
       setIsSubmitting(false);
       setError(error instanceof Error ? error.message : 'Failed to save changes');
+      toast.error('Failed to save changes', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred'
+      });
     }
   };
 
@@ -666,15 +708,26 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         
       case 7:
         // Quantity & Price step - match creation form structure exactly
-        return {
+        // Handle custom auction duration properly
+        const isCustomDuration = stepData.auctionDuration === 'custom';
+        const auctionDurationValue = isCustomDuration ? 0 : parseInt(stepData.auctionDuration || '7');
+        
+        const step7Data: any = {
           available_quantity: Number(stepData.availableQuantity || 0),
           unit_of_measurement: convertLabelToValue('unit_of_measurement', stepData.unit || ''),
           minimum_order_quantity: Number(stepData.minimumOrder || 0),
           starting_bid_price: Number(stepData.startingPrice || 0),
           currency: stepData.currency || 'SEK',
-          auction_duration: parseInt(stepData.auctionDuration || '7'),
+          auction_duration: auctionDurationValue,
           reserve_price: stepData.reservePrice ? Number(stepData.reservePrice) : undefined
         };
+        
+        // Add custom auction duration if applicable
+        if (isCustomDuration && stepData.customAuctionDuration) {
+          step7Data.custom_auction_duration = stepData.customAuctionDuration;
+        }
+        
+        return step7Data;
         
       case 8:
         // Title & Description step - handled separately above
@@ -683,96 +736,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       default:
         return null;
     }
-  };
-
-  // Helper function to convert label to backend value (matching creation form)
-  const convertLabelToValue = (field: string, label: string): string => {
-    // This should match the convertLabelToValue function from the creation form
-    const mappings: Record<string, Record<string, string>> = {
-      packaging: {
-        'Baled': 'baled',
-        'Loose': 'loose',
-        'Big-bag': 'big_bag',
-        'Octabin': 'octabin',
-        'Roles': 'roles',
-        'Container': 'container',
-        'Other': 'other'
-      },
-      material_frequency: {
-        'One-time': 'one_time',
-        'Weekly': 'weekly',
-        'Bi-weekly': 'bi_weekly',
-        'Monthly': 'monthly',
-        'Quarterly': 'quarterly',
-        'Yearly': 'yearly'
-      },
-      origin: {
-        'Post-industrial': 'post_industrial',
-        'Post-consumer': 'post_consumer',
-        'Mix': 'mix'
-      },
-      contamination: {
-        'Clean': 'clean',
-        'Slightly Contaminated': 'slightly_contaminated',
-        'Heavily Contaminated': 'heavily_contaminated'
-      },
-      additives: {
-        'UV Stabilizer': 'uv_stabilizer',
-        'Antioxidant': 'antioxidant',
-        'Flame retardants': 'flame_retardants',
-        'Chlorides': 'chlorides',
-        'No additives': 'no_additives'
-      },
-      storage_conditions: {
-        'Climate Controlled': 'climate_controlled',
-        'Protected Outdoor': 'protected_outdoor',
-        'Unprotected Outdoor': 'unprotected_outdoor'
-      },
-      processing_methods: {
-        'Blow moulding': 'blow_moulding',
-        'Injection moulding': 'injection_moulding',
-        'Extrusion': 'extrusion',
-        'Calendering': 'calendering',
-        'Rotational moulding': 'rotational_moulding',
-        'Sintering': 'sintering',
-        'Thermoforming': 'thermoforming',
-        'Sorting': 'sorting',
-        'Cleaning': 'cleaning',
-        'Shredding': 'shredding',
-        'Melting': 'melting',
-        'Granulation': 'granulation'
-      },
-      delivery_options: {
-        'Pickup Only': 'pickup_only',
-        'Local Delivery': 'local_delivery',
-        'National Shipping': 'national_shipping',
-        'International Shipping': 'international_shipping',
-        'Freight Forwarding': 'freight_forwarding'
-      },
-      unit_of_measurement: {
-        'kg': 'kg',
-        'tons': 'tons',
-        'tonnes': 'tons', // Map both tons and tonnes to 'tons'
-        'lbs': 'lb',
-        'pounds': 'lb',
-        'pieces': 'pieces',
-        'units': 'units',
-        'bales': 'bales',
-        'containers': 'containers',
-        'm³': 'm3',
-        'cubic meters': 'm3',
-        'liters': 'liters',
-        'gallons': 'gallons'
-      }
-    };
-    
-    const fieldMappings = mappings[field];
-    if (fieldMappings && fieldMappings[label]) {
-      return fieldMappings[label];
-    }
-    
-    // Return lowercase version as fallback
-    return label.toLowerCase().replace(/[^a-z0-9]/g, '_');
   };
 
   const getStepStatus = (stepNumber: number): 'completed' | 'current' | 'pending' => {
@@ -1474,13 +1437,56 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               </label>
               <select
                 value={stepData.auctionDuration || '7'}
-                onChange={(e) => handleStepDataChange({ auctionDuration: e.target.value })}
+                onChange={(e) => {
+                  const duration = e.target.value;
+                  handleStepDataChange({ auctionDuration: duration });
+                  // Clear custom duration fields if switching away from custom
+                  if (duration !== 'custom') {
+                    handleStepDataChange({ customAuctionDuration: 0 });
+                  }
+                }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               >
                 {bidDurationOptions.map(option => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
               </select>
+              
+              {/* Custom Duration Date Picker */}
+              {stepData.auctionDuration === 'custom' && (
+                <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select End Date
+                  </label>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split('T')[0]}
+                    max={new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}
+                    onChange={(e) => {
+                      const selectedDate = e.target.value;
+                      if (selectedDate) {
+                        // Calculate days difference
+                        const today = new Date();
+                        const endDate = new Date(selectedDate);
+                        const diffTime = endDate.getTime() - today.getTime();
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        handleStepDataChange({ 
+                          customAuctionDuration: diffDays > 0 ? diffDays : 1 
+                        });
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Select a date up to 90 days from today when the auction should end.
+                  </p>
+                  {stepData.customAuctionDuration && stepData.customAuctionDuration > 0 && (
+                    <p className="text-xs text-[#FF8A00] mt-1">
+                      Auction will run for {stepData.customAuctionDuration} days
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             
             <div>
@@ -1506,6 +1512,23 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       case 8:
         return (
           <div className="space-y-6">
+            {/* Validation Errors Summary */}
+            {showValidationErrors && validationErrors && Object.keys(validationErrors).length > 0 && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-medium text-red-900 mb-2">Please fix the following validation errors:</h4>
+                    <ul className="text-sm text-red-800 space-y-1">
+                      {Object.entries(validationErrors).map(([field, errors]) => (
+                        <li key={field}>• <strong>{field.charAt(0).toUpperCase() + field.slice(1)}:</strong> {errors[0]}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Title *
@@ -1514,12 +1537,36 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                 type="text"
                 value={stepData.title || ''}
                 onChange={(e) => handleStepDataChange({ title: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent ${
+                  (stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 10) || (showValidationErrors && validationErrors?.title)
+                    ? 'border-red-300 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
                 placeholder="Enter auction title"
+                maxLength={255}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Minimum 10 characters required
-              </p>
+              {/* Validation Error Message */}
+              {showValidationErrors && validationErrors?.title && (
+                <div className="flex items-center mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                  <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+                  <span className="text-sm font-medium text-red-700">{validationErrors.title[0]}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center mt-1">
+                <p className={`text-xs ${
+                  (stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 10) || (showValidationErrors && validationErrors?.title)
+                    ? 'text-red-600 font-medium' 
+                    : 'text-gray-500'
+                }`}>
+                  {(stepData.title || '').trim().length}/255 characters
+                  {stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 10 && 
+                    ` - Need at least ${10 - stepData.title.trim().length} more characters`
+                  }
+                </p>
+                {stepData.title && stepData.title.trim().length >= 10 && stepData.title.length <= 255 && !validationErrors?.title && (
+                  <span className="text-xs text-green-600">✓ Valid length</span>
+                )}
+              </div>
             </div>
             
             <div>
@@ -1530,17 +1577,40 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                 value={stepData.description || ''}
                 onChange={(e) => handleStepDataChange({ description: e.target.value })}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                placeholder="Describe your material..."
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent resize-vertical min-h-[120px] ${
+                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50) || (showValidationErrors && validationErrors?.description)
+                    ? 'border-red-300 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
+                placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 50 characters)"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Minimum 50 characters required
-              </p>
+              {/* Validation Error Message */}
+              {showValidationErrors && validationErrors?.description && (
+                <div className="flex items-center mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                  <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+                  <span className="text-sm font-medium text-red-700">{validationErrors.description[0]}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center mt-1">
+                <p className={`text-xs ${
+                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50) || (showValidationErrors && validationErrors?.description)
+                    ? 'text-red-600 font-medium' 
+                    : 'text-gray-500'
+                }`}>
+                  {(stepData.description || '').trim().length} characters
+                  {stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50 && 
+                    ` - Need at least ${50 - stepData.description.trim().length} more characters`
+                  }
+                </p>
+                {stepData.description && stepData.description.trim().length >= 50 && !validationErrors?.description && (
+                  <span className="text-xs text-green-600">✓ Valid length</span>
+                )}
+              </div>
             </div>
             
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Keywords (comma-separated)
+                Keywords (comma-separated, optional)
               </label>
               <input
                 type="text"
@@ -1548,18 +1618,37 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                 onChange={(e) => handleStepDataChange({ 
                   keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k.length > 0)
                 })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent ${
+                  showValidationErrors && validationErrors?.keywords ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="plastic, recycled, high quality"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Help buyers find your material with relevant keywords
-              </p>
+              {/* Validation Error Message */}
+              {showValidationErrors && validationErrors?.keywords && (
+                <div className="flex items-center mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                  <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
+                  <span className="text-sm font-medium text-red-700">{validationErrors.keywords[0]}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center mt-1">
+                <p className={`text-xs ${
+                  showValidationErrors && validationErrors?.keywords ? 'text-red-600 font-medium' : 'text-gray-500'
+                }`}>
+                  {(stepData.keywords?.join(', ') || '').length}/500 characters total
+                  {(stepData.keywords?.join(', ') || '').length > 500 && 
+                    ` - Exceeded by ${(stepData.keywords?.join(', ') || '').length - 500} characters`
+                  }
+                </p>
+                {(stepData.keywords?.join(', ') || '').length <= 500 && (stepData.keywords?.join(', ') || '').length > 0 && !validationErrors?.keywords && (
+                  <span className="text-xs text-green-600">✓ Valid length</span>
+                )}
+              </div>
             </div>
-            
+
             {/* Image Upload Section */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Material Image
+                Material Image (Optional but Recommended)
               </label>
               
               {/* Current Image or Upload Area */}
@@ -1671,6 +1760,185 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
       default:
         return null;
+    }
+  };
+
+  // Validation functions synchronized with AlternativeAuctionForm
+  const validateStep8Detailed = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    const fieldErrors: Record<string, string[]> = {};
+    
+    // Title validation (minimum 10 characters)
+    if (!stepData.title || stepData.title.trim().length < 10) {
+      const titleError = 'Title must be at least 10 characters long';
+      errors.push(titleError);
+      fieldErrors.title = [titleError];
+    } else if (stepData.title.length > 255) {
+      const titleError = 'Title must not exceed 255 characters';
+      errors.push(titleError);
+      fieldErrors.title = [titleError];
+    }
+    
+    // Description validation (minimum 50 characters)
+    if (!stepData.description || stepData.description.trim().length < 50) {
+      const descError = 'Description must be at least 50 characters long';
+      errors.push(descError);
+      fieldErrors.description = [descError];
+    }
+    
+    // Keywords validation (optional, but if provided, max 500 chars total)
+    const keywordsText = stepData.keywords?.join(', ') || '';
+    if (keywordsText.length > 500) {
+      const keywordsError = 'Keywords must not exceed 500 characters total';
+      errors.push(keywordsError);
+      fieldErrors.keywords = [keywordsError];
+    }
+    
+    // Update validation state
+    setValidationErrors(fieldErrors);
+    setShowValidationErrors(errors.length > 0);
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const validateCurrentStepDetailed = (): { isValid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    const fieldErrors: Record<string, string[]> = {};
+
+    switch (activeStep) {
+      case 1:
+        if (!stepData.category) {
+          const error = 'Category is required';
+          errors.push(error);
+          fieldErrors.category = [error];
+        }
+        if (!stepData.subcategory) {
+          const error = 'Subcategory is required';
+          errors.push(error);
+          fieldErrors.subcategory = [error];
+        }
+        if (!stepData.packaging) {
+          const error = 'Packaging type is required';
+          errors.push(error);
+          fieldErrors.packaging = [error];
+        }
+        if (!stepData.materialFrequency) {
+          const error = 'Material frequency is required';
+          errors.push(error);
+          fieldErrors.materialFrequency = [error];
+        }
+        break;
+
+      case 3:
+        if (!stepData.origin) {
+          const error = 'Material origin is required';
+          errors.push(error);
+          fieldErrors.origin = [error];
+        }
+        break;
+
+      case 4:
+        if (!stepData.contaminationLevel) {
+          const error = 'Contamination level is required';
+          errors.push(error);
+          fieldErrors.contaminationLevel = [error];
+        }
+        break;
+
+      case 5:
+        if (!stepData.processingMethods || stepData.processingMethods.length === 0) {
+          const error = 'At least one processing method is required';
+          errors.push(error);
+          fieldErrors.processingMethods = [error];
+        }
+        break;
+
+      case 6:
+        if (!stepData.location?.country) {
+          const error = 'Country is required';
+          errors.push(error);
+          fieldErrors.country = [error];
+        }
+        if (!stepData.location?.city) {
+          const error = 'City is required';
+          errors.push(error);
+          fieldErrors.city = [error];
+        }
+        break;
+
+      case 7:
+        if (!stepData.availableQuantity || stepData.availableQuantity <= 0) {
+          const error = 'Available quantity must be greater than 0';
+          errors.push(error);
+          fieldErrors.availableQuantity = [error];
+        }
+        if (!stepData.unit) {
+          const error = 'Unit of measurement is required';
+          errors.push(error);
+          fieldErrors.unit = [error];
+        }
+        if (!stepData.startingPrice || stepData.startingPrice <= 0) {
+          const error = 'Base price must be greater than 0';
+          errors.push(error);
+          fieldErrors.startingPrice = [error];
+        }
+        const hasValidAuctionDuration = stepData.auctionDuration && 
+          (stepData.auctionDuration !== 'custom' || 
+           (stepData.auctionDuration === 'custom' && stepData.customAuctionDuration && stepData.customAuctionDuration > 0));
+        if (!hasValidAuctionDuration) {
+          const error = 'Valid auction duration is required';
+          errors.push(error);
+          fieldErrors.auctionDuration = [error];
+        }
+        break;
+
+      case 8:
+        return validateStep8Detailed();
+
+      default:
+        break;
+    }
+
+    // Update validation state
+    setValidationErrors(fieldErrors);
+    setShowValidationErrors(errors.length > 0);
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  const validateStep = (stepId: number): boolean => {
+    switch (stepId) {
+      case 1:
+        return !!(stepData.category && stepData.subcategory && stepData.packaging && stepData.materialFrequency);
+      case 2:
+        // Specifications are optional
+        return true;
+      case 3:
+        return !!(stepData.origin);
+      case 4:
+        return !!(stepData.contaminationLevel);
+      case 5:
+        return !!(stepData.processingMethods && stepData.processingMethods.length > 0);
+      case 6:
+        return !!(stepData.location?.country && stepData.location?.city);
+      case 7:
+        const hasValidAuctionDuration = stepData.auctionDuration && 
+          (stepData.auctionDuration !== 'custom' || 
+           (stepData.auctionDuration === 'custom' && stepData.customAuctionDuration && stepData.customAuctionDuration > 0));
+        return !!(stepData.availableQuantity && stepData.availableQuantity > 0 && stepData.unit && stepData.startingPrice && stepData.startingPrice > 0 && hasValidAuctionDuration);
+      case 8:
+        // Step 8 validation
+        const titleValid = stepData.title && stepData.title.trim().length >= 10;
+        const descriptionValid = stepData.description && stepData.description.trim().length >= 50;
+        return !!(titleValid && descriptionValid);
+      default:
+        return true;
     }
   };
 

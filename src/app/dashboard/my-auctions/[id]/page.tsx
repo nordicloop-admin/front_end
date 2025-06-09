@@ -3,10 +3,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ArrowLeft, Clock, Package, User, Calendar, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Clock, Package, User, Calendar, AlertCircle, Edit, Trash2, Play, Pause } from 'lucide-react';
 import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
-import { getAuctionById, deleteAuction, getAdDetails } from '@/services/auction';
+import { getAuctionById, deleteAuction, getAdDetails, activateAd, deactivateAd } from '@/services/auction';
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -254,6 +254,20 @@ export default function AuctionDetail() {
       // Dismiss loading toast
       toast.dismiss(loadingToast);
 
+      // Check for successful deletion
+      if (!response.error && response.data?.success) {
+        // Show success message with details from backend
+        const deletedTitle = response.data.deletedAd?.title || auction.name;
+        toast.success(response.data.message || 'Auction deleted successfully', {
+          description: `"${deletedTitle}" has been removed from your listings.`,
+          duration: 3000,
+        });
+
+        // Redirect to auctions list
+        router.push('/dashboard/my-auctions');
+        return;
+      }
+
       if (response.error) {
         // Show error toast
         toast.error('Failed to delete auction', {
@@ -263,20 +277,132 @@ export default function AuctionDetail() {
         return;
       }
 
-      // Show success message
-      toast.success('Auction deleted successfully', {
-        description: 'The auction has been removed from your listings.',
-        duration: 3000,
+      // Fallback error (shouldn't reach here)
+      toast.error('Failed to delete auction', {
+        description: 'An unexpected error occurred',
+        duration: 5000,
       });
 
-      // Redirect to auctions list
-      router.push('/dashboard/my-auctions');
     } catch (error) {
       // Dismiss loading toast
       toast.dismiss(loadingToast);
 
       // Show error toast
       toast.error('Failed to delete auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
+  };
+
+  // Handle activate/publish auction
+  const handleActivateAuction = async () => {
+    // Show loading toast
+    const loadingToast = toast.loading('Publishing auction...');
+
+    try {
+      // Send activate request to API
+      const response = await activateAd(params.id as string);
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Check for successful activation
+      if (!response.error && response.data) {
+        // Update local auction state
+        setAuction((prevAuction: any) => ({
+          ...prevAuction,
+          status: 'active',
+          auctionStatus: 'Active',
+          timeLeft: response.data!.ad.auction_duration_display
+        }));
+
+        // Show success message
+        toast.success(response.data.message || 'Auction published successfully', {
+          description: 'Your auction is now live and visible to buyers.',
+          duration: 3000,
+        });
+        return;
+      }
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to publish auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Fallback error
+      toast.error('Failed to publish auction', {
+        description: 'An unexpected error occurred',
+        duration: 5000,
+      });
+
+    } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to publish auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
+  };
+
+  // Handle deactivate/unpublish auction
+  const handleDeactivateAuction = async () => {
+    // Show loading toast
+    const loadingToast = toast.loading('Unpublishing auction...');
+
+    try {
+      // Send deactivate request to API
+      const response = await deactivateAd(params.id as string);
+
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Check for successful deactivation
+      if (!response.error && response.data) {
+        // Update local auction state
+        setAuction((prevAuction: any) => ({
+          ...prevAuction,
+          status: 'inactive',
+          auctionStatus: 'Draft',
+          timeLeft: 'Not Started'
+        }));
+
+        // Show success message
+        toast.success(response.data.message || 'Auction unpublished successfully', {
+          description: 'Your auction is no longer visible to buyers.',
+          duration: 3000,
+        });
+        return;
+      }
+
+      if (response.error) {
+        // Show error toast
+        toast.error('Failed to unpublish auction', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Fallback error
+      toast.error('Failed to unpublish auction', {
+        description: 'An unexpected error occurred',
+        duration: 5000,
+      });
+
+    } catch (error) {
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
+      // Show error toast
+      toast.error('Failed to unpublish auction', {
         description: error instanceof Error ? error.message : 'An unexpected error occurred',
         duration: 5000,
       });
@@ -332,22 +458,68 @@ export default function AuctionDetail() {
                 {auction.auctionStatus || (auction.status === 'active' ? 'Active' : 'Inactive')}
               </span>
               
-              {/* Action buttons */}
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="p-2 text-gray-500 hover:text-gray-700 border border-gray-200 rounded-md hover:bg-gray-50 transition-all"
-                  title="Edit auction"
-                >
-                  <Edit size={16} />
-                </button>
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="p-2 text-gray-500 hover:text-red-600 border border-gray-200 rounded-md hover:bg-gray-50 transition-all"
-                  title="Delete auction"
-                >
-                  <Trash2 size={16} />
-                </button>
+              {/* Clean Action Layout */}
+              <div className="space-y-4">
+                {/* Primary Action Only */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-2 h-2 rounded-full ${
+                      auction.status === 'active' || auction.auctionStatus === 'Active' 
+                        ? 'bg-emerald-400 animate-pulse' 
+                        : auction.isComplete 
+                          ? 'bg-amber-400' 
+                          : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-sm font-medium text-gray-600">
+                      {auction.status === 'active' || auction.auctionStatus === 'Active' 
+                        ? 'Live' 
+                        : auction.isComplete 
+                          ? 'Ready to Publish' 
+                          : 'Draft'
+                      }
+                    </span>
+                  </div>
+
+                  {/* Primary Action Button - Added proper spacing */}
+                  <div className="flex items-center ml-6">
+                    {auction.isComplete && (
+                      <>
+                        {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
+                          <button
+                            onClick={handleActivateAuction}
+                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5"
+                          >
+                            <Play className="w-3.5 h-3.5" />
+                            <span>Publish</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleDeactivateAuction}
+                            className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5"
+                          >
+                            <Pause className="w-3.5 h-3.5" />
+                            <span>Hide</span>
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {/* Continue Setup Button (for incomplete auctions) */}
+                    {!auction.isComplete && (
+                      <button className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Continue Setup</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Setup Progress (for incomplete auctions) */}
+                {!auction.isComplete && auction.stepCompletionStatus && (
+                  <div className="text-xs text-gray-500">
+                    Progress: {Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8 steps completed
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -479,22 +651,25 @@ export default function AuctionDetail() {
                 </div>
               )}
 
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="py-3 px-4 bg-[#FF8A00] text-white rounded-md font-medium hover:bg-[#e67e00] transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="py-3 px-4 bg-white text-red-600 border border-red-200 rounded-md font-medium hover:bg-red-50 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete</span>
-                </button>
+              {/* Management Actions - Subtle & Elegant */}
+              <div className="mb-6">
+                <div className="flex items-center space-x-4 text-sm">
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="text-gray-500 hover:text-gray-700 transition-colors flex items-center space-x-1.5"
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span>Edit</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    className="text-gray-500 hover:text-red-500 transition-colors flex items-center space-x-1.5"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -564,6 +739,57 @@ export default function AuctionDetail() {
 
           {/* Sidebar */}
           <div className="xl:col-span-1 space-y-6">
+            {/* Quick Actions - Minimal Sidebar */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Status</h3>
+              
+              <div className="space-y-4">
+                {/* Status Indicator */}
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${
+                      auction.status === 'active' || auction.auctionStatus === 'Active' 
+                        ? 'bg-emerald-400 animate-pulse' 
+                        : auction.isComplete 
+                          ? 'bg-amber-400' 
+                          : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-sm font-medium text-gray-700">
+                      {auction.status === 'active' || auction.auctionStatus === 'Active' 
+                        ? 'Live' 
+                        : auction.isComplete 
+                          ? 'Ready' 
+                          : 'Draft'
+                      }
+                    </span>
+                  </div>
+                  {auction.isComplete && (
+                    <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-md">
+                      Complete
+                    </span>
+                  )}
+                </div>
+
+                {/* Progress for incomplete auctions */}
+                {!auction.isComplete && auction.stepCompletionStatus && (
+                  <div>
+                    <div className="flex justify-between text-xs text-gray-500 mb-2">
+                      <span>Progress</span>
+                      <span>{Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
+                      <div 
+                        className="bg-amber-400 h-1.5 rounded-full transition-all duration-300"
+                        style={{ 
+                          width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Auction Info */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Auction Details</h3>
@@ -627,32 +853,6 @@ export default function AuctionDetail() {
                       />
                     </div>
                   </div>
-                )}
-              </div>
-            </div>
-
-            {/* Management Actions */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Management</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => setIsEditModalOpen(true)}
-                  className="w-full py-3 bg-gray-50 text-gray-700 rounded-md font-medium hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Edit className="w-4 h-4" />
-                  <span>Edit Details</span>
-                </button>
-                <button
-                  onClick={() => setIsDeleteConfirmOpen(true)}
-                  className="w-full py-3 bg-red-50 text-red-700 rounded-md font-medium hover:bg-red-100 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Delete Auction</span>
-                </button>
-                {!auction.isComplete && (
-                  <button className="w-full py-3 bg-orange-50 text-[#FF8A00] rounded-md font-medium hover:bg-orange-100 transition-colors">
-                    Continue Setup
-                  </button>
                 )}
               </div>
             </div>

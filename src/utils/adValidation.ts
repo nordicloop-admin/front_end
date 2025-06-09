@@ -42,7 +42,8 @@ export const isValidValue = (field: string, value: string): boolean => {
 // Validate auction duration (must be integer)
 export const isValidAuctionDuration = (duration: number): boolean => {
   const validDurations = Object.values(AD_CHOICES.AUCTION_DURATION);
-  return validDurations.includes(duration);
+  // Also allow 0 for custom duration
+  return validDurations.includes(duration) || duration === 0;
 };
 
 // Convert display label to backend value
@@ -291,6 +292,15 @@ export const validateStepData = (step: number, data: any): { isValid: boolean; e
       if (typeof data.auction_duration !== 'number') {
         errors.push('auction_duration must be a number');
       }
+      
+      // Validate custom auction duration if auction_duration is 0
+      if (data.auction_duration === 0) {
+        if (!data.custom_auction_duration || typeof data.custom_auction_duration !== 'number') {
+          errors.push('custom_auction_duration is required when auction_duration is 0');
+        } else if (data.custom_auction_duration <= 0 || data.custom_auction_duration > 90) {
+          errors.push('custom_auction_duration must be between 1 and 90 days');
+        }
+      }
       break;
 
     case 8:
@@ -309,9 +319,23 @@ export const validateStepData = (step: number, data: any): { isValid: boolean; e
         errors.push('Description must be at least 50 characters long');
       }
 
-      if (data.keywords && typeof data.keywords === 'string' && data.keywords.length > 500) {
-        errors.push('Keywords must not exceed 500 characters');
+      // Keywords validation - optional but if provided, check total length
+      if (data.keywords) {
+        let keywordsText = '';
+        if (Array.isArray(data.keywords)) {
+          keywordsText = data.keywords.join(', ');
+        } else if (typeof data.keywords === 'string') {
+          keywordsText = data.keywords;
+        }
+        
+        if (keywordsText.length > 500) {
+          errors.push('Keywords must not exceed 500 characters total');
+        }
       }
+      
+      // Image validation - OPTIONAL according to backend
+      // No image validation required as per STEP_8_VALIDATION_GUIDE.md
+      
       break;
   }
 

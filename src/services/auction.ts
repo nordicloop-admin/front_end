@@ -386,9 +386,34 @@ export async function updateAuction(auctionId: string | number, auctionData: Auc
 export async function deleteAuction(auctionId: string | number) {
   try {
     // Delete auction requires authentication
-    const response = await apiDelete<{ success: boolean }>(`/ads/${auctionId}/delete/`, true);
+    // Use /ads/{id}/ with DELETE method as per API specification
+    // API now returns JSON response with message and deleted_ad details
+    const response = await apiDelete<{
+      message: string;
+      deleted_ad: {
+        id: number;
+        title: string;
+      };
+    }>(`/ads/${auctionId}/`, true);
 
-    return response;
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status || 500
+      };
+    }
+
+    // Success: Return the response data with success flag
+    return {
+      data: { 
+        success: true, 
+        message: response.data?.message || 'Ad deleted successfully',
+        deletedAd: response.data?.deleted_ad
+      },
+      error: null,
+      status: response.status || 200
+    };
   } catch (error) {
     return {
       data: null,
@@ -469,6 +494,91 @@ export async function getAdDetails(adId: string | number) {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while fetching ad details',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Activate/publish an ad to make it visible and available for bidding
+ * @param adId The ID of the ad to activate
+ * @returns The API response
+ */
+export async function activateAd(adId: string | number) {
+  try {
+    // Activate ad requires authentication
+    const response = await apiPost<{
+      message: string;
+      ad: {
+        id: number;
+        title: string;
+        is_active: boolean;
+        is_complete: boolean;
+        auction_start_date: string;
+        auction_end_date: string;
+        auction_duration_display: string;
+      };
+    }>(`/ads/${adId}/activate/`, {}, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status || 500
+      };
+    }
+
+    // Success: Return the response data
+    return {
+      data: response.data,
+      error: null,
+      status: response.status || 200
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while activating the ad',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Deactivate/unpublish an ad to make it invisible and stop bidding
+ * @param adId The ID of the ad to deactivate
+ * @returns The API response
+ */
+export async function deactivateAd(adId: string | number) {
+  try {
+    // Deactivate ad requires authentication
+    const response = await apiPost<{
+      message: string;
+      ad: {
+        id: number;
+        title: string;
+        is_active: boolean;
+        is_complete: boolean;
+      };
+    }>(`/ads/${adId}/deactivate/`, {}, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status || 500
+      };
+    }
+
+    // Success: Return the response data
+    return {
+      data: response.data,
+      error: null,
+      status: response.status || 200
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while deactivating the ad',
       status: 500
     };
   }
