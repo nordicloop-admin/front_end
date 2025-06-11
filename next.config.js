@@ -29,8 +29,8 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'nordic-loop-platform.onrender.com',
-        pathname: '/**',
+        hostname: 'storage.googleapis.com',
+        pathname: '/nordic-loop.firebasestorage.app/**',
       },
     ],
     unoptimized: false,

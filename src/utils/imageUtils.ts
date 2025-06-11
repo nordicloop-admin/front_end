@@ -36,7 +36,7 @@ export const getFullImageUrl = (imagePath: string | null | undefined): string =>
   
   // If it's just a filename, assume it's in the material_images directory
   if (!imagePath.startsWith('/')) {
-    return `${backendUrl}/media/material_images/${imagePath}`;
+    return `${backendUrl}/media/${imagePath}`;
   }
   
   // For any other case, append to backend URL
