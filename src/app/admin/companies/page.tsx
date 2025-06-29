@@ -2,120 +2,220 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-
-// Mock data for companies
-const mockCompanies = [
-  {
-    id: '1',
-    companyName: 'Eco Solutions AB',
-    vatNumber: 'SE123456789001',
-    country: 'Sweden',
-    sector: 'Recycling & Waste Management',
-    companyEmail: 'info@ecosolutions.se',
-    companyPhone: '+46 8 123 45 67',
-    contacts: [
-      {
-        name: 'Erik Johansson',
-        email: 'erik@ecosolutions.se',
-        position: 'Sustainability Manager'
-      },
-      {
-        name: 'Anna Lindberg',
-        email: 'anna@ecosolutions.se',
-        position: 'Operations Director'
-      }
-    ],
-    status: 'approved',
-    createdAt: '2023-05-15'
-  },
-  {
-    id: '2',
-    companyName: 'Green Tech Norway',
-    vatNumber: 'NO987654321001',
-    country: 'Norway',
-    sector: 'Energy & Utilities',
-    companyEmail: 'info@greentech.no',
-    companyPhone: '+47 21 98 76 54',
-    contacts: [
-      {
-        name: 'Astrid Olsen',
-        email: 'astrid@greentech.no',
-        position: 'CEO'
-      },
-      {
-        name: 'Lars Hansen',
-        email: 'lars@greentech.no',
-        position: 'Technical Director'
-      }
-    ],
-    status: 'pending',
-    createdAt: '2023-06-20'
-  },
-  {
-    id: '3',
-    companyName: 'Circular Materials Oy',
-    vatNumber: 'FI567890123001',
-    country: 'Finland',
-    sector: 'Manufacturing & Production',
-    companyEmail: 'info@circularmaterials.fi',
-    companyPhone: '+358 9 876 54 32',
-    contacts: [
-      {
-        name: 'Mikko Virtanen',
-        email: 'mikko@circularmaterials.fi',
-        position: 'Operations Director'
-      },
-      {
-        name: 'Elina Korhonen',
-        email: 'elina@circularmaterials.fi',
-        position: 'Sustainability Coordinator'
-      }
-    ],
-    status: 'pending',
-    createdAt: '2023-07-05'
-  }
-];
+import { useSearchParams, useRouter } from 'next/navigation';
+import { getAdminCompanies, type AdminCompany, type AdminCompanyParams } from '@/services/company';
 
 export default function CompaniesPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const statusFilter = searchParams.get('status');
+  const pageParam = searchParams.get('page');
 
-  const [companies, setCompanies] = useState(mockCompanies);
-  const [filteredCompanies, setFilteredCompanies] = useState(mockCompanies);
+  const [companies, setCompanies] = useState<AdminCompany[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState(statusFilter || 'all');
+  const [currentPage, setCurrentPage] = useState(pageParam ? parseInt(pageParam) : 1);
+  const [pagination, setPagination] = useState({
+    count: 0,
+    next: null as string | null,
+    previous: null as string | null,
+    total_pages: 1,
+    page_size: 10
+  });
+
+  // Debounced search to avoid too many API calls
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 
   useEffect(() => {
-    // Filter companies based on search term and status
-    let filtered = companies;
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
 
-    if (searchTerm) {
-      filtered = filtered.filter(company =>
-        company.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.companyEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.companyPhone.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.contacts.some(contact =>
-          contact.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          contact.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          contact.position.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Load companies data
+  useEffect(() => {
+    const loadCompanies = async () => {
+      setLoading(true);
+      setError(null);
+
+      const params: AdminCompanyParams = {
+        page: currentPage,
+        page_size: 10
+      };
+
+      if (debouncedSearchTerm) {
+        params.search = debouncedSearchTerm;
+      }
+
+      if (selectedStatus !== 'all') {
+        params.status = selectedStatus as 'pending' | 'approved' | 'rejected';
+      }
+
+      try {
+        const response = await getAdminCompanies(params);
+
+        if (response.error) {
+          setError(response.error);
+          setCompanies([]);
+        } else if (response.data) {
+          setCompanies(response.data.results);
+          setPagination({
+            count: response.data.count,
+            next: response.data.next,
+            previous: response.data.previous,
+            total_pages: response.data.total_pages,
+            page_size: response.data.page_size
+          });
+        }
+      } catch (err) {
+        setError('Failed to load companies');
+        setCompanies([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCompanies();
+  }, [debouncedSearchTerm, selectedStatus, currentPage]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (selectedStatus !== 'all') {
+      params.set('status', selectedStatus);
+    }
+    
+    if (currentPage > 1) {
+      params.set('page', currentPage.toString());
+    }
+
+    const newUrl = `/admin/companies${params.toString() ? `?${params.toString()}` : ''}`;
+    router.replace(newUrl, { scroll: false });
+  }, [selectedStatus, currentPage, router]);
+
+  const handleStatusChange = (newStatus: string) => {
+    setSelectedStatus(newStatus);
+    setCurrentPage(1); // Reset to first page when changing filters
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handleStatusUpdate = async (companyId: string, newStatus: string) => {
+    // TODO: Implement status update API call
+    console.log(`Updating company ${companyId} status to ${newStatus}`);
+    // For now, just refresh the data
+    const params: AdminCompanyParams = {
+      page: currentPage,
+      page_size: 10
+    };
+
+    if (debouncedSearchTerm) {
+      params.search = debouncedSearchTerm;
     }
 
     if (selectedStatus !== 'all') {
-      filtered = filtered.filter(company => company.status === selectedStatus);
+      params.status = selectedStatus as 'pending' | 'approved' | 'rejected';
     }
 
-    setFilteredCompanies(filtered);
-  }, [searchTerm, selectedStatus, companies]);
+    const response = await getAdminCompanies(params);
+    if (response.data) {
+      setCompanies(response.data.results);
+    }
+  };
 
-  const handleStatusChange = (companyId: string, newStatus: string) => {
-    // Update company status
-    const updatedCompanies = companies.map(company =>
-      company.id === companyId ? { ...company, status: newStatus } : company
+  const renderPagination = () => {
+    if (pagination.total_pages <= 1) return null;
+
+    const pages = [];
+    const maxVisible = 5;
+    const halfVisible = Math.floor(maxVisible / 2);
+    
+    let startPage = Math.max(1, currentPage - halfVisible);
+    let endPage = Math.min(pagination.total_pages, startPage + maxVisible - 1);
+    
+    if (endPage - startPage + 1 < maxVisible) {
+      startPage = Math.max(1, endPage - maxVisible + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200 sm:px-6">
+        <div className="flex justify-between flex-1 sm:hidden">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={!pagination.previous}
+            className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={!pagination.next}
+            className="relative ml-3 inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm text-gray-700">
+              Showing{' '}
+              <span className="font-medium">
+                {(currentPage - 1) * pagination.page_size + 1}
+              </span>{' '}
+              to{' '}
+              <span className="font-medium">
+                {Math.min(currentPage * pagination.page_size, pagination.count)}
+              </span>{' '}
+              of{' '}
+              <span className="font-medium">{pagination.count}</span>{' '}
+              results
+            </p>
+          </div>
+          <div>
+            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={!pagination.previous}
+                className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              {pages.map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                    page === currentPage
+                      ? 'z-10 bg-[#FF8A00] border-[#FF8A00] text-white'
+                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!pagination.next}
+                className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
     );
-    setCompanies(updatedCompanies);
   };
 
   return (
@@ -129,6 +229,12 @@ export default function CompaniesPage() {
           Add New Company
         </Link>
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+          {error}
+        </div>
+      )}
 
       <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
         <div className="p-4 border-b">
@@ -153,7 +259,7 @@ export default function CompaniesPage() {
                 id="status"
                 className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => handleStatusChange(e.target.value)}
               >
                 <option value="all">All</option>
                 <option value="pending">Pending</option>
@@ -164,114 +270,126 @@ export default function CompaniesPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Company
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Company Contact
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact People
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Country
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sector
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredCompanies.length > 0 ? (
-                filteredCompanies.map((company) => (
-                  <tr key={company.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{company.companyName}</div>
-                      <div className="text-sm text-gray-500">VAT: {company.vatNumber}</div>
-                      <div className="text-xs text-gray-500">Registered: {company.createdAt}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        {company.companyEmail}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                        </svg>
-                        {company.companyPhone}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {company.contacts.map((contact, index) => (
-                        <div key={index} className={`${index > 0 ? 'mt-3 pt-3 border-t border-gray-200' : ''}`}>
-                          <div className="text-sm font-medium text-gray-900">{contact.name}</div>
-                          <div className="text-sm text-gray-500">{contact.email}</div>
-                          <div className="text-xs text-gray-500">{contact.position}</div>
-                        </div>
-                      ))}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {company.country}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {company.sector}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                        ${company.status === 'approved' ? 'bg-green-100 text-green-800' :
-                          company.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'}`}>
-                        {company.status.charAt(0).toUpperCase() + company.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Link href={`/admin/companies/${company.id}`} className="text-blue-600 hover:text-blue-900">
-                          View
-                        </Link>
-                        {company.status === 'pending' && (
-                          <>
-                            <button
-                              onClick={() => handleStatusChange(company.id, 'approved')}
-                              className="text-green-600 hover:text-green-900"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleStatusChange(company.id, 'rejected')}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
+        {loading ? (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF8A00]"></div>
+            <p className="mt-2 text-gray-500">Loading companies...</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Company
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Company Contact
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Contact People
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Country
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sector
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                    No companies found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {companies.length > 0 ? (
+                    companies.map((company) => (
+                      <tr key={company.id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">{company.companyName}</div>
+                          <div className="text-sm text-gray-500">VAT: {company.vatNumber}</div>
+                          <div className="text-xs text-gray-500">Registered: {company.registrationDate}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-900">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            {company.companyEmail}
+                          </div>
+                          {company.companyPhone && (
+                            <div className="text-sm text-gray-500 mt-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                              </svg>
+                              {company.companyPhone}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {company.contacts.map((contact, index) => (
+                            <div key={index} className={`${index > 0 ? 'mt-3 pt-3 border-t border-gray-200' : ''}`}>
+                              <div className="text-sm font-medium text-gray-900">{contact.name}</div>
+                              <div className="text-sm text-gray-500">{contact.email}</div>
+                              <div className="text-xs text-gray-500">{contact.position}</div>
+                            </div>
+                          ))}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {company.country}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {company.sector}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                            ${company.status === 'approved' ? 'bg-green-100 text-green-800' :
+                              company.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'}`}>
+                            {company.status.charAt(0).toUpperCase() + company.status.slice(1)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <Link href={`/admin/companies/${company.id}`} className="text-blue-600 hover:text-blue-900">
+                              View
+                            </Link>
+                            {company.status === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => handleStatusUpdate(company.id, 'approved')}
+                                  className="text-green-600 hover:text-green-900"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleStatusUpdate(company.id, 'rejected')}
+                                  className="text-red-600 hover:text-red-900"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                        No companies found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {renderPagination()}
+          </>
+        )}
       </div>
     </div>
   );
