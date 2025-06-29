@@ -1,7 +1,7 @@
 /**
  * Company service for handling company registration and management
  */
-import { apiPost, apiGet } from './api';
+import { apiPost, apiGet, apiPut } from './api';
 import { CompanyRegistration } from '@/types/auth';
 
 /**
@@ -68,6 +68,15 @@ interface AdminCompanyParams {
   status?: 'all' | 'pending' | 'approved' | 'rejected';
   page?: number;
   page_size?: number;
+}
+
+/**
+ * Interface for company status update response
+ */
+interface CompanyStatusUpdateResponse {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  message?: string;
 }
 
 /**
@@ -161,6 +170,73 @@ export async function getAdminCompany(companyId: string) {
 }
 
 /**
+ * Approve a company
+ * @param companyId The company ID to approve
+ * @returns The update response
+ */
+export async function approveCompany(companyId: string) {
+  try {
+    const response = await apiPost<CompanyStatusUpdateResponse>(`/company/approve/${companyId}/`, {}, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while approving the company',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Reject a company
+ * @param companyId The company ID to reject
+ * @returns The update response
+ */
+export async function rejectCompany(companyId: string) {
+  try {
+    // Assuming there's a similar endpoint for rejection, or we use a generic status update endpoint
+    const response = await apiPost<CompanyStatusUpdateResponse>(`/company/reject/${companyId}/`, {}, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while rejecting the company',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Update company status (generic function for both approve/reject if needed)
+ * @param companyId The company ID
+ * @param status The new status ('approved' or 'rejected')
+ * @returns The update response
+ */
+export async function updateCompanyStatus(companyId: string, status: 'approved' | 'rejected') {
+  try {
+    let endpoint: string;
+    
+    if (status === 'approved') {
+      endpoint = `/company/approve/${companyId}/`;
+    } else {
+      endpoint = `/company/reject/${companyId}/`;
+    }
+
+    const response = await apiPost<CompanyStatusUpdateResponse>(endpoint, {}, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : `An error occurred while ${status === 'approved' ? 'approving' : 'rejecting'} the company`,
+      status: 500
+    };
+  }
+}
+
+/**
  * Generate a signup token for a user
  * @param email The user's email
  * @returns A base64 encoded token
@@ -175,4 +251,4 @@ export function generateSignupToken(email: string): string {
 }
 
 // Export types for use in components
-export type { AdminCompany, AdminCompanyListResponse, AdminCompanyParams };
+export type { AdminCompany, AdminCompanyListResponse, AdminCompanyParams, CompanyStatusUpdateResponse };

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getAdminCompanies, type AdminCompany, type AdminCompanyParams } from '@/services/company';
+import { getAdminCompanies, updateCompanyStatus, type AdminCompany, type AdminCompanyParams } from '@/services/company';
 
 export default function CompaniesPage() {
   const searchParams = useSearchParams();
@@ -17,6 +17,7 @@ export default function CompaniesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState(statusFilter || 'all');
   const [currentPage, setCurrentPage] = useState(pageParam ? parseInt(pageParam) : 1);
+  const [updatingCompanyId, setUpdatingCompanyId] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     count: 0,
     next: null as string | null,
@@ -107,26 +108,55 @@ export default function CompaniesPage() {
     setCurrentPage(page);
   };
 
-  const handleStatusUpdate = async (companyId: string, newStatus: string) => {
-    // TODO: Implement status update API call
-    console.log(`Updating company ${companyId} status to ${newStatus}`);
-    // For now, just refresh the data
-    const params: AdminCompanyParams = {
-      page: currentPage,
-      page_size: 10
-    };
+  const handleStatusUpdate = async (companyId: string, newStatus: 'approved' | 'rejected') => {
+    setUpdatingCompanyId(companyId);
+    setError(null);
 
-    if (debouncedSearchTerm) {
-      params.search = debouncedSearchTerm;
-    }
+    try {
+      const response = await updateCompanyStatus(companyId, newStatus);
 
-    if (selectedStatus !== 'all') {
-      params.status = selectedStatus as 'pending' | 'approved' | 'rejected';
-    }
+      if (response.error) {
+        setError(response.error);
+      } else {
+        // Update the local state immediately for better UX
+        setCompanies(prevCompanies => 
+          prevCompanies.map(company => 
+            company.id === companyId 
+              ? { ...company, status: newStatus }
+              : company
+          )
+        );
 
-    const response = await getAdminCompanies(params);
-    if (response.data) {
-      setCompanies(response.data.results);
+        // Optionally refresh the data to ensure consistency
+        const params: AdminCompanyParams = {
+          page: currentPage,
+          page_size: 10
+        };
+
+        if (debouncedSearchTerm) {
+          params.search = debouncedSearchTerm;
+        }
+
+        if (selectedStatus !== 'all') {
+          params.status = selectedStatus as 'pending' | 'approved' | 'rejected';
+        }
+
+        const refreshResponse = await getAdminCompanies(params);
+        if (refreshResponse.data) {
+          setCompanies(refreshResponse.data.results);
+          setPagination({
+            count: refreshResponse.data.count,
+            next: refreshResponse.data.next,
+            previous: refreshResponse.data.previous,
+            total_pages: refreshResponse.data.total_pages,
+            page_size: refreshResponse.data.page_size
+          });
+        }
+      }
+    } catch (err) {
+      setError(`Failed to ${newStatus === 'approved' ? 'approve' : 'reject'} company`);
+    } finally {
+      setUpdatingCompanyId(null);
     }
   };
 
@@ -361,15 +391,17 @@ export default function CompaniesPage() {
                               <>
                                 <button
                                   onClick={() => handleStatusUpdate(company.id, 'approved')}
-                                  className="text-green-600 hover:text-green-900"
+                                  disabled={updatingCompanyId === company.id}
+                                  className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  Approve
+                                  {updatingCompanyId === company.id ? 'Approving...' : 'Approve'}
                                 </button>
                                 <button
                                   onClick={() => handleStatusUpdate(company.id, 'rejected')}
-                                  className="text-red-600 hover:text-red-900"
+                                  disabled={updatingCompanyId === company.id}
+                                  className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  Reject
+                                  {updatingCompanyId === company.id ? 'Rejecting...' : 'Reject'}
                                 </button>
                               </>
                             )}

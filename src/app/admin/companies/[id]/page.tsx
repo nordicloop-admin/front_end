@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { getAdminCompany, type AdminCompany } from '@/services/company';
+import { getAdminCompany, updateCompanyStatus, type AdminCompany } from '@/services/company';
 import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User } from 'lucide-react';
 
 export default function CompanyDetailPage() {
@@ -14,6 +14,7 @@ export default function CompanyDetailPage() {
   const [company, setCompany] = useState<AdminCompany | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     const loadCompany = async () => {
@@ -40,15 +41,31 @@ export default function CompanyDetailPage() {
     loadCompany();
   }, [companyId]);
 
-  const handleStatusUpdate = async (newStatus: string) => {
-    // TODO: Implement status update API call
-    console.log(`Updating company ${companyId} status to ${newStatus}`);
-    // For now, just update the local state
-    if (company) {
-      setCompany({
-        ...company,
-        status: newStatus as 'pending' | 'approved' | 'rejected'
-      });
+  const handleStatusUpdate = async (newStatus: 'approved' | 'rejected') => {
+    if (!company) return;
+
+    setUpdating(true);
+    setError(null);
+
+    try {
+      const response = await updateCompanyStatus(companyId, newStatus);
+
+      if (response.error) {
+        setError(response.error);
+      } else {
+        // Update the local state immediately for better UX
+        setCompany({
+          ...company,
+          status: newStatus
+        });
+
+        // Show success message or redirect if needed
+        // For now, just update the state
+      }
+    } catch (err) {
+      setError(`Failed to ${newStatus === 'approved' ? 'approve' : 'reject'} company`);
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -122,19 +139,28 @@ export default function CompanyDetailPage() {
           <div className="flex space-x-3">
             <button
               onClick={() => handleStatusUpdate('approved')}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+              disabled={updating}
+              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Approve Company
+              {updating ? 'Processing...' : 'Approve Company'}
             </button>
             <button
               onClick={() => handleStatusUpdate('rejected')}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+              disabled={updating}
+              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Reject Company
+              {updating ? 'Processing...' : 'Reject Company'}
             </button>
           </div>
         )}
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+          {error}
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -292,15 +318,17 @@ export default function CompanyDetailPage() {
               <div className="mt-4 space-y-2">
                 <button
                   onClick={() => handleStatusUpdate('approved')}
-                  className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
+                  disabled={updating}
+                  className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Approve
+                  {updating ? 'Processing...' : 'Approve'}
                 </button>
                 <button
                   onClick={() => handleStatusUpdate('rejected')}
-                  className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+                  disabled={updating}
+                  className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Reject
+                  {updating ? 'Processing...' : 'Reject'}
                 </button>
               </div>
             )}
