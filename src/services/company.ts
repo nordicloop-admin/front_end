@@ -176,7 +176,7 @@ export async function getAdminCompany(companyId: string) {
  */
 export async function approveCompany(companyId: string) {
   try {
-    const response = await apiPost<CompanyStatusUpdateResponse>(`/company/approve/${companyId}/`, {}, true);
+    const response = await apiPost<CompanyStatusUpdateResponse>(`/company/${companyId}/approve/`, {}, true);
 
     return response;
   } catch (error) {
@@ -195,8 +195,8 @@ export async function approveCompany(companyId: string) {
  */
 export async function rejectCompany(companyId: string) {
   try {
-    // Assuming there's a similar endpoint for rejection, or we use a generic status update endpoint
-    const response = await apiPost<CompanyStatusUpdateResponse>(`/company/reject/${companyId}/`, {}, true);
+    // Assuming there's a similar endpoint for rejection with the new format
+    const response = await apiPost<CompanyStatusUpdateResponse>(`/company/${companyId}/reject/`, {}, true);
 
     return response;
   } catch (error) {
@@ -219,9 +219,9 @@ export async function updateCompanyStatus(companyId: string, status: 'approved' 
     let endpoint: string;
     
     if (status === 'approved') {
-      endpoint = `/company/approve/${companyId}/`;
+      endpoint = `/company/${companyId}/approve/`;
     } else {
-      endpoint = `/company/reject/${companyId}/`;
+      endpoint = `/company/${companyId}/reject/`;
     }
 
     const response = await apiPost<CompanyStatusUpdateResponse>(endpoint, {}, true);
