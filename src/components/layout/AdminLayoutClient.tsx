@@ -91,16 +91,16 @@ export default function AdminLayoutClient({
           </Link>
 
           <Link
-            href="/admin/marketplace"
-            className={`flex items-center px-4 py-2 mt-4 ${pathname === '/admin/marketplace' ? 'text-[#FF8A00] font-medium' : 'text-gray-600 hover:text-[#FF8A00]'}`}
+            href="/admin/auctions"
+            className={`flex items-center px-4 py-2 mt-4 ${pathname === '/admin/auctions' || pathname.startsWith('/admin/auctions') ? 'text-[#FF8A00] font-medium' : 'text-gray-600 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
             <svg className="h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="4" width="16" height="16" rx="1" stroke={pathname === '/admin/marketplace' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
-              <path d="M4 8H20" stroke={pathname === '/admin/marketplace' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
-              <path d="M9 20V8" stroke={pathname === '/admin/marketplace' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
+              <rect x="4" y="4" width="16" height="16" rx="1" stroke={pathname === '/admin/auctions' || pathname.startsWith('/admin/auctions') ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
+              <path d="M4 8H20" stroke={pathname === '/admin/auctions' || pathname.startsWith('/admin/auctions') ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
+              <path d="M9 20V8" stroke={pathname === '/admin/auctions' || pathname.startsWith('/admin/auctions') ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
             </svg>
-            <span>Marketplace</span>
+            <span>Auctions</span>
           </Link>
 
           <Link
