@@ -206,7 +206,7 @@ export default function AdminLayoutClient({
         <DashboardHeader onMobileMenuToggle={toggleSidebar} showAddAuctionsButton={false} />
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-5">
           {children}
         </main>
       </div>
