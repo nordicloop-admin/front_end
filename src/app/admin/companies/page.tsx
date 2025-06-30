@@ -72,7 +72,7 @@ export default function CompaniesPage() {
             page_size: response.data.page_size
           });
         }
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to load companies');
         setCompanies([]);
       } finally {
@@ -153,7 +153,7 @@ export default function CompaniesPage() {
           });
         }
       }
-    } catch (err) {
+    } catch (_err) {
       setError(`Failed to ${newStatus === 'approved' ? 'approve' : 'reject'} company`);
     } finally {
       setUpdatingCompanyId(null);
@@ -168,7 +168,7 @@ export default function CompaniesPage() {
     const halfVisible = Math.floor(maxVisible / 2);
     
     let startPage = Math.max(1, currentPage - halfVisible);
-    let endPage = Math.min(pagination.total_pages, startPage + maxVisible - 1);
+    const endPage = Math.min(pagination.total_pages, startPage + maxVisible - 1);
     
     if (endPage - startPage + 1 < maxVisible) {
       startPage = Math.max(1, endPage - maxVisible + 1);

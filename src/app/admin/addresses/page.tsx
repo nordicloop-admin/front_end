@@ -1,128 +1,129 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, ChevronDown, ChevronUp, MapPin, Building, Check, X } from 'lucide-react';
-
-// Mock data for addresses
-const mockAddresses = [
-  {
-    id: '1',
-    companyId: '1',
-    companyName: 'Eco Solutions AB',
-    type: 'business',
-    addressLine1: 'Storgatan 45',
-    addressLine2: '',
-    city: 'Stockholm',
-    postalCode: '11455',
-    country: 'Sweden',
-    isVerified: true,
-    isPrimary: true,
-    contactName: 'Erik Johansson',
-    contactPhone: '+46 70 123 4567',
-    createdAt: '2023-05-15'
-  },
-  {
-    id: '2',
-    companyId: '1',
-    companyName: 'Eco Solutions AB',
-    type: 'shipping',
-    addressLine1: 'Industrivägen 12',
-    addressLine2: 'Port 3',
-    city: 'Stockholm',
-    postalCode: '12645',
-    country: 'Sweden',
-    isVerified: true,
-    isPrimary: false,
-    contactName: 'Maria Andersson',
-    contactPhone: '+46 70 987 6543',
-    createdAt: '2023-05-16'
-  },
-  {
-    id: '3',
-    companyId: '2',
-    companyName: 'Green Tech Norway',
-    type: 'business',
-    addressLine1: 'Kongens gate 20',
-    addressLine2: '4th Floor',
-    city: 'Oslo',
-    postalCode: '0153',
-    country: 'Norway',
-    isVerified: true,
-    isPrimary: true,
-    contactName: 'Astrid Olsen',
-    contactPhone: '+47 912 34 567',
-    createdAt: '2023-06-20'
-  },
-  {
-    id: '4',
-    companyId: '2',
-    companyName: 'Green Tech Norway',
-    type: 'shipping',
-    addressLine1: 'Havnegata 7',
-    addressLine2: '',
-    city: 'Oslo',
-    postalCode: '0150',
-    country: 'Norway',
-    isVerified: false,
-    isPrimary: false,
-    contactName: 'Johan Berg',
-    contactPhone: '+47 987 65 432',
-    createdAt: '2023-06-21'
-  },
-  {
-    id: '5',
-    companyId: '3',
-    companyName: 'Circular Materials Oy',
-    type: 'business',
-    addressLine1: 'Mannerheimintie 15',
-    addressLine2: '',
-    city: 'Helsinki',
-    postalCode: '00100',
-    country: 'Finland',
-    isVerified: true,
-    isPrimary: true,
-    contactName: 'Mikko Virtanen',
-    contactPhone: '+358 40 123 4567',
-    createdAt: '2023-07-05'
-  }
-];
+import { Search, Filter, ChevronDown, ChevronUp, MapPin, Building, Check, X, RefreshCw } from 'lucide-react';
+import { getAdminAddresses, AdminAddress } from '@/services/addresses';
 
 export default function AddressesPage() {
-  const [addresses, setAddresses] = useState(mockAddresses);
-  const [filteredAddresses, setFilteredAddresses] = useState(mockAddresses);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState('all');
-  const [selectedVerification, setSelectedVerification] = useState('all');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // State management
+  const [addresses, setAddresses] = useState<AdminAddress[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    count: 0,
+    totalPages: 1,
+    currentPage: 1,
+    pageSize: 10
+  });
+
+  // URL state management for filters
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [selectedType, setSelectedType] = useState(searchParams.get('type') || 'all');
+  const [selectedVerification, setSelectedVerification] = useState(searchParams.get('is_verified') || 'all');
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+
+  // Sorting state
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
 
-  // Filter addresses based on search term, type, and verification status
+  // Debounce search term
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
   useEffect(() => {
-    let result = addresses;
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
 
-    if (searchTerm) {
-      result = result.filter(address =>
-        address.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        address.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        address.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        address.contactName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Update URL when filters change
+  const updateURL = useCallback((search: string, type: string, verification: string, page: number) => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (type && type !== 'all') params.set('type', type);
+    if (verification && verification !== 'all') params.set('is_verified', verification);
+    if (page > 1) params.set('page', page.toString());
+    
+    const newURL = `/admin/addresses${params.toString() ? `?${params.toString()}` : ''}`;
+    router.push(newURL);
+  }, [router]);
+
+  // Fetch addresses from API
+  const fetchAddresses = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = {
+        search: debouncedSearchTerm || undefined,
+        type: selectedType !== 'all' ? selectedType : undefined,
+        is_verified: selectedVerification !== 'all' ? selectedVerification === 'verified' : undefined,
+        page: currentPage,
+        page_size: pagination.pageSize
+      };
+
+      const response = await getAdminAddresses(params);
+
+      if (response.data) {
+        setAddresses(response.data.results);
+        setPagination({
+          count: response.data.count,
+          totalPages: response.data.total_pages,
+          currentPage: response.data.current_page,
+          pageSize: response.data.page_size
+        });
+      } else {
+        setError(response.error || 'Failed to fetch addresses');
+      }
+    } catch (_err) {
+      setError('An unexpected error occurred while fetching addresses');
+    } finally {
+      setLoading(false);
     }
+  }, [debouncedSearchTerm, selectedType, selectedVerification, currentPage, pagination.pageSize]);
 
-    if (selectedType !== 'all') {
-      result = result.filter(address => address.type === selectedType);
-    }
+  // Fetch data when dependencies change
+  useEffect(() => {
+    fetchAddresses();
+  }, [fetchAddresses]);
 
-    if (selectedVerification !== 'all') {
-      const isVerified = selectedVerification === 'verified';
-      result = result.filter(address => address.isVerified === isVerified);
-    }
+  // Update URL when filters change
+  useEffect(() => {
+    updateURL(debouncedSearchTerm, selectedType, selectedVerification, currentPage);
+  }, [debouncedSearchTerm, selectedType, selectedVerification, currentPage, updateURL]);
 
-    setFilteredAddresses(result);
-  }, [searchTerm, selectedType, selectedVerification, addresses]);
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
 
-  // Handle verification status change
-  const handleVerificationChange = (addressId: string, isVerified: boolean) => {
+  // Handle type filter change
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedType(e.target.value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Handle verification filter change
+  const handleVerificationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedVerification(e.target.value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Handle verification status change (placeholder for now)
+  const handleVerificationStatusChange = (addressId: string, isVerified: boolean) => {
+    // TODO: Implement API call to update verification status
+    // For now, update local state
     const updatedAddresses = addresses.map(address =>
       address.id === addressId ? { ...address, isVerified } : address
     );
@@ -139,17 +140,20 @@ export default function AddressesPage() {
 
     setSortConfig({ key, direction });
 
-    const sortedAddresses = [...filteredAddresses].sort((a, b) => {
-      if (a[key as keyof typeof a] < b[key as keyof typeof b]) {
+    const sortedAddresses = [...addresses].sort((a, b) => {
+      const aValue = a[key as keyof AdminAddress];
+      const bValue = b[key as keyof AdminAddress];
+
+      if (aValue < bValue) {
         return direction === 'ascending' ? -1 : 1;
       }
-      if (a[key as keyof typeof a] > b[key as keyof typeof b]) {
+      if (aValue > bValue) {
         return direction === 'ascending' ? 1 : -1;
       }
       return 0;
     });
 
-    setFilteredAddresses(sortedAddresses);
+    setAddresses(sortedAddresses);
   };
 
   // Get sort indicator
@@ -161,18 +165,94 @@ export default function AddressesPage() {
     return sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
-  // Format address for display - prefixed with underscore to indicate it's not currently used
-  const _formatAddress = (address: typeof mockAddresses[0]) => {
-    let formattedAddress = address.addressLine1;
-    if (address.addressLine2) formattedAddress += `, ${address.addressLine2}`;
-    formattedAddress += `, ${address.city}, ${address.postalCode}, ${address.country}`;
-    return formattedAddress;
+  // Count addresses that need verification
+  const unverifiedCount = addresses.filter(address => !address.isVerified).length;
+
+  // Generate pagination
+  const renderPagination = () => {
+    if (pagination.totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    if (currentPage > 1) {
+      pages.push(
+        <button
+          key="prev"
+          onClick={() => handlePageChange(currentPage - 1)}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50"
+        >
+          Previous
+        </button>
+      );
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-2 text-sm font-medium border ${
+            i === currentPage
+              ? 'bg-[#FF8A00] text-white border-[#FF8A00]'
+              : 'text-gray-500 bg-white border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Next button
+    if (currentPage < pagination.totalPages) {
+      pages.push(
+        <button
+          key="next"
+          onClick={() => handlePageChange(currentPage + 1)}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50"
+        >
+          Next
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-between mt-6">
+        <div className="text-sm text-gray-700">
+          Showing {((currentPage - 1) * pagination.pageSize) + 1} to {Math.min(currentPage * pagination.pageSize, pagination.count)} of {pagination.count} results
+        </div>
+        <div className="flex">{pages}</div>
+      </div>
+    );
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Address Management</h1>
+        <div className="flex items-center">
+          <h1 className="text-2xl font-bold">Address Management</h1>
+          {unverifiedCount > 0 && (
+            <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {unverifiedCount}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={fetchAddresses}
+          disabled={loading}
+          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
       {/* Filters */}
@@ -184,10 +264,10 @@ export default function AddressesPage() {
             </div>
             <input
               type="text"
-              placeholder="Search addresses..."
+              placeholder="Search addresses by company, city, country, contact..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
 
@@ -196,7 +276,7 @@ export default function AddressesPage() {
             <select
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={selectedType}
-              onChange={(e) => setSelectedType(e.target.value)}
+              onChange={handleTypeChange}
             >
               <option value="all">All Types</option>
               <option value="business">Business</option>
@@ -209,7 +289,7 @@ export default function AddressesPage() {
             <select
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={selectedVerification}
-              onChange={(e) => setSelectedVerification(e.target.value)}
+              onChange={handleVerificationChange}
             >
               <option value="all">All Verification</option>
               <option value="verified">Verified</option>
@@ -218,6 +298,13 @@ export default function AddressesPage() {
           </div>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="text-red-800">{error}</div>
+        </div>
+      )}
 
       {/* Addresses Table */}
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
@@ -255,8 +342,17 @@ export default function AddressesPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAddresses.length > 0 ? (
-                filteredAddresses.map((address) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center">
+                    <div className="flex items-center justify-center space-x-2">
+                      <RefreshCw className="h-5 w-5 animate-spin text-gray-400" />
+                      <span className="text-gray-500">Loading addresses...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : addresses.length > 0 ? (
+                addresses.map((address) => (
                   <tr key={address.id} className={!address.isVerified ? "bg-yellow-50" : ""}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{address.companyName}</div>
@@ -308,13 +404,10 @@ export default function AddressesPage() {
                         <Link href={`/admin/addresses/${address.id}`} className="text-blue-600 hover:text-blue-900">
                           View
                         </Link>
-                        <Link href={`/admin/addresses/${address.id}/edit`} className="text-indigo-600 hover:text-indigo-900">
-                          Edit
-                        </Link>
                         {!address.isVerified ? (
                           <button
                             className="text-green-600 hover:text-green-900 flex items-center"
-                            onClick={() => handleVerificationChange(address.id, true)}
+                            onClick={() => handleVerificationStatusChange(address.id, true)}
                           >
                             <Check className="h-4 w-4 mr-1" />
                             Verify
@@ -322,7 +415,7 @@ export default function AddressesPage() {
                         ) : (
                           <button
                             className="text-red-600 hover:text-red-900 flex items-center"
-                            onClick={() => handleVerificationChange(address.id, false)}
+                            onClick={() => handleVerificationStatusChange(address.id, false)}
                           >
                             <X className="h-4 w-4 mr-1" />
                             Unverify
@@ -334,14 +427,21 @@ export default function AddressesPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                    No addresses found
+                  <td colSpan={6} className="px-6 py-8 text-center">
+                    <div className="text-gray-500">
+                      {searchTerm || selectedType !== 'all' || selectedVerification !== 'all'
+                        ? 'No addresses found matching your criteria'
+                        : 'No addresses available'}
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {renderPagination()}
       </div>
     </div>
   );

@@ -78,7 +78,7 @@ export default function AuctionsPage() {
       } else {
         setError(response.error || 'Failed to fetch auctions');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An unexpected error occurred while fetching auctions');
     } finally {
       setLoading(false);
@@ -175,7 +175,7 @@ export default function AuctionsPage() {
     const pages = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);

@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { getAdminUser, type AdminUser } from '@/services/users';
-import { ArrowLeft, User, Mail, Building, Calendar, Shield, Clock } from 'lucide-react';
+import { ArrowLeft, Mail, Building, Calendar, Shield, Clock } from 'lucide-react';
 
 export default function UserDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const userId = params.id as string;
 
   const [user, setUser] = useState<AdminUser | null>(null);
@@ -30,7 +29,7 @@ export default function UserDetailPage() {
         } else if (response.data) {
           setUser(response.data);
         }
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to load user details');
       } finally {
         setLoading(false);

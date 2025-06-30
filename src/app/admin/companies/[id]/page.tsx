@@ -2,13 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { getAdminCompany, updateCompanyStatus, type AdminCompany } from '@/services/company';
 import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User } from 'lucide-react';
 
 export default function CompanyDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const companyId = params.id as string;
 
   const [company, setCompany] = useState<AdminCompany | null>(null);
@@ -31,7 +30,7 @@ export default function CompanyDetailPage() {
         } else if (response.data) {
           setCompany(response.data);
         }
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to load company details');
       } finally {
         setLoading(false);
@@ -62,7 +61,7 @@ export default function CompanyDetailPage() {
         // Show success message or redirect if needed
         // For now, just update the state
       }
-    } catch (err) {
+    } catch (_err) {
       setError(`Failed to ${newStatus === 'approved' ? 'approve' : 'reject'} company`);
     } finally {
       setUpdating(false);

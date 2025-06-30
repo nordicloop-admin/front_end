@@ -233,51 +233,7 @@ export function AlternativeAuctionForm() {
     }
   }, [showValidationErrors, validationErrors]);
 
-  const handleAutoSave = useCallback(async () => {
-    if (!adId || currentStep === 1) return; // Skip auto-save for step 1 and if no ad exists
-
-    setIsAutoSaving(true);
-    try {
-      const stepData = convertFormDataToApiData(currentStep, formData);
-      
-      // Validate step data before auto-saving (skip step 2 and 8 as they have different validation)
-      if (currentStep !== 2 && currentStep !== 8) {
-        const validation = validateStepData(currentStep, stepData);
-        if (!validation.isValid) {
-          // Silent failure for auto-save with invalid data - don't disrupt user
-          setIsAutoSaving(false);
-          return;
-        }
-      }
-      
-      const result = await adCreationService.updateAdStep(currentStep, stepData);
-      
-      if (result.success) {
-        setHasUnsavedChanges(false);
-        if (result.data) {
-          setApiCompletedSteps(result.data.step_completion_status);
-        }
-      }
-    } catch (_error) {
-      // Silent failure for auto-save - don't show error to user
-      // Error is handled gracefully without disrupting the user experience
-    } finally {
-      setIsAutoSaving(false);
-    }
-  }, [adId, currentStep, formData]);
-
-  // Auto-save functionality
-  useEffect(() => {
-    if (!hasUnsavedChanges || !adId || isSubmitting || !categoriesLoaded) return;
-
-    const timeoutId = setTimeout(async () => {
-      await handleAutoSave();
-    }, 2000); // Auto-save after 2 seconds of inactivity
-
-    return () => clearTimeout(timeoutId);
-  }, [hasUnsavedChanges, adId, isSubmitting, categoriesLoaded, handleAutoSave]);
-
-  const convertFormDataToApiData = (step: number, data: FormData): any => {
+  const convertFormDataToApiData = useCallback((step: number, data: FormData): any => {
     switch (step) {
       case 1:
         const step1Data = {
@@ -360,7 +316,43 @@ export function AlternativeAuctionForm() {
       default:
         return {};
     }
-  };
+  }, [categories, findCategoryId, findSubcategoryId]);
+
+  const handleAutoSave = useCallback(async () => {
+    if (!adId || !hasUnsavedChanges || !categoriesLoaded) return;
+
+    setIsAutoSaving(true);
+
+    try {
+      const stepData = convertFormDataToApiData(currentStep, formData);
+      
+      // Use the existing service for consistency
+      const result = await adCreationService.updateAdStep(currentStep, stepData);
+      
+      if (result.success) {
+        setHasUnsavedChanges(false);
+        if (result.data) {
+          setApiCompletedSteps(result.data.step_completion_status);
+        }
+      }
+    } catch (_error) {
+      // Silent failure for auto-save - don't show error to user
+      // Error is handled gracefully without disrupting the user experience
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [adId, currentStep, formData, convertFormDataToApiData, hasUnsavedChanges, categoriesLoaded]);
+
+  // Auto-save functionality
+  useEffect(() => {
+    if (!hasUnsavedChanges || !adId || isSubmitting || !categoriesLoaded) return;
+
+    const timeoutId = setTimeout(async () => {
+      await handleAutoSave();
+    }, 2000); // Auto-save after 2 seconds of inactivity
+
+    return () => clearTimeout(timeoutId);
+  }, [hasUnsavedChanges, adId, isSubmitting, categoriesLoaded, handleAutoSave]);
 
   const validateStep8Detailed = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];

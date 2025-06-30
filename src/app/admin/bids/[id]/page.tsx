@@ -1,14 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, RefreshCw, Clock, User, Package, TrendingUp } from 'lucide-react';
 import { getAdminBid, AdminBid } from '@/services/bids';
 
 export default function BidDetailPage() {
   const { id } = useParams();
-  const router = useRouter();
   
   // State management
   const [bid, setBid] = useState<AdminBid | null>(null);
@@ -16,7 +15,7 @@ export default function BidDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch bid details
-  const fetchBidDetails = async () => {
+  const fetchBidDetails = useCallback(async () => {
     if (!id || typeof id !== 'string') return;
     
     setLoading(true);
@@ -30,16 +29,16 @@ export default function BidDetailPage() {
       } else {
         setError(response.error || 'Failed to fetch bid details');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An unexpected error occurred while fetching bid details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchBidDetails();
-  }, [id]);
+  }, [fetchBidDetails]);
 
   // Format bid amount
   const formatBidAmount = (amount: number) => {

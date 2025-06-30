@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Search, Filter, ChevronDown, ChevronUp, Clock, RefreshCw } from 'lucide-react';
 import { getAdminBids, AdminBid } from '@/services/bids';
 
@@ -78,7 +77,7 @@ export default function BidsPage() {
       } else {
         setError(response.error || 'Failed to fetch bids');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An unexpected error occurred while fetching bids');
     } finally {
       setLoading(false);
@@ -177,7 +176,7 @@ export default function BidsPage() {
     const pages = [];
     const maxVisiblePages = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    let endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+    const endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);

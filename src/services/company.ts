@@ -1,7 +1,7 @@
 /**
  * Company service for handling company registration and management
  */
-import { apiPost, apiGet, apiPut } from './api';
+import { apiPost, apiGet } from './api';
 import { CompanyRegistration } from '@/types/auth';
 
 /**

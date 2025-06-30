@@ -77,7 +77,7 @@ export default function UsersPage() {
             page_size: response.data.page_size
           });
         }
-      } catch (err) {
+      } catch (_err) {
         setError('Failed to load users');
         setUsers([]);
       } finally {
@@ -147,7 +147,7 @@ export default function UsersPage() {
     const halfVisible = Math.floor(maxVisible / 2);
     
     let startPage = Math.max(1, currentPage - halfVisible);
-    let endPage = Math.min(pagination.total_pages, startPage + maxVisible - 1);
+    const endPage = Math.min(pagination.total_pages, startPage + maxVisible - 1);
     
     if (endPage - startPage + 1 < maxVisible) {
       startPage = Math.max(1, endPage - maxVisible + 1);

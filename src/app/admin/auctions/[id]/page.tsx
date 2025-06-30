@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, RefreshCw, Clock, User, Package, TrendingUp, Globe, Tag } from 'lucide-react';
@@ -9,7 +9,6 @@ import { getAdminAuction, AdminAuction } from '@/services/auctions';
 
 export default function AuctionDetailPage() {
   const { id } = useParams();
-  const router = useRouter();
   
   // State management
   const [auction, setAuction] = useState<AdminAuction | null>(null);
@@ -17,7 +16,7 @@ export default function AuctionDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch auction details
-  const fetchAuctionDetails = async () => {
+  const fetchAuctionDetails = useCallback(async () => {
     if (!id || typeof id !== 'string') return;
     
     setLoading(true);
@@ -31,16 +30,16 @@ export default function AuctionDetailPage() {
       } else {
         setError(response.error || 'Failed to fetch auction details');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('An unexpected error occurred while fetching auction details');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     fetchAuctionDetails();
-  }, [id]);
+  }, [fetchAuctionDetails]);
 
   // Format price
   const formatPrice = (amount: number) => {
