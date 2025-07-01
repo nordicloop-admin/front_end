@@ -134,253 +134,156 @@ export default function SubscriptionDetailPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/admin/subscriptions"
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to Subscriptions
-          </Link>
-          <h1 className="text-2xl font-bold">Subscription Details</h1>
+    <div className="min-h-screen bg-gray-50 -mx-5">
+      {/* Clean Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-full mx-auto px-6 lg:px-12 py-4">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/admin/subscriptions"
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft size={20} className="mr-2" />
+              <span className="font-medium">Back to Subscriptions</span>
+            </Link>
+            
+            <div className="flex items-center space-x-3">
+              <span className={`px-3 py-1 rounded-md text-sm font-medium border ${getStatusBadgeColor(subscription.status)}`}>
+                {subscription.status === 'active' ? 'Active' :
+                 subscription.status === 'expired' ? 'Expired' :
+                 subscription.status === 'payment_failed' ? 'Payment Failed' :
+                 'Cancelled'}
+              </span>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={fetchSubscriptionDetails}
-          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </button>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Subscription Information */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Subscription Overview */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold flex items-center">
-                <DollarSign className="h-5 w-5 mr-2 text-[#FF8A00]" />
-                Subscription Overview
-              </h2>
+      <div className="max-w-full mx-auto px-6 lg:px-12 py-8">
+        {/* Hero Section */}
+        <div className="bg-white rounded-lg border border-gray-200 mb-8">
+          <div className="p-6 border-b border-gray-200">
+            <h1 className="text-2xl font-bold text-gray-900">{getPlanDisplayName(subscription.plan)} Subscription</h1>
+            <p className="text-gray-500 mt-1">Started on {formatDate(subscription.startDate)} • Subscription ID: #{subscription.id}</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+            <div className="border border-gray-200 rounded-md p-4">
+              <div className="text-sm text-gray-500 mb-1">Monthly Amount</div>
+              <div className="text-2xl font-bold text-[#FF8A00]">{subscription.amount}</div>
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Subscription ID
-                  </label>
-                  <div className="text-sm font-medium text-gray-900">{subscription.id}</div>
+            
+            <div className="border border-gray-200 rounded-md p-4">
+              <div className="text-sm text-gray-500 mb-1 flex items-center">
+                <DollarSign className="w-4 h-4 mr-2" />
+                Plan Type
+              </div>
+              <div className="text-xl font-bold text-gray-900">{getPlanDisplayName(subscription.plan)}</div>
+            </div>
+            
+            <div className="border border-gray-200 rounded-md p-4">
+              <div className="text-sm text-gray-500 mb-1 flex items-center">
+                <Building className="w-4 h-4 mr-2" />
+                Company
+              </div>
+              <div className="text-xl font-bold text-gray-900">{subscription.companyName}</div>
+              <div className="text-sm text-gray-500">{subscription.contactEmail}</div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="xl:col-span-3 space-y-6">
+            {/* Subscription Details */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription Details</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Plan</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{getPlanDisplayName(subscription.plan)}</div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Plan
-                  </label>
-                  <div className="text-lg font-bold text-gray-900">{getPlanDisplayName(subscription.plan)}</div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Status</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{subscription.status === 'active' ? 'Active' : subscription.status === 'expired' ? 'Expired' : subscription.status === 'payment_failed' ? 'Payment Failed' : 'Cancelled'}</div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Status
-                  </label>
-                  <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusBadgeColor(subscription.status)}`}>
-                    {subscription.status === 'active' ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" />
-                        Active
-                      </>
-                    ) : subscription.status === 'expired' ? (
-                      <>
-                        <Clock className="h-4 w-4 mr-1" />
-                        Expired
-                      </>
-                    ) : subscription.status === 'payment_failed' ? (
-                      <>
-                        <AlertCircle className="h-4 w-4 mr-1" />
-                        Payment Failed
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-4 w-4 mr-1" />
-                        Cancelled
-                      </>
-                    )}
-                  </span>
-                  {subscription.status === 'payment_failed' && (
-                    <div className="text-xs text-red-600 mt-1">Requires immediate attention</div>
-                  )}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Amount</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{subscription.amount}</div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Amount
-                  </label>
-                  <div className="text-lg font-semibold text-gray-900">{subscription.amount}</div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Auto Renewal</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{subscription.autoRenew ? 'Yes' : 'No'}</div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Auto Renewal
-                  </label>
-                  <div className="flex items-center">
-                    {subscription.autoRenew ? (
-                      <>
-                        <Check className="h-4 w-4 mr-2 text-green-500" />
-                        <span className="text-sm text-green-600">Enabled</span>
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-4 w-4 mr-2 text-gray-400" />
-                        <span className="text-sm text-gray-600">Disabled</span>
-                      </>
-                    )}
-                  </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Start Date</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{formatDate(subscription.startDate)}</div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Start Date
-                  </label>
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                    <span className="text-sm text-gray-900">{formatDate(subscription.startDate)}</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    End Date
-                  </label>
-                  <div className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                    <span className="text-sm text-gray-900">
-                      {subscription.endDate ? formatDate(subscription.endDate) : 'No end date'}
-                    </span>
-                  </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">End Date</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{subscription.endDate ? formatDate(subscription.endDate) : 'No end date'}</div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Payment Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold flex items-center">
-                <CreditCard className="h-5 w-5 mr-2 text-[#FF8A00]" />
-                Payment Information
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Payment Method
-                  </label>
-                  {subscription.paymentMethod ? (
-                    <div className="flex items-center">
-                      {getPaymentMethodIcon(subscription.paymentMethod)}
-                      <span className="ml-2 text-sm font-medium text-gray-900">
-                        {subscription.paymentMethod === 'credit_card' ? 'Credit Card' : 'Invoice'}
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-sm text-gray-500">No payment method</div>
-                  )}
+            {/* Payment Information */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Payment Method</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">
+                    {subscription.paymentMethod ? (subscription.paymentMethod === 'credit_card' ? 'Credit Card' : 'Invoice') : 'No payment method'}
+                  </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Last Payment
-                  </label>
-                  <div className="text-sm text-gray-900">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Last Payment</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">
                     {subscription.lastPayment ? formatDate(subscription.lastPayment) : 'No payments yet'}
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Right Column - Company Information & Actions */}
-        <div className="space-y-6">
-          {/* Company Details */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold flex items-center">
-                <Building className="h-5 w-5 mr-2 text-[#FF8A00]" />
-                Company Information
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Company Name
-                  </label>
-                  <div className="text-sm font-medium text-gray-900">{subscription.companyName}</div>
+            
+            {/* Company Information */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Company Information</h2>
+                <Link
+                  href={`/admin/companies/${subscription.companyId}`}
+                  className="text-[#FF8A00] text-sm hover:text-orange-700 font-medium"
+                >
+                  View Company Details
+                </Link>
+              </div>
+              
+              <div className="flex items-center p-4 bg-gray-50 rounded-md border border-gray-100">
+                <div className="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center mr-4">
+                  <Building size={24} className="text-gray-500" />
                 </div>
-                
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Company ID
-                  </label>
-                  <div className="text-sm text-gray-900">{subscription.companyId}</div>
+                  <h3 className="font-medium text-gray-900">{subscription.companyName}</h3>
+                  <p className="text-sm text-gray-500">ID: {subscription.companyId}</p>
+                  <p className="text-sm text-gray-500">{subscription.contactEmail}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Contact Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold flex items-center">
-                <User className="h-5 w-5 mr-2 text-[#FF8A00]" />
-                Contact Information
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Contact Name
-                  </label>
-                  <div className="text-sm font-medium text-gray-900">{subscription.contactName}</div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Contact Email
-                  </label>
-                  <div className="text-sm text-gray-900">{subscription.contactEmail}</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Subscription Summary */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold">Subscription Summary</h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Plan</span>
-                  <span className="text-sm font-medium text-gray-900">{getPlanDisplayName(subscription.plan)}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Status</span>
-                  <span className={`text-sm font-medium ${
-                    subscription.status === 'active' ? 'text-green-600' :
-                    subscription.status === 'payment_failed' ? 'text-red-600' :
-                    subscription.status === 'expired' ? 'text-gray-600' :
-                    'text-yellow-600'
+          {/* Sidebar */}
+          <div className="xl:col-span-1 space-y-6">
+            {/* Status Information */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Information</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Current Status</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    subscription.status === 'active' ? 'bg-green-100 text-green-800' :
+                    subscription.status === 'expired' ? 'bg-gray-100 text-gray-800' :
+                    subscription.status === 'payment_failed' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
                   }`}>
                     {subscription.status === 'active' ? 'Active' :
                      subscription.status === 'expired' ? 'Expired' :
@@ -388,42 +291,44 @@ export default function SubscriptionDetailPage() {
                      'Cancelled'}
                   </span>
                 </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Auto Renewal</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {subscription.autoRenew ? 'Yes' : 'No'}
-                  </span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Start Date</span>
+                  <span className="font-medium text-gray-900">{formatDate(subscription.startDate)}</span>
                 </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Monthly Cost</span>
-                  <span className="text-sm font-medium text-gray-900">{subscription.amount}</span>
-                </div>
+                {subscription.endDate && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">End Date</span>
+                    <span className="font-medium text-gray-900">{formatDate(subscription.endDate)}</span>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold">Quick Actions</h2>
-            </div>
-            <div className="p-6">
+            
+            {/* Contact Information */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
               <div className="space-y-3">
-                <Link
-                  href={`/admin/companies/${subscription.companyId}`}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8A00]"
-                >
-                  View Company Details
-                </Link>
-                <Link
-                  href={`/admin/subscriptions`}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#FF8A00] hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8A00]"
-                >
-                  View All Subscriptions
-                </Link>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Contact Name</span>
+                  <span className="font-medium text-gray-900">{subscription.contactName}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Email</span>
+                  <span className="font-medium text-gray-900">{subscription.contactEmail}</span>
+                </div>
               </div>
+            </div>
+            
+            {/* Admin Notes */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Admin Notes</h3>
+              <textarea
+                placeholder="Add private notes about this subscription (only visible to admins)"
+                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+              ></textarea>
+              <button className="mt-2 w-full px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-orange-600 transition-colors">
+                Save Notes
+              </button>
             </div>
           </div>
         </div>

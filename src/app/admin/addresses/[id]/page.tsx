@@ -104,240 +104,219 @@ export default function AddressDetailPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/admin/addresses"
-            className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5 mr-2" />
-            Back to Addresses
-          </Link>
-          <h1 className="text-2xl font-bold">Address Details</h1>
+    <div className="min-h-screen bg-gray-50 -mx-5">
+      {/* Clean Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-full mx-auto px-6 lg:px-12 py-4">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/admin/addresses"
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft size={20} className="mr-2" />
+              <span className="font-medium">Back to Addresses</span>
+            </Link>
+            
+            <div className="flex items-center space-x-3">
+              <span className={`px-3 py-1 rounded-md text-sm font-medium border ${getVerificationBadgeColor(address.isVerified)}`}>
+                {address.isVerified ? 'Verified' : 'Unverified'}
+              </span>
+              
+              <button
+                onClick={fetchAddressDetails}
+                className="flex items-center px-4 py-2 border border-gray-200 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+              >
+                <RefreshCw size={14} className="mr-2" />
+                Refresh
+              </button>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={fetchAddressDetails}
-          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-        >
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </button>
       </div>
 
-      {/* Main Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Address Information */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Address Overview */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold flex items-center">
-                <MapPin className="h-5 w-5 mr-2 text-[#FF8A00]" />
-                Address Overview
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Address ID
-                  </label>
-                  <div className="text-sm font-medium text-gray-900">{address.id}</div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Type
-                  </label>
-                  <div className="flex items-center">
-                    {getTypeIcon(address.type)}
-                    <span className="ml-2 text-sm font-medium text-gray-900 capitalize">
-                      {address.type}
-                    </span>
-                    {address.isPrimary && (
-                      <span className="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
-                        Primary
-                      </span>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Verification Status
-                  </label>
-                  <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getVerificationBadgeColor(address.isVerified)}`}>
-                    {address.isVerified ? (
-                      <>
-                        <Check className="h-4 w-4 mr-1" />
-                        Verified
-                      </>
-                    ) : (
-                      <>
-                        <X className="h-4 w-4 mr-1" />
-                        Unverified
-                      </>
-                    )}
-                  </span>
-                </div>
-                
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Street Address
-                  </label>
-                  <div className="text-sm text-gray-900">
-                    {address.addressLine1}
-                    {address.addressLine2 && (
-                      <div className="text-sm text-gray-600 mt-1">{address.addressLine2}</div>
-                    )}
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    City
-                  </label>
-                  <div className="text-sm text-gray-900">{address.city}</div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Postal Code
-                  </label>
-                  <div className="text-sm text-gray-900">{address.postalCode}</div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Country
-                  </label>
-                  <div className="flex items-center">
-                    <Globe className="h-4 w-4 mr-2 text-gray-400" />
-                    <span className="text-sm text-gray-900">{address.country}</span>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Created Date
-                  </label>
-                  <div className="text-sm text-gray-900">{formatDate(address.createdAt)}</div>
-                </div>
-              </div>
-            </div>
+      <div className="max-w-full mx-auto px-6 lg:px-12 py-8">
+        {/* Hero Section */}
+        <div className="bg-white rounded-lg border border-gray-200 mb-8">
+          <div className="p-6 border-b border-gray-200">
+            <h1 className="text-2xl font-bold text-gray-900">{address.type.charAt(0).toUpperCase() + address.type.slice(1)} Address</h1>
+            <p className="text-gray-500 mt-1">Created on {formatDate(address.createdAt)} • Address ID: #{address.id}</p>
           </div>
-
-          {/* Contact Information */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold flex items-center">
-                <User className="h-5 w-5 mr-2 text-[#FF8A00]" />
-                Contact Information
-              </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
+            <div className="border border-gray-200 rounded-md p-4">
+              <div className="text-sm text-gray-500 mb-1">Address Type</div>
+              <div className="text-2xl font-bold text-[#FF8A00] capitalize">{address.type}</div>
+              {address.isPrimary && (
+                <div className="text-sm text-blue-600 mt-1">Primary Address</div>
+              )}
             </div>
-            <div className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Contact Name
-                  </label>
-                  <div className="text-sm font-medium text-gray-900">{address.contactName}</div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Contact Phone
-                  </label>
-                  <div className="flex items-center">
-                    <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                    <span className="text-sm text-gray-900">{address.contactPhone}</span>
-                  </div>
-                </div>
+            
+            <div className="border border-gray-200 rounded-md p-4">
+              <div className="text-sm text-gray-500 mb-1 flex items-center">
+                <MapPin className="w-4 h-4 mr-2" />
+                Location
               </div>
+              <div className="text-xl font-bold text-gray-900">{address.city}</div>
+              <div className="text-sm text-gray-500">{address.country}</div>
+            </div>
+            
+            <div className="border border-gray-200 rounded-md p-4">
+              <div className="text-sm text-gray-500 mb-1 flex items-center">
+                <Building className="w-4 h-4 mr-2" />
+                Company
+              </div>
+              <div className="text-xl font-bold text-gray-900">{address.companyName}</div>
+              <div className="text-sm text-gray-500">{address.contactName}</div>
             </div>
           </div>
         </div>
-
-        {/* Right Column - Company Information & Actions */}
-        <div className="space-y-6">
-          {/* Company Details */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold flex items-center">
-                <Building className="h-5 w-5 mr-2 text-[#FF8A00]" />
-                Company Information
-              </h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Company Name
-                  </label>
-                  <div className="text-sm font-medium text-gray-900">{address.companyName}</div>
+        
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          {/* Main Content */}
+          <div className="xl:col-span-3 space-y-6">
+            {/* Address Details */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Address Details</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Type</div>
+                  <div className="text-gray-900 font-medium text-sm text-right capitalize">{address.type}</div>
                 </div>
-                
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Status</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{address.isVerified ? 'Verified' : 'Unverified'}</div>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Primary Address</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{address.isPrimary ? 'Yes' : 'No'}</div>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Street Address</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{address.addressLine1}</div>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">City</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{address.city}</div>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Postal Code</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{address.postalCode}</div>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Country</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{address.country}</div>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Created Date</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{formatDate(address.createdAt)}</div>
+                </div>
+              </div>
+              
+              {address.addressLine2 && (
+                <div className="mt-6">
+                  <h3 className="text-md font-semibold mb-2">Additional Address Information</h3>
+                  <div className="p-4 bg-gray-50 rounded-md border border-gray-100 text-gray-700">
+                    {address.addressLine2}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Contact Information */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Contact Name</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{address.contactName}</div>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Contact Phone</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{address.contactPhone}</div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Company Information */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Company Information</h2>
+                <Link
+                  href={`/admin/companies/${address.companyId}`}
+                  className="text-[#FF8A00] text-sm hover:text-orange-700 font-medium"
+                >
+                  View Company Details
+                </Link>
+              </div>
+              
+              <div className="flex items-center p-4 bg-gray-50 rounded-md border border-gray-100">
+                <div className="h-16 w-16 bg-gray-200 rounded-md flex items-center justify-center mr-4">
+                  <Building size={24} className="text-gray-500" />
+                </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-1">
-                    Company ID
-                  </label>
-                  <div className="text-sm text-gray-900">{address.companyId}</div>
+                  <h3 className="font-medium text-gray-900">{address.companyName}</h3>
+                  <p className="text-sm text-gray-500">ID: {address.companyId}</p>
+                  <p className="text-sm text-gray-500">Contact: {address.contactName}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Address Summary */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold">Address Summary</h2>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Type</span>
-                  <span className="text-sm font-medium text-gray-900 capitalize">{address.type}</span>
-                </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Status</span>
-                  <span className={`text-sm font-medium ${address.isVerified ? 'text-green-600' : 'text-yellow-600'}`}>
-                    {address.isVerified ? 'Verified' : 'Pending Verification'}
+          {/* Sidebar */}
+          <div className="xl:col-span-1 space-y-6">
+            {/* Address Status */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Status</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Verification Status</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    address.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {address.isVerified ? 'Verified' : 'Pending'}
                   </span>
                 </div>
-                
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">Primary Address</span>
-                  <span className="text-sm font-medium text-gray-900">
-                    {address.isPrimary ? 'Yes' : 'No'}
-                  </span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Primary Address</span>
+                  <span className="font-medium text-gray-900">{address.isPrimary ? 'Yes' : 'No'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Type</span>
+                  <span className="font-medium text-gray-900 capitalize">{address.type}</span>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold">Quick Actions</h2>
-            </div>
-            <div className="p-6">
+            
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <Link
                   href={`/admin/companies/${address.companyId}`}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8A00]"
+                  className="w-full flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                 >
                   View Company Details
                 </Link>
                 <Link
                   href={`/admin/addresses`}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#FF8A00] hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8A00]"
+                  className="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-[#FF8A00] hover:bg-orange-600 transition-colors"
                 >
                   View All Addresses
                 </Link>
               </div>
+            </div>
+            
+            {/* Admin Notes */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3">Admin Notes</h3>
+              <textarea
+                placeholder="Add private notes about this address (only visible to admins)"
+                className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+              ></textarea>
+              <button className="mt-2 w-full px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-orange-600 transition-colors">
+                Save Notes
+              </button>
             </div>
           </div>
         </div>
