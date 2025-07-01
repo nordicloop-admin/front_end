@@ -2,13 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Info, Package, ArrowRight, Clock, AlertTriangle } from 'lucide-react';
+import { Info, Package, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { getTimeUntilExpiration, forceTokenExpiration } from '@/services/auth';
 
 const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [tokenTimeLeft, setTokenTimeLeft] = useState(0);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -20,34 +18,6 @@ const DashboardPage = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Update token time left every second (for development testing)
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      const updateTokenTime = () => {
-        setTokenTimeLeft(getTimeUntilExpiration());
-      };
-
-      updateTokenTime();
-      const interval = setInterval(updateTokenTime, 1000);
-
-      return () => clearInterval(interval);
-    }
-  }, []);
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${remainingSeconds}s`;
-    } else if (minutes > 0) {
-      return `${minutes}m ${remainingSeconds}s`;
-    } else {
-      return `${remainingSeconds}s`;
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -58,33 +28,7 @@ const DashboardPage = () => {
 
   return (
     <div className="p-5">
-      {/* Development Token Status */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mb-4 bg-yellow-50 border border-yellow-200 p-3 rounded-md">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Clock size={16} className="text-yellow-600 mr-2" />
-              <span className="text-sm font-medium text-yellow-800">
-                Token expires in: {formatTime(tokenTimeLeft)}
-              </span>
-            </div>
-            <button
-              onClick={forceTokenExpiration}
-              className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition-colors"
-            >
-              Test Expiration
-            </button>
-          </div>
-          {tokenTimeLeft < 300 && tokenTimeLeft > 0 && (
-            <div className="mt-2 flex items-center">
-              <AlertTriangle size={14} className="text-orange-500 mr-1" />
-              <span className="text-xs text-orange-700">Token will expire soon!</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Greeting */}
+      {/* Header with Greeting */}
       <div className="mb-5">
         <div className="text-gray-500 text-sm">Hello</div>
         <h1 className="text-xl font-medium text-gray-900">

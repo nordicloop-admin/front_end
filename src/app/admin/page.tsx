@@ -2,12 +2,15 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Building, Users, Clock, Plus } from 'lucide-react';
+import { Building, Users, Clock, Plus, ArrowLeft } from 'lucide-react';
 
 export default function AdminDashboard() {
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-bold mb-8">Admin Dashboard</h1>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
