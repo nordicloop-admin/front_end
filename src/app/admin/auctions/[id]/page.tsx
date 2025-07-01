@@ -252,7 +252,7 @@ export default function AuctionDetailPage() {
             {/* Content Section - Takes remaining space */}
             <div className="p-8 xl:col-span-2">
               <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900 mb-2">{auction.name}</h1>
+                <h1 className="text-xl font-medium text-gray-900 mb-2">{auction.name}</h1>
                 
                 <div className="flex items-center text-gray-600 text-sm">
                   <Building className="w-4 h-4 mr-2" />
@@ -267,7 +267,7 @@ export default function AuctionDetailPage() {
                   <div className="text-sm text-gray-500 mb-1">
                     {auction.highestBid > auction.basePrice ? 'Current Highest Bid' : 'Starting Price'}
                   </div>
-                  <div className="text-xl font-bold text-[#FF8A00]">
+                  <div className="text-lg font-semibold text-[#FF8A00]">
                     {formatPrice(auction.highestBid > auction.basePrice ? auction.highestBid : auction.basePrice)}
                   </div>
                 </div>
@@ -277,7 +277,7 @@ export default function AuctionDetailPage() {
                     <Package className="w-4 h-4 mr-1" />
                     Volume
                   </div>
-                  <div className="text-xl font-bold text-gray-900">
+                  <div className="text-lg font-semibold text-gray-900">
                     {auction.volume}
                   </div>
                 </div>
@@ -339,13 +339,13 @@ export default function AuctionDetailPage() {
           <div className="xl:col-span-3 space-y-6">
             {/* Description */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Description</h2>
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Description</h2>
               <p className="text-gray-700 leading-relaxed">{auction.description || 'No description available.'}</p>
             </div>
 
             {/* Specifications */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Specifications</h2>
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Specifications</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Category</div>
@@ -382,7 +382,7 @@ export default function AuctionDetailPage() {
 
             {/* Bid History */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Bid History</h2>
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Bid History</h2>
               {bidLoading ? (
                 <div className="flex items-center justify-center p-6">
                   <RefreshCw className="h-5 w-5 animate-spin text-gray-400 mr-2" />
@@ -452,7 +452,7 @@ export default function AuctionDetailPage() {
           <div className="xl:col-span-1 space-y-6">
             {/* Admin Info */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Actions</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Admin Actions</h3>
               <div className="space-y-3">
                 <button
                   onClick={() => handleStatusUpdate('active')}
@@ -480,7 +480,7 @@ export default function AuctionDetailPage() {
 
             {/* Seller Info */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Seller Information</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Seller Information</h3>
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -502,7 +502,7 @@ export default function AuctionDetailPage() {
 
             {/* Admin Notes */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Admin Notes</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Admin Notes</h3>
               <textarea
                 placeholder="Add private notes about this auction (only visible to admins)"
                 className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"

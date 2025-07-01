@@ -238,7 +238,7 @@ export default function AuctionsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold">Auctions Management</h1>
+          <h1 className="text-xl font-medium">Auctions Management</h1>
           {pendingReviewCount > 0 && (
             <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {pendingReviewCount}

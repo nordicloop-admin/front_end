@@ -163,14 +163,21 @@ export default function SubscriptionDetailPage() {
         {/* Hero Section */}
         <div className="bg-white rounded-lg border border-gray-200 mb-8">
           <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">{getPlanDisplayName(subscription.plan)} Subscription</h1>
+            <div className="mb-6">
+              <h1 className="text-xl font-medium text-gray-900">{getPlanDisplayName(subscription.plan)} Subscription</h1>
+              
+              <div className="flex items-center text-gray-600 text-sm">
+                <Building className="w-4 h-4 mr-2" />
+                <span>For <span className="font-medium text-gray-900">{subscription.companyName}</span></span>
+              </div>
+            </div>
             <p className="text-gray-500 mt-1">Started on {formatDate(subscription.startDate)} • Subscription ID: #{subscription.id}</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
             <div className="border border-gray-200 rounded-md p-4">
               <div className="text-sm text-gray-500 mb-1">Monthly Amount</div>
-              <div className="text-2xl font-bold text-[#FF8A00]">{subscription.amount}</div>
+              <div className="text-lg font-semibold text-[#FF8A00]">{subscription.amount}</div>
             </div>
             
             <div className="border border-gray-200 rounded-md p-4">
@@ -178,7 +185,7 @@ export default function SubscriptionDetailPage() {
                 <DollarSign className="w-4 h-4 mr-2" />
                 Plan Type
               </div>
-              <div className="text-xl font-bold text-gray-900">{getPlanDisplayName(subscription.plan)}</div>
+              <div className="text-lg font-semibold text-gray-900">{getPlanDisplayName(subscription.plan)}</div>
             </div>
             
             <div className="border border-gray-200 rounded-md p-4">
@@ -186,7 +193,7 @@ export default function SubscriptionDetailPage() {
                 <Building className="w-4 h-4 mr-2" />
                 Company
               </div>
-              <div className="text-xl font-bold text-gray-900">{subscription.companyName}</div>
+              <div className="text-lg font-semibold text-gray-900">{subscription.companyName}</div>
               <div className="text-sm text-gray-500">{subscription.contactEmail}</div>
             </div>
           </div>
@@ -198,7 +205,7 @@ export default function SubscriptionDetailPage() {
           <div className="xl:col-span-3 space-y-6">
             {/* Subscription Details */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Subscription Details</h2>
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Subscription Details</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Plan</div>
@@ -229,7 +236,7 @@ export default function SubscriptionDetailPage() {
 
             {/* Payment Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h2>
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Payment Information</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Payment Method</div>
@@ -249,7 +256,7 @@ export default function SubscriptionDetailPage() {
             {/* Company Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Company Information</h2>
+                <h2 className="text-sm font-medium text-gray-900">Company Information</h2>
                 <Link
                   href={`/admin/companies/${subscription.companyId}`}
                   className="text-[#FF8A00] text-sm hover:text-orange-700 font-medium"
@@ -275,7 +282,7 @@ export default function SubscriptionDetailPage() {
           <div className="xl:col-span-1 space-y-6">
             {/* Status Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Information</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Status Information</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Current Status</span>
@@ -306,7 +313,7 @@ export default function SubscriptionDetailPage() {
             
             {/* Contact Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Contact Information</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Contact Name</span>
@@ -321,7 +328,7 @@ export default function SubscriptionDetailPage() {
             
             {/* Admin Notes */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Admin Notes</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Admin Notes</h3>
               <textarea
                 placeholder="Add private notes about this subscription (only visible to admins)"
                 className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"

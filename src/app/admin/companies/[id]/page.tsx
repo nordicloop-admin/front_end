@@ -131,7 +131,7 @@ export default function CompanyDetailPage() {
             <ArrowLeft size={20} className="mr-1" />
             Back to Companies
           </Link>
-          <h1 className="text-2xl font-bold">Company Details</h1>
+          <h1 className="text-xl font-medium">Company Details</h1>
         </div>
         
         {company.status === 'pending' && (
@@ -139,14 +139,14 @@ export default function CompanyDetailPage() {
             <button
               onClick={() => handleStatusUpdate('approved')}
               disabled={updating}
-              className="border border-green-300 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 hover:border-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border border-green-300 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 hover:border-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {updating ? 'Updating...' : 'Approve Company'}
             </button>
             <button
               onClick={() => handleStatusUpdate('rejected')}
               disabled={updating}
-              className="border border-red-300 text-red-700 px-4 py-2 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border border-red-300 text-red-700 px-4 py-2 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
               {updating ? 'Updating...' : 'Reject Company'}
             </button>
@@ -169,7 +169,7 @@ export default function CompanyDetailPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center mb-4">
               <Building className="text-[#FF8A00] mr-2" size={24} />
-              <h2 className="text-lg font-semibold">Company Information</h2>
+              <h2 className="text-sm font-medium">Company Information</h2>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -252,7 +252,7 @@ export default function CompanyDetailPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center mb-4">
               <User className="text-[#FF8A00] mr-2" size={24} />
-              <h2 className="text-lg font-semibold">Contact People</h2>
+              <h2 className="text-sm font-medium">Contact People</h2>
             </div>
             
             <div className="space-y-4">
@@ -302,7 +302,7 @@ export default function CompanyDetailPage() {
         <div className="space-y-6">
           {/* Status Card */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Status</h2>
+            <h2 className="text-sm font-medium mb-4">Status</h2>
             
             <div className="text-center">
               <span className={`inline-flex px-4 py-2 rounded-full text-sm font-semibold
@@ -316,16 +316,16 @@ export default function CompanyDetailPage() {
 
           {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+            <h2 className="text-sm font-medium mb-4">Quick Actions</h2>
             
             <div className="space-y-2">
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
                 Send Email
               </button>
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
                 View Activity Log
               </button>
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
                 Export Details
               </button>
             </div>
@@ -333,7 +333,7 @@ export default function CompanyDetailPage() {
 
           {/* Company Stats */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold mb-4">Statistics</h2>
+            <h2 className="text-sm font-medium mb-4">Statistics</h2>
             
             <div className="space-y-3">
               <div className="flex justify-between">

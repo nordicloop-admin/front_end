@@ -296,7 +296,7 @@ export default function SubscriptionsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold">Subscription Management</h1>
+          <h1 className="text-xl font-medium">Subscription Management</h1>
           {failedPaymentCount > 0 && (
             <span className="ml-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {failedPaymentCount}

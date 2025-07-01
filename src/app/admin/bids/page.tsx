@@ -238,14 +238,12 @@ export default function BidsPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold">Bids Management</h1>
-          {pendingReviewCount > 0 && (
-            <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {pendingReviewCount}
-            </span>
-          )}
-        </div>
+        <h1 className="text-xl font-medium">Bids Management</h1>
+        {pendingReviewCount > 0 && (
+          <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {pendingReviewCount}
+          </span>
+        )}
         <button
           onClick={fetchBids}
           disabled={loading}

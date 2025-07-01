@@ -119,7 +119,7 @@ export default function UserDetailPage() {
             <ArrowLeft size={20} className="mr-1" />
             Back to Users
           </Link>
-          <h1 className="text-2xl font-bold">User Details</h1>
+          <h1 className="text-xl font-medium">User Details</h1>
         </div>
         
         <div className="flex space-x-3">
@@ -147,7 +147,7 @@ export default function UserDetailPage() {
                 </div>
               </div>
               <div className="ml-4">
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-lg font-medium text-gray-900">
                   {user.firstName} {user.lastName}
                 </h2>
                 <p className="text-gray-500">{user.email}</p>
@@ -218,21 +218,21 @@ export default function UserDetailPage() {
 
           {/* Activity Overview */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Activity Overview</h3>
+            <h3 className="text-sm font-medium mb-4">Activity Overview</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">0</div>
+                <div className="text-lg font-semibold text-blue-600">0</div>
                 <div className="text-sm text-gray-600">Active Ads</div>
               </div>
               
               <div className="bg-green-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">0</div>
+                <div className="text-lg font-semibold text-green-600">0</div>
                 <div className="text-sm text-gray-600">Total Bids</div>
               </div>
               
               <div className="bg-purple-50 p-4 rounded-lg">
-                <div className="text-2xl font-bold text-purple-600">0</div>
+                <div className="text-lg font-semibold text-purple-600">0</div>
                 <div className="text-sm text-gray-600">Completed Deals</div>
               </div>
             </div>
@@ -240,7 +240,7 @@ export default function UserDetailPage() {
 
           {/* Recent Activity */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
+            <h3 className="text-sm font-medium mb-4">Recent Activity</h3>
             
             <div className="text-center py-8">
               <p className="text-gray-500">No recent activity to display</p>
@@ -254,7 +254,7 @@ export default function UserDetailPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center mb-4">
               <Shield className="text-[#FF8A00] mr-2" size={20} />
-              <h3 className="text-lg font-semibold">Status & Role</h3>
+              <h3 className="text-sm font-medium">Status & Role</h3>
             </div>
             
             <div className="space-y-4">
@@ -279,10 +279,10 @@ export default function UserDetailPage() {
             </div>
             
             <div className="mt-6 space-y-2">
-              <button className="w-full border border-blue-300 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-50 hover:border-blue-400 transition-colors">
+              <button className="w-full border border-blue-300 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-50 hover:border-blue-400 transition-colors text-sm">
                 Reset Password
               </button>
-              <button className="w-full border border-red-300 text-red-700 px-4 py-2 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors">
+              <button className="w-full border border-red-300 text-red-700 px-4 py-2 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors text-sm">
                 {user.status === 'active' ? 'Deactivate' : 'Activate'} Account
               </button>
             </div>
@@ -290,19 +290,19 @@ export default function UserDetailPage() {
 
           {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+            <h3 className="text-sm font-medium mb-4">Quick Actions</h3>
             
             <div className="space-y-2">
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
                 Send Email
               </button>
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
                 View Company Details
               </button>
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
                 View Activity Log
               </button>
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
                 Export User Data
               </button>
             </div>
@@ -310,7 +310,7 @@ export default function UserDetailPage() {
 
           {/* User Statistics */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold mb-4">Statistics</h3>
+            <h3 className="text-sm font-medium mb-4">Statistics</h3>
             
             <div className="space-y-3">
               <div className="flex justify-between">

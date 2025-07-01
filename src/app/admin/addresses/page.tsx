@@ -237,14 +237,12 @@ export default function AddressesPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold">Address Management</h1>
-          {unverifiedCount > 0 && (
-            <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {unverifiedCount}
-            </span>
-          )}
-        </div>
+        <h1 className="text-xl font-medium">Address Management</h1>
+        {unverifiedCount > 0 && (
+          <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {unverifiedCount}
+          </span>
+        )}
         <button
           onClick={fetchAddresses}
           disabled={loading}

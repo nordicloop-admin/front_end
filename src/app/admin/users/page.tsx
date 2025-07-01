@@ -230,10 +230,10 @@ export default function UsersPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Users Management</h1>
+        <h1 className="text-xl font-medium">Users Management</h1>
         <Link
           href="/admin/users/new"
-          className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#e67e00] transition-colors"
+          className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#e67e00] transition-colors text-sm"
         >
           Add New User
         </Link>
@@ -268,7 +268,7 @@ export default function UsersPage() {
                 <input
                   type="text"
                   id="company"
-                  className="block w-full pl-3 pr-3 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  className="block w-full pl-3 pr-3 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
                   placeholder="Filter by company"
                   value={selectedCompany}
                   onChange={(e) => handleCompanyChange(e.target.value)}
@@ -278,7 +278,7 @@ export default function UsersPage() {
                 <label htmlFor="status" className="mr-2 text-sm font-medium text-gray-700">Status:</label>
                 <select
                   id="status"
-                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                  className="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
                   value={selectedStatus}
                   onChange={(e) => handleStatusChange(e.target.value)}
                 >

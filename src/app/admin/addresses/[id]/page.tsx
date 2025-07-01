@@ -138,14 +138,21 @@ export default function AddressDetailPage() {
         {/* Hero Section */}
         <div className="bg-white rounded-lg border border-gray-200 mb-8">
           <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">{address.type.charAt(0).toUpperCase() + address.type.slice(1)} Address</h1>
+            <div className="mb-6">
+              <h1 className="text-xl font-medium text-gray-900">{address.type.charAt(0).toUpperCase() + address.type.slice(1)} Address</h1>
+              
+              <div className="flex items-center text-gray-600 text-sm">
+                <Building className="w-4 h-4 mr-2" />
+                <span>For <span className="font-medium text-gray-900">{address.companyName}</span></span>
+              </div>
+            </div>
             <p className="text-gray-500 mt-1">Created on {formatDate(address.createdAt)} • Address ID: #{address.id}</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
             <div className="border border-gray-200 rounded-md p-4">
               <div className="text-sm text-gray-500 mb-1">Address Type</div>
-              <div className="text-2xl font-bold text-[#FF8A00] capitalize">{address.type}</div>
+              <div className="text-lg font-semibold text-[#FF8A00] capitalize">{address.type}</div>
               {address.isPrimary && (
                 <div className="text-sm text-blue-600 mt-1">Primary Address</div>
               )}
@@ -156,7 +163,7 @@ export default function AddressDetailPage() {
                 <MapPin className="w-4 h-4 mr-2" />
                 Location
               </div>
-              <div className="text-xl font-bold text-gray-900">{address.city}</div>
+              <div className="text-lg font-semibold text-gray-900">{address.city}</div>
               <div className="text-sm text-gray-500">{address.country}</div>
             </div>
             
@@ -165,7 +172,7 @@ export default function AddressDetailPage() {
                 <Building className="w-4 h-4 mr-2" />
                 Company
               </div>
-              <div className="text-xl font-bold text-gray-900">{address.companyName}</div>
+              <div className="text-lg font-semibold text-gray-900">{address.companyName}</div>
               <div className="text-sm text-gray-500">{address.contactName}</div>
             </div>
           </div>
@@ -177,7 +184,7 @@ export default function AddressDetailPage() {
           <div className="xl:col-span-3 space-y-6">
             {/* Address Details */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Address Details</h2>
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Address Details</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Type</div>
@@ -225,7 +232,7 @@ export default function AddressDetailPage() {
 
             {/* Contact Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Contact Information</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Contact Name</div>
@@ -241,7 +248,7 @@ export default function AddressDetailPage() {
             {/* Company Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Company Information</h2>
+                <h2 className="text-sm font-medium text-gray-900">Company Information</h2>
                 <Link
                   href={`/admin/companies/${address.companyId}`}
                   className="text-[#FF8A00] text-sm hover:text-orange-700 font-medium"
@@ -267,7 +274,7 @@ export default function AddressDetailPage() {
           <div className="xl:col-span-1 space-y-6">
             {/* Address Status */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Address Status</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Address Status</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Verification Status</span>
@@ -290,7 +297,7 @@ export default function AddressDetailPage() {
             
             {/* Quick Actions */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
                 <Link
                   href={`/admin/companies/${address.companyId}`}
@@ -309,7 +316,7 @@ export default function AddressDetailPage() {
             
             {/* Admin Notes */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Admin Notes</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Admin Notes</h3>
               <textarea
                 placeholder="Add private notes about this address (only visible to admins)"
                 className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"

@@ -198,14 +198,20 @@ export default function BidDetailPage() {
         {/* Hero Section */}
         <div className="bg-white rounded-lg border border-gray-200 mb-8">
           <div className="p-6 border-b border-gray-200">
-            <h1 className="text-2xl font-bold text-gray-900">Bid for {bid.itemName}</h1>
-            <p className="text-gray-500 mt-1">Placed on {formatDate(bid.bidDate)} • Bid ID: #{bid.id}</p>
+            <div className="mb-6">
+              <h1 className="text-xl font-medium text-gray-900">Bid for {bid.itemName}</h1>
+              
+              <div className="flex items-center text-gray-600 text-sm mt-2">
+                <User className="w-4 h-4 mr-2" />
+                <span>Placed by <span className="font-medium text-gray-900">{bid.bidderName}</span></span>
+              </div>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
             <div className="border border-gray-200 rounded-md p-4">
               <div className="text-sm text-gray-500 mb-1">Bid Amount</div>
-              <div className="text-2xl font-bold text-[#FF8A00]">{formatBidAmount(bid.bidAmount)}</div>
+              <div className="text-lg font-semibold text-[#FF8A00]">{formatBidAmount(bid.bidAmount)}</div>
             </div>
             
             <div className="border border-gray-200 rounded-md p-4">
@@ -213,7 +219,7 @@ export default function BidDetailPage() {
                 <Package className="w-4 h-4 mr-2" />
                 Volume
               </div>
-              <div className="text-xl font-bold text-gray-900">{formatBidAmount(bid.volume)} {bid.unit}</div>
+              <div className="text-lg font-semibold text-gray-900">{formatBidAmount(bid.volume)} {bid.unit}</div>
             </div>
             
             <div className="border border-gray-200 rounded-md p-4">
@@ -221,7 +227,7 @@ export default function BidDetailPage() {
                 <User className="w-4 h-4 mr-2" />
                 Bidder
               </div>
-              <div className="text-xl font-bold text-gray-900">{bid.bidderName}</div>
+              <div className="text-lg font-semibold text-gray-900">{bid.bidderName}</div>
               <div className="text-sm text-gray-500">{bid.bidderEmail}</div>
             </div>
           </div>
@@ -233,7 +239,7 @@ export default function BidDetailPage() {
           <div className="xl:col-span-3 space-y-6">
             {/* Bid Details */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Bid Details</h2>
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Bid Details</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Bid Amount</div>
@@ -274,7 +280,7 @@ export default function BidDetailPage() {
             {/* Item Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Item Information</h2>
+                <h2 className="text-sm font-medium text-gray-900">Item Information</h2>
                 <Link
                   href={`/admin/auctions/${bid.itemId}`}
                   className="text-[#FF8A00] text-sm hover:text-orange-700 font-medium"
@@ -297,7 +303,7 @@ export default function BidDetailPage() {
             {/* Bidder Information */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Bidder Information</h2>
+                <h2 className="text-sm font-medium text-gray-900">Bidder Information</h2>
                 <Link
                   href={`/admin/users/${bid.bidderId}`}
                   className="text-[#FF8A00] text-sm hover:text-orange-700 font-medium"
@@ -335,7 +341,7 @@ export default function BidDetailPage() {
           <div className="xl:col-span-1 space-y-6">
             {/* Admin Actions */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Admin Actions</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Admin Actions</h3>
               <div className="space-y-3">
                 <button
                   onClick={() => handleStatusUpdate('active')}
@@ -363,7 +369,7 @@ export default function BidDetailPage() {
             
             {/* Bid Status History */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Status Information</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-4">Status Information</h3>
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Current Status</span>
@@ -387,7 +393,7 @@ export default function BidDetailPage() {
             
             {/* Admin Notes */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Admin Notes</h3>
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Admin Notes</h3>
               <textarea
                 placeholder="Add private notes about this bid (only visible to admins)"
                 className="w-full h-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
