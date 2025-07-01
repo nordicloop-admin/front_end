@@ -3,15 +3,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, ChevronDown, ChevronUp, MapPin, Building, Check, X, RefreshCw } from 'lucide-react';
-import { getAdminAddresses, AdminAddress } from '@/services/addresses';
+import Image from 'next/image';
+import { Search, Filter, ChevronDown, ChevronUp, Clock, RefreshCw, Package } from 'lucide-react';
+import { getAdminAuctions, AdminAuction } from '@/services/auctions';
 
-export default function AddressesPage() {
+export default function AuctionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
   // State management
-  const [addresses, setAddresses] = useState<AdminAddress[]>([]);
+  const [auctions, setAuctions] = useState<AdminAuction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
@@ -20,13 +21,12 @@ export default function AddressesPage() {
     currentPage: 1,
     pageSize: 10
   });
-
+  
   // URL state management for filters
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
-  const [selectedType, setSelectedType] = useState(searchParams.get('type') || 'all');
-  const [selectedVerification, setSelectedVerification] = useState(searchParams.get('is_verified') || 'all');
+  const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') || 'all');
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
-
+  
   // Sorting state
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
 
@@ -42,35 +42,33 @@ export default function AddressesPage() {
   }, [searchTerm]);
 
   // Update URL when filters change
-  const updateURL = useCallback((search: string, type: string, verification: string, page: number) => {
+  const updateURL = useCallback((search: string, status: string, page: number) => {
     const params = new URLSearchParams();
     if (search) params.set('search', search);
-    if (type && type !== 'all') params.set('type', type);
-    if (verification && verification !== 'all') params.set('is_verified', verification);
+    if (status && status !== 'all') params.set('status', status);
     if (page > 1) params.set('page', page.toString());
     
-    const newURL = `/admin/addresses${params.toString() ? `?${params.toString()}` : ''}`;
+    const newURL = `/admin/auctions${params.toString() ? `?${params.toString()}` : ''}`;
     router.push(newURL);
   }, [router]);
 
-  // Fetch addresses from API
-  const fetchAddresses = useCallback(async () => {
+  // Fetch auctions from API
+  const fetchAuctions = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
       const params = {
         search: debouncedSearchTerm || undefined,
-        type: selectedType !== 'all' ? selectedType : undefined,
-        is_verified: selectedVerification !== 'all' ? selectedVerification === 'verified' : undefined,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined,
         page: currentPage,
         page_size: pagination.pageSize
       };
 
-      const response = await getAdminAddresses(params);
+      const response = await getAdminAuctions(params);
 
       if (response.data) {
-        setAddresses(response.data.results);
+        setAuctions(response.data.results);
         setPagination({
           count: response.data.count,
           totalPages: response.data.total_pages,
@@ -78,24 +76,24 @@ export default function AddressesPage() {
           pageSize: response.data.page_size
         });
       } else {
-        setError(response.error || 'Failed to fetch addresses');
+        setError(response.error || 'Failed to fetch auctions');
       }
     } catch (_err) {
-      setError('An unexpected error occurred while fetching addresses');
+      setError('An unexpected error occurred while fetching auctions');
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchTerm, selectedType, selectedVerification, currentPage, pagination.pageSize]);
+  }, [debouncedSearchTerm, selectedStatus, currentPage, pagination.pageSize]);
 
   // Fetch data when dependencies change
   useEffect(() => {
-    fetchAddresses();
-  }, [fetchAddresses]);
+    fetchAuctions();
+  }, [fetchAuctions]);
 
   // Update URL when filters change
   useEffect(() => {
-    updateURL(debouncedSearchTerm, selectedType, selectedVerification, currentPage);
-  }, [debouncedSearchTerm, selectedType, selectedVerification, currentPage, updateURL]);
+    updateURL(debouncedSearchTerm, selectedStatus, currentPage);
+  }, [debouncedSearchTerm, selectedStatus, currentPage, updateURL]);
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,15 +101,9 @@ export default function AddressesPage() {
     setCurrentPage(1); // Reset to first page when searching
   };
 
-  // Handle type filter change
-  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedType(e.target.value);
-    setCurrentPage(1); // Reset to first page when filtering
-  };
-
-  // Handle verification filter change
-  const handleVerificationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedVerification(e.target.value);
+  // Handle status filter change
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedStatus(e.target.value);
     setCurrentPage(1); // Reset to first page when filtering
   };
 
@@ -120,30 +112,25 @@ export default function AddressesPage() {
     setCurrentPage(page);
   };
 
-  // Handle verification status change (placeholder for now)
-  const handleVerificationStatusChange = (addressId: string, isVerified: boolean) => {
-    // TODO: Implement API call to update verification status
-    // For now, update local state
-    const updatedAddresses = addresses.map(address =>
-      address.id === addressId ? { ...address, isVerified } : address
-    );
-    setAddresses(updatedAddresses);
-  };
-
   // Handle sort
   const requestSort = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
-
+    
     if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
     }
-
+    
     setSortConfig({ key, direction });
-
-    const sortedAddresses = [...addresses].sort((a, b) => {
-      const aValue = a[key as keyof AdminAddress];
-      const bValue = b[key as keyof AdminAddress];
-
+    
+    const sortedAuctions = [...auctions].sort((a, b) => {
+      const aValue = a[key as keyof AdminAuction];
+      const bValue = b[key as keyof AdminAuction];
+      
+      // Handle undefined values
+      if (aValue === undefined && bValue === undefined) return 0;
+      if (aValue === undefined) return direction === 'ascending' ? 1 : -1;
+      if (bValue === undefined) return direction === 'ascending' ? -1 : 1;
+      
       if (aValue < bValue) {
         return direction === 'ascending' ? -1 : 1;
       }
@@ -152,8 +139,8 @@ export default function AddressesPage() {
       }
       return 0;
     });
-
-    setAddresses(sortedAddresses);
+    
+    setAuctions(sortedAuctions);
   };
 
   // Get sort indicator
@@ -161,12 +148,30 @@ export default function AddressesPage() {
     if (!sortConfig || sortConfig.key !== key) {
       return null;
     }
-
+    
     return sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
-  // Count addresses that need verification
-  const unverifiedCount = addresses.filter(address => !address.isVerified).length;
+  // Format price
+  const formatPrice = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
+    }).format(amount);
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Count auctions that need review (pending status)
+  const pendingReviewCount = auctions.filter(auction => auction.status === 'pending').length;
 
   // Generate pagination
   const renderPagination = () => {
@@ -237,14 +242,16 @@ export default function AddressesPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-medium">Address Management</h1>
-        {unverifiedCount > 0 && (
-          <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-            {unverifiedCount}
-          </span>
-        )}
+        <div className="flex items-center">
+          <h1 className="text-xl font-medium">Auctions Management</h1>
+          {pendingReviewCount > 0 && (
+            <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {pendingReviewCount}
+            </span>
+          )}
+        </div>
         <button
-          onClick={fetchAddresses}
+          onClick={fetchAuctions}
           disabled={loading}
           className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50"
         >
@@ -252,7 +259,7 @@ export default function AddressesPage() {
           Refresh
         </button>
       </div>
-
+      
       {/* Filters */}
       <div className="bg-white p-4 rounded-md shadow-sm mb-6">
         <div className="flex flex-col md:flex-row gap-4">
@@ -262,36 +269,25 @@ export default function AddressesPage() {
             </div>
             <input
               type="text"
-              placeholder="Search addresses by company, city, country, contact..."
+              placeholder="Search auctions by name, category, seller..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={searchTerm}
               onChange={handleSearchChange}
             />
           </div>
-
+          
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
             <select
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              value={selectedType}
-              onChange={handleTypeChange}
+              value={selectedStatus}
+              onChange={handleStatusChange}
             >
-              <option value="all">All Types</option>
-              <option value="business">Business</option>
-              <option value="shipping">Shipping</option>
-            </select>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              value={selectedVerification}
-              onChange={handleVerificationChange}
-            >
-              <option value="all">All Verification</option>
-              <option value="verified">Verified</option>
-              <option value="unverified">Unverified</option>
+              <option value="all">All Status</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="closed">Closed</option>
+              <option value="suspended">Suspended</option>
             </select>
           </div>
         </div>
@@ -303,36 +299,54 @@ export default function AddressesPage() {
           <div className="text-red-800">{error}</div>
         </div>
       )}
-
-      {/* Addresses Table */}
+      
+      {/* Auctions Table */}
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('companyName')}>
-                    Company
-                    {getSortIndicator('companyName')}
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('name')}>
+                    Auction
+                    {getSortIndicator('name')}
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('type')}>
-                    Type
-                    {getSortIndicator('type')}
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('category')}>
+                    Category
+                    {getSortIndicator('category')}
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Address
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('isVerified')}>
-                    Verification
-                    {getSortIndicator('isVerified')}
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('basePrice')}>
+                    Base Price
+                    {getSortIndicator('basePrice')}
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('highestBid')}>
+                    Highest Bid
+                    {getSortIndicator('highestBid')}
+                  </div>
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('seller')}>
+                    Seller
+                    {getSortIndicator('seller')}
+                  </div>
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('status')}>
+                    Status
+                    {getSortIndicator('status')}
+                  </div>
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('createdAt')}>
+                    Created
+                    {getSortIndicator('createdAt')}
+                  </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -342,94 +356,93 @@ export default function AddressesPage() {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center">
+                  <td colSpan={8} className="px-6 py-8 text-center">
                     <div className="flex items-center justify-center space-x-2">
                       <RefreshCw className="h-5 w-5 animate-spin text-gray-400" />
-                      <span className="text-gray-500">Loading addresses...</span>
+                      <span className="text-gray-500">Loading auctions...</span>
                     </div>
                   </td>
                 </tr>
-              ) : addresses.length > 0 ? (
-                addresses.map((address) => (
-                  <tr key={address.id} className={!address.isVerified ? "bg-yellow-50" : ""}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{address.companyName}</div>
-                      <Link href={`/admin/companies/${address.companyId}`} className="text-xs text-blue-600 hover:text-blue-900">
-                        View Company
-                      </Link>
-                    </td>
+              ) : auctions.length > 0 ? (
+                auctions.map((auction) => (
+                  <tr key={auction.id} className={auction.status === 'pending' ? "bg-yellow-50" : ""}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        {address.type === 'business' ? (
-                          <Building className="h-4 w-4 mr-1 text-gray-400" />
-                        ) : (
-                          <MapPin className="h-4 w-4 mr-1 text-gray-400" />
-                        )}
-                        <span className="text-sm text-gray-900 capitalize">
-                          {address.type}
-                        </span>
-                      </div>
-                      {address.isPrimary && (
-                        <span className="mt-1 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">
-                          Primary
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {address.addressLine1}
-                        {address.addressLine2 && <span>, {address.addressLine2}</span>}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {address.city}, {address.postalCode}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        {address.country}
+                        <div className="flex-shrink-0 h-12 w-12 relative">
+                          {auction.image ? (
+                            <Image
+                              src={auction.image}
+                              alt={auction.name}
+                              fill
+                              className="rounded-md object-cover"
+                            />
+                          ) : (
+                            <div className="h-12 w-12 bg-gray-200 rounded-md flex items-center justify-center">
+                              <Package className="h-6 w-6 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{auction.name}</div>
+                          <div className="text-xs text-gray-500">{auction.volume}</div>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                        ${address.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                        {address.isVerified ? 'Verified' : 'Unverified'}
+                      <div className="text-sm text-gray-900">{auction.category}</div>
+                      <div className="text-xs text-gray-500">{auction.countryOfOrigin}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatPrice(auction.basePrice)}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-green-600">
+                        {formatPrice(auction.highestBid)}
+                      </div>
+                      {auction.highestBid > auction.basePrice && (
+                        <div className="text-xs text-green-500">
+                          +{formatPrice(auction.highestBid - auction.basePrice)}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{auction.seller}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${auction.status === 'active' ? 'bg-green-100 text-green-800' : 
+                          auction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                          auction.status === 'closed' ? 'bg-gray-100 text-gray-800' :
+                          auction.status === 'suspended' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'}`}>
+                        {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{address.contactName}</div>
-                      <div className="text-sm text-gray-500">{address.contactPhone}</div>
+                      <div className="flex items-center text-sm text-gray-500">
+                        <Clock className="h-4 w-4 mr-1 text-gray-400" />
+                        <span>{formatDate(auction.createdAt)}</span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Link href={`/admin/addresses/${address.id}`} className="text-blue-600 hover:text-blue-900">
-                          View
-                        </Link>
-                        {!address.isVerified ? (
-                          <button
-                            className="text-green-600 hover:text-green-900 flex items-center"
-                            onClick={() => handleVerificationStatusChange(address.id, true)}
-                          >
-                            <Check className="h-4 w-4 mr-1" />
-                            Verify
-                          </button>
-                        ) : (
-                          <button
-                            className="text-red-600 hover:text-red-900 flex items-center"
-                            onClick={() => handleVerificationStatusChange(address.id, false)}
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Unverify
-                          </button>
-                        )}
-                      </div>
+                      <Link 
+                        href={`/admin/auctions/${auction.id}`} 
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        Details
+                      </Link>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center">
+                  <td colSpan={8} className="px-6 py-8 text-center">
                     <div className="text-gray-500">
-                      {searchTerm || selectedType !== 'all' || selectedVerification !== 'all'
-                        ? 'No addresses found matching your criteria'
-                        : 'No addresses available'}
+                      {searchTerm || selectedStatus !== 'all' 
+                        ? 'No auctions found matching your criteria' 
+                        : 'No auctions available'}
                     </div>
                   </td>
                 </tr>
@@ -443,4 +456,4 @@ export default function AddressesPage() {
       </div>
     </div>
   );
-}
+} 

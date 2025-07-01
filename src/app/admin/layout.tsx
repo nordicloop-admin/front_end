@@ -1,7 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import AdminLayoutClient from '@/components/layout/AdminLayoutClient';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import AdminProtectedRoute from '@/components/auth/AdminProtectedRoute';
 
 export const metadata: Metadata = {
   title: "Admin Dashboard - Nordic Loop",
@@ -14,8 +14,8 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ProtectedRoute>
+    <AdminProtectedRoute>
       <AdminLayoutClient>{children}</AdminLayoutClient>
-    </ProtectedRoute>
+    </AdminProtectedRoute>
   );
 }

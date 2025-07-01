@@ -53,7 +53,7 @@ export default function SettingsPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Platform Settings</h1>
+        <h1 className="text-xl font-medium">Platform Settings</h1>
       </div>
 
       <div className="bg-white rounded-md shadow-sm overflow-hidden">

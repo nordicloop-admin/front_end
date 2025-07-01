@@ -86,7 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           firstName: response.data.first_name || response.data.firstName || (response.data.username ? response.data.username.split(' ')[0] : 'User'),
           lastName: response.data.last_name || response.data.lastName,
           position: response.data.position,
-          companyId: response.data.company_id || response.data.companyId
+          companyId: response.data.company_id || response.data.companyId,
+          role: response.data.role
         };
 
         setUser(user);
