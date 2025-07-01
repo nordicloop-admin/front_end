@@ -1,7 +1,7 @@
 /**
  * Bids service for handling admin bid management
  */
-import { apiGet } from './api';
+import { apiGet, apiPut } from './api';
 
 /**
  * Interface for admin bid list response
@@ -30,6 +30,10 @@ interface AdminBid {
   unit: string;
   status: 'active' | 'pending' | 'outbid' | 'rejected' | 'won';
   bidDate: string;
+  bidderCompany?: string;
+  bidderPhone?: string;
+  bidderId?: string;
+  message?: string;
 }
 
 /**
@@ -106,6 +110,30 @@ export async function getAdminBid(bidId: string) {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while fetching bid details',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Update the status of a bid
+ * @param bidId The bid ID to update
+ * @param newStatus The new status for the bid
+ * @returns Response with updated bid or error
+ */
+export async function updateBidStatus(bidId: string, newStatus: string) {
+  try {
+    const response = await apiPut<AdminBid>(
+      `/bids/admin/bids/${bidId}/status/`,
+      { status: newStatus },
+      true
+    );
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while updating bid status',
       status: 500
     };
   }

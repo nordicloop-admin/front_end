@@ -123,14 +123,11 @@ export default function UserDetailPage() {
         </div>
         
         <div className="flex space-x-3">
-          <Link
-            href={`/admin/users/${user.id}/edit`}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
-          >
+          <button className="border border-blue-300 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-50 hover:border-blue-400 transition-colors">
             Edit User
-          </Link>
-          <button className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
-            {user.status === 'active' ? 'Deactivate' : 'Activate'} User
+          </button>
+          <button className="border border-red-300 text-red-700 px-4 py-2 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors">
+            Suspend User
           </button>
         </div>
       </div>
@@ -282,10 +279,10 @@ export default function UserDetailPage() {
             </div>
             
             <div className="mt-6 space-y-2">
-              <button className="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+              <button className="w-full border border-blue-300 text-blue-700 px-4 py-2 rounded-md hover:bg-blue-50 hover:border-blue-400 transition-colors">
                 Reset Password
               </button>
-              <button className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
+              <button className="w-full border border-red-300 text-red-700 px-4 py-2 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors">
                 {user.status === 'active' ? 'Deactivate' : 'Activate'} Account
               </button>
             </div>

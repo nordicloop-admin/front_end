@@ -139,16 +139,16 @@ export default function CompanyDetailPage() {
             <button
               onClick={() => handleStatusUpdate('approved')}
               disabled={updating}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border border-green-300 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 hover:border-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {updating ? 'Processing...' : 'Approve Company'}
+              {updating ? 'Updating...' : 'Approve Company'}
             </button>
             <button
               onClick={() => handleStatusUpdate('rejected')}
               disabled={updating}
-              className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="border border-red-300 text-red-700 px-4 py-2 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {updating ? 'Processing...' : 'Reject Company'}
+              {updating ? 'Updating...' : 'Reject Company'}
             </button>
           </div>
         )}
@@ -318,16 +318,16 @@ export default function CompanyDetailPage() {
                 <button
                   onClick={() => handleStatusUpdate('approved')}
                   disabled={updating}
-                  className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full border border-green-300 text-green-700 px-4 py-2 rounded-md hover:bg-green-50 hover:border-green-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {updating ? 'Processing...' : 'Approve'}
+                  Approve Company
                 </button>
                 <button
                   onClick={() => handleStatusUpdate('rejected')}
                   disabled={updating}
-                  className="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full border border-red-300 text-red-700 px-4 py-2 rounded-md hover:bg-red-50 hover:border-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {updating ? 'Processing...' : 'Reject'}
+                  Reject Company
                 </button>
               </div>
             )}

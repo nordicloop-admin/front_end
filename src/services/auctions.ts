@@ -1,7 +1,7 @@
 /**
  * Auctions service for handling admin auction management
  */
-import { apiGet } from './api';
+import { apiGet, apiPut } from './api';
 
 /**
  * Interface for admin auction list response
@@ -31,6 +31,10 @@ interface AdminAuction {
   countryOfOrigin: string;
   createdAt: string;
   image: string;
+  description?: string;
+  company?: string;
+  location?: string;
+  endDate?: string;
 }
 
 /**
@@ -107,6 +111,30 @@ export async function getAdminAuction(auctionId: string) {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while fetching auction details',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Update the status of an auction
+ * @param auctionId The auction ID to update
+ * @param newStatus The new status for the auction
+ * @returns Response with updated auction or error
+ */
+export async function updateAuctionStatus(auctionId: string, newStatus: string) {
+  try {
+    const response = await apiPut<AdminAuction>(
+      `/ads/admin/auctions/${auctionId}/status/`,
+      { status: newStatus },
+      true
+    );
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while updating auction status',
       status: 500
     };
   }
