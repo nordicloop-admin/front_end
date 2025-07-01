@@ -186,26 +186,18 @@ export function AlternativeAuctionForm() {
     loadCategories();
   }, []);
 
-  const findCategoryId = (categoryName: string): number => {
+  const findCategoryId = useCallback((categoryName: string): number => {
     const category = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
-    if (!category && categoryName) {
-      toast.warning(`Category "${categoryName}" not found, using default`);
-    }
-    return category?.id || 1; // Default to 1 if not found
-  };
+    return category ? category.id : 0;
+  }, [categories]);
 
-  const findSubcategoryId = (categoryName: string, subcategoryName: string): number => {
+  const findSubcategoryId = useCallback((categoryName: string, subcategoryName: string): number => {
     const category = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
-    if (!category) {
-      return 1;
-    }
+    if (!category) return 0;
     
     const subcategory = category.subcategories.find(sub => sub.name.toLowerCase() === subcategoryName.toLowerCase());
-    if (!subcategory && subcategoryName) {
-      toast.warning(`Subcategory "${subcategoryName}" not found, using default`);
-    }
-    return subcategory?.id || 1; // Default to 1 if not found
-  };
+    return subcategory ? subcategory.id : 0;
+  }, [categories]);
 
   const updateFormData = useCallback((updates: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...updates }));
@@ -316,7 +308,7 @@ export function AlternativeAuctionForm() {
       default:
         return {};
     }
-  }, [categories, findCategoryId, findSubcategoryId]);
+  }, [findCategoryId, findSubcategoryId]);
 
   const handleAutoSave = useCallback(async () => {
     if (!adId || !hasUnsavedChanges || !categoriesLoaded) return;

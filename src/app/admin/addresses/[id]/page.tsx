@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, RefreshCw, Building, MapPin, User, Globe, Phone, Check, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Building, MapPin } from 'lucide-react';
 import { getAdminAddress, AdminAddress } from '@/services/addresses';
 
 export default function AddressDetailPage() {
@@ -55,7 +55,7 @@ export default function AddressDetailPage() {
   };
 
   // Get type icon
-  const getTypeIcon = (type: string) => {
+  const _getTypeIcon = (type: string) => {
     return type === 'business' ? (
       <Building className="h-5 w-5 text-[#FF8A00]" />
     ) : (

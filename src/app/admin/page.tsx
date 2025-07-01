@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Building, Users, Clock, Plus, ArrowLeft } from 'lucide-react';
+import { Building, Users, Clock, Plus } from 'lucide-react';
 
 export default function AdminDashboard() {
   return (

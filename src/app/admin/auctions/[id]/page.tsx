@@ -4,14 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, RefreshCw, Clock, User, Package, TrendingUp, Globe, Tag, Building, MapPin, AlertCircle, ChevronDown, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown } from 'lucide-react';
 import { getAdminAuction, AdminAuction, updateAuctionStatus } from '@/services/auctions';
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { toast } from 'sonner';
 
 export default function AuctionDetailPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const { id } = useParams();
   
   // State management
@@ -42,8 +42,8 @@ export default function AuctionDetailPage() {
           if (!bidsResponse.error && bidsResponse.data) {
             setBids(bidsResponse.data.bids || []);
           }
-        } catch (err) {
-          console.error("Failed to fetch bids:", err);
+        } catch (_err) {
+          // Failed to fetch bids - silently handle this error
         } finally {
           setBidLoading(false);
         }
@@ -106,10 +106,10 @@ export default function AuctionDetailPage() {
         // Update local state
         setAuction({
           ...auction,
-          status: newStatus
+          status: newStatus as 'pending' | 'active' | 'closed' | 'suspended'
         });
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update status', {
         description: 'An unexpected error occurred',
       });

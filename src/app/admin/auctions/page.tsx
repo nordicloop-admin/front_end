@@ -126,6 +126,11 @@ export default function AuctionsPage() {
       const aValue = a[key as keyof AdminAuction];
       const bValue = b[key as keyof AdminAuction];
       
+      // Handle undefined values
+      if (aValue === undefined && bValue === undefined) return 0;
+      if (aValue === undefined) return direction === 'ascending' ? 1 : -1;
+      if (bValue === undefined) return direction === 'ascending' ? -1 : 1;
+      
       if (aValue < bValue) {
         return direction === 'ascending' ? -1 : 1;
       }

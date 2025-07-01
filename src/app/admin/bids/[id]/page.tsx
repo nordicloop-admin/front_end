@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, RefreshCw, Clock, User, Package, TrendingUp, AlertCircle, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
+import { ArrowLeft, User, Package, AlertCircle, ChevronDown } from 'lucide-react';
 import { getAdminBid, AdminBid, updateBidStatus } from '@/services/bids';
 import { toast } from 'sonner';
 
 export default function BidDetailPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const { id } = useParams();
   
   // State management
@@ -84,10 +84,10 @@ export default function BidDetailPage() {
         // Update local state
         setBid({
           ...bid,
-          status: newStatus
+          status: newStatus as 'active' | 'pending' | 'outbid' | 'rejected' | 'won'
         });
       }
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update status', {
         description: 'An unexpected error occurred',
       });

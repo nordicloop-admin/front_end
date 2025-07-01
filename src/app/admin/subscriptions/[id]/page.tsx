@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, RefreshCw, Building, CreditCard, Calendar, User, DollarSign, Clock, AlertCircle, Check, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Building, DollarSign, CreditCard } from 'lucide-react';
 import { getAdminSubscription, AdminSubscription } from '@/services/subscriptions';
 
 export default function SubscriptionDetailPage() {
@@ -80,7 +80,7 @@ export default function SubscriptionDetailPage() {
   };
 
   // Get payment method icon
-  const getPaymentMethodIcon = (method: string | null) => {
+  const _getPaymentMethodIcon = (method: string | null) => {
     if (method === 'credit_card') {
       return <CreditCard className="h-5 w-5 text-[#FF8A00]" />;
     } else if (method === 'invoice') {
