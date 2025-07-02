@@ -7,20 +7,25 @@ import { Building, Users, Clock, Plus } from 'lucide-react';
 export default function AdminDashboard() {
   return (
     <div className="w-full">
-      <h1 className="text-2xl font-bold mb-8">Admin Dashboard</h1>
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-xl font-medium">Admin Dashboard</h1>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Companies Card */}
         <div className="bg-white border border-gray-100 rounded-md p-5">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-medium text-gray-700">Companies</h2>
+            <h2 className="text-sm font-medium text-gray-700">Companies</h2>
             <div className="text-blue-500">
               <Building size={20} />
             </div>
           </div>
-          <div className="text-3xl font-bold mb-1">0</div>
-          <div className="text-xs text-gray-500 mb-2">Total registered companies</div>
+          <div className="space-y-1">
+            <div className="text-lg font-semibold mb-1">0</div>
+            <div className="text-sm font-medium text-gray-600">Total Companies</div>
+          </div>
           <Link
             href="/admin/companies"
             className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"
@@ -32,13 +37,15 @@ export default function AdminDashboard() {
         {/* Users Card */}
         <div className="bg-white border border-gray-100 rounded-md p-5">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-medium text-gray-700">Users</h2>
+            <h2 className="text-sm font-medium text-gray-700">Users</h2>
             <div className="text-green-500">
               <Users size={20} />
             </div>
           </div>
-          <div className="text-3xl font-bold mb-1">0</div>
-          <div className="text-xs text-gray-500 mb-2">Total registered users</div>
+          <div className="space-y-1">
+            <div className="text-lg font-semibold mb-1">0</div>
+            <div className="text-sm font-medium text-gray-600">Total Users</div>
+          </div>
           <Link
             href="/admin/users"
             className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"
@@ -50,13 +57,15 @@ export default function AdminDashboard() {
         {/* Pending Approvals Card */}
         <div className="bg-white border border-gray-100 rounded-md p-5">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="text-base font-medium text-gray-700">Pending Approvals</h2>
+            <h2 className="text-sm font-medium text-gray-700">Pending Approvals</h2>
             <div className="text-yellow-500">
               <Clock size={20} />
             </div>
           </div>
-          <div className="text-3xl font-bold mb-1">0</div>
-          <div className="text-xs text-gray-500 mb-2">Companies awaiting approval</div>
+          <div className="space-y-1">
+            <div className="text-lg font-semibold mb-1">0</div>
+            <div className="text-sm font-medium text-gray-600">Companies awaiting approval</div>
+          </div>
           <Link
             href="/admin/companies?status=pending"
             className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"
@@ -68,7 +77,7 @@ export default function AdminDashboard() {
 
       {/* Recent Activity */}
       <div className="bg-white border border-gray-100 rounded-md p-5 mb-8">
-        <h2 className="text-base font-medium text-gray-700 mb-3">Recent Activity</h2>
+        <h2 className="text-sm font-medium text-gray-700 mb-3">Recent Activity</h2>
         <div className="overflow-hidden">
           <table className="min-w-full">
             <thead>
@@ -99,7 +108,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Quick Actions */}
         <div className="bg-white border border-gray-100 rounded-md p-5">
-          <h2 className="text-base font-medium text-gray-700 mb-3">Quick Actions</h2>
+          <h2 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h2>
           <div className="space-y-2">
             <Link
               href="/admin/companies/new"
@@ -120,7 +129,7 @@ export default function AdminDashboard() {
 
         {/* System Status */}
         <div className="bg-white border border-gray-100 rounded-md p-5">
-          <h2 className="text-base font-medium text-gray-700 mb-3">System Status</h2>
+          <h2 className="text-sm font-medium text-gray-700 mb-3">System Status</h2>
           <div className="space-y-4">
             <div>
               <div className="flex justify-between mb-1">

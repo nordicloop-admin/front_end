@@ -1,87 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, ChevronDown, ChevronUp, CreditCard, Clock, AlertCircle } from 'lucide-react';
-
-// Mock data for subscriptions
-const mockSubscriptions = [
-  {
-    id: '1',
-    companyId: '1',
-    companyName: 'Eco Solutions AB',
-    plan: 'premium',
-    status: 'active',
-    startDate: '2023-01-15',
-    endDate: '2024-01-15',
-    autoRenew: true,
-    paymentMethod: 'credit_card',
-    lastPayment: '2023-01-15',
-    amount: '799 SEK',
-    contactName: 'Erik Johansson',
-    contactEmail: 'erik@ecosolutions.se'
-  },
-  {
-    id: '2',
-    companyId: '2',
-    companyName: 'Green Tech Norway',
-    plan: 'standard',
-    status: 'active',
-    startDate: '2023-02-20',
-    endDate: '2024-02-20',
-    autoRenew: true,
-    paymentMethod: 'invoice',
-    lastPayment: '2023-02-20',
-    amount: '599 SEK',
-    contactName: 'Astrid Olsen',
-    contactEmail: 'astrid@greentech.no'
-  },
-  {
-    id: '3',
-    companyId: '3',
-    companyName: 'Circular Materials Oy',
-    plan: 'free',
-    status: 'active',
-    startDate: '2023-03-10',
-    endDate: null,
-    autoRenew: false,
-    paymentMethod: null,
-    lastPayment: null,
-    amount: '0 SEK',
-    contactName: 'Mikko Virtanen',
-    contactEmail: 'mikko@circularmaterials.fi'
-  },
-  {
-    id: '4',
-    companyId: '4',
-    companyName: 'Sustainable Textiles AB',
-    plan: 'standard',
-    status: 'expired',
-    startDate: '2022-11-05',
-    endDate: '2023-11-05',
-    autoRenew: false,
-    paymentMethod: 'credit_card',
-    lastPayment: '2022-11-05',
-    amount: '599 SEK',
-    contactName: 'Sofia Lindberg',
-    contactEmail: 'sofia@sustainabletextiles.se'
-  },
-  {
-    id: '5',
-    companyId: '5',
-    companyName: 'Nordic Recyclers',
-    plan: 'premium',
-    status: 'payment_failed',
-    startDate: '2023-04-15',
-    endDate: '2024-04-15',
-    autoRenew: true,
-    paymentMethod: 'credit_card',
-    lastPayment: '2023-04-15',
-    amount: '799 SEK',
-    contactName: 'Lars Nielsen',
-    contactEmail: 'lars@nordicrecyclers.dk'
-  }
-];
+import { Search, Filter, ChevronDown, ChevronUp, CreditCard, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { getAdminSubscriptions, AdminSubscription } from '@/services/subscriptions';
 
 // Subscription plan details
 const subscriptionPlans = [
@@ -127,41 +50,126 @@ const subscriptionPlans = [
 ];
 
 export default function SubscriptionsPage() {
-  const [subscriptions, setSubscriptions] = useState(mockSubscriptions);
-  const [filteredSubscriptions, setFilteredSubscriptions] = useState(mockSubscriptions);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedPlan, setSelectedPlan] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // State management
+  const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    count: 0,
+    totalPages: 1,
+    currentPage: 1,
+    pageSize: 10
+  });
+
+  // URL state management for filters
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [selectedPlan, setSelectedPlan] = useState(searchParams.get('plan') || 'all');
+  const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') || 'all');
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+
+  // UI state
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
   const [showPlanDetails, setShowPlanDetails] = useState<string | null>(null);
 
-  // Filter subscriptions based on search term, plan, and status
+  // Debounce search term
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
   useEffect(() => {
-    let result = subscriptions;
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
 
-    if (searchTerm) {
-      result = result.filter(subscription =>
-        subscription.companyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        subscription.contactName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        subscription.contactEmail.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Update URL when filters change
+  const updateURL = useCallback((search: string, plan: string, status: string, page: number) => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (plan && plan !== 'all') params.set('plan', plan);
+    if (status && status !== 'all') params.set('status', status);
+    if (page > 1) params.set('page', page.toString());
+    
+    const newURL = `/admin/subscriptions${params.toString() ? `?${params.toString()}` : ''}`;
+    router.push(newURL);
+  }, [router]);
+
+  // Fetch subscriptions from API
+  const fetchSubscriptions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = {
+        search: debouncedSearchTerm || undefined,
+        plan: selectedPlan !== 'all' ? selectedPlan : undefined,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined,
+        page: currentPage,
+        page_size: pagination.pageSize
+      };
+
+      const response = await getAdminSubscriptions(params);
+
+      if (response.data) {
+        setSubscriptions(response.data.results);
+        setPagination({
+          count: response.data.count,
+          totalPages: response.data.total_pages,
+          currentPage: response.data.current_page,
+          pageSize: response.data.page_size
+        });
+      } else {
+        setError(response.error || 'Failed to fetch subscriptions');
+      }
+    } catch (_err) {
+      setError('An unexpected error occurred while fetching subscriptions');
+    } finally {
+      setLoading(false);
     }
+  }, [debouncedSearchTerm, selectedPlan, selectedStatus, currentPage, pagination.pageSize]);
 
-    if (selectedPlan !== 'all') {
-      result = result.filter(subscription => subscription.plan === selectedPlan);
-    }
+  // Fetch data when dependencies change
+  useEffect(() => {
+    fetchSubscriptions();
+  }, [fetchSubscriptions]);
 
-    if (selectedStatus !== 'all') {
-      result = result.filter(subscription => subscription.status === selectedStatus);
-    }
+  // Update URL when filters change
+  useEffect(() => {
+    updateURL(debouncedSearchTerm, selectedPlan, selectedStatus, currentPage);
+  }, [debouncedSearchTerm, selectedPlan, selectedStatus, currentPage, updateURL]);
 
-    setFilteredSubscriptions(result);
-  }, [searchTerm, selectedPlan, selectedStatus, subscriptions]);
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
+  };
 
-  // Handle subscription status change
-  const handleStatusChange = (subscriptionId: string, newStatus: string) => {
+  // Handle plan filter change
+  const handlePlanChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedPlan(e.target.value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Handle status filter change
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedStatus(e.target.value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  // Handle subscription status change (placeholder for now)
+  const handleSubscriptionStatusChange = (subscriptionId: string, newStatus: string) => {
+    // TODO: Implement API call to update subscription status
+    // For now, update local state
     const updatedSubscriptions = subscriptions.map(subscription =>
-      subscription.id === subscriptionId ? { ...subscription, status: newStatus } : subscription
+      subscription.id === subscriptionId ? { ...subscription, status: newStatus as AdminSubscription['status'] } : subscription
     );
     setSubscriptions(updatedSubscriptions);
   };
@@ -176,9 +184,9 @@ export default function SubscriptionsPage() {
 
     setSortConfig({ key, direction });
 
-    const sortedSubscriptions = [...filteredSubscriptions].sort((a, b) => {
-      const aValue = a[key as keyof typeof a];
-      const bValue = b[key as keyof typeof b];
+    const sortedSubscriptions = [...subscriptions].sort((a, b) => {
+      const aValue = a[key as keyof AdminSubscription];
+      const bValue = b[key as keyof AdminSubscription];
 
       // Handle null or undefined values
       if (aValue == null && bValue == null) return 0;
@@ -194,7 +202,7 @@ export default function SubscriptionsPage() {
       return 0;
     });
 
-    setFilteredSubscriptions(sortedSubscriptions);
+    setSubscriptions(sortedSubscriptions);
   };
 
   // Get sort indicator
@@ -215,10 +223,94 @@ export default function SubscriptionsPage() {
     }
   };
 
+  // Count subscriptions that need attention
+  const failedPaymentCount = subscriptions.filter(subscription => subscription.status === 'payment_failed').length;
+
+  // Generate pagination
+  const renderPagination = () => {
+    if (pagination.totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    if (currentPage > 1) {
+      pages.push(
+        <button
+          key="prev"
+          onClick={() => handlePageChange(currentPage - 1)}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50"
+        >
+          Previous
+        </button>
+      );
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-2 text-sm font-medium border ${
+            i === currentPage
+              ? 'bg-[#FF8A00] text-white border-[#FF8A00]'
+              : 'text-gray-500 bg-white border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Next button
+    if (currentPage < pagination.totalPages) {
+      pages.push(
+        <button
+          key="next"
+          onClick={() => handlePageChange(currentPage + 1)}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50"
+        >
+          Next
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-between mt-6">
+        <div className="text-sm text-gray-700">
+          Showing {((currentPage - 1) * pagination.pageSize) + 1} to {Math.min(currentPage * pagination.pageSize, pagination.count)} of {pagination.count} results
+        </div>
+        <div className="flex">{pages}</div>
+      </div>
+    );
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Subscription Management</h1>
+        <div className="flex items-center">
+          <h1 className="text-xl font-medium">Subscription Management</h1>
+          {failedPaymentCount > 0 && (
+            <span className="ml-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {failedPaymentCount}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={fetchSubscriptions}
+          disabled={loading}
+          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
 
       {/* Subscription Plans */}
@@ -264,7 +356,7 @@ export default function SubscriptionsPage() {
               placeholder="Search companies or contacts..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
 
@@ -273,7 +365,7 @@ export default function SubscriptionsPage() {
             <select
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={selectedPlan}
-              onChange={(e) => setSelectedPlan(e.target.value)}
+              onChange={handlePlanChange}
             >
               <option value="all">All Plans</option>
               <option value="free">Free Plan</option>
@@ -287,7 +379,7 @@ export default function SubscriptionsPage() {
             <select
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={handleStatusChange}
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -298,6 +390,13 @@ export default function SubscriptionsPage() {
           </div>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="text-red-800">{error}</div>
+        </div>
+      )}
 
       {/* Subscriptions Table */}
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
@@ -341,8 +440,17 @@ export default function SubscriptionsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredSubscriptions.length > 0 ? (
-                filteredSubscriptions.map((subscription) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center">
+                    <div className="flex items-center justify-center space-x-2">
+                      <RefreshCw className="h-5 w-5 animate-spin text-gray-400" />
+                      <span className="text-gray-500">Loading subscriptions...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : subscriptions.length > 0 ? (
+                subscriptions.map((subscription) => (
                   <tr key={subscription.id} className={subscription.status === 'payment_failed' ? "bg-red-50" : ""}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{subscription.companyName}</div>
@@ -403,9 +511,11 @@ export default function SubscriptionsPage() {
                               {subscription.paymentMethod === 'credit_card' ? 'Credit Card' : 'Invoice'}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-500">
-                            Last payment: {subscription.lastPayment} ({subscription.amount})
-                          </div>
+                          {subscription.lastPayment && (
+                            <div className="text-xs text-gray-500">
+                              Last payment: {subscription.lastPayment} ({subscription.amount})
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div className="text-sm text-gray-500">No payment required</div>
@@ -422,7 +532,7 @@ export default function SubscriptionsPage() {
                         {subscription.status === 'payment_failed' && (
                           <button
                             className="text-green-600 hover:text-green-900"
-                            onClick={() => handleStatusChange(subscription.id, 'active')}
+                            onClick={() => handleSubscriptionStatusChange(subscription.id, 'active')}
                           >
                             Resolve
                           </button>
@@ -430,7 +540,7 @@ export default function SubscriptionsPage() {
                         {subscription.status === 'active' && (
                           <button
                             className="text-red-600 hover:text-red-900"
-                            onClick={() => handleStatusChange(subscription.id, 'cancelled')}
+                            onClick={() => handleSubscriptionStatusChange(subscription.id, 'cancelled')}
                           >
                             Cancel
                           </button>
@@ -441,14 +551,21 @@ export default function SubscriptionsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                    No subscriptions found
+                  <td colSpan={6} className="px-6 py-8 text-center">
+                    <div className="text-gray-500">
+                      {searchTerm || selectedPlan !== 'all' || selectedStatus !== 'all'
+                        ? 'No subscriptions found matching your criteria'
+                        : 'No subscriptions available'}
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {renderPagination()}
       </div>
     </div>
   );

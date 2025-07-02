@@ -1,154 +1,116 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Search, Filter, ChevronDown, ChevronUp, Clock } from 'lucide-react';
-
-// Mock data for bids
-const mockBids = [
-  {
-    id: '1',
-    itemId: '1',
-    itemName: 'PPA Thermocomp UFW49RSC (Black)',
-    itemImage: '/images/marketplace/categories/plastics.jpg',
-    bidAmount: '5,250,000',
-    previousBid: '5,150,000',
-    bidderName: 'Erik Johansson',
-    bidderCompany: 'Eco Solutions AB',
-    bidderEmail: 'erik@ecosolutions.se',
-    status: 'active',
-    isHighest: true,
-    createdAt: '2023-05-15 14:30',
-    expiresAt: '2023-05-18 14:30',
-    timeLeft: '2d 4h',
-    needsReview: false
-  },
-  {
-    id: '2',
-    itemId: '3',
-    itemName: 'Aluminum Scrap 6061',
-    itemImage: '/images/marketplace/categories/metals.jpg',
-    bidAmount: '7,500,000',
-    previousBid: '7,400,000',
-    bidderName: 'Astrid Olsen',
-    bidderCompany: 'Green Tech Norway',
-    bidderEmail: 'astrid@greentech.no',
-    status: 'active',
-    isHighest: true,
-    createdAt: '2023-05-16 10:15',
-    expiresAt: '2023-05-19 10:15',
-    timeLeft: '3d 6h',
-    needsReview: false
-  },
-  {
-    id: '3',
-    itemId: '5',
-    itemName: 'Clear Glass Cullet',
-    itemImage: '/images/marketplace/categories/glass.jpg',
-    bidAmount: '3,900,000',
-    previousBid: '3,850,000',
-    bidderName: 'Mikko Virtanen',
-    bidderCompany: 'Circular Materials Oy',
-    bidderEmail: 'mikko@circularmaterials.fi',
-    status: 'active',
-    isHighest: true,
-    createdAt: '2023-05-17 09:45',
-    expiresAt: '2023-05-21 09:45',
-    timeLeft: '4d 2h',
-    needsReview: false
-  },
-  {
-    id: '4',
-    itemId: '1',
-    itemName: 'PPA Thermocomp UFW49RSC (Black)',
-    itemImage: '/images/marketplace/categories/plastics.jpg',
-    bidAmount: '5,150,000',
-    previousBid: '5,100,000',
-    bidderName: 'Mikko Virtanen',
-    bidderCompany: 'Circular Materials Oy',
-    bidderEmail: 'mikko@circularmaterials.fi',
-    status: 'outbid',
-    isHighest: false,
-    createdAt: '2023-05-14 16:20',
-    expiresAt: '2023-05-18 14:30',
-    timeLeft: '2d 4h',
-    needsReview: false
-  },
-  {
-    id: '5',
-    itemId: '7',
-    itemName: 'Reclaimed Pine Lumber',
-    itemImage: '/images/marketplace/categories/wood.jpg',
-    bidAmount: '4,300,000',
-    previousBid: '4,250,000',
-    bidderName: 'Erik Johansson',
-    bidderCompany: 'Eco Solutions AB',
-    bidderEmail: 'erik@ecosolutions.se',
-    status: 'pending',
-    isHighest: true,
-    createdAt: '2023-05-18 08:30',
-    expiresAt: '2023-05-20 22:30',
-    timeLeft: '2d 22h',
-    needsReview: true
-  },
-  {
-    id: '6',
-    itemId: '8',
-    itemName: 'Recycled Cotton Fabric',
-    itemImage: '/images/marketplace/categories/textiles.jpg',
-    bidAmount: '3,950,000',
-    previousBid: '3,900,000',
-    bidderName: 'Astrid Olsen',
-    bidderCompany: 'Green Tech Norway',
-    bidderEmail: 'astrid@greentech.no',
-    status: 'pending',
-    isHighest: true,
-    createdAt: '2023-05-18 11:45',
-    expiresAt: '2023-05-25 14:30',
-    timeLeft: '7d 14h',
-    needsReview: true
-  }
-];
+import { Search, Filter, ChevronDown, ChevronUp, Clock, RefreshCw } from 'lucide-react';
+import { getAdminBids, AdminBid } from '@/services/bids';
 
 export default function BidsPage() {
-  const [bids, setBids] = useState(mockBids);
-  const [filteredBids, setFilteredBids] = useState(mockBids);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // State management
+  const [bids, setBids] = useState<AdminBid[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState({
+    count: 0,
+    totalPages: 1,
+    currentPage: 1,
+    pageSize: 10
+  });
+  
+  // URL state management for filters
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [selectedStatus, setSelectedStatus] = useState(searchParams.get('status') || 'all');
+  const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+  
+  // Sorting state
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'ascending' | 'descending' } | null>(null);
-  
-  // Filter bids based on search term and status
+
+  // Debounce search term
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
   useEffect(() => {
-    let result = bids;
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Update URL when filters change
+  const updateURL = useCallback((search: string, status: string, page: number) => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (status && status !== 'all') params.set('status', status);
+    if (page > 1) params.set('page', page.toString());
     
-    if (searchTerm) {
-      result = result.filter(bid => 
-        bid.itemName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bid.bidderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bid.bidderCompany.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+    const newURL = `/admin/bids${params.toString() ? `?${params.toString()}` : ''}`;
+    router.push(newURL);
+  }, [router]);
+
+  // Fetch bids from API
+  const fetchBids = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = {
+        search: debouncedSearchTerm || undefined,
+        status: selectedStatus !== 'all' ? selectedStatus : undefined,
+        page: currentPage,
+        page_size: pagination.pageSize
+      };
+
+      const response = await getAdminBids(params);
+
+      if (response.data) {
+        setBids(response.data.results);
+        setPagination({
+          count: response.data.count,
+          totalPages: response.data.total_pages,
+          currentPage: response.data.current_page,
+          pageSize: response.data.page_size
+        });
+      } else {
+        setError(response.error || 'Failed to fetch bids');
+      }
+    } catch (_err) {
+      setError('An unexpected error occurred while fetching bids');
+    } finally {
+      setLoading(false);
     }
-    
-    if (selectedStatus !== 'all') {
-      result = result.filter(bid => bid.status === selectedStatus);
-    }
-    
-    setFilteredBids(result);
-  }, [searchTerm, selectedStatus, bids]);
-  
-  // Handle bid approval
-  const handleBidApproval = (bidId: string, approved: boolean) => {
-    const updatedBids = bids.map(bid => 
-      bid.id === bidId ? { 
-        ...bid, 
-        status: approved ? 'active' : 'rejected',
-        needsReview: false
-      } : bid
-    );
-    setBids(updatedBids);
+  }, [debouncedSearchTerm, selectedStatus, currentPage, pagination.pageSize]);
+
+  // Fetch data when dependencies change
+  useEffect(() => {
+    fetchBids();
+  }, [fetchBids]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    updateURL(debouncedSearchTerm, selectedStatus, currentPage);
+  }, [debouncedSearchTerm, selectedStatus, currentPage, updateURL]);
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setCurrentPage(1); // Reset to first page when searching
   };
-  
+
+  // Handle status filter change
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedStatus(e.target.value);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
   // Handle sort
   const requestSort = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
@@ -159,19 +121,27 @@ export default function BidsPage() {
     
     setSortConfig({ key, direction });
     
-    const sortedBids = [...filteredBids].sort((a, b) => {
-      if (a[key as keyof typeof a] < b[key as keyof typeof b]) {
+    const sortedBids = [...bids].sort((a, b) => {
+      const aValue = a[key as keyof AdminBid];
+      const bValue = b[key as keyof AdminBid];
+      
+      // Handle undefined values
+      if (aValue === undefined && bValue === undefined) return 0;
+      if (aValue === undefined) return direction === 'ascending' ? 1 : -1;
+      if (bValue === undefined) return direction === 'ascending' ? -1 : 1;
+      
+      if (aValue < bValue) {
         return direction === 'ascending' ? -1 : 1;
       }
-      if (a[key as keyof typeof a] > b[key as keyof typeof b]) {
+      if (aValue > bValue) {
         return direction === 'ascending' ? 1 : -1;
       }
       return 0;
     });
     
-    setFilteredBids(sortedBids);
+    setBids(sortedBids);
   };
-  
+
   // Get sort indicator
   const getSortIndicator = (key: string) => {
     if (!sortConfig || sortConfig.key !== key) {
@@ -181,20 +151,112 @@ export default function BidsPage() {
     return sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
-  // Count bids that need review
-  const pendingReviewCount = bids.filter(bid => bid.needsReview).length;
+  // Format bid amount
+  const formatBidAmount = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3
+    }).format(amount);
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  // Count bids that need review (pending status)
+  const pendingReviewCount = bids.filter(bid => bid.status === 'pending').length;
+
+  // Generate pagination
+  const renderPagination = () => {
+    if (pagination.totalPages <= 1) return null;
+
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    const endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    // Previous button
+    if (currentPage > 1) {
+      pages.push(
+        <button
+          key="prev"
+          onClick={() => handlePageChange(currentPage - 1)}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50"
+        >
+          Previous
+        </button>
+      );
+    }
+
+    // Page numbers
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <button
+          key={i}
+          onClick={() => handlePageChange(i)}
+          className={`px-3 py-2 text-sm font-medium border ${
+            i === currentPage
+              ? 'bg-[#FF8A00] text-white border-[#FF8A00]'
+              : 'text-gray-500 bg-white border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          {i}
+        </button>
+      );
+    }
+
+    // Next button
+    if (currentPage < pagination.totalPages) {
+      pages.push(
+        <button
+          key="next"
+          onClick={() => handlePageChange(currentPage + 1)}
+          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50"
+        >
+          Next
+        </button>
+      );
+    }
+
+    return (
+      <div className="flex items-center justify-between mt-6">
+        <div className="text-sm text-gray-700">
+          Showing {((currentPage - 1) * pagination.pageSize) + 1} to {Math.min(currentPage * pagination.pageSize, pagination.count)} of {pagination.count} results
+        </div>
+        <div className="flex">{pages}</div>
+      </div>
+    );
+  };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold">Bids Management</h1>
-          {pendingReviewCount > 0 && (
-            <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {pendingReviewCount}
-            </span>
-          )}
-        </div>
+        <h1 className="text-xl font-medium">Bids Management</h1>
+        {pendingReviewCount > 0 && (
+          <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {pendingReviewCount}
+          </span>
+        )}
+        <button
+          onClick={fetchBids}
+          disabled={loading}
+          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50"
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+          Refresh
+        </button>
       </div>
       
       {/* Filters */}
@@ -206,10 +268,10 @@ export default function BidsPage() {
             </div>
             <input
               type="text"
-              placeholder="Search bids..."
+              placeholder="Search bids by item name, bidder name..."
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
             />
           </div>
           
@@ -218,11 +280,11 @@ export default function BidsPage() {
             <select
               className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
+              onChange={handleStatusChange}
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
-              <option value="pending">Pending Review</option>
+              <option value="pending">Pending</option>
               <option value="outbid">Outbid</option>
               <option value="rejected">Rejected</option>
               <option value="won">Won</option>
@@ -230,6 +292,13 @@ export default function BidsPage() {
           </div>
         </div>
       </div>
+
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="text-red-800">{error}</div>
+        </div>
+      )}
       
       {/* Bids Table */}
       <div className="bg-white rounded-md shadow-sm overflow-hidden">
@@ -250,6 +319,12 @@ export default function BidsPage() {
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('volume')}>
+                    Volume
+                    {getSortIndicator('volume')}
+                  </div>
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <div className="flex items-center cursor-pointer" onClick={() => requestSort('bidderName')}>
                     Bidder
                     {getSortIndicator('bidderName')}
@@ -262,9 +337,9 @@ export default function BidsPage() {
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('createdAt')}>
-                    Time
-                    {getSortIndicator('createdAt')}
+                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('bidDate')}>
+                    Bid Date
+                    {getSortIndicator('bidDate')}
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -273,41 +348,36 @@ export default function BidsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredBids.length > 0 ? (
-                filteredBids.map((bid) => (
-                  <tr key={bid.id} className={bid.needsReview ? "bg-yellow-50" : ""}>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="px-6 py-8 text-center">
+                    <div className="flex items-center justify-center space-x-2">
+                      <RefreshCw className="h-5 w-5 animate-spin text-gray-400" />
+                      <span className="text-gray-500">Loading bids...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : bids.length > 0 ? (
+                bids.map((bid) => (
+                  <tr key={bid.id} className={bid.status === 'pending' ? "bg-yellow-50" : ""}>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 relative">
-                          <Image
-                            src={bid.itemImage}
-                            alt={bid.itemName}
-                            fill
-                            className="rounded-md object-cover"
-                          />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{bid.itemName}</div>
-                          <Link href={`/admin/marketplace/${bid.itemId}`} className="text-xs text-blue-600 hover:text-blue-900">
-                            View Item
-                          </Link>
-                        </div>
+                      <div className="text-sm font-medium text-gray-900">{bid.itemName}</div>
+                      <Link href={`/admin/marketplace/${bid.itemId}`} className="text-xs text-blue-600 hover:text-blue-900">
+                        View Item
+                      </Link>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatBidAmount(bid.bidAmount)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{bid.bidAmount}</div>
-                      {bid.previousBid && (
-                        <div className="text-xs text-gray-500">Previous: {bid.previousBid}</div>
-                      )}
-                      {bid.isHighest && (
-                        <span className="px-2 py-0.5 text-xs bg-green-100 text-green-800 rounded-full">
-                          Highest
-                        </span>
-                      )}
+                      <div className="text-sm text-gray-900">
+                        {formatBidAmount(bid.volume)} {bid.unit}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">{bid.bidderName}</div>
-                      <div className="text-xs text-gray-500">{bid.bidderCompany}</div>
                       <div className="text-xs text-gray-500">{bid.bidderEmail}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -316,53 +386,44 @@ export default function BidsPage() {
                           bid.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
                           bid.status === 'outbid' ? 'bg-gray-100 text-gray-800' :
                           bid.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                          'bg-blue-100 text-blue-800'}`}>
+                          bid.status === 'won' ? 'bg-blue-100 text-blue-800' :
+                          'bg-gray-100 text-gray-800'}`}>
                         {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
-                        {bid.needsReview && " (Review)"}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center text-sm text-gray-500">
                         <Clock className="h-4 w-4 mr-1 text-gray-400" />
-                        <span>{bid.timeLeft} left</span>
+                        <span>{formatDate(bid.bidDate)}</span>
                       </div>
-                      <div className="text-xs text-gray-500">Placed: {bid.createdAt}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Link href={`/admin/bids/${bid.id}`} className="text-blue-600 hover:text-blue-900">
-                          Details
-                        </Link>
-                        {bid.needsReview && (
-                          <>
-                            <button 
-                              className="text-green-600 hover:text-green-900"
-                              onClick={() => handleBidApproval(bid.id, true)}
-                            >
-                              Approve
-                            </button>
-                            <button 
-                              className="text-red-600 hover:text-red-900"
-                              onClick={() => handleBidApproval(bid.id, false)}
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      <Link 
+                        href={`/admin/bids/${bid.id}`} 
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        Details
+                      </Link>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                    No bids found
+                  <td colSpan={7} className="px-6 py-8 text-center">
+                    <div className="text-gray-500">
+                      {searchTerm || selectedStatus !== 'all' 
+                        ? 'No bids found matching your criteria' 
+                        : 'No bids available'}
+                    </div>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {renderPagination()}
       </div>
     </div>
   );

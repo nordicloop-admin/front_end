@@ -54,6 +54,7 @@ export interface User {
   lastName?: string;
   position?: string;
   companyId?: string;
+  role?: string;
   createdAt?: string;
 }
 
