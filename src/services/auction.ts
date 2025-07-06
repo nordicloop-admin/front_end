@@ -583,3 +583,45 @@ export async function deactivateAd(adId: string | number) {
     };
   }
 }
+
+/**
+ * Interface for user ads count response
+ */
+export interface UserAdsCountResponse {
+  user_id: number;
+  username: string;
+  ads_count: number;
+}
+
+/**
+ * Fetch the count of ads created by the current user
+ * @returns The API response with the user's ad count
+ */
+export async function getUserAdsCount() {
+  try {
+    const endpoint = `/ads/user/count/`;
+    
+    // This endpoint requires authentication
+    const response = await apiGet<UserAdsCountResponse>(endpoint, true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    return {
+      data: response.data,
+      error: null,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching your ad count',
+      status: 500
+    };
+  }
+}
