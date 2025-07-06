@@ -185,11 +185,21 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Copyright */}
+        {/* Copyright and Legal Links */}
         <div className="border-t border-[#2A3642] pt-8">
-          <p className="text-sm text-gray-400 text-center">
-            © Nordic loop 2025, all right reserved
-          </p>
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-gray-400 mb-4 md:mb-0">
+              © Nordic loop 2025, all rights reserved
+            </p>
+            <div className="flex space-x-6">
+              <Link href="/terms" className="text-sm text-gray-400 hover:text-white transition-colors">
+                Terms and Conditions
+              </Link>
+              <Link href="/privacy" className="text-sm text-gray-400 hover:text-white transition-colors">
+                Privacy Policy
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </footer>
