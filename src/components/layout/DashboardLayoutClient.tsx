@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ import {
   LogOut
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
+import { getUserAdsCount } from '@/services/auction';
 
 export default function DashboardLayoutClient({
   children,
@@ -27,9 +28,26 @@ export default function DashboardLayoutClient({
   const router = useRouter();
   const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userAdsCount, setUserAdsCount] = useState<number>(0);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // Fetch user's ad count
+  useEffect(() => {
+    const fetchUserAdsCount = async () => {
+      try {
+        const response = await getUserAdsCount();
+        if (response.data) {
+          setUserAdsCount(response.data.ads_count);
+        }
+      } catch (_error) {
+        // Error handling - silently fail
+      }
+    };
+    
+    fetchUserAdsCount();
+  }, []);
 
   // Debug function to help troubleshoot user data issues
   // To debug user data, uncomment the following code and add useEffect import:
@@ -110,7 +128,11 @@ export default function DashboardLayoutClient({
           >
             <FileText size={18} className="mr-3" />
             <span>My Auctions</span>
-            <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">2</span>
+            {userAdsCount > 0 && (
+              <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {userAdsCount}
+              </span>
+            )}
           </Link>
 
           <Link
