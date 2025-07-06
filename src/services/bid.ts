@@ -238,25 +238,28 @@ export async function createBid(bidData: BidCreateData) {
 
     // If the response has an error status, format it properly
     if (response.error || (response.status && response.status >= 400)) {
-      // Handle specific error cases
-      if (response.data && typeof response.data === 'object' && 'error' in response.data) {
-        const errorData = response.data as BidErrorResponse;
-        const errorMessage = errorData.error;
-        
-        // Check for specific error messages
-        if (errorMessage && errorMessage.includes("You cannot bid on your own ad")) {
-          return {
-            data: null,
-            error: "You cannot bid on your own advertisement",
-            status: 403,
-            errorCode: "OWN_AD_BID"
-          };
+      // Extract clean error message from API response
+      let errorMessage = response.error || 'Failed to create bid';
+      
+      // Handle specific error format: "Failed to place bid: ['You cannot bid on your own ad.']"
+      if (typeof response.data === 'object' && response.data !== null) {
+        if ('error' in response.data) {
+          const apiError = response.data.error;
+          if (typeof apiError === 'string') {
+            // Extract message from "Failed to place bid: ['Error message']" format
+            const match = apiError.match(/\['(.+?)'\]/);
+            if (match && match[1]) {
+              errorMessage = match[1];
+            } else {
+              errorMessage = apiError;
+            }
+          }
         }
       }
       
       return {
-        data: response.data,
-        error: response.error || 'Failed to create bid',
+        data: null,
+        error: errorMessage,
         status: response.status || 500
       };
     }
