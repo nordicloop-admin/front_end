@@ -141,6 +141,18 @@ export default function useBidding(): UseBiddingReturn {
       toast.dismiss(loadingToast);
 
       if (response.error) {
+        // Check for specific error messages
+        if (response.error.includes("You cannot bid on your own ad")) {
+          toast.error("Cannot bid on your own auction", {
+            description: "You cannot place bids on auctions that you created.",
+            duration: 5000,
+          });
+        } else {
+          toast.error(`Failed to ${selectedAuction.bidId ? 'update' : 'place'} bid`, {
+            description: response.error,
+            duration: 5000,
+          });
+        }
         setError(response.error);
         return;
       }
