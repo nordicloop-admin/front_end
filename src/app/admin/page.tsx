@@ -1,19 +1,50 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Building, Users, Clock, Plus } from 'lucide-react';
+import { Building, Users, Clock, Plus, PackageCheck, Tag, ShoppingBag } from 'lucide-react';
+import { getPlatformStatistics, PlatformStatistics } from '@/services/statistics';
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<PlatformStatistics | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchStatistics = async () => {
+      try {
+        setLoading(true);
+        const response = await getPlatformStatistics();
+        
+        if (response.error) {
+          setError(response.error);
+        } else if (response.data) {
+          setStats(response.data);
+        }
+      } catch (_error) {
+        setError('Failed to load platform statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatistics();
+  }, []);
+
   return (
     <div className="w-full">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-xl font-medium">Admin Dashboard</h1>
+        {error && (
+          <div className="mt-2 p-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-md">
+            {error}
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Companies Card */}
         <div className="bg-white border border-gray-100 rounded-md p-5">
           <div className="flex items-center justify-between mb-2">
@@ -23,7 +54,9 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-lg font-semibold mb-1">0</div>
+            <div className="text-lg font-semibold mb-1">
+              {loading ? 'Loading...' : stats?.total_companies || 0}
+            </div>
             <div className="text-sm font-medium text-gray-600">Total Companies</div>
           </div>
           <Link
@@ -43,7 +76,9 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-lg font-semibold mb-1">0</div>
+            <div className="text-lg font-semibold mb-1">
+              {loading ? 'Loading...' : stats?.total_users || 0}
+            </div>
             <div className="text-sm font-medium text-gray-600">Total Users</div>
           </div>
           <Link
@@ -63,7 +98,9 @@ export default function AdminDashboard() {
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-lg font-semibold mb-1">0</div>
+            <div className="text-lg font-semibold mb-1">
+              {loading ? 'Loading...' : stats?.pending_companies || 0}
+            </div>
             <div className="text-sm font-medium text-gray-600">Companies awaiting approval</div>
           </div>
           <Link
@@ -71,6 +108,75 @@ export default function AdminDashboard() {
             className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"
           >
             Review pending companies →
+          </Link>
+        </div>
+      </div>
+
+      {/* Bids Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Total Bids */}
+        <div className="bg-white border border-gray-100 rounded-md p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-medium text-gray-700">Total Bids</h2>
+            <div className="text-purple-500">
+              <ShoppingBag size={20} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-lg font-semibold mb-1">
+              {loading ? 'Loading...' : stats?.total_bids || 0}
+            </div>
+            <div className="text-sm font-medium text-gray-600">Bids placed on platform</div>
+          </div>
+          <Link
+            href="/admin/bids"
+            className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"
+          >
+            View all bids →
+          </Link>
+        </div>
+
+        {/* Active Bids */}
+        <div className="bg-white border border-gray-100 rounded-md p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-medium text-gray-700">Active Bids</h2>
+            <div className="text-indigo-500">
+              <Tag size={20} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-lg font-semibold mb-1">
+              {loading ? 'Loading...' : stats?.active_bids || 0}
+            </div>
+            <div className="text-sm font-medium text-gray-600">Currently active bids</div>
+          </div>
+          <Link
+            href="/admin/bids?status=active"
+            className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"
+          >
+            View active bids →
+          </Link>
+        </div>
+
+        {/* Winning Bids */}
+        <div className="bg-white border border-gray-100 rounded-md p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm font-medium text-gray-700">Winning Bids</h2>
+            <div className="text-teal-500">
+              <PackageCheck size={20} />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="text-lg font-semibold mb-1">
+              {loading ? 'Loading...' : stats?.winning_bids || 0}
+            </div>
+            <div className="text-sm font-medium text-gray-600">Successful bids</div>
+          </div>
+          <Link
+            href="/admin/bids?status=winning"
+            className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"
+          >
+            View winning bids →
           </Link>
         </div>
       </div>
