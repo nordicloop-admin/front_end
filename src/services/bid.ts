@@ -183,6 +183,31 @@ export interface BidErrorResponse {
 }
 
 /**
+ * Interface for user bids response
+ */
+export interface UserBidsResponse {
+  user_id: number;
+  total_bids: number;
+  bids: UserBidItem[];
+}
+
+/**
+ * Interface for user bid item
+ */
+export interface UserBidItem {
+  id: number;
+  ad_id: number;
+  ad_title: string;
+  bidder_name: string;
+  bid_price_per_unit: string;
+  volume_requested: string;
+  total_bid_value: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
  * Utility function to extract minimum bid amount from error message
  * @param errorMessage The error message from the API
  * @returns The minimum bid amount if found, null otherwise
@@ -213,6 +238,22 @@ export async function createBid(bidData: BidCreateData) {
 
     // If the response has an error status, format it properly
     if (response.error || (response.status && response.status >= 400)) {
+      // Handle specific error cases
+      if (response.data && typeof response.data === 'object' && 'error' in response.data) {
+        const errorData = response.data as BidErrorResponse;
+        const errorMessage = errorData.error;
+        
+        // Check for specific error messages
+        if (errorMessage && errorMessage.includes("You cannot bid on your own ad")) {
+          return {
+            data: null,
+            error: "You cannot bid on your own advertisement",
+            status: 403,
+            errorCode: "OWN_AD_BID"
+          };
+        }
+      }
+      
       return {
         data: response.data,
         error: response.error || 'Failed to create bid',
@@ -353,10 +394,10 @@ export async function getUserBids(params?: BidPaginationParams) {
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
     if (params?.status) queryParams.set('status', params.status);
     
-    const endpoint = `/bids/user/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const endpoint = `/bids/my/`;
     
     // Get user bids requires authentication
-    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+    const response = await apiGet<UserBidsResponse>(endpoint, true);
 
     if (response.error) {
       return {
@@ -366,18 +407,35 @@ export async function getUserBids(params?: BidPaginationParams) {
       };
     }
 
-    // Return both bids and pagination metadata
+    // Map UserBidItem to BidItem format
+    const mappedBids: BidItem[] = (response.data?.bids || []).map(bid => ({
+      id: bid.id,
+      bidder_name: bid.bidder_name,
+      ad_title: bid.ad_title,
+      bid_price_per_unit: bid.bid_price_per_unit,
+      volume_requested: bid.volume_requested,
+      total_bid_value: bid.total_bid_value,
+      status: bid.status,
+      created_at: bid.created_at,
+      updated_at: bid.updated_at,
+      // Add default values for required BidItem fields
+      currency: 'EUR', // Default currency
+      unit: 'kg',     // Default unit
+      is_winning: bid.status === 'winning',
+      rank: bid.status === 'winning' ? 1 : 0
+    }));
+
+    // Transform response to match expected format with pagination
     const result: PaginatedBidResult = {
-      bids: response.data?.results || [],
+      bids: mappedBids,
       pagination: {
-        count: response.data?.count || 0,
-        next: response.data?.next || null,
-        previous: response.data?.previous || null,
-        page_size: response.data?.page_size || 10,
-        total_pages: response.data?.total_pages || 1,
-        current_page: response.data?.current_page || 1
-      },
-      statistics: response.data?.platform_statistics
+        count: response.data?.total_bids || 0,
+        next: null,
+        previous: null,
+        page_size: params?.page_size || 10,
+        total_pages: Math.ceil((response.data?.total_bids || 0) / (params?.page_size || 10)),
+        current_page: params?.page || 1
+      }
     };
 
     return {
