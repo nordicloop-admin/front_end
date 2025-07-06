@@ -16,6 +16,49 @@ export interface PlatformStatistics {
 }
 
 /**
+ * Interface for recent bid in user dashboard statistics
+ */
+export interface RecentBid {
+  id: number;
+  status: string;
+  price: number;
+  created_at: string;
+  ad_id: number;
+}
+
+/**
+ * Interface for recent ad in user dashboard statistics
+ */
+export interface RecentAd {
+  id: number;
+  title: string;
+  status: string;
+  created_at: string;
+  bids_count: number;
+}
+
+/**
+ * Interface for user dashboard statistics response
+ */
+export interface UserDashboardStatistics {
+  user_id: number;
+  username: string;
+  active_bids: number;
+  winning_bids: number;
+  total_bids: number;
+  active_ads: number;
+  recent_bids: RecentBid[];
+  recent_ads: RecentAd[];
+  company_id: number;
+  company_name: string;
+  subscription: string;
+  verification_status: string;
+  is_verified: boolean;
+  pending_verification: boolean;
+  verification_message: string;
+}
+
+/**
  * Fetch platform statistics
  * @returns The API response with platform statistics
  */
@@ -41,6 +84,37 @@ export async function getPlatformStatistics() {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while fetching platform statistics',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Fetch user dashboard statistics
+ * @returns The API response with user dashboard statistics
+ */
+export async function getUserDashboardStatistics() {
+  try {
+    // This endpoint requires authentication
+    const response = await apiGet<UserDashboardStatistics>('/base/dashboard/stats/', true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    return {
+      data: response.data,
+      error: null,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching dashboard statistics',
       status: 500
     };
   }
