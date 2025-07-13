@@ -2,39 +2,48 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { MapPin, Building, Plus, Edit2, Trash2, Check, AlertCircle, RefreshCw, Briefcase, Home } from 'lucide-react';
+import { MapPin, Building, Plus, Edit2, Trash2, Check, AlertCircle, RefreshCw, Briefcase, Home, User } from 'lucide-react';
 import { getUserAddresses, deleteUserAddress, setPrimaryAddress, Address } from '@/services/userAddresses';
+import { getUserProfile, UserProfile } from '@/services/userProfile';
 
 
 
 export default function Addresses() {
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingId, setProcessingId] = useState<number | null>(null);
 
-  // Fetch addresses
+  // Fetch addresses and user profile
   useEffect(() => {
-    const fetchAddresses = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await getUserAddresses();
         
-        if (response.error) {
-          setError(response.error);
-        } else if (response.data) {
-          setAddresses(response.data.addresses);
+        // Fetch addresses
+        const addressResponse = await getUserAddresses();
+        if (addressResponse.error) {
+          setError(addressResponse.error);
+        } else if (addressResponse.data) {
+          setAddresses(addressResponse.data.addresses);
+        }
+        
+        // Fetch user profile
+        const profileResponse = await getUserProfile();
+        if (profileResponse.data) {
+          setProfile(profileResponse.data);
         }
       } catch (_error) {
-        setError('Failed to load addresses');
+        setError('Failed to load data');
       } finally {
         setIsLoading(false);
       }
     };
-
-    fetchAddresses();
+    
+    fetchData();
   }, []);
 
   // Function to set an address as primary
@@ -114,8 +123,17 @@ export default function Addresses() {
 
   return (
     <div className="p-5">
+      {/* Header with user info */}
       <div className="flex justify-between items-center mb-5">
-        <h1 className="text-xl font-medium">My Addresses</h1>
+        <div>
+          <h1 className="text-xl font-medium">My Addresses</h1>
+          {profile && (
+            <p className="text-sm text-gray-500 mt-1 flex items-center">
+              <User size={14} className="mr-1" />
+              {profile.name} • {profile.role_display} at {profile.company_name}
+            </p>
+          )}
+        </div>
         <Link
           href="/dashboard/addresses/new"
           className="bg-[#FF8A00] text-white py-2 px-4 rounded-md flex items-center text-sm"

@@ -1,37 +1,58 @@
 "use client";
 
-import React, { useState } from 'react';
-// Link is imported but not used in this file
-import _Link from 'next/link';
-import { User, Mail, Phone, Building, Shield, Key, Save, X } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import { User, Mail, Building, Shield, Key, Save, X, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { getUserProfile, updateUserProfile, UserProfile, ProfileUpdateRequest } from '@/services/userProfile';
 
 export default function Profile() {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('personal');
-
-  // Mock user data
-  const userData = {
-    firstName: user?.firstName || 'Charmant',
-    lastName: user?.lastName || 'Uwase',
-    email: user?.email || 'charmant@ecosolutions.se',
-    phone: '+46 70 123 4567',
-    company: 'Eco Solutions AB',
-    position: 'Procurement Manager'
-  };
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
-    firstName: userData.firstName,
-    lastName: userData.lastName,
-    email: userData.email,
-    phone: userData.phone,
-    company: userData.company,
-    position: userData.position,
+    firstName: '',
+    lastName: '',
+    email: '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+  
+  // Fetch user profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await getUserProfile();
+        
+        if (response.error) {
+          setError(response.error);
+        } else if (response.data) {
+          setProfile(response.data);
+          setFormData({
+            firstName: response.data.first_name,
+            lastName: response.data.last_name,
+            email: response.data.email,
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          });
+        }
+      } catch (_err) {
+        setError('Failed to load profile data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, []);
 
   // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,313 +64,293 @@ export default function Profile() {
   };
 
   // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would save the data to the backend
-    alert('Profile updated successfully!');
+    
+    if (isSaving) return;
+    
+    try {
+      setIsSaving(true);
+      setError(null);
+      setSuccess(null);
+      
+      const updateData: ProfileUpdateRequest = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email
+      };
+      
+      const response = await updateUserProfile(updateData);
+      
+      if (response.error) {
+        setError(response.error);
+      } else if (response.data) {
+        setProfile(response.data);
+        setSuccess('Profile updated successfully!');
+      }
+    } catch (_err) {
+      setError('Failed to update profile');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
     <div className="p-5">
       <h1 className="text-xl font-medium mb-5">My Profile</h1>
 
-      <div className="bg-white border border-gray-100 rounded-md overflow-hidden">
-        {/* Profile Header */}
-        <div className="p-5 border-b border-gray-100">
-          <h2 className="text-lg font-medium text-gray-900">
-            {userData.firstName} {userData.lastName}
-          </h2>
-          <div className="text-sm text-gray-500">
-            {userData.position} at {userData.company}
+      {/* Error message */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <AlertCircle className="text-red-500 mr-2" size={16} />
+            <p className="text-sm text-red-700">{error}</p>
           </div>
         </div>
+      )}
 
-        {/* Tabs */}
-        <div className="border-b border-gray-100">
-          <div className="flex">
-            <button
-              className={`px-4 py-3 text-sm font-medium ${
-                activeTab === 'personal'
-                  ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab('personal')}
-            >
-              Personal Information
-            </button>
-            <button
-              className={`px-4 py-3 text-sm font-medium ${
-                activeTab === 'company'
-                  ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab('company')}
-            >
-              Company Details
-            </button>
-            <button
-              className={`px-4 py-3 text-sm font-medium ${
-                activeTab === 'security'
-                  ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]'
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
-              onClick={() => setActiveTab('security')}
-            >
-              Security
-            </button>
+      {/* Success message */}
+      {success && (
+        <div className="p-4 bg-green-50 border border-green-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <CheckCircle className="text-green-500 mr-2" size={16} />
+            <p className="text-sm text-green-700">{success}</p>
           </div>
         </div>
+      )}
+      
+      {isLoading ? (
+        <div className="bg-white border border-gray-100 rounded-md p-12 flex flex-col items-center justify-center shadow-sm">
+          <RefreshCw size={32} className="text-[#FF8A00] animate-spin mb-4" />
+          <p className="text-gray-500">Loading profile data...</p>
+        </div>
+      ) : profile ? (
+        <div className="bg-white border border-gray-100 rounded-md overflow-hidden shadow-sm">
+          {/* Tabs */}
+          <div className="border-b border-gray-100">
+            <div className="flex">
+              <button
+                className={`px-5 py-3 text-sm font-medium ${activeTab === 'personal' ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('personal')}
+              >
+                Personal Information
+              </button>
+              <button
+                className={`px-5 py-3 text-sm font-medium ${activeTab === 'company' ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('company')}
+              >
+                Company
+              </button>
+              <button
+                className={`px-5 py-3 text-sm font-medium ${activeTab === 'security' ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('security')}
+              >
+                Security
+              </button>
+            </div>
+          </div>
 
-        {/* Tab Content */}
-        <div className="p-5">
-          <form onSubmit={handleSubmit}>
-            {/* Personal Information Tab */}
-            {activeTab === 'personal' && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User size={16} className="text-gray-400" />
-                      </div>
+          {/* Tab Content */}
+          <div className="p-5">
+            <form onSubmit={handleSubmit}>
+              {/* Personal Information Tab */}
+              {activeTab === 'personal' && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        First Name
+                      </label>
                       <input
                         type="text"
                         name="firstName"
                         value={formData.firstName}
                         onChange={handleChange}
-                        className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
                       />
                     </div>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <User size={16} className="text-gray-400" />
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 mb-2">
+                        Last Name
+                      </label>
                       <input
                         type="text"
                         name="lastName"
                         value={formData.lastName}
                         onChange={handleChange}
-                        className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
                       />
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Mail size={16} className="text-gray-400" />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                      Email
+                    </label>
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
                       onChange={handleChange}
-                      className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Phone size={16} className="text-gray-400" />
-                    </div>
-                    <input
-                      type="tel"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Company Details Tab */}
-            {activeTab === 'company' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Company Name
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Building size={16} className="text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      name="company"
-                      value={formData.company}
-                      onChange={handleChange}
-                      className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Position
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <User size={16} className="text-gray-400" />
-                    </div>
-                    <input
-                      type="text"
-                      name="position"
-                      value={formData.position}
-                      onChange={handleChange}
-                      className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-md">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <Shield size={16} className="text-blue-500" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-blue-700">Company Verification</h3>
-                      <div className="mt-1 text-xs text-blue-600">
-                        <p>Your company is currently under verification. Once verified, you&apos;ll have full access to all platform features.</p>
+                  {/* Permissions */}
+                  <div className="mt-8">
+                    <h3 className="text-sm font-medium text-gray-600 mb-4">Account Permissions</h3>
+                    <div className="flex space-x-6">
+                      <div className="flex items-center">
+                        <div className={`w-2 h-2 rounded-full mr-2 ${profile?.can_place_ads ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                        <span className="text-sm text-gray-700">Place Advertisements</span>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <div className={`w-2 h-2 rounded-full mr-2 ${profile?.can_place_bids ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                        <span className="text-sm text-gray-700">Place Bids</span>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Security Tab */}
-            {activeTab === 'security' && (
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Current Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Key size={16} className="text-gray-400" />
+              {/* Company Tab */}
+              {activeTab === 'company' && (
+                <div className="space-y-6">
+                  {/* Company Info */}
+                  <div className="flex flex-col items-center py-6">
+                    <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mb-3">
+                      <Building size={32} className="text-gray-400" />
                     </div>
+                    <h3 className="text-lg font-medium text-gray-800">{profile?.company_name || 'Company'}</h3>
+                    <span className="text-sm text-gray-500 mt-1">Role: {profile?.role_display || 'User'}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Security Tab */}
+              {activeTab === 'security' && (
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                      Current Password
+                    </label>
                     <input
                       type="password"
                       name="currentPassword"
                       value={formData.currentPassword}
                       onChange={handleChange}
-                      className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    New Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Key size={16} className="text-gray-400" />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                      New Password
+                    </label>
                     <input
                       type="password"
                       name="newPassword"
                       value={formData.newPassword}
                       onChange={handleChange}
-                      className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Confirm New Password
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <Key size={16} className="text-gray-400" />
-                    </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                      Confirm New Password
+                    </label>
                     <input
                       type="password"
                       name="confirmPassword"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className="pl-10 pr-3 py-2 w-full border border-gray-100 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+                      className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
                     />
                   </div>
-                </div>
 
-                <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-md">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <Shield size={16} className="text-yellow-500" />
-                    </div>
-                    <div className="ml-3">
-                      <h3 className="text-sm font-medium text-yellow-700">Password Requirements</h3>
-                      <div className="mt-1 text-xs text-yellow-600">
-                        <ul className="list-disc pl-5 space-y-1">
-                          <li>At least 8 characters long</li>
-                          <li>Include at least one uppercase letter</li>
-                          <li>Include at least one number</li>
-                          <li>Include at least one special character</li>
-                        </ul>
+                  <div className="bg-yellow-50 border border-yellow-100 p-4 rounded-md">
+                    <div className="flex">
+                      <div className="flex-shrink-0">
+                        <Shield size={16} className="text-yellow-500" />
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-yellow-700">Password Requirements</h3>
+                        <div className="mt-1 text-xs text-yellow-600">
+                          <ul className="list-disc pl-5 space-y-1">
+                            <li>At least 8 characters long</li>
+                            <li>Include at least one uppercase letter</li>
+                            <li>Include at least one number</li>
+                            <li>Include at least one special character</li>
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* Form Actions */}
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-gray-200 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
+                  onClick={() => {
+                    // Reset form to initial values
+                    if (profile) {
+                      setFormData({
+                        firstName: profile.first_name,
+                        lastName: profile.last_name,
+                        email: profile.email,
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                      });
+                    }
+                    setError(null);
+                    setSuccess(null);
+                  }}
+                >
+                  <X size={16} className="mr-2" />
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors flex items-center"
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <RefreshCw size={16} className="animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={16} className="mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </button>
               </div>
-            )}
-
-            {/* Form Actions */}
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                type="button"
-                className="px-4 py-2 border border-gray-100 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition-colors flex items-center"
-                onClick={() => {
-                  // Reset form to initial values
-                  setFormData({
-                    firstName: userData.firstName,
-                    lastName: userData.lastName,
-                    email: userData.email,
-                    phone: userData.phone,
-                    company: userData.company,
-                    position: userData.position,
-                    currentPassword: '',
-                    newPassword: '',
-                    confirmPassword: ''
-                  });
-                }}
-              >
-                <X size={16} className="mr-2" />
-                Cancel
-              </button>
-
-              <button
-                type="submit"
-                className="px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors flex items-center"
-              >
-                <Save size={16} className="mr-2" />
-                Save Changes
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="bg-white border border-gray-100 rounded-md p-12 flex flex-col items-center justify-center shadow-sm">
+          <AlertCircle size={32} className="text-red-500 mb-4" />
+          <p className="text-gray-700 font-medium">Failed to load profile</p>
+          <p className="text-gray-500 mt-1">Please try refreshing the page</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
+          >
+            Refresh
+          </button>
+        </div>
+      )}
     </div>
   );
 }
