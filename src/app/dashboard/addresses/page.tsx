@@ -1,13 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Building, Plus, Edit2, Trash2, Check, AlertCircle, RefreshCw, Briefcase, Home } from 'lucide-react';
+import { MapPin, Building, Plus, Trash2, Check, AlertCircle, RefreshCw, Briefcase, Home, Pencil } from 'lucide-react';
 import { getUserAddresses, deleteUserAddress, setPrimaryAddress, Address } from '@/services/userAddresses';
 
 
 
-export default function Addresses() {
+export default function AddressesPage() {
+  const router = useRouter();
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,9 +27,9 @@ export default function Addresses() {
         if (response.error) {
           setError(response.error);
         } else if (response.data) {
-          setAddresses(response.data.addresses);
+          setAddresses(response.data || []);
         }
-      } catch (_error) {
+      } catch (_err) {
         setError('Failed to load addresses');
       } finally {
         setIsLoading(false);
@@ -114,15 +116,15 @@ export default function Addresses() {
 
   return (
     <div className="p-5">
-      <div className="flex justify-between items-center mb-5">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-medium">My Addresses</h1>
-        <Link
-          href="/dashboard/addresses/new"
-          className="bg-[#FF8A00] text-white py-2 px-4 rounded-md flex items-center text-sm"
+        <button 
+          onClick={() => router.push('/dashboard/addresses/new')}
+          className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#E67E00] transition-colors flex items-center"
         >
           <Plus size={16} className="mr-2" />
-          Add Address
-        </Link>
+          Add New Address
+        </button>
       </div>
       
       {/* Error message */}
@@ -204,12 +206,12 @@ export default function Addresses() {
                 </div>
 
                 <div className="flex space-x-2">
-                  <Link
-                    href={`/dashboard/addresses/${address.id}/edit`}
-                    className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                  <button 
+                    onClick={() => router.push(`/dashboard/addresses/edit/${address.id}`)}
+                    className="text-gray-600 hover:text-gray-900 p-1 rounded-full hover:bg-gray-100 transition-colors"
                   >
-                    <Edit2 size={16} />
-                  </Link>
+                    <Pencil size={16} />
+                  </button>
                   <button
                     className="p-1.5 text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-md transition-colors"
                     onClick={() => handleDeleteAddress(address.id)}

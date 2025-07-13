@@ -21,11 +21,8 @@ export interface Address {
   is_primary: boolean;
   contact_name: string;
   contact_phone: string;
-  created_at: string;
-}
-
-export interface AddressesResponse {
-  addresses: Address[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AddressCreateRequest {
@@ -35,18 +32,18 @@ export interface AddressCreateRequest {
   city: string;
   postal_code: string;
   country: string;
-  is_primary?: boolean;
+  is_primary: boolean;
   contact_name: string;
   contact_phone: string;
+}
+
+export interface AddressUpdateRequest extends AddressCreateRequest {
+  id: number;
 }
 
 export interface AddressCreateResponse {
   message: string;
   address: Address;
-}
-
-export interface AddressUpdateRequest extends AddressCreateRequest {
-  id: number;
 }
 
 export interface AddressUpdateResponse {
@@ -59,8 +56,12 @@ export interface AddressDeleteResponse {
 }
 
 // API functions
-export async function getUserAddresses(): Promise<ApiResponse<AddressesResponse>> {
-  return await apiGet<AddressesResponse>('/ads/user/addresses/', true);
+export async function getUserAddresses(): Promise<ApiResponse<Address[]>> {
+  return await apiGet<Address[]>('/ads/user/addresses/', true);
+}
+
+export async function getUserAddressById(id: string | number): Promise<ApiResponse<Address>> {
+  return await apiGet<Address>(`/ads/user/addresses/${id}/`, true);
 }
 
 export async function createUserAddress(
