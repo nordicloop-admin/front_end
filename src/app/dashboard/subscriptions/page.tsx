@@ -1,8 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Check, X, Calendar, ArrowRight } from 'lucide-react';
+import { Check, X, Calendar, ArrowRight, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
+import { getUserSubscription, updateUserSubscription, UserSubscription } from '@/services/userSubscription';
 
 // Subscription plan details
 const subscriptionPlans = [
@@ -63,36 +64,161 @@ const subscriptionPlans = [
 ];
 
 export default function Subscriptions() {
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Fetch subscription data
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getUserSubscription();
+        
+        if (response.error) {
+          setError(response.error);
+        } else if (response.data) {
+          setSubscription(response.data);
+        }
+      } catch (_error) {
+        setError('Failed to load subscription data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSubscription();
+  }, []);
+
+  // Handle plan upgrade
+  const handlePlanChange = async (planId: string) => {
+    if (!subscription || subscription.plan === planId || isUpdating) return;
+    
+    try {
+      setIsUpdating(true);
+      setError(null);
+      setUpdateSuccess(false);
+      
+      const updateData = {
+        plan: planId,
+        auto_renew: subscription.auto_renew,
+        payment_method: subscription.payment_method,
+        contact_name: subscription.contact_name,
+        contact_email: subscription.contact_email
+      };
+      
+      const response = await updateUserSubscription(updateData);
+      
+      if (response.error) {
+        setError(response.error);
+      } else if (response.data) {
+        setSubscription(response.data.subscription);
+        setUpdateSuccess(true);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setUpdateSuccess(false);
+        }, 3000);
+      }
+    } catch (_error) {
+      setError('Failed to update subscription');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Format date string
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch (_e) {
+      return dateString;
+    }
+  };
   return (
     <div className="p-5">
       <h1 className="text-xl font-medium mb-5">Subscription Plans</h1>
 
+      {/* Error message */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <AlertCircle className="text-red-500 mr-2" size={16} />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Success message */}
+      {updateSuccess && (
+        <div className="p-4 bg-green-50 border border-green-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <CheckCircle className="text-green-500 mr-2" size={16} />
+            <p className="text-sm text-green-700">Subscription updated successfully!</p>
+          </div>
+        </div>
+      )}
+
       {/* Current Subscription */}
       <div className="bg-white border border-gray-100 rounded-md p-4 mb-6">
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-sm font-medium text-gray-700">Current Plan</h2>
-            <div className="text-base font-medium mt-1">Free Plan</div>
-            <div className="text-xs text-gray-500 mt-1">
-              Commission rate: 9% on all trades
+        {isLoading ? (
+          <div className="flex items-center justify-center p-4">
+            <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-[#FF8A00]"></div>
+          </div>
+        ) : subscription ? (
+          <>
+            <div className="flex justify-between items-start">
+              <div>
+                <h2 className="text-sm font-medium text-gray-700">Current Plan</h2>
+                <div className="text-base font-medium mt-1">{subscription.plan_display}</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {subscription.plan === 'premium' ? 'No commission fees on trades' : 
+                   subscription.plan === 'standard' ? 'Commission rate: 7% on all trades' : 
+                   'Commission rate: 9% on all trades'}
+                </div>
+              </div>
+
+              <div className={`text-xs px-2 py-1 rounded-full ${
+                subscription.status === 'active' ? 'bg-green-100 text-green-800' : 
+                subscription.status === 'expired' ? 'bg-red-100 text-red-800' : 
+                'bg-yellow-100 text-yellow-800'
+              }`}>
+                {subscription.status_display}
+              </div>
             </div>
-          </div>
 
-          <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-            Active
-          </div>
-        </div>
+            <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+              <div className="text-xs text-gray-500 flex items-center">
+                <Calendar size={14} className="mr-1" />
+                Next billing date: {subscription.end_date ? formatDate(subscription.end_date) : 'N/A'}
+              </div>
 
-        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-          <div className="text-xs text-gray-500 flex items-center">
-            <Calendar size={14} className="mr-1" />
-            Next billing date: N/A
+              <div className="flex items-center space-x-4">
+                <div className="text-xs text-gray-500">
+                  Auto-renew: {subscription.auto_renew ? (
+                    <span className="text-green-600 font-medium">Enabled</span>
+                  ) : (
+                    <span className="text-red-600 font-medium">Disabled</span>
+                  )}
+                </div>
+                <Link href="/dashboard/subscriptions/payment" className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium">
+                  Manage Payment Methods
+                </Link>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="text-center py-4 text-gray-500">
+            No subscription information available
           </div>
-
-          <button className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium">
-            Manage Payment Methods
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Subscription Plans */}
@@ -101,14 +227,14 @@ export default function Subscriptions() {
           <div
             key={plan.id}
             className={`bg-white border rounded-md p-4 ${
-              plan.current
+              subscription && subscription.plan === plan.id
                 ? 'border-[#FF8A00] ring-1 ring-[#FF8A00]'
                 : 'border-gray-100'
             }`}
           >
             <div className="flex justify-between items-start mb-3">
               <h3 className="text-base font-medium">{plan.name}</h3>
-              {plan.current && (
+              {subscription && subscription.plan === plan.id && (
                 <span className="bg-[#FF8A00] text-white text-xs px-2 py-0.5 rounded-full">
                   Current
                 </span>
@@ -142,13 +268,23 @@ export default function Subscriptions() {
 
             <button
               className={`w-full py-2 rounded-md text-sm ${
-                plan.current
+                (subscription && subscription.plan === plan.id) || isUpdating
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-[#FF8A00] text-white hover:bg-[#e67e00] transition-colors'
               }`}
-              disabled={plan.current}
+              disabled={(subscription && subscription.plan === plan.id) || isUpdating}
+              onClick={() => handlePlanChange(plan.id)}
             >
-              {plan.current ? 'Current Plan' : 'Upgrade'}
+              {isUpdating ? (
+                <span className="flex items-center justify-center">
+                  <RefreshCw size={14} className="animate-spin mr-2" />
+                  Updating...
+                </span>
+              ) : subscription && subscription.plan === plan.id ? (
+                'Current Plan'
+              ) : (
+                'Upgrade'
+              )}
             </button>
           </div>
         ))}
@@ -159,13 +295,29 @@ export default function Subscriptions() {
         <h2 className="text-sm font-medium text-gray-700 mb-3">Billing History</h2>
 
         <div className="border-t border-gray-100 py-4 text-center">
-          <p className="text-sm text-gray-500">No billing history available for Free Plan.</p>
-          <Link
-            href="/dashboard/subscriptions/billing"
-            className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium flex items-center justify-center mt-2"
-          >
-            View all transactions <ArrowRight size={12} className="ml-1" />
-          </Link>
+          {isLoading ? (
+            <div className="flex items-center justify-center p-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#FF8A00]"></div>
+            </div>
+          ) : subscription ? (
+            <>
+              <p className="text-sm text-gray-500">
+                {subscription.last_payment ? (
+                  <>Last payment: {formatDate(subscription.last_payment)} - {subscription.amount}</>
+                ) : (
+                  <>No billing history available for {subscription.plan_display}.</>
+                )}
+              </p>
+              <Link
+                href="/dashboard/subscriptions/billing"
+                className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium flex items-center justify-center mt-2"
+              >
+                View all transactions <ArrowRight size={12} className="ml-1" />
+              </Link>
+            </>
+          ) : (
+            <p className="text-sm text-gray-500">No billing history available.</p>
+          )}
         </div>
       </div>
     </div>
