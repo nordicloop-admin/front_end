@@ -14,7 +14,8 @@ import {
   Bell,
   MapPin,
   User,
-  LogOut
+  LogOut,
+  Megaphone
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
 import { getUserAdsCount } from '@/services/auction';
@@ -188,6 +189,15 @@ export default function DashboardLayoutClient({
               />
             </svg>
             <span>My Bids</span>
+          </Link>
+
+          <Link
+            href="/dashboard/announcements"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/announcements' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <Megaphone size={18} className="mr-3" />
+            <span>Announcements</span>
           </Link>
 
           <Link
