@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
@@ -12,6 +12,7 @@ import {
   LogOut
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
+import { getTotalBidsCount } from '@/services/statistics';
 
 export default function AdminLayoutClient({
   children,
@@ -22,9 +23,26 @@ export default function AdminLayoutClient({
   const router = useRouter();
   const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [totalBids, setTotalBids] = useState<number | null>(null);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // Fetch total bids count
+  useEffect(() => {
+    const fetchTotalBids = async () => {
+      try {
+        const response = await getTotalBidsCount();
+        if (response.data) {
+          setTotalBids(response.data.total_bids);
+        }
+      } catch (_error) {
+        // Silently fail
+      }
+    };
+
+    fetchTotalBids();
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -130,7 +148,11 @@ export default function AdminLayoutClient({
               <path d="M4 17H20" stroke={pathname === '/admin/bids' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             <span>Bids</span>
-            <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">2</span>
+            {totalBids !== null && (
+              <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center">
+                {totalBids}
+              </span>
+            )}
           </Link>
 
           <Link

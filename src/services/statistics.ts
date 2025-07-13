@@ -16,6 +16,13 @@ export interface PlatformStatistics {
 }
 
 /**
+ * Interface for total bids count response
+ */
+export interface TotalBidsResponse {
+  total_bids: number;
+}
+
+/**
  * Interface for recent bid in user dashboard statistics
  */
 export interface RecentBid {
@@ -115,6 +122,37 @@ export async function getUserDashboardStatistics() {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while fetching dashboard statistics',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get total bids count
+ * @returns The API response with the total number of bids
+ */
+export async function getTotalBidsCount() {
+  try {
+    // This endpoint requires authentication
+    const response = await apiGet<TotalBidsResponse>('/base/bids/count/', true);
+
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
+    return {
+      data: response.data,
+      error: null,
+      status: response.status
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching total bids count',
       status: 500
     };
   }
