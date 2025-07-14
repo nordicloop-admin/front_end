@@ -15,8 +15,8 @@ export default function TermsAndConditions() {
           <p className="text-lg font-medium mb-4">Welcome to Nordic Loop</p>
           
           <p className="mb-6">
-            These Terms and Conditions ("Terms") govern your use of the website nordicloop.se (the
-            "Platform"), operated by Nordic Loop AB, a company registered in Sweden (org. number not
+            These Terms and Conditions (&quot;Terms&quot;) govern your use of the website nordicloop.se (the
+            &quot;Platform&quot;), operated by Nordic Loop AB, a company registered in Sweden (org. number not
             yet available).
           </p>
           
@@ -28,7 +28,7 @@ export default function TermsAndConditions() {
           <h2 className="text-xl font-medium mt-8 mb-4">1. Who We Are</h2>
           <p className="mb-6">
             Nordic Loop is a B2B platform aimed at helping companies give new life to underused or
-            surplus materials. We're a small but ambitious team committed to making circular business
+            surplus materials. We&apos;re a small but ambitious team committed to making circular business
             easy, practical, and profitable.
           </p>
           
@@ -53,7 +53,7 @@ export default function TermsAndConditions() {
           
           <h2 className="text-xl font-medium mt-8 mb-4">3. Listings: Offers and Demands</h2>
           <p className="mb-4">
-            Users may post material listings, either as an "Offer" (to sell/give away) or "Demand" (to
+            Users may post material listings, either as an &quot;Offer&quot; (to sell/give away) or &quot;Demand&quot; (to
             acquire).
           </p>
           <p className="mb-4">Each listing must:</p>
@@ -63,7 +63,7 @@ export default function TermsAndConditions() {
             <li>Be published for up to 90 days unless renewed</li>
           </ul>
           <p className="mb-6">
-            Your company's contact information is only shared with registered users, not the general
+            Your company&apos;s contact information is only shared with registered users, not the general
             public.
           </p>
           
@@ -82,7 +82,7 @@ export default function TermsAndConditions() {
             <li>Not engage in spam, fraud, or abusive behavior</li>
           </ul>
           <p className="mb-6">
-            You can request account deletion at any time by emailing us at info@nordicloop.se. We'll
+            You can request account deletion at any time by emailing us at info@nordicloop.se. We&apos;ll
             process the request within 30 days.
           </p>
           
@@ -98,7 +98,7 @@ export default function TermsAndConditions() {
           
           <h2 className="text-xl font-medium mt-8 mb-4">7. Changes to Terms</h2>
           <p className="mb-6">
-            These Terms may be updated as we grow. You'll be notified at least 15 days in advance of
+            These Terms may be updated as we grow. You&apos;ll be notified at least 15 days in advance of
             any significant changes. Continued use of the Platform after such updates constitutes
             acceptance of the revised Terms.
           </p>

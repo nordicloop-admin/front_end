@@ -249,7 +249,7 @@ const DashboardPage = () => {
           ) : (
             <div className="flex flex-col items-center justify-center text-center py-8">
               <Box className="text-gray-300 mb-2" size={32} />
-              <p className="text-sm text-gray-500">You haven't placed any bids yet</p>
+              <p className="text-sm text-gray-500">You haven&apos;t placed any bids yet</p>
             </div>
           )}
           <div className="mt-4 pt-3 border-t border-gray-100">
@@ -294,7 +294,7 @@ const DashboardPage = () => {
           ) : (
             <div className="flex flex-col items-center justify-center text-center py-8">
               <Package className="text-gray-300 mb-2" size={32} />
-              <p className="text-sm text-gray-500">You haven't created any auctions yet</p>
+              <p className="text-sm text-gray-500">You haven&apos;t created any auctions yet</p>
               <Link 
                 href="/dashboard/my-auctions/create"
                 className="mt-2 text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"

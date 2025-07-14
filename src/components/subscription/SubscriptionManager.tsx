@@ -56,7 +56,7 @@ const SubscriptionManager: React.FC = () => {
             contact_email: response.data.contact_email
           });
         }
-      } catch (error) {
+      } catch (_error) {
         setError('Failed to load subscription data');
       } finally {
         setIsLoading(false);
@@ -100,7 +100,7 @@ const SubscriptionManager: React.FC = () => {
           setUpdateSuccess(false);
         }, 3000);
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to update subscription');
     } finally {
       setIsLoading(false);

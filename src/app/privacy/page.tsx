@@ -95,7 +95,7 @@ export default function PrivacyPolicy() {
             <li>Data portability</li>
           </ul>
           <p className="mb-6">
-            To exercise any of these rights, email: info@nordicloop.se. If you're not satisfied, you can file
+            To exercise any of these rights, email: info@nordicloop.se. If you&apos;re not satisfied, you can file
             a complaint with the Swedish Authority for Privacy Protection (IMY).
           </p>
           
