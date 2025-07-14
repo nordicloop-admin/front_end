@@ -1,4 +1,4 @@
-import { apiGet, apiPut } from './api';
+import { apiGet, apiPatch } from './api';
 
 // Import or recreate ApiResponse type
 export interface ApiResponse<T> {
@@ -37,5 +37,5 @@ export async function getUserProfile(): Promise<ApiResponse<UserProfile>> {
 
 // Update user profile
 export async function updateUserProfile(data: ProfileUpdateRequest): Promise<ApiResponse<UserProfile>> {
-  return await apiPut<UserProfile>('/users/profile/', data, true);
+  return await apiPatch<UserProfile>('/users/profile/', data, true);
 }
