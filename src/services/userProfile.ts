@@ -35,7 +35,24 @@ export async function getUserProfile(): Promise<ApiResponse<UserProfile>> {
   return await apiGet<UserProfile>('/users/profile/', true);
 }
 
+// Response type for profile update
+interface ProfileUpdateResponse {
+  message: string;
+  user: UserProfile;
+}
+
 // Update user profile
 export async function updateUserProfile(data: ProfileUpdateRequest): Promise<ApiResponse<UserProfile>> {
-  return await apiPatch<UserProfile>('/users/profile/', data, true);
+  const response = await apiPatch<ProfileUpdateResponse>('/users/profile/', data, true);
+  
+  // If the response is successful and contains the nested user data, extract it
+  if (response.data && response.data.user) {
+    return {
+      data: response.data.user,
+      error: response.error,
+      status: response.status
+    };
+  }
+  
+  return response as ApiResponse<UserProfile>;
 }
