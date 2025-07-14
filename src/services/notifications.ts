@@ -70,7 +70,7 @@ export async function deleteNotification(notificationId: number) {
  * @returns Promise with all notifications data
  */
 export async function getAllNotifications() {
-  return apiGet<Notification[]>('/admin/notifications', true);
+  return apiGet<Notification[]>('/notifications/list-all/', true);
 }
 
 /**
@@ -79,7 +79,7 @@ export async function getAllNotifications() {
  * @returns Promise with created notification data
  */
 export async function createNotification(notification: CreateNotificationRequest) {
-  return apiPost<Notification>('/admin/notifications', notification, true);
+  return apiPost<Notification>('/notifications/create-notification/', notification, true);
 }
 
 /**
@@ -88,7 +88,7 @@ export async function createNotification(notification: CreateNotificationRequest
  * @returns Promise with created notification data
  */
 export async function createNotificationForAllUsers(notification: Omit<CreateNotificationRequest, 'userId'>) {
-  return apiPost<{ success: boolean, count: number }>('/admin/notifications/broadcast', notification, true);
+  return apiPost<{ success: boolean, count: number }>('/notifications/broadcast/', notification, true);
 }
 
 /**
@@ -97,5 +97,5 @@ export async function createNotificationForAllUsers(notification: Omit<CreateNot
  * @returns Promise with success status
  */
 export async function deleteNotificationForAllUsers(notificationId: number) {
-  return apiDelete<{ success: boolean }>(`/admin/notifications/${notificationId}/broadcast`, true);
+  return apiDelete<{ success: boolean }>(`/notifications/${notificationId}/delete-broadcast/`, true);
 }

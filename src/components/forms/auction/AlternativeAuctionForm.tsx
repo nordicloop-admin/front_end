@@ -318,16 +318,50 @@ export function AlternativeAuctionForm() {
     }
   }, [findCategoryId, findSubcategoryId]);
 
+  /**
+   * Maps frontend step IDs to backend API step IDs based on material type
+   * For plastics, the mapping is 1:1 (frontend step = backend step)
+   * For other materials, we need to map the 4 frontend steps to the correct backend steps
+   */
+  const mapFrontendStepToBackendStep = useCallback((frontendStepId: number): number => {
+    // Step 1 is always the same for all material types
+    if (frontendStepId === 1) return 1;
+    
+    // For plastics, the mapping is 1:1
+    const isPlasticMaterial = formData.materialType?.toLowerCase().includes('plastic');
+    if (isPlasticMaterial) return frontendStepId;
+    
+    // For other materials, map frontend steps 2, 3, 4 to backend steps 6, 7, 8
+    switch (frontendStepId) {
+      case 2: return 6; // Location & Logistics (frontend step 2) maps to backend step 6
+      case 3: return 7; // Quantity & Price (frontend step 3) maps to backend step 7
+      case 4: return 8; // Image & Description (frontend step 4) maps to backend step 8
+      default: return frontendStepId; // Fallback (should not happen)
+    }
+  }, [formData.materialType]);
+
   const handleAutoSave = useCallback(async () => {
     if (!adId || !hasUnsavedChanges || !categoriesLoaded) return;
 
     setIsAutoSaving(true);
 
     try {
-      const stepData = convertFormDataToApiData(currentStep, formData);
+      // Map frontend step to backend API step
+      const backendStepId = mapFrontendStepToBackendStep(currentStep);
       
-      // Use the existing service for consistency
-      const result = await adCreationService.updateAdStep(currentStep, stepData);
+      // Debug logging for auto-save step mapping (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        // Find the current step title
+        const currentStepObj = steps.find(step => step.id === currentStep);
+        const currentStepTitle = currentStepObj?.title || '';
+        console.log(`AutoSave - Step mapping: Frontend step ${currentStep} (${currentStepTitle}) -> Backend step ${backendStepId}`);
+      }
+      
+      // Convert form data based on the backend step ID
+      const stepData = convertFormDataToApiData(backendStepId, formData);
+      
+      // Use the existing service for consistency with the correct backend step ID
+      const result = await adCreationService.updateAdStep(backendStepId, stepData);
       
       if (result.success) {
         setHasUnsavedChanges(false);
@@ -341,7 +375,7 @@ export function AlternativeAuctionForm() {
     } finally {
       setIsAutoSaving(false);
     }
-  }, [adId, currentStep, formData, convertFormDataToApiData, hasUnsavedChanges, categoriesLoaded]);
+  }, [adId, currentStep, formData, convertFormDataToApiData, hasUnsavedChanges, categoriesLoaded, mapFrontendStepToBackendStep, steps]);
 
   // Auto-save functionality
   useEffect(() => {
@@ -614,9 +648,22 @@ export function AlternativeAuctionForm() {
           });
         }
       } else {
-        // Steps 2-8: Update existing ad
-        if (currentStep === 8) {
-          // Step 8: Handle file uploads with FormData
+        // Get the current step title to determine which step we're on
+        const currentStepObj = steps.find(step => step.id === currentStep);
+        const currentStepTitle = currentStepObj?.title || '';
+        
+        // Map frontend step to backend API step
+        const backendStepId = mapFrontendStepToBackendStep(currentStep);
+        
+        // Debug logging for step mapping (only in development)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Step mapping: Frontend step ${currentStep} (${currentStepTitle}) -> Backend step ${backendStepId}`);
+          console.log(`Material type: ${formData.materialType}`);
+        }
+        
+        // Handle final step with file uploads separately
+        if (currentStepTitle === 'Image & Description') {
+          // Final step: Handle file uploads with FormData
           const result = await adCreationService.updateAdStep8WithFiles(
             formData.title,
             formData.description,
@@ -635,12 +682,13 @@ export function AlternativeAuctionForm() {
             });
           }
         } else {
-          // Steps 2-7: Regular JSON updates
-          const stepData = convertFormDataToApiData(currentStep, formData);
+          // All other steps: Regular JSON updates
+          // Convert form data based on the backend step ID
+          const stepData = convertFormDataToApiData(backendStepId, formData);
           
-          // Validate step data before sending (skip step 2 as it has different validation)
-          if (currentStep !== 2) {
-            const validation = validateStepData(currentStep, stepData);
+          // Validate step data before sending (skip specifications step as it has different validation)
+          if (currentStepTitle !== 'Specifications') {
+            const validation = validateStepData(backendStepId, stepData);
             if (!validation.isValid) {
               toast.error('Invalid data format', {
                 description: validation.errors.join(', ')
@@ -650,7 +698,8 @@ export function AlternativeAuctionForm() {
             }
           }
           
-          const result = await adCreationService.updateAdStep(currentStep, stepData);
+          // Call the API with the correct backend step ID
+          const result = await adCreationService.updateAdStep(backendStepId, stepData);
 
           if (result.success && result.data) {
             setApiCompletedSteps(result.data.step_completion_status);
