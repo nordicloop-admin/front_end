@@ -342,6 +342,15 @@ export function AlternativeAuctionForm() {
 
   const handleAutoSave = useCallback(async () => {
     if (!adId || !hasUnsavedChanges || !categoriesLoaded) return;
+    
+    // Find the current step title
+    const currentStepObj = steps.find(step => step.id === currentStep);
+    const currentStepTitle = currentStepObj?.title || '';
+    
+    // Skip autosave for the final "Image & Description" step
+    if (currentStepTitle === 'Image & Description') {
+      return;
+    }
 
     setIsAutoSaving(true);
 
@@ -403,9 +412,9 @@ export function AlternativeAuctionForm() {
       fieldErrors.title = [titleError];
     }
     
-    // Description validation (minimum 50 characters)
-    if (!formData.description || formData.description.trim().length < 50) {
-      const descError = 'Description must be at least 50 characters long';
+    // Description validation (minimum 30 characters)
+    if (!formData.description || formData.description.trim().length < 30) {
+      const descError = 'Description must be at least 30 characters long';
       errors.push(descError);
       fieldErrors.description = [descError];
     }
@@ -416,6 +425,13 @@ export function AlternativeAuctionForm() {
       const keywordsError = 'Keywords must not exceed 500 characters total';
       errors.push(keywordsError);
       fieldErrors.keywords = [keywordsError];
+    }
+    
+    // Image validation (at least one image required)
+    if (!formData.images || formData.images.length === 0) {
+      const imageError = 'At least one image is required';
+      errors.push(imageError);
+      fieldErrors.images = [imageError];
     }
     
     // Update validation state
@@ -591,7 +607,9 @@ export function AlternativeAuctionForm() {
         return !!formData.title && 
                formData.title.length >= 10 && 
                !!formData.description && 
-               formData.description.length >= 30;
+               formData.description.length >= 30 &&
+               !!formData.images &&
+               formData.images.length > 0;
       
       default:
         return false;
@@ -663,6 +681,32 @@ export function AlternativeAuctionForm() {
         
         // Handle final step with file uploads separately
         if (currentStepTitle === 'Image & Description') {
+          // Validate image data before sending
+          if (!formData.title || formData.title.length < 10) {
+            toast.error('Title validation failed', {
+              description: 'Title must be at least 10 characters long'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          if (!formData.description || formData.description.length < 30) {
+            toast.error('Description validation failed', {
+              description: 'Description must be at least 30 characters long'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Check if at least one image is provided
+          if (!formData.images || formData.images.length === 0) {
+            toast.error('Image validation failed', {
+              description: 'At least one image is required'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
           // Final step: Handle file uploads with FormData
           const result = await adCreationService.updateAdStep8WithFiles(
             formData.title,
@@ -743,12 +787,37 @@ export function AlternativeAuctionForm() {
     setValidationErrors({});
     setShowValidationErrors(false);
 
-    if (!validateStep(8)) {
-      const validation = validateStep8Detailed();
-      toast.error('Please fix the validation errors highlighted below', {
-        description: validation.errors.join(', ')
-      });
+    // Check if we have all required data for step 8
+    if (!formData.title || formData.title.length < 10) {
+      toast.error('Please enter a title with at least 10 characters');
       return;
+    }
+
+    if (!formData.description || formData.description.length < 30) {
+      toast.error('Please enter a description with at least 30 characters');
+      return;
+    }
+
+    if (!formData.images || formData.images.length === 0) {
+      toast.error('Please upload at least one image');
+      return;
+    }
+    
+    // If we get here, all validation has passed
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Form data for submission:', {
+        title: formData.title,
+        titleLength: formData.title?.length || 0,
+        description: formData.description?.substring(0, 30) + '...',
+        descriptionLength: formData.description?.length || 0,
+        hasImages: formData.images?.length > 0,
+        imageCount: formData.images?.length || 0,
+        imageDetails: formData.images?.map(img => ({
+          name: img.name,
+          type: img.type,
+          size: Math.round(img.size / 1024) + 'KB'
+        })) || []
+      });
     }
 
     setIsSubmitting(true);

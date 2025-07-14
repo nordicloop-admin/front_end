@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, Trash2, Send, Users, User, Search, X } from 'lucide-react';
+import { Bell, Check, Trash2, Send, Users, User, X } from 'lucide-react';
 import { 
   getAllNotifications, 
   createNotification, 
