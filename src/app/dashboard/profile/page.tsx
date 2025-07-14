@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { User, Mail, Building, Shield, Key, Save, X, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { Building, Shield, Save, X, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
 import { getUserProfile, updateUserProfile, UserProfile, ProfileUpdateRequest } from '@/services/userProfile';
 
 export default function Profile() {

@@ -6,7 +6,6 @@ import {
   CreditCard, 
   Wallet, 
   Plus, 
-  Check, 
   Trash2, 
   ChevronLeft, 
   AlertCircle, 
@@ -154,21 +153,35 @@ export default function PaymentMethodsPage() {
   const handleAddPaymentMethod = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Create a new payment method object
-    const newMethod = {
-      id: `${paymentMethods.length + 1}`,
-      type: newPaymentMethod.type,
-      name: newPaymentMethod.type === 'credit_card' 
-        ? `Card ending in ${newPaymentMethod.cardNumber?.slice(-4) || '****'}`
-        : newPaymentMethod.type === 'bank_transfer'
-          ? newPaymentMethod.bankName || 'Bank Account'
-          : 'PayPal Account',
-      expiryDate: newPaymentMethod.expiryDate || '',
-      accountNumber: newPaymentMethod.type === 'bank_transfer' 
-        ? `****${newPaymentMethod.accountNumber?.slice(-4) || '****'}` 
-        : undefined,
-      isDefault: paymentMethods.length === 0
-    };
+    // Create a new payment method object based on type
+    let newMethod;
+    
+    if (newPaymentMethod.type === 'credit_card') {
+      newMethod = {
+        id: `${paymentMethods.length + 1}`,
+        type: newPaymentMethod.type,
+        name: `Card ending in ${newPaymentMethod.cardNumber?.slice(-4) || '****'}`,
+        expiryDate: newPaymentMethod.expiryDate || '',
+        isDefault: paymentMethods.length === 0
+      };
+    } else if (newPaymentMethod.type === 'bank_transfer') {
+      newMethod = {
+        id: `${paymentMethods.length + 1}`,
+        type: newPaymentMethod.type,
+        name: newPaymentMethod.bankName || 'Bank Account',
+        accountNumber: `****${newPaymentMethod.accountNumber?.slice(-4) || '****'}`,
+        isDefault: paymentMethods.length === 0
+      };
+    } else {
+      // PayPal or other payment types - adding empty accountNumber to satisfy type requirements
+      newMethod = {
+        id: `${paymentMethods.length + 1}`,
+        type: newPaymentMethod.type,
+        name: 'PayPal Account',
+        accountNumber: '',  // Empty string to satisfy the type requirement
+        isDefault: paymentMethods.length === 0
+      };
+    }
     
     // Add the new method to the list
     setPaymentMethods([...paymentMethods, newMethod]);
@@ -538,7 +551,7 @@ export default function PaymentMethodsPage() {
                 {newPaymentMethod.type === 'paypal' && (
                   <div className="p-4 bg-blue-50 rounded-md">
                     <p className="text-sm text-blue-700">
-                      You'll be redirected to PayPal to connect your account after clicking "Add Payment Method".
+                      You&apos;ll be redirected to PayPal to connect your account after clicking &quot;Add Payment Method&quot;.
                     </p>
                   </div>
                 )}
