@@ -5,15 +5,22 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Filter, ChevronDown, ChevronUp, MapPin, Building, Check, X, RefreshCw } from 'lucide-react';
 import { getAdminAddresses, AdminAddress } from '@/services/addresses';
+import { verifyAddress } from '@/services/adminAddresses';
+
+// Interface for processing state
+interface ProcessingAddress extends AdminAddress {
+  isProcessing?: boolean;
+}
 
 export default function AddressesPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
   // State management
-  const [addresses, setAddresses] = useState<AdminAddress[]>([]);
+  const [addresses, setAddresses] = useState<ProcessingAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     count: 0,
     totalPages: 1,
@@ -120,39 +127,81 @@ export default function AddressesPage() {
     setCurrentPage(page);
   };
 
-  // Handle verification status change (placeholder for now)
-  const handleVerificationStatusChange = (addressId: string, isVerified: boolean) => {
-    // TODO: Implement API call to update verification status
-    // For now, update local state
-    const updatedAddresses = addresses.map(address =>
-      address.id === addressId ? { ...address, isVerified } : address
-    );
-    setAddresses(updatedAddresses);
+  // Handle verification status change
+  const handleVerificationStatusChange = async (addressId: string, isVerified: boolean) => {
+    try {
+      // Show loading state
+      setAddresses(prevAddresses => 
+        prevAddresses.map(address => 
+          address.id === addressId ? { ...address, isProcessing: true } : address
+        )
+      );
+      
+      // Call the API to update verification status
+      const response = await verifyAddress(Number(addressId), isVerified);
+      
+      if (response.error) {
+        // Show error message
+        setError(`Failed to ${isVerified ? 'verify' : 'unverify'} address: ${response.error}`);
+        
+        // Revert the optimistic update
+        setAddresses(prevAddresses => 
+          prevAddresses.map(address => 
+            address.id === addressId ? { ...address, isProcessing: false } : address
+          )
+        );
+      } else {
+        // Update was successful
+        setAddresses(prevAddresses => 
+          prevAddresses.map(address => 
+            address.id === addressId ? { ...address, isVerified, isProcessing: false } : address
+          )
+        );
+        
+        // Show success message
+        setSuccess(`Address ${isVerified ? 'verified' : 'unverified'} successfully`);
+        
+        // Clear success message after 3 seconds
+        setTimeout(() => {
+          setSuccess(null);
+        }, 3000);
+      }
+    } catch (_err) {
+      setError(`An error occurred while ${isVerified ? 'verifying' : 'unverifying'} the address`);
+      
+      // Revert the optimistic update
+      setAddresses(prevAddresses => 
+        prevAddresses.map(address => 
+          address.id === addressId ? { ...address, isProcessing: false } : address
+        )
+      );
+    }
   };
 
   // Handle sort
   const requestSort = (key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
-
-    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+    
+    if (
+      sortConfig &&
+      sortConfig.key === key &&
+      sortConfig.direction === 'ascending'
+    ) {
       direction = 'descending';
     }
-
+    
     setSortConfig({ key, direction });
-
+    
     const sortedAddresses = [...addresses].sort((a, b) => {
-      const aValue = a[key as keyof AdminAddress];
-      const bValue = b[key as keyof AdminAddress];
-
-      if (aValue < bValue) {
+      if (a[key as keyof AdminAddress] < b[key as keyof AdminAddress]) {
         return direction === 'ascending' ? -1 : 1;
       }
-      if (aValue > bValue) {
+      if (a[key as keyof AdminAddress] > b[key as keyof AdminAddress]) {
         return direction === 'ascending' ? 1 : -1;
       }
       return 0;
     });
-
+    
     setAddresses(sortedAddresses);
   };
 
@@ -161,173 +210,207 @@ export default function AddressesPage() {
     if (!sortConfig || sortConfig.key !== key) {
       return null;
     }
-
-    return sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
+    
+    return sortConfig.direction === 'ascending' ? (
+      <ChevronUp className="h-4 w-4" />
+    ) : (
+      <ChevronDown className="h-4 w-4" />
+    );
   };
 
-  // Count addresses that need verification
+  // Calculate unverified count
   const unverifiedCount = addresses.filter(address => !address.isVerified).length;
 
   // Generate pagination
   const renderPagination = () => {
     if (pagination.totalPages <= 1) return null;
-
+    
     const pages = [];
-    const maxVisiblePages = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-    const endPage = Math.min(pagination.totalPages, startPage + maxVisiblePages - 1);
-
-    if (endPage - startPage + 1 < maxVisiblePages) {
-      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, pagination.currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(pagination.totalPages, startPage + maxPagesToShow - 1);
+    
+    if (endPage - startPage + 1 < maxPagesToShow && startPage > 1) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
-
+    
     // Previous button
-    if (currentPage > 1) {
-      pages.push(
-        <button
-          key="prev"
-          onClick={() => handlePageChange(currentPage - 1)}
-          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50"
-        >
-          Previous
-        </button>
-      );
-    }
-
+    pages.push(
+      <button
+        key="prev"
+        onClick={() => handlePageChange(Math.max(1, pagination.currentPage - 1))}
+        disabled={pagination.currentPage === 1}
+        className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+          pagination.currentPage === 1
+            ? 'text-gray-400 cursor-not-allowed'
+            : 'text-gray-700 hover:bg-gray-50'
+        }`}
+      >
+        Previous
+      </button>
+    );
+    
     // Page numbers
     for (let i = startPage; i <= endPage; i++) {
       pages.push(
         <button
           key={i}
           onClick={() => handlePageChange(i)}
-          className={`px-3 py-2 text-sm font-medium border ${
-            i === currentPage
-              ? 'bg-[#FF8A00] text-white border-[#FF8A00]'
-              : 'text-gray-500 bg-white border-gray-300 hover:bg-gray-50'
+          className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+            i === pagination.currentPage
+              ? 'bg-orange-500 text-white'
+              : 'text-gray-700 hover:bg-gray-50'
           }`}
         >
           {i}
         </button>
       );
     }
-
+    
     // Next button
-    if (currentPage < pagination.totalPages) {
-      pages.push(
-        <button
-          key="next"
-          onClick={() => handlePageChange(currentPage + 1)}
-          className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50"
-        >
-          Next
-        </button>
-      );
-    }
-
+    pages.push(
+      <button
+        key="next"
+        onClick={() => handlePageChange(Math.min(pagination.totalPages, pagination.currentPage + 1))}
+        disabled={pagination.currentPage === pagination.totalPages}
+        className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-md ${
+          pagination.currentPage === pagination.totalPages
+            ? 'text-gray-400 cursor-not-allowed'
+            : 'text-gray-700 hover:bg-gray-50'
+        }`}
+      >
+        Next
+      </button>
+    );
+    
     return (
-      <div className="flex items-center justify-between mt-6">
-        <div className="text-sm text-gray-700">
-          Showing {((currentPage - 1) * pagination.pageSize) + 1} to {Math.min(currentPage * pagination.pageSize, pagination.count)} of {pagination.count} results
-        </div>
-        <div className="flex">{pages}</div>
+      <div className="flex justify-center mt-6">
+        <nav className="inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+          {pages}
+        </nav>
       </div>
     );
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-xl font-medium">Address Management</h1>
-        {unverifiedCount > 0 && (
-          <span className="ml-3 bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-            {unverifiedCount}
-          </span>
-        )}
-        <button
-          onClick={fetchAddresses}
-          disabled={loading}
-          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
-        </button>
+    <div className="container mx-auto px-4 py-6">
+      <div className="mb-5">
+        <h1 className="text-2xl font-semibold text-gray-800">Address Management</h1>
+        <p className="text-sm text-gray-500 mt-1">View and manage all user addresses</p>
       </div>
-
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-md shadow-sm mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="relative flex-grow">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search addresses by company, city, country, contact..."
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              value={searchTerm}
-              onChange={handleSearchChange}
-            />
+      
+      {/* Success message */}
+      {success && (
+        <div className="p-4 bg-green-50 border border-green-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <Check className="text-green-500 mr-2" size={16} />
+            <p className="text-sm text-green-700">{success}</p>
           </div>
-
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              value={selectedType}
-              onChange={handleTypeChange}
-            >
-              <option value="all">All Types</option>
-              <option value="business">Business</option>
-              <option value="shipping">Shipping</option>
-            </select>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              value={selectedVerification}
-              onChange={handleVerificationChange}
-            >
-              <option value="all">All Verification</option>
-              <option value="verified">Verified</option>
-              <option value="unverified">Unverified</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
-          <div className="text-red-800">{error}</div>
         </div>
       )}
-
-      {/* Addresses Table */}
-      <div className="bg-white rounded-md shadow-sm overflow-hidden">
+      
+      {/* Error message */}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <X className="text-red-500 mr-2" size={16} />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        </div>
+      )}
+      
+      <div className="bg-white shadow rounded-lg">
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+            {/* Search */}
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search addresses..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 w-full md:w-64"
+              />
+            </div>
+            
+            {/* Filters */}
+            <div className="flex flex-col md:flex-row space-y-3 md:space-y-0 md:space-x-3">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Filter className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  value={selectedType}
+                  onChange={handleTypeChange}
+                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="all">All Types</option>
+                  <option value="business">Business</option>
+                  <option value="residential">Residential</option>
+                </select>
+              </div>
+              
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Filter className="h-5 w-5 text-gray-400" />
+                </div>
+                <select
+                  value={selectedVerification}
+                  onChange={handleVerificationChange}
+                  className="pl-10 pr-8 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                >
+                  <option value="all">All Verification</option>
+                  <option value="verified">Verified</option>
+                  <option value="unverified">Unverified</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Unverified count */}
+        {unverifiedCount > 0 && (
+          <div className="px-6 py-3 bg-yellow-50">
+            <div className="flex items-center">
+              <X className="h-5 w-5 text-yellow-500 mr-2" />
+              <p className="text-sm text-yellow-700">
+                <span className="font-medium">{unverifiedCount}</span> {unverifiedCount === 1 ? 'address' : 'addresses'} pending verification
+              </p>
+            </div>
+          </div>
+        )}
+        
+        {/* Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('companyName')}>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => requestSort('companyName')}
+                >
+                  <div className="flex items-center">
                     Company
                     {getSortIndicator('companyName')}
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('type')}>
-                    Type
-                    {getSortIndicator('type')}
-                  </div>
+                  Type
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Address
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <div className="flex items-center cursor-pointer" onClick={() => requestSort('isVerified')}>
-                    Verification
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => requestSort('isVerified')}
+                >
+                  <div className="flex items-center">
+                    Status
                     {getSortIndicator('isVerified')}
                   </div>
                 </th>
@@ -388,8 +471,7 @@ export default function AddressesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                        ${address.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${address.isVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
                         {address.isVerified ? 'Verified' : 'Unverified'}
                       </span>
                     </td>
@@ -406,16 +488,26 @@ export default function AddressesPage() {
                           <button
                             className="text-green-600 hover:text-green-900 flex items-center"
                             onClick={() => handleVerificationStatusChange(address.id, true)}
+                            disabled={address.isProcessing}
                           >
-                            <Check className="h-4 w-4 mr-1" />
+                            {address.isProcessing ? (
+                              <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <Check className="h-4 w-4 mr-1" />
+                            )}
                             Verify
                           </button>
                         ) : (
                           <button
                             className="text-red-600 hover:text-red-900 flex items-center"
                             onClick={() => handleVerificationStatusChange(address.id, false)}
+                            disabled={address.isProcessing}
                           >
-                            <X className="h-4 w-4 mr-1" />
+                            {address.isProcessing ? (
+                              <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                            ) : (
+                              <X className="h-4 w-4 mr-1" />
+                            )}
                             Unverify
                           </button>
                         )}
