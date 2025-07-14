@@ -219,12 +219,34 @@ export default function Profile() {
               {activeTab === 'company' && (
                 <div className="space-y-6">
                   {/* Company Info */}
-                  <div className="flex flex-col items-center py-6">
-                    <div className="h-16 w-16 bg-gray-50 rounded-full flex items-center justify-center mb-3">
-                      <Building size={32} className="text-gray-400" />
+                  <div className="bg-white border border-gray-100 rounded-lg p-6 shadow-sm">
+                    <div className="flex items-start">
+                      <div className="h-14 w-14 bg-[#FF8A00]/10 rounded-lg flex items-center justify-center">
+                        <Building size={24} className="text-[#FF8A00]" />
+                      </div>
+                      <div className="ml-5">
+                        <h3 className="text-lg font-medium text-gray-800">{profile?.company_name || 'Company'}</h3>
+                        <div className="mt-1 flex items-center">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                            {profile?.role_display || 'User'}
+                          </span>
+                        </div>
+                        <p className="mt-3 text-sm text-gray-500">Company information and role details</p>
+                      </div>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-800">{profile?.company_name || 'Company'}</h3>
-                    <span className="text-sm text-gray-500 mt-1">Role: {profile?.role_display || 'User'}</span>
+                    <div className="mt-6 border-t border-gray-100 pt-6">
+                      <h4 className="text-sm font-medium text-gray-700 mb-4">Account Permissions</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center p-3 bg-gray-50 rounded-md">
+                          <div className={`w-2 h-2 rounded-full mr-2 ${profile?.can_place_ads ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                          <span className="text-sm text-gray-700">Place Advertisements</span>
+                        </div>
+                        <div className="flex items-center p-3 bg-gray-50 rounded-md">
+                          <div className={`w-2 h-2 rounded-full mr-2 ${profile?.can_place_bids ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                          <span className="text-sm text-gray-700">Place Bids</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
