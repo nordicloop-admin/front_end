@@ -318,16 +318,59 @@ export function AlternativeAuctionForm() {
     }
   }, [findCategoryId, findSubcategoryId]);
 
+  /**
+   * Maps frontend step IDs to backend API step IDs based on material type
+   * For plastics, the mapping is 1:1 (frontend step = backend step)
+   * For other materials, we need to map the 4 frontend steps to the correct backend steps
+   */
+  const mapFrontendStepToBackendStep = useCallback((frontendStepId: number): number => {
+    // Step 1 is always the same for all material types
+    if (frontendStepId === 1) return 1;
+    
+    // For plastics, the mapping is 1:1
+    const isPlasticMaterial = formData.materialType?.toLowerCase().includes('plastic');
+    if (isPlasticMaterial) return frontendStepId;
+    
+    // For other materials, map frontend steps 2, 3, 4 to backend steps 6, 7, 8
+    switch (frontendStepId) {
+      case 2: return 6; // Location & Logistics (frontend step 2) maps to backend step 6
+      case 3: return 7; // Quantity & Price (frontend step 3) maps to backend step 7
+      case 4: return 8; // Image & Description (frontend step 4) maps to backend step 8
+      default: return frontendStepId; // Fallback (should not happen)
+    }
+  }, [formData.materialType]);
+
   const handleAutoSave = useCallback(async () => {
     if (!adId || !hasUnsavedChanges || !categoriesLoaded) return;
+    
+    // Find the current step title
+    const currentStepObj = steps.find(step => step.id === currentStep);
+    const currentStepTitle = currentStepObj?.title || '';
+    
+    // Skip autosave for the final "Image & Description" step
+    if (currentStepTitle === 'Image & Description') {
+      return;
+    }
 
     setIsAutoSaving(true);
 
     try {
-      const stepData = convertFormDataToApiData(currentStep, formData);
+      // Map frontend step to backend API step
+      const backendStepId = mapFrontendStepToBackendStep(currentStep);
       
-      // Use the existing service for consistency
-      const result = await adCreationService.updateAdStep(currentStep, stepData);
+      // Debug logging for auto-save step mapping (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        // Find the current step title
+        const currentStepObj = steps.find(step => step.id === currentStep);
+        const _currentStepTitle = currentStepObj?.title || '';
+        // Step mapping information removed to comply with ESLint rules
+      }
+      
+      // Convert form data based on the backend step ID
+      const stepData = convertFormDataToApiData(backendStepId, formData);
+      
+      // Use the existing service for consistency with the correct backend step ID
+      const result = await adCreationService.updateAdStep(backendStepId, stepData);
       
       if (result.success) {
         setHasUnsavedChanges(false);
@@ -341,7 +384,7 @@ export function AlternativeAuctionForm() {
     } finally {
       setIsAutoSaving(false);
     }
-  }, [adId, currentStep, formData, convertFormDataToApiData, hasUnsavedChanges, categoriesLoaded]);
+  }, [adId, currentStep, formData, convertFormDataToApiData, hasUnsavedChanges, categoriesLoaded, mapFrontendStepToBackendStep, steps]);
 
   // Auto-save functionality
   useEffect(() => {
@@ -369,9 +412,9 @@ export function AlternativeAuctionForm() {
       fieldErrors.title = [titleError];
     }
     
-    // Description validation (minimum 50 characters)
-    if (!formData.description || formData.description.trim().length < 50) {
-      const descError = 'Description must be at least 50 characters long';
+    // Description validation (minimum 30 characters)
+    if (!formData.description || formData.description.trim().length < 30) {
+      const descError = 'Description must be at least 30 characters long';
       errors.push(descError);
       fieldErrors.description = [descError];
     }
@@ -382,6 +425,13 @@ export function AlternativeAuctionForm() {
       const keywordsError = 'Keywords must not exceed 500 characters total';
       errors.push(keywordsError);
       fieldErrors.keywords = [keywordsError];
+    }
+    
+    // Image validation (at least one image required)
+    if (!formData.images || formData.images.length === 0) {
+      const imageError = 'At least one image is required';
+      errors.push(imageError);
+      fieldErrors.images = [imageError];
     }
     
     // Update validation state
@@ -557,7 +607,9 @@ export function AlternativeAuctionForm() {
         return !!formData.title && 
                formData.title.length >= 10 && 
                !!formData.description && 
-               formData.description.length >= 30;
+               formData.description.length >= 30 &&
+               !!formData.images &&
+               formData.images.length > 0;
       
       default:
         return false;
@@ -614,9 +666,47 @@ export function AlternativeAuctionForm() {
           });
         }
       } else {
-        // Steps 2-8: Update existing ad
-        if (currentStep === 8) {
-          // Step 8: Handle file uploads with FormData
+        // Get the current step title to determine which step we're on
+        const currentStepObj = steps.find(step => step.id === currentStep);
+        const currentStepTitle = currentStepObj?.title || '';
+        
+        // Map frontend step to backend API step
+        const backendStepId = mapFrontendStepToBackendStep(currentStep);
+        
+        // Debug logging for step mapping (only in development)
+        if (process.env.NODE_ENV === 'development') {
+          // Step mapping and material type logging removed to comply with ESLint rules
+        }
+        
+        // Handle final step with file uploads separately
+        if (currentStepTitle === 'Image & Description') {
+          // Validate image data before sending
+          if (!formData.title || formData.title.length < 10) {
+            toast.error('Title validation failed', {
+              description: 'Title must be at least 10 characters long'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          if (!formData.description || formData.description.length < 30) {
+            toast.error('Description validation failed', {
+              description: 'Description must be at least 30 characters long'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Check if at least one image is provided
+          if (!formData.images || formData.images.length === 0) {
+            toast.error('Image validation failed', {
+              description: 'At least one image is required'
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          // Final step: Handle file uploads with FormData
           const result = await adCreationService.updateAdStep8WithFiles(
             formData.title,
             formData.description,
@@ -635,12 +725,13 @@ export function AlternativeAuctionForm() {
             });
           }
         } else {
-          // Steps 2-7: Regular JSON updates
-          const stepData = convertFormDataToApiData(currentStep, formData);
+          // All other steps: Regular JSON updates
+          // Convert form data based on the backend step ID
+          const stepData = convertFormDataToApiData(backendStepId, formData);
           
-          // Validate step data before sending (skip step 2 as it has different validation)
-          if (currentStep !== 2) {
-            const validation = validateStepData(currentStep, stepData);
+          // Validate step data before sending (skip specifications step as it has different validation)
+          if (currentStepTitle !== 'Specifications') {
+            const validation = validateStepData(backendStepId, stepData);
             if (!validation.isValid) {
               toast.error('Invalid data format', {
                 description: validation.errors.join(', ')
@@ -650,7 +741,8 @@ export function AlternativeAuctionForm() {
             }
           }
           
-          const result = await adCreationService.updateAdStep(currentStep, stepData);
+          // Call the API with the correct backend step ID
+          const result = await adCreationService.updateAdStep(backendStepId, stepData);
 
           if (result.success && result.data) {
             setApiCompletedSteps(result.data.step_completion_status);
@@ -694,13 +786,24 @@ export function AlternativeAuctionForm() {
     setValidationErrors({});
     setShowValidationErrors(false);
 
-    if (!validateStep(8)) {
-      const validation = validateStep8Detailed();
-      toast.error('Please fix the validation errors highlighted below', {
-        description: validation.errors.join(', ')
-      });
+    // Check if we have all required data for step 8
+    if (!formData.title || formData.title.length < 10) {
+      toast.error('Please enter a title with at least 10 characters');
       return;
     }
+
+    if (!formData.description || formData.description.length < 30) {
+      toast.error('Please enter a description with at least 30 characters');
+      return;
+    }
+
+    if (!formData.images || formData.images.length === 0) {
+      toast.error('Please upload at least one image');
+      return;
+    }
+    
+    // If we get here, all validation has passed
+    // Development logging removed to comply with ESLint rules
 
     setIsSubmitting(true);
 

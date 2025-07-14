@@ -83,7 +83,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
   };
 
   const isDescriptionValid = () => {
-    return formData.description.trim().length >= 50;
+    return formData.description.trim().length >= 30;
   };
 
   const areKeywordsValid = () => {
@@ -129,9 +129,9 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
             <h4 className="font-medium text-blue-900 mb-2">Step 8 Requirements</h4>
             <ul className="text-sm text-blue-800 space-y-1">
               <li>• <strong>Title:</strong> Minimum 10 characters, maximum 255 characters</li>
-              <li>• <strong>Description:</strong> Minimum 50 characters (no maximum limit)</li>
+              <li>• <strong>Description:</strong> Minimum 30 characters (no maximum limit)</li>
               <li>• <strong>Keywords:</strong> Optional, maximum 500 characters total</li>
-              <li>• <strong>Image:</strong> Optional (but recommended) - JPEG, PNG, WebP, GIF</li>
+              <li>• <strong>Image:</strong> Required - JPEG, PNG, WebP</li>
             </ul>
           </div>
         </div>
@@ -201,10 +201,10 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
           Description *
-          <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 50 characters)</span>
+          <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 30 characters)</span>
         </label>
         <textarea
-          placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 50 characters)"
+          placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 30 characters)"
           className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] resize-vertical min-h-[120px] ${
             (formData.description.length > 0 && !isDescriptionValid()) || (showValidationErrors && validationErrors?.description)
               ? 'border-red-300 bg-red-50' 
@@ -228,8 +228,8 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
               : 'text-gray-500'
           }`}>
             {formData.description.trim().length} characters 
-            {formData.description.length > 0 && formData.description.trim().length < 50 && 
-              ` - Need at least ${50 - formData.description.trim().length} more characters`
+            {formData.description.length > 0 && formData.description.trim().length < 30 && 
+              ` - Need at least ${30 - formData.description.trim().length} more characters`
             }
           </p>
           {isDescriptionValid() && !validationErrors?.description && (
@@ -301,7 +301,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
       {/* Upload Area */}
       <div className="pt-4 border-t border-gray-200">
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Material Image (Optional but Recommended)
+          Material Image *
         </label>
         {formData.images && formData.images.length > 0 ? (
           <div className="relative">

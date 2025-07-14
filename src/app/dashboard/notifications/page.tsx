@@ -1,44 +1,13 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, Check, Trash2 } from 'lucide-react';
+import { getUserNotifications, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
 
-// Mock data for announcements/notifications
+// Fallback mock data in case API fails
 const mockNotifications = [
   {
     id: 1,
-    title: "New Feature: Auction Analytics",
-    message: "We've launched a new analytics dashboard for your auctions. Track performance in real-time!",
-    date: "2025-07-10T14:30:00",
-    isRead: false,
-    type: "feature"
-  },
-  {
-    id: 2,
-    title: "System Maintenance",
-    message: "Nordic Loop will undergo scheduled maintenance on July 15th from 2-4 AM UTC. Some features may be temporarily unavailable.",
-    date: "2025-07-08T09:15:00",
-    isRead: true,
-    type: "system"
-  },
-  {
-    id: 3,
-    title: "Your Auction Has a New Bid!",
-    message: "Someone placed a bid on your 'Vintage Wooden Chair' auction. Check it out now!",
-    date: "2025-07-07T18:45:00",
-    isRead: false,
-    type: "auction"
-  },
-  {
-    id: 4,
-    title: "Limited Time Promotion",
-    message: "Enjoy 50% off on premium listing fees until July 20th. Upgrade your auctions today!",
-    date: "2025-07-05T11:20:00",
-    isRead: true,
-    type: "promotion"
-  },
-  {
-    id: 5,
     title: "Welcome to Nordic Loop",
     message: "Thank you for joining our community! Explore our marketplace and start creating your first auction.",
     date: "2025-07-01T10:00:00",
@@ -85,9 +54,37 @@ const getNotificationIcon = (type: string) => {
   }
 };
 
-export default function AnnouncementsPage() {
-  const [notifications, setNotifications] = useState(mockNotifications);
+export default function NotificationsPage() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Fetch notifications from API
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true);
+        const response = await getUserNotifications();
+        
+        if (response.error) {
+          setError(response.error);
+          // Fallback to mock data if API fails
+          setNotifications(mockNotifications);
+        } else if (response.data) {
+          setNotifications(response.data);
+        }
+      } catch (_err) {
+        setError('Failed to load notifications');
+        // Fallback to mock data if API fails
+        setNotifications(mockNotifications);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchNotifications();
+  }, []);
   
   // Filter notifications based on active tab
   const filteredNotifications = activeTab === 'all' 
@@ -97,32 +94,65 @@ export default function AnnouncementsPage() {
       : notifications.filter(notification => notification.isRead);
   
   // Mark notification as read
-  const markAsRead = (id: number) => {
-    setNotifications(notifications.map(notification => 
-      notification.id === id ? { ...notification, isRead: true } : notification
-    ));
+  const markAsRead = async (id: number) => {
+    try {
+      const response = await markNotificationAsRead(id);
+      
+      if (response.error) {
+        setError(response.error);
+      } else {
+        // Update local state
+        setNotifications(notifications.map(notification => 
+          notification.id === id ? { ...notification, isRead: true } : notification
+        ));
+      }
+    } catch (_err) {
+      setError('Failed to mark notification as read');
+    }
   };
   
   // Delete notification
-  const deleteNotification = (id: number) => {
-    setNotifications(notifications.filter(notification => notification.id !== id));
+  const handleDeleteNotification = async (id: number) => {
+    try {
+      const response = await deleteNotification(id);
+      
+      if (response.error) {
+        setError(response.error);
+      } else {
+        // Update local state
+        setNotifications(notifications.filter(notification => notification.id !== id));
+      }
+    } catch (_err) {
+      setError('Failed to delete notification');
+    }
   };
   
   // Mark all as read
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(notification => ({ ...notification, isRead: true })));
+  const handleMarkAllAsRead = async () => {
+    try {
+      const response = await markAllNotificationsAsRead();
+      
+      if (response.error) {
+        setError(response.error);
+      } else {
+        // Update local state
+        setNotifications(notifications.map(notification => ({ ...notification, isRead: true })));
+      }
+    } catch (_err) {
+      setError('Failed to mark all notifications as read');
+    }
   };
 
   return (
     <div className="p-5">
       <div className="mb-5">
-        <h1 className="text-xl font-medium text-gray-900">Announcements & Notifications</h1>
+        <h1 className="text-xl font-medium text-gray-900">Notifications</h1>
         <p className="text-gray-500 text-sm mt-1">Stay updated with the latest news and activity</p>
       </div>
       
-      <div className="bg-white border border-gray-100 rounded-md p-5">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         {/* Tabs */}
-        <div className="flex border-b border-gray-100 -mx-5 px-5 -mt-5 mb-4">
+        <div className="flex items-center border-b border-gray-200 px-5">
           <button 
             onClick={() => setActiveTab('all')}
             className={`px-4 py-3 text-sm font-medium ${activeTab === 'all' ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]' : 'text-gray-600 hover:text-gray-800'}`}
@@ -143,8 +173,9 @@ export default function AnnouncementsPage() {
           </button>
           <div className="ml-auto flex items-center">
             <button 
-              onClick={markAllAsRead}
+              onClick={handleMarkAllAsRead}
               className="text-sm text-gray-600 hover:text-[#FF8A00] flex items-center"
+              disabled={loading || notifications.length === 0}
             >
               <Check size={14} className="mr-1" />
               Mark all as read
@@ -152,9 +183,23 @@ export default function AnnouncementsPage() {
           </div>
         </div>
         
+        {/* Error message */}
+        {error && (
+          <div className="p-4 text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+        
+        {/* Loading state */}
+        {loading && (
+          <div className="flex justify-center items-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF8A00]"></div>
+          </div>
+        )}
+        
         {/* Notifications List */}
         <div>
-          {filteredNotifications.length > 0 ? (
+          {!loading && filteredNotifications.length > 0 ? (
             <div className="space-y-3">
               {filteredNotifications.map((notification) => (
                 <div 
@@ -180,14 +225,16 @@ export default function AnnouncementsPage() {
                           <button 
                             onClick={() => markAsRead(notification.id)}
                             className="text-xs text-[#FF8A00] hover:text-[#e67e00] flex items-center"
+                            disabled={loading}
                           >
                             <Check size={12} className="mr-1" />
                             Mark as read
                           </button>
                         )}
                         <button 
-                          onClick={() => deleteNotification(notification.id)}
+                          onClick={() => handleDeleteNotification(notification.id)}
                           className="text-xs text-gray-500 hover:text-red-500 flex items-center"
+                          disabled={loading}
                         >
                           <Trash2 size={12} className="mr-1" />
                           Delete
