@@ -9,7 +9,8 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 import {
   Home,
-  LogOut
+  LogOut,
+  Bell
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
 import { getTotalBidsCount } from '@/services/statistics';
@@ -189,6 +190,15 @@ export default function AdminLayoutClient({
               <path d="M12 21C16 17 20 13.4183 20 10C20 5.58172 16.4183 2 12 2C7.58172 2 4 5.58172 4 10C4 13.4183 8 17 12 21Z" stroke={pathname === '/admin/addresses' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
             </svg>
             <span>Addresses</span>
+          </Link>
+
+          <Link
+            href="/admin/notifications"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/admin/notifications' || pathname.startsWith('/admin/notifications/') ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <Bell size={18} className="mr-3" />
+            <span>Notifications</span>
           </Link>
 
           <Link
