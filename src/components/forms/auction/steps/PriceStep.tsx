@@ -25,8 +25,9 @@ const bidDurationOptions = [
 ];
 
 export function PriceStep({ formData, updateFormData }: Props) {
+  // Initialize state based on form data
   const [showCustomDuration, setShowCustomDuration] = useState(formData.price.auctionDuration === 'custom');
-  const [customEndDate, setCustomEndDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState(formData.price.customEndDate || '');
 
   const handlePriceUpdate = (field: string, value: string | number) => {
     updateFormData({
@@ -55,14 +56,33 @@ export function PriceStep({ formData, updateFormData }: Props) {
   };
 
   const handleDurationSelect = (duration: string) => {
-    handlePriceUpdate('auctionDuration', duration);
+    // Force a state update first to ensure UI responds immediately
     setShowCustomDuration(duration === 'custom');
+    
+    // Create a new price object with all the updates
+    const updatedPrice = {
+      ...formData.price,
+      auctionDuration: duration,
+      priceType: 'auction' as const // Type assertion to fix TypeScript error
+    };
     
     // If switching away from custom, clear custom fields
     if (duration !== 'custom') {
-      handlePriceUpdate('customEndDate', '');
-      handlePriceUpdate('customAuctionDuration', 0);
+      updatedPrice.customEndDate = '';
+      updatedPrice.customAuctionDuration = 0;
+      setCustomEndDate('');
     }
+    
+    // Update form data with all changes at once
+    updateFormData({
+      price: updatedPrice
+    });
+    
+    // Force re-render by triggering a state update
+    // This ensures the UI reflects the current selection
+    setTimeout(() => {
+      setShowCustomDuration(duration === 'custom');
+    }, 0);
   };
 
   const handleCustomDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -75,10 +95,19 @@ export function PriceStep({ formData, updateFormData }: Props) {
     const diffTime = endDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    // Store the custom duration value and end date
-    handlePriceUpdate('customEndDate', selectedDate);
-    handlePriceUpdate('customAuctionDuration', diffDays > 0 ? diffDays : 1);
-    // Keep auctionDuration as 'custom' - don't set it to the number of days
+    // Create a new price object with all the updates
+    const updatedPrice = {
+      ...formData.price,
+      customEndDate: selectedDate,
+      customAuctionDuration: diffDays > 0 ? diffDays : 1,
+      auctionDuration: 'custom' as const, // Ensure auctionDuration stays as 'custom'
+      priceType: 'auction' as const
+    };
+    
+    // Update form data with all changes at once
+    updateFormData({
+      price: updatedPrice
+    });
   };
 
   // Calculate minimum date (today) for the date picker
@@ -218,21 +247,29 @@ export function PriceStep({ formData, updateFormData }: Props) {
           How long should the auction run?
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {bidDurationOptions.map((option) => (
-            <button
-              key={option.value}
-              onClick={() => handleDurationSelect(option.value)}
-              className={`
-                p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                ${formData.price.auctionDuration === option.value || (option.value === 'custom' && showCustomDuration)
-                  ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                  : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                }
-              `}
-            >
-              {option.label}
-            </button>
-          ))}
+          {bidDurationOptions.map((option) => {
+            // Determine if this option is currently selected
+            const isSelected = formData.price.auctionDuration === option.value;
+            
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleDurationSelect(option.value)}
+                style={{ cursor: 'pointer' }} /* Explicitly set cursor to pointer */
+                className={`
+                  p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                  ${isSelected 
+                    ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                    : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                  }
+                  hover:cursor-pointer /* Add hover cursor pointer class */
+                `}
+              >
+                {option.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Custom Duration Calendar */}
