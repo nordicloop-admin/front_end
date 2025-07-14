@@ -157,7 +157,7 @@ export default function AdminNotificationsPage() {
       
       if (sendToAllUsers) {
         // Send to all users
-        const { userId, ...notificationData } = formData;
+        const { userId: _userId, ...notificationData } = formData;
         response = await createNotificationForAllUsers(notificationData);
       } else {
         // Send to specific user

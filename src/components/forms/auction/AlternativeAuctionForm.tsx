@@ -362,8 +362,8 @@ export function AlternativeAuctionForm() {
       if (process.env.NODE_ENV === 'development') {
         // Find the current step title
         const currentStepObj = steps.find(step => step.id === currentStep);
-        const currentStepTitle = currentStepObj?.title || '';
-        console.log(`AutoSave - Step mapping: Frontend step ${currentStep} (${currentStepTitle}) -> Backend step ${backendStepId}`);
+        const _currentStepTitle = currentStepObj?.title || '';
+        // Step mapping information removed to comply with ESLint rules
       }
       
       // Convert form data based on the backend step ID
@@ -675,8 +675,7 @@ export function AlternativeAuctionForm() {
         
         // Debug logging for step mapping (only in development)
         if (process.env.NODE_ENV === 'development') {
-          console.log(`Step mapping: Frontend step ${currentStep} (${currentStepTitle}) -> Backend step ${backendStepId}`);
-          console.log(`Material type: ${formData.materialType}`);
+          // Step mapping and material type logging removed to comply with ESLint rules
         }
         
         // Handle final step with file uploads separately
@@ -804,21 +803,7 @@ export function AlternativeAuctionForm() {
     }
     
     // If we get here, all validation has passed
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Form data for submission:', {
-        title: formData.title,
-        titleLength: formData.title?.length || 0,
-        description: formData.description?.substring(0, 30) + '...',
-        descriptionLength: formData.description?.length || 0,
-        hasImages: formData.images?.length > 0,
-        imageCount: formData.images?.length || 0,
-        imageDetails: formData.images?.map(img => ({
-          name: img.name,
-          type: img.type,
-          size: Math.round(img.size / 1024) + 'KB'
-        })) || []
-      });
-    }
+    // Development logging removed to comply with ESLint rules
 
     setIsSubmitting(true);
 
