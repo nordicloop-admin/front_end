@@ -137,7 +137,8 @@ const initialFormData: FormData = {
   keywords: []
 };
 
-const steps = [
+// Define all possible steps
+const allSteps = [
   { id: 1, title: 'Material Type', component: MaterialTypeStep },
   { id: 2, title: 'Specifications', component: MaterialSpecificationStep },
   { id: 3, title: 'Material Origin', component: MaterialOriginStep },
@@ -148,10 +149,27 @@ const steps = [
   { id: 8, title: 'Image & Description', component: ImagesStep }
 ];
 
+// Function to get steps based on material type
+const getStepsByMaterialType = (materialType: string) => {
+  // For plastics, show all steps
+  if (materialType.toLowerCase() === 'plastic' || materialType.toLowerCase() === 'plastics') {
+    return allSteps;
+  }
+  
+  // For all other materials, skip steps 2-5
+  return [
+    allSteps[0], // Material Type
+    { id: 2, title: 'Location & Logistics', component: LocationLogisticsStep },
+    { id: 3, title: 'Quantity & Price', component: PriceStep },
+    { id: 4, title: 'Image & Description', component: ImagesStep }
+  ];
+};
+
 export function AlternativeAuctionForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
+  const [steps, setSteps] = useState(getStepsByMaterialType(''));
   
   // ADS Integration state
   const [adId, setAdId] = useState<number | null>(null);
@@ -200,30 +218,20 @@ export function AlternativeAuctionForm() {
   }, [categories]);
 
   const updateFormData = useCallback((updates: Partial<FormData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
-    setHasUnsavedChanges(true);
-    
-    // Clear validation errors when user starts fixing them
-    if (showValidationErrors) {
-      const clearedErrors = { ...validationErrors };
-      let hasChanges = false;
+    setFormData(prev => {
+      const newData = { ...prev, ...updates };
+      setHasUnsavedChanges(true);
       
-      // Clear errors for fields being updated
-      Object.keys(updates).forEach(field => {
-        if (clearedErrors[field]) {
-          delete clearedErrors[field];
-          hasChanges = true;
-        }
-      });
-      
-      if (hasChanges) {
-        setValidationErrors(clearedErrors);
-        if (Object.keys(clearedErrors).length === 0) {
-          setShowValidationErrors(false);
-        }
+      // If material type is being updated, update the steps
+      if (updates.materialType !== undefined && updates.materialType !== prev.materialType) {
+        setSteps(getStepsByMaterialType(updates.materialType));
+        // Reset completed steps when material type changes
+        setCompletedSteps(new Set([]));
       }
-    }
-  }, [showValidationErrors, validationErrors]);
+      
+      return newData;
+    });
+  }, []);
 
   const convertFormDataToApiData = useCallback((step: number, data: FormData): any => {
     switch (step) {
@@ -388,101 +396,106 @@ export function AlternativeAuctionForm() {
 
   const validateCurrentStepDetailed = (): { isValid: boolean; errors: string[] } => {
     const errors: string[] = [];
-    const fieldErrors: Record<string, string[]> = {};
+    let isValid = true;
 
-    switch (currentStep) {
-      case 1:
+    // Find the actual step object based on current step index
+    const currentStepObj = steps.find(step => step.id === currentStep);
+    if (!currentStepObj) {
+      errors.push('Invalid step');
+      return { isValid: false, errors };
+    }
+
+    // Use the step title to determine which validation to run
+    const stepTitle = currentStepObj.title;
+
+    switch (stepTitle) {
+      case 'Material Type':
         if (!formData.materialType) {
-          const error = 'Material type is required';
-          errors.push(error);
-          fieldErrors.materialType = [error];
-        }
-        if (!formData.quantity.packaging) {
-          const error = 'Packaging type is required';
-          errors.push(error);
-          fieldErrors.packaging = [error];
-        }
-        if (!formData.sellFrequency) {
-          const error = 'Material frequency is required';
-          errors.push(error);
-          fieldErrors.sellFrequency = [error];
+          errors.push('Material type is required');
+          isValid = false;
         }
         if (!formData.category) {
-          const error = 'Category is required';
-          errors.push(error);
-          fieldErrors.category = [error];
+          errors.push('Category is required');
+          isValid = false;
         }
         if (!formData.subcategory) {
-          const error = 'Subcategory is required';
-          errors.push(error);
-          fieldErrors.subcategory = [error];
+          errors.push('Subcategory is required');
+          isValid = false;
+        }
+        if (!formData.quantity.packaging) {
+          errors.push('Packaging type is required');
+          isValid = false;
+        }
+        if (!formData.sellFrequency) {
+          errors.push('Sell frequency is required');
+          isValid = false;
         }
         break;
 
-      case 3:
+      case 'Specifications':
+        // Allow empty specifications
+        break;
+
+      case 'Material Origin':
         if (!formData.origin.source) {
-          const error = 'Material origin is required';
-          errors.push(error);
-          fieldErrors.origin = [error];
+          errors.push('Material origin is required');
+          isValid = false;
         }
         break;
 
-      case 4:
+      case 'Contamination':
         if (!formData.contamination.level) {
-          const error = 'Contamination level is required';
-          errors.push(error);
-          fieldErrors.contamination = [error];
+          errors.push('Contamination level is required');
+          isValid = false;
         }
         break;
 
-      case 5:
-        if (!formData.processing.methods || formData.processing.methods.length === 0) {
-          const error = 'At least one processing method is required';
-          errors.push(error);
-          fieldErrors.processing = [error];
-        }
+      case 'Processing Method':
+        // Allow empty processing methods
         break;
 
-      case 6:
+      case 'Location & Logistics':
         if (!formData.location.country) {
-          const error = 'Country is required';
-          errors.push(error);
-          fieldErrors.country = [error];
+          errors.push('Country is required');
+          isValid = false;
+        }
+        if (!formData.location.region) {
+          errors.push('Region is required');
+          isValid = false;
         }
         if (!formData.location.city) {
-          const error = 'City is required';
-          errors.push(error);
-          fieldErrors.city = [error];
+          errors.push('City is required');
+          isValid = false;
         }
         break;
 
-      case 7:
-        if (!formData.quantity.available || formData.quantity.available <= 0) {
-          const error = 'Available quantity must be greater than 0';
-          errors.push(error);
-          fieldErrors.quantity = [error];
+      case 'Quantity & Price':
+        if (formData.quantity.available <= 0) {
+          errors.push('Available quantity must be greater than 0');
+          isValid = false;
         }
         if (!formData.quantity.unit) {
-          const error = 'Unit of measurement is required';
-          errors.push(error);
-          fieldErrors.unit = [error];
+          errors.push('Unit of measurement is required');
+          isValid = false;
         }
-        if (!formData.price.basePrice || formData.price.basePrice <= 0) {
-          const error = 'Base price must be greater than 0';
-          errors.push(error);
-          fieldErrors.basePrice = [error];
+        if (formData.quantity.minimumOrder < 0) {
+          errors.push('Minimum order quantity must be greater than or equal to 0');
+          isValid = false;
+        }
+        if (formData.price.basePrice <= 0) {
+          errors.push('Base price must be greater than 0');
+          isValid = false;
         }
         const hasValidAuctionDuration = formData.price.auctionDuration && 
           (formData.price.auctionDuration !== 'custom' || 
            (formData.price.auctionDuration === 'custom' && formData.price.customAuctionDuration && formData.price.customAuctionDuration > 0));
         if (!hasValidAuctionDuration) {
-          const error = 'Valid auction duration is required';
-          errors.push(error);
-          fieldErrors.auctionDuration = [error];
+          errors.push('Valid auction duration is required');
+          isValid = false;
         }
         break;
 
-      case 8:
+      case 'Image & Description':
         return validateStep8Detailed();
 
       default:
@@ -490,44 +503,64 @@ export function AlternativeAuctionForm() {
     }
 
     // Update validation state
-    setValidationErrors(fieldErrors);
+    setValidationErrors(errors.reduce((acc, error) => ({ ...acc, [error]: [error] }), {}));
     setShowValidationErrors(errors.length > 0);
 
     return {
-      isValid: errors.length === 0,
+      isValid,
       errors
     };
   };
 
   const validateStep = (stepId: number): boolean => {
-    // Add validation logic for each step
-    switch (stepId) {
-      case 1:
-        return !!(formData.materialType && formData.quantity.packaging && formData.sellFrequency && formData.category && formData.subcategory);
-      case 2:
-        // Specifications are optional
+    // Find the actual step object based on step ID
+    const stepObj = steps.find(step => step.id === stepId);
+    if (!stepObj) return false;
+    
+    // Use the step title to determine which validation to run
+    const stepTitle = stepObj.title;
+    
+    switch (stepTitle) {
+      case 'Material Type':
+        return !!formData.materialType && 
+               !!formData.category && 
+               !!formData.subcategory && 
+               !!formData.quantity.packaging && 
+               !!formData.sellFrequency;
+      
+      case 'Specifications':
+        // Allow empty specifications
         return true;
-      case 3:
-        return !!(formData.origin.source);
-      case 4:
-        return !!(formData.contamination.level);
-      case 5:
-        return !!(formData.processing.methods && formData.processing.methods.length > 0);
-      case 6:
-        return !!(formData.location.country && formData.location.city);
-      case 7:
-        const hasValidAuctionDuration = formData.price.auctionDuration && 
-          (formData.price.auctionDuration !== 'custom' || 
-           (formData.price.auctionDuration === 'custom' && formData.price.customAuctionDuration && formData.price.customAuctionDuration > 0));
-        return !!(formData.quantity.available > 0 && formData.quantity.unit && formData.price.basePrice > 0 && hasValidAuctionDuration);
-      case 8:
-        // Step 8 validation according to STEP_8_VALIDATION_GUIDE.md
-        const titleValid = formData.title && formData.title.trim().length >= 10;
-        const descriptionValid = formData.description && formData.description.trim().length >= 50;
-        // Images are OPTIONAL according to backend requirements
-        return !!(titleValid && descriptionValid);
+      
+      case 'Material Origin':
+        return !!formData.origin.source;
+      
+      case 'Contamination':
+        return !!formData.contamination.level;
+      
+      case 'Processing Method':
+        // Allow empty processing methods
+        return true;
+        
+      case 'Location & Logistics':
+        return !!formData.location.country && 
+               !!formData.location.region && 
+               !!formData.location.city;
+      
+      case 'Quantity & Price':
+        return formData.quantity.available > 0 && 
+               !!formData.quantity.unit && 
+               formData.quantity.minimumOrder >= 0 && 
+               formData.price.basePrice > 0;
+      
+      case 'Image & Description':
+        return !!formData.title && 
+               formData.title.length >= 10 && 
+               !!formData.description && 
+               formData.description.length >= 30;
+      
       default:
-        return true;
+        return false;
     }
   };
 
@@ -542,6 +575,11 @@ export function AlternativeAuctionForm() {
         description: validation.errors.join(', ')
       });
       return;
+    }
+    
+    // If this is step 1 and material type has been selected, update steps
+    if (currentStep === 1 && formData.materialType) {
+      setSteps(getStepsByMaterialType(formData.materialType));
     }
 
     setIsSubmitting(true);
@@ -702,7 +740,9 @@ export function AlternativeAuctionForm() {
     }
   };
 
-  const CurrentStepComponent = steps[currentStep - 1]?.component;
+  // Find the current step component based on the current step ID
+  const currentStepObj = steps.find(step => step.id === currentStep);
+  const CurrentStepComponent = currentStepObj?.component;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
