@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, ArrowLeft, Save, RefreshCw, AlertCircle, CheckCircle, Building, Home, Briefcase } from 'lucide-react';
+import { MapPin, ArrowLeft, Save, RefreshCw, AlertCircle, CheckCircle, Home, Briefcase } from 'lucide-react';
 import { createUserAddress, AddressCreateRequest } from '@/services/userAddresses';
 
 export default function NewAddress() {
