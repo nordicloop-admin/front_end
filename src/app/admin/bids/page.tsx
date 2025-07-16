@@ -362,9 +362,9 @@ export default function BidsPage() {
                   <tr key={bid.id} className={bid.status === 'pending' ? "bg-yellow-50" : ""}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{bid.itemName}</div>
-                      <Link href={`/admin/marketplace/${bid.itemId}`} className="text-xs text-blue-600 hover:text-blue-900">
+                      {/* <Link href={`/admin/marketplace/${bid.itemId}`} className="text-xs text-blue-600 hover:text-blue-900">
                         View Item
-                      </Link>
+                      </Link> */}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
