@@ -230,13 +230,13 @@ export default function DashboardLayoutClient({
 
         {/* Become Vendor Section */}
         <div className="p-4 border-t border-gray-100 flex-shrink-0">
-          <div className="mb-1.5 text-sm font-medium">Become vendor</div>
+          {/* <div className="mb-1.5 text-sm font-medium">Become vendor</div>
           <p className="text-xs text-gray-500 mb-3">
             Vendors can sell products and manage a store with a vendor dashboard.
           </p>
           <button className="w-full bg-[#FF8A00] text-white py-2 px-4 rounded-md hover:bg-[#e67e00] transition-colors mb-4 text-sm">
             Become vendor
-          </button>
+          </button> */}
 
           {/* Logout Button */}
           <button
