@@ -308,7 +308,7 @@ export async function apiDelete<T>(
       if (text) {
         try {
           data = JSON.parse(text);
-        } catch (e) {
+        } catch (_e) {
           // If parsing fails, return the error
           return {
             data: null,
