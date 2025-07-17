@@ -83,6 +83,23 @@ export async function createNotification(notification: CreateNotificationRequest
 }
 
 /**
+ * Get count of unread notifications for the current user
+ * @returns The count of unread notifications
+ */
+export async function getUnreadNotificationCount() {
+  try {
+    const response = await apiGet<{ count: number }>('/notifications/unread-count/', true);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching unread notification count',
+      status: 500
+    };
+  }
+}
+
+/**
  * Create a notification for all users (admin only)
  * @param notification The notification data to create
  * @returns Promise with created notification data
