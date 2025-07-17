@@ -1,7 +1,7 @@
 /**
  * User Subscription service for handling user subscription management
  */
-import { apiGet, apiPut } from './api';
+import { apiGet, apiPut, apiPost } from './api';
 
 /**
  * Interface for user subscription data
@@ -30,6 +30,21 @@ export interface SubscriptionUpdateRequest {
   plan: string;
   auto_renew: boolean;
   payment_method: string;
+  contact_name: string;
+  contact_email: string;
+}
+
+/**
+ * Interface for subscription create request
+ */
+export interface SubscriptionCreateRequest {
+  plan: string;
+  status: string;
+  start_date: string;
+  end_date: string;
+  auto_renew: boolean;
+  last_payment: string;
+  amount: string;
   contact_name: string;
   contact_email: string;
 }
@@ -72,6 +87,24 @@ export async function updateUserSubscription(subscriptionData: SubscriptionUpdat
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while updating subscription',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Create a new subscription for the current user
+ * @param subscriptionData The subscription data to create
+ * @returns The created subscription data
+ */
+export async function createUserSubscription(subscriptionData: SubscriptionCreateRequest) {
+  try {
+    const response = await apiPost<SubscriptionUpdateResponse>('/ads/user/subscription/', subscriptionData, true);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while creating subscription',
       status: 500
     };
   }
