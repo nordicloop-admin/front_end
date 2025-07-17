@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Check, X, Calendar, ArrowRight, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
-import { getUserSubscription, updateUserSubscription, UserSubscription } from '@/services/userSubscription';
+import { getUserSubscription, updateUserSubscription, createUserSubscription, UserSubscription } from '@/services/userSubscription';
+import { getUserProfile, UserProfile } from '@/services/userProfile';
 
 // Subscription plan details
 const subscriptionPlans = [
@@ -65,56 +66,113 @@ const subscriptionPlans = [
 
 export default function Subscriptions() {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
 
-  // Fetch subscription data
+  // Fetch subscription data and user profile
   useEffect(() => {
-    const fetchSubscription = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
-        const response = await getUserSubscription();
         
-        if (response.error) {
-          setError(response.error);
-        } else if (response.data) {
-          setSubscription(response.data);
+        // Fetch user profile
+        const profileResponse = await getUserProfile();
+        if (profileResponse.error) {
+          setError(profileResponse.error);
+        } else if (profileResponse.data) {
+          setUserProfile(profileResponse.data);
+        }
+        
+        // Fetch subscription
+        const subscriptionResponse = await getUserSubscription();
+        
+        if (subscriptionResponse.error) {
+          // Check if the error is due to no subscription found
+          if (subscriptionResponse.status === 404 || 
+              subscriptionResponse.error.includes('not found') || 
+              subscriptionResponse.error.includes('No subscription')) {
+            setHasSubscription(false);
+          } else {
+            setError(subscriptionResponse.error);
+          }
+        } else if (subscriptionResponse.data) {
+          setSubscription(subscriptionResponse.data);
+          setHasSubscription(true);
         }
       } catch (_error) {
-        setError('Failed to load subscription data');
+        setError('Failed to load data');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchSubscription();
+    fetchData();
   }, []);
 
-  // Handle plan upgrade
+  // Handle plan change (upgrade or create new)
   const handlePlanChange = async (planId: string) => {
-    if (!subscription || subscription.plan === planId || isUpdating) return;
+    // If updating or trying to select the current plan, do nothing
+    if (isUpdating || (subscription && subscription.plan === planId)) return;
     
     try {
       setIsUpdating(true);
       setError(null);
       setUpdateSuccess(false);
       
-      const updateData = {
-        plan: planId,
-        auto_renew: subscription.auto_renew,
-        payment_method: subscription.payment_method,
-        contact_name: subscription.contact_name,
-        contact_email: subscription.contact_email
-      };
+      let response;
       
-      const response = await updateUserSubscription(updateData);
+      // If user has no subscription, create a new one
+      if (!hasSubscription) {
+        // Get current date and one year from now
+        const today = new Date();
+        const nextYear = new Date(today);
+        nextYear.setFullYear(today.getFullYear() + 1);
+        
+        // Format dates as YYYY-MM-DD
+        const formatDate = (date: Date) => {
+          return date.toISOString().split('T')[0];
+        };
+        
+        const startDate = formatDate(today);
+        const endDate = formatDate(nextYear);
+        
+        // Create subscription with required format
+        const createData = {
+          plan: planId,
+          status: 'active',
+          start_date: startDate,
+          end_date: endDate,
+          auto_renew: true,
+          last_payment: startDate,
+          amount: planId === 'free' ? '0' : planId === 'standard' ? '599' : '799',
+          // Use user profile information for contact details if available
+          contact_name: userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() : '',
+          contact_email: userProfile ? userProfile.email : ''
+        };
+        
+        response = await createUserSubscription(createData);
+      } else if (subscription) {
+        // Otherwise update the existing subscription
+        const updateData = {
+          plan: planId,
+          auto_renew: subscription.auto_renew,
+          payment_method: subscription.payment_method,
+          contact_name: subscription.contact_name,
+          contact_email: subscription.contact_email
+        };
+        
+        response = await updateUserSubscription(updateData);
+      }
       
-      if (response.error) {
+      if (response?.error) {
         setError(response.error);
-      } else if (response.data) {
+      } else if (response?.data) {
         setSubscription(response.data.subscription);
+        setHasSubscription(true);
         setUpdateSuccess(true);
         
         // Hide success message after 3 seconds
@@ -161,7 +219,19 @@ export default function Subscriptions() {
         <div className="p-4 bg-green-50 border border-green-100 rounded-md mb-5">
           <div className="flex items-center">
             <CheckCircle className="text-green-500 mr-2" size={16} />
-            <p className="text-sm text-green-700">Subscription updated successfully!</p>
+            <p className="text-sm text-green-700">
+              {hasSubscription ? 'Subscription updated successfully!' : 'Subscription created successfully!'}
+            </p>
+          </div>
+        </div>
+      )}
+      
+      {/* No subscription message */}
+      {hasSubscription === false && !isLoading && (
+        <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <AlertCircle className="text-yellow-500 mr-2" size={16} />
+            <p className="text-sm text-yellow-700">No subscription found for this company. Please select a plan below.</p>
           </div>
         </div>
       )}
@@ -278,48 +348,52 @@ export default function Subscriptions() {
               {isUpdating ? (
                 <span className="flex items-center justify-center">
                   <RefreshCw size={14} className="animate-spin mr-2" />
-                  Updating...
+                  {hasSubscription ? 'Updating...' : 'Creating...'}
                 </span>
               ) : subscription && subscription.plan === plan.id ? (
                 'Current Plan'
-              ) : (
+              ) : hasSubscription ? (
                 'Upgrade'
+              ) : (
+                'Select Plan'
               )}
             </button>
           </div>
         ))}
       </div>
 
-      {/* Billing History */}
-      <div className="bg-white border border-gray-100 rounded-md p-4">
-        <h2 className="text-sm font-medium text-gray-700 mb-3">Billing History</h2>
+      {/* Billing History - Only show if user has a subscription */}
+      {hasSubscription && (
+        <div className="bg-white border border-gray-100 rounded-md p-4">
+          <h2 className="text-sm font-medium text-gray-700 mb-3">Billing History</h2>
 
-        <div className="border-t border-gray-100 py-4 text-center">
-          {isLoading ? (
-            <div className="flex items-center justify-center p-2">
-              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#FF8A00]"></div>
-            </div>
-          ) : subscription ? (
-            <>
-              <p className="text-sm text-gray-500">
-                {subscription.last_payment ? (
-                  <>Last payment: {formatDate(subscription.last_payment)} - {subscription.amount}</>
-                ) : (
-                  <>No billing history available for {subscription.plan_display}.</>
-                )}
-              </p>
-              <Link
-                href="/dashboard/subscriptions/billing"
-                className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium flex items-center justify-center mt-2"
-              >
-                View all transactions <ArrowRight size={12} className="ml-1" />
-              </Link>
-            </>
-          ) : (
-            <p className="text-sm text-gray-500">No billing history available.</p>
-          )}
+          <div className="border-t border-gray-100 py-4 text-center">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#FF8A00]"></div>
+              </div>
+            ) : subscription ? (
+              <>
+                <p className="text-sm text-gray-500">
+                  {subscription.last_payment ? (
+                    <>Last payment: {formatDate(subscription.last_payment)} - {subscription.amount}</>
+                  ) : (
+                    <>No billing history available for {subscription.plan_display}.</>
+                  )}
+                </p>
+                <Link
+                  href="/dashboard/subscriptions/billing"
+                  className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium flex items-center justify-center mt-2"
+                >
+                  View all transactions <ArrowRight size={12} className="ml-1" />
+                </Link>
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">No billing history available.</p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
