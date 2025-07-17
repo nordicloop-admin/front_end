@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, Check, Trash2, Send, Users, User, X } from 'lucide-react';
 import { 
   getAllNotifications, 
@@ -10,6 +10,7 @@ import {
   Notification,
   CreateNotificationRequest
 } from '@/services/notifications';
+import { searchUsers } from '@/services/users';
 
 // Notification type options
 const notificationTypes = [
@@ -48,15 +49,12 @@ const getNotificationIcon = (type: string) => {
   }
 };
 
-// Mock users for user selection
-// In a real implementation, this would be fetched from an API
-const mockUsers = [
-  { id: 1, name: 'John Doe', email: 'john@example.com' },
-  { id: 2, name: 'Jane Smith', email: 'jane@example.com' },
-  { id: 3, name: 'Robert Johnson', email: 'robert@example.com' },
-  { id: 4, name: 'Emily Davis', email: 'emily@example.com' },
-  { id: 5, name: 'Michael Wilson', email: 'michael@example.com' },
-];
+// User type for the component
+interface User {
+  id: number;
+  name: string;
+  company_name: string;
+}
 
 export default function AdminNotificationsPage() {
   // State for notifications list
@@ -73,10 +71,12 @@ export default function AdminNotificationsPage() {
   });
   
   // State for user selection
-  const [selectedUser, setSelectedUser] = useState<{ id: number, name: string, email: string } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userSearchResults, setUserSearchResults] = useState<User[]>([]);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [sendToAllUsers, setSendToAllUsers] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   
   // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,13 +105,39 @@ export default function AdminNotificationsPage() {
     fetchNotifications();
   }, []);
   
-  // Filter users based on search query
-  const filteredUsers = userSearchQuery 
-    ? mockUsers.filter(user => 
-        user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
-        user.email.toLowerCase().includes(userSearchQuery.toLowerCase())
-      )
-    : mockUsers;
+  // Search users from API
+  const searchUsersFromAPI = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setUserSearchResults([]);
+      return;
+    }
+    
+    setIsSearching(true);
+    try {
+      const response = await searchUsers(query);
+      
+      if (response.data) {
+        setUserSearchResults(response.data.results);
+      } else {
+        setUserSearchResults([]);
+      }
+    } catch (_err) {
+      setUserSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+  
+  // Debounce search input
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      searchUsersFromAPI(userSearchQuery);
+    }, 300);
+    
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [userSearchQuery, searchUsersFromAPI]);
   
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -124,11 +150,12 @@ export default function AdminNotificationsPage() {
   };
   
   // Handle user selection
-  const handleSelectUser = (user: { id: number, name: string, email: string }) => {
+  const handleSelectUser = (user: User) => {
     setSelectedUser(user);
     setFormData(prev => ({ ...prev, userId: user.id }));
     setShowUserDropdown(false);
     setSendToAllUsers(false);
+    setUserSearchQuery('');
   };
   
   // Handle send to all users toggle
@@ -347,15 +374,20 @@ export default function AdminNotificationsPage() {
                       </div>
                       <div>
                         <div className="text-sm font-medium">{selectedUser.name}</div>
-                        <div className="text-xs text-gray-500">{selectedUser.email}</div>
+                        <div className="text-xs text-gray-500">{selectedUser.company_name}</div>
                       </div>
                     </div>
                   )}
                   
                   {showUserDropdown && !selectedUser && (
                     <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {filteredUsers.length > 0 ? (
-                        filteredUsers.map(user => (
+                      {isSearching ? (
+                        <div className="px-4 py-3 text-sm text-gray-500 flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#FF8A00] mr-2"></div>
+                          Searching...
+                        </div>
+                      ) : userSearchResults.length > 0 ? (
+                        userSearchResults.map(user => (
                           <div
                             key={user.id}
                             className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
@@ -366,12 +398,14 @@ export default function AdminNotificationsPage() {
                             </div>
                             <div>
                               <div className="text-sm font-medium">{user.name}</div>
-                              <div className="text-xs text-gray-500">{user.email}</div>
+                              <div className="text-xs text-gray-500">{user.company_name}</div>
                             </div>
                           </div>
                         ))
-                      ) : (
+                      ) : userSearchQuery ? (
                         <div className="px-4 py-2 text-sm text-gray-500">No users found</div>
+                      ) : (
+                        <div className="px-4 py-2 text-sm text-gray-500">Type to search users</div>
                       )}
                     </div>
                   )}

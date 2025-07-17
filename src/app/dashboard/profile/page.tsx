@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { Building, Shield, Save, X, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
-import { getUserProfile, updateUserProfile, UserProfile, ProfileUpdateRequest } from '@/services/userProfile';
+import { getUserProfile, updateUserProfile, changePassword, UserProfile, ProfileUpdateRequest, PasswordChangeRequest } from '@/services/userProfile';
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('personal');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -74,19 +75,70 @@ export default function Profile() {
       setError(null);
       setSuccess(null);
       
-      const updateData: ProfileUpdateRequest = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-        email: formData.email
-      };
-      
-      const response = await updateUserProfile(updateData);
-      
-      if (response.error) {
-        setError(response.error);
-      } else if (response.data) {
-        setProfile(response.data);
-        setSuccess('Profile updated successfully!');
+      // Check if we're on the security tab and changing password
+      if (activeTab === 'security' && 
+          formData.currentPassword && 
+          formData.newPassword && 
+          formData.confirmPassword) {
+        
+        // Handle password change
+        setIsChangingPassword(true);
+        
+        // Validate passwords match
+        if (formData.newPassword !== formData.confirmPassword) {
+          setError('New password and confirmation do not match');
+          setIsSaving(false);
+          setIsChangingPassword(false);
+          return;
+        }
+        
+        // Validate password requirements
+        const passwordRegex = /^(?=.*[A-Z])(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
+        if (!passwordRegex.test(formData.newPassword)) {
+          setError('New password does not meet the requirements');
+          setIsSaving(false);
+          setIsChangingPassword(false);
+          return;
+        }
+        
+        const passwordData: PasswordChangeRequest = {
+          current_password: formData.currentPassword,
+          new_password: formData.newPassword,
+          confirm_password: formData.confirmPassword
+        };
+        
+        const passwordResponse = await changePassword(passwordData);
+        
+        if (passwordResponse.error) {
+          setError(passwordResponse.error);
+        } else if (passwordResponse.data) {
+          setSuccess(passwordResponse.data.message || 'Password updated successfully!');
+          // Reset password fields
+          setFormData(prev => ({
+            ...prev,
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: ''
+          }));
+        }
+        
+        setIsChangingPassword(false);
+      } else {
+        // Handle profile update
+        const updateData: ProfileUpdateRequest = {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email
+        };
+        
+        const response = await updateUserProfile(updateData);
+        
+        if (response.error) {
+          setError(response.error);
+        } else if (response.data) {
+          setProfile(response.data);
+          setSuccess('Profile updated successfully!');
+        }
       }
     } catch (_err) {
       setError('Failed to update profile');
@@ -347,12 +399,12 @@ export default function Profile() {
                   {isSaving ? (
                     <>
                       <RefreshCw size={16} className="animate-spin mr-2" />
-                      Saving...
+                      {activeTab === 'security' && isChangingPassword ? 'Changing Password...' : 'Saving...'}
                     </>
                   ) : (
                     <>
                       <Save size={16} className="mr-2" />
-                      Save Changes
+                      {activeTab === 'security' ? 'Change Password' : 'Save Changes'}
                     </>
                   )}
                 </button>

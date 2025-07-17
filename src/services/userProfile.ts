@@ -1,4 +1,4 @@
-import { apiGet, apiPatch } from './api';
+import { apiGet, apiPatch, apiPost } from './api';
 
 // Import or recreate ApiResponse type
 export interface ApiResponse<T> {
@@ -30,6 +30,16 @@ export interface ProfileUpdateRequest {
   email?: string;
 }
 
+export interface PasswordChangeRequest {
+  current_password: string;
+  new_password: string;
+  confirm_password: string;
+}
+
+export interface PasswordChangeResponse {
+  message: string;
+}
+
 // Get user profile
 export async function getUserProfile(): Promise<ApiResponse<UserProfile>> {
   return await apiGet<UserProfile>('/users/profile/', true);
@@ -55,4 +65,22 @@ export async function updateUserProfile(data: ProfileUpdateRequest): Promise<Api
   }
   
   return response as ApiResponse<UserProfile>;
+}
+
+/**
+ * Change user password
+ * @param data Password change request data
+ * @returns API response with success message
+ */
+export async function changePassword(data: PasswordChangeRequest): Promise<ApiResponse<PasswordChangeResponse>> {
+  try {
+    const response = await apiPost<PasswordChangeResponse>('/users/change-password/', data, true);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while changing password',
+      status: 500
+    };
+  }
 }
