@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ import {
   Building,
   Settings
 } from 'lucide-react';
+import { getUnreadNotificationCount } from '@/services/notifications';
 
 interface DashboardHeaderProps {
   onMobileMenuToggle?: () => void;
@@ -30,6 +31,7 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
   const { logout, user } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [workspaceDropdownOpen, setWorkspaceDropdownOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(0);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -49,6 +51,28 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
       router.push('/dashboard');
     }
   };
+  
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadNotificationCount = async () => {
+      try {
+        const response = await getUnreadNotificationCount();
+        if (response.data) {
+          setUnreadNotificationCount(response.data.count);
+        }
+      } catch (_error) {
+        // Error handling - silently fail
+      }
+    };
+    
+    fetchUnreadNotificationCount();
+    
+    // Set up interval to refresh the count every minute
+    const intervalId = setInterval(fetchUnreadNotificationCount, 60000);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   const isAdminPath = pathname.startsWith('/admin');
 
@@ -146,9 +170,14 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
         )}
 
         {/* Notification Button */}
-        <button className="p-2 text-gray-500 hover:text-gray-700 relative">
+        <Link href="/dashboard/notifications" className="p-2 text-gray-500 hover:text-gray-700 relative">
           <Bell size={18} />
-        </button>
+          {unreadNotificationCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+            </span>
+          )}
+        </Link>
 
         {/* User Dropdown */}
         <div className="flex items-center relative">

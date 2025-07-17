@@ -115,5 +115,45 @@ export async function getAdminUser(userId: string) {
   }
 }
 
+/**
+ * Interface for user search response
+ */
+interface UserSearchResponse {
+  results: UserSearchResult[];
+  count: number;
+}
+
+/**
+ * Interface for user search result
+ */
+interface UserSearchResult {
+  id: number;
+  name: string;
+  company_name: string;
+  registration_date: string;
+}
+
+/**
+ * Search users by name or company name
+ * @param query Search query string
+ * @returns The search results
+ */
+export async function searchUsers(query?: string) {
+  try {
+    const endpoint = query 
+      ? `/users/search/?query=${encodeURIComponent(query)}` 
+      : '/users/search/';
+    
+    const response = await apiGet<UserSearchResponse>(endpoint, true);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while searching users',
+      status: 500
+    };
+  }
+}
+
 // Export types for use in components
-export type { AdminUser, AdminUserListResponse, AdminUserParams }; 
+export type { AdminUser, AdminUserListResponse, AdminUserParams, UserSearchResult, UserSearchResponse }; 
