@@ -211,7 +211,7 @@ const LoginPage = () => {
             </div>
 
             <div className="flex justify-end mb-6">
-              <Link href="/contact" className="text-sm text-[#FF8A00] hover:text-[#e67e00] transition-colors font-medium">
+              <Link href="/forgot-password" className="text-sm text-[#FF8A00] hover:text-[#e67e00] transition-colors font-medium">
                 Forgot password?
               </Link>
             </div>
