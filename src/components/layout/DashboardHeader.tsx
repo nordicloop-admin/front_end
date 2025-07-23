@@ -225,14 +225,7 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
                     Profile Settings
                   </Link>
                   
-                  <Link
-                    href="/dashboard/addresses"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <MapPin size={16} className="mr-3" />
-                    My Addresses
-                  </Link>
+
                   
                   <Link
                     href="/dashboard/subscriptions"
