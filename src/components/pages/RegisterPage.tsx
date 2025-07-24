@@ -302,7 +302,7 @@ const RegisterPage = () => {
             Back to Home
           </Link>
           <Link
-            href="/coming-soon"
+            href="/contact"
             className="flex items-center text-gray-700 hover:text-gray-900 transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -852,9 +852,14 @@ const RegisterPage = () => {
             </svg>
             Nordic Loop 2025
           </div>
-          <Link href="/coming-soon" className="text-gray-500 hover:text-gray-700 transition-colors">
-            Privacy and policy
-          </Link>
+          <div className="flex space-x-4">
+            <Link href="/privacy" className="text-gray-500 hover:text-gray-700 transition-colors">
+              Privacy Policy
+            </Link>
+            <Link href="/contact" className="text-gray-500 hover:text-gray-700 transition-colors">
+              Contact Support
+            </Link>
+          </div>
         </div>
       </div>
     </div>
