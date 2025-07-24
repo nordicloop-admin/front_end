@@ -61,13 +61,18 @@ export async function getUserCategorySubscriptions() {
   // Map the paginated response to the expected format
   if (response.data && response.data.results) {
     return {
-      data: response.data.results,
+      data: response.data.results as CategorySubscription[],
       error: response.error,
       status: response.status
     };
   }
   
-  return response;
+  // Return empty array if no results
+  return {
+    data: [] as CategorySubscription[],
+    error: response.error,
+    status: response.status
+  };
 }
 
 /**

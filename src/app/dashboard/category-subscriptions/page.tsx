@@ -99,23 +99,27 @@ export default function CategorySubscriptionsPage() {
   };
   
   // Format auction duration to human-readable format
-  const formatAuctionDuration = (days: number): string => {
+  const formatAuctionDuration = (days: number | null | undefined): string => {
+    if (days === null || days === undefined) return 'N/A';
     if (days === 0) return 'Custom';
     return `${days} day${days > 1 ? 's' : ''}`;
   };
   
   // Format contamination level to be more readable
-  const formatContamination = (contamination: string): string => {
+  const formatContamination = (contamination: string | null | undefined): string => {
+    if (contamination === null || contamination === undefined) return 'N/A';
     return contamination.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
   
   // Format storage conditions to be more readable
-  const formatStorageConditions = (conditions: string): string => {
+  const formatStorageConditions = (conditions: string | null | undefined): string => {
+    if (conditions === null || conditions === undefined) return 'N/A';
     return conditions.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
   
   // Format packaging to be more readable
-  const formatPackaging = (packaging: string): string => {
+  const formatPackaging = (packaging: string | null | undefined): string => {
+    if (packaging === null || packaging === undefined) return 'N/A';
     return packaging.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
