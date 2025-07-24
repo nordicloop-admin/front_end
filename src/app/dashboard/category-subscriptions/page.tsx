@@ -14,26 +14,20 @@ export default function CategorySubscriptionsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subscriptions, setSubscriptions] = useState<CategorySubscription[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
   const [expandedSubscriptions, setExpandedSubscriptions] = useState<number[]>([]);
+  const [showCategories, setShowCategories] = useState(false);
 
-  // Fetch categories and user subscriptions
+  // Fetch only user subscriptions on initial load
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSubscriptions = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
-        // Fetch categories
-        const categoriesResponse = await getCategories();
-        if (categoriesResponse.error) {
-          setError(categoriesResponse.error);
-        } else if (categoriesResponse.data) {
-          setCategories(categoriesResponse.data);
-        }
         
         // Fetch user's category subscriptions
         const subscriptionsResponse = await getUserCategorySubscriptions();
@@ -49,14 +43,42 @@ export default function CategorySubscriptionsPage() {
           setSubscriptions([]);
         }
       } catch (_err) {
-        setError('Failed to load data');
+        setError('Failed to load subscriptions');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchData();
+    fetchSubscriptions();
   }, []); 
+  
+  // Function to load categories on demand
+  const loadCategories = async () => {
+    if (categories.length > 0) {
+      // Categories already loaded, just show them
+      setShowCategories(true);
+      return;
+    }
+    
+    try {
+      setIsCategoriesLoading(true);
+      setError(null);
+      
+      // Fetch categories
+      const categoriesResponse = await getCategories();
+      if (categoriesResponse.error) {
+        setError(categoriesResponse.error);
+      } else if (categoriesResponse.data) {
+        setCategories(categoriesResponse.data);
+        setShowCategories(true);
+      }
+    } catch (_err) {
+      setError('Failed to load categories');
+    } finally {
+      setIsCategoriesLoading(false);
+    }
+  };
+  
 
   // Toggle category expansion
   const toggleCategoryExpansion = (categoryId: number) => {
@@ -311,11 +333,25 @@ export default function CategorySubscriptionsPage() {
           
           {/* Available Categories Section */}
           <div className="border rounded-md">
-            <div className="bg-gray-50 px-4 py-2 border-b">
+            <div className="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
               <h3 className="font-medium">Browse Categories</h3>
+              {!showCategories && (
+                <button 
+                  onClick={loadCategories}
+                  className="text-[#FF8A00] hover:text-[#e67e00] text-sm flex items-center"
+                  disabled={isCategoriesLoading}
+                >
+                  {isCategoriesLoading ? (
+                    <Loader2 size={14} className="animate-spin mr-1" />
+                  ) : (
+                    <Bell size={14} className="mr-1" />
+                  )}
+                  Load Categories
+                </button>
+              )}
             </div>
             
-            {categories.length > 0 ? (
+            {showCategories && categories.length > 0 ? (
               <div className="divide-y">
                 {categories.map(category => (
                   <div key={category.id} className="border-b last:border-b-0">
