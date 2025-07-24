@@ -12,7 +12,6 @@ import {
   FileText,
   Package,
   Bell,
-  MapPin,
   User,
   LogOut,
   Megaphone
