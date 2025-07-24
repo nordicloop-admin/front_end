@@ -208,6 +208,43 @@ export default function DashboardLayoutClient({
             <span>Subscriptions</span>
           </Link>
 
+          <Link
+            href="/dashboard/category-subscriptions"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/category-subscriptions' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="mr-3"
+            >
+              <path
+                d="M4 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M14 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M4 15a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M14 15a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+            </svg>
+            <span>Category Alerts</span>
+          </Link>
+
 
 
           <Link
