@@ -2,7 +2,7 @@
  * Category subscription service for handling user subscriptions to auction categories
  */
 import { apiGet, apiPost, apiDelete } from './api';
-import { Category, Subcategory } from './auction';
+import { Category as _Category, Subcategory as _Subcategory } from './auction';
 
 /**
  * Interface for related ad data
