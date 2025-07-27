@@ -11,6 +11,7 @@ import {
   CreateNotificationRequest
 } from '@/services/notifications';
 import { searchUsers } from '@/services/users';
+import { getNotificationIconComponent, getNotificationTypeConfig } from '@/utils/notificationUtils';
 
 // Notification type options
 const notificationTypes = [
@@ -19,6 +20,12 @@ const notificationTypes = [
   { value: 'auction', label: 'Auction Related', color: 'green' },
   { value: 'promotion', label: 'Promotion', color: 'purple' },
   { value: 'welcome', label: 'Welcome', color: 'gray' },
+  { value: 'subscription', label: 'Subscription', color: 'indigo' },
+  { value: 'security', label: 'Security', color: 'red' },
+  { value: 'account', label: 'Account', color: 'teal' },
+  { value: 'bid', label: 'Bid', color: 'emerald' },
+  { value: 'payment', label: 'Payment', color: 'cyan' },
+  { value: 'admin', label: 'Admin', color: 'orange' },
 ];
 
 // Function to format date
@@ -35,18 +42,13 @@ const formatDate = (dateString: string) => {
 
 // Get notification icon based on type
 const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case 'feature':
-      return <div className="bg-blue-100 p-2 rounded-full"><Bell size={16} className="text-blue-600" /></div>;
-    case 'system':
-      return <div className="bg-amber-100 p-2 rounded-full"><Bell size={16} className="text-amber-600" /></div>;
-    case 'auction':
-      return <div className="bg-green-100 p-2 rounded-full"><Bell size={16} className="text-green-600" /></div>;
-    case 'promotion':
-      return <div className="bg-purple-100 p-2 rounded-full"><Bell size={16} className="text-purple-600" /></div>;
-    default:
-      return <div className="bg-gray-100 p-2 rounded-full"><Bell size={16} className="text-gray-600" /></div>;
-  }
+  const config = getNotificationTypeConfig(type);
+  const IconComponent = getNotificationIconComponent(type);
+  return (
+    <div className={`p-2 rounded-full ${config.bgColor}`}>
+      <IconComponent size={16} className={config.color} />
+    </div>
+  );
 };
 
 // User type for the component

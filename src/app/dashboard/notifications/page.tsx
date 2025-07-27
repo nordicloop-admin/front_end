@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Bell, Check, Trash2 } from 'lucide-react';
+import { Bell, CheckCircle } from 'lucide-react';
 import { getUserNotifications, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
+import NotificationCard from '@/components/notifications/NotificationCard';
+import NotificationFilters from '@/components/notifications/NotificationFilters';
+import { filterNotifications, sortNotificationsByPriority } from '@/utils/notificationUtils';
 
 // Fallback mock data in case API fails
 const mockNotifications = [
@@ -16,49 +19,17 @@ const mockNotifications = [
   }
 ];
 
-// Function to format date
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    return 'Today';
-  } else if (diffDays === 1) {
-    return 'Yesterday';
-  } else if (diffDays < 7) {
-    return `${diffDays} days ago`;
-  } else {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: now.getFullYear() !== date.getFullYear() ? 'numeric' : undefined
-    });
-  }
-};
 
-// Get notification icon based on type
-const getNotificationIcon = (type: string) => {
-  switch (type) {
-    case 'feature':
-      return <div className="bg-blue-100 p-2 rounded-full"><Bell size={16} className="text-blue-600" /></div>;
-    case 'system':
-      return <div className="bg-amber-100 p-2 rounded-full"><Bell size={16} className="text-amber-600" /></div>;
-    case 'auction':
-      return <div className="bg-green-100 p-2 rounded-full"><Bell size={16} className="text-green-600" /></div>;
-    case 'promotion':
-      return <div className="bg-purple-100 p-2 rounded-full"><Bell size={16} className="text-purple-600" /></div>;
-    default:
-      return <div className="bg-gray-100 p-2 rounded-full"><Bell size={16} className="text-gray-600" /></div>;
-  }
-};
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<string | undefined>();
+  const [selectedPriority, setSelectedPriority] = useState<string | undefined>();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
   
   // Fetch notifications from API
   useEffect(() => {
@@ -86,12 +57,29 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, []);
   
-  // Filter notifications based on active tab
-  const filteredNotifications = activeTab === 'all' 
-    ? notifications 
-    : activeTab === 'unread'
-      ? notifications.filter(notification => !notification.isRead)
-      : notifications.filter(notification => notification.isRead);
+  // Filter and sort notifications
+  const getFilteredNotifications = () => {
+    let filtered = notifications;
+
+    // Filter by tab
+    if (activeTab === 'unread') {
+      filtered = filtered.filter(notification => !notification.isRead);
+    } else if (activeTab === 'read') {
+      filtered = filtered.filter(notification => notification.isRead);
+    }
+
+    // Apply additional filters
+    filtered = filterNotifications(filtered, {
+      type: selectedType,
+      priority: selectedPriority,
+      search: searchQuery
+    });
+
+    // Sort by priority and date
+    return sortNotificationsByPriority(filtered);
+  };
+
+  const filteredNotifications = getFilteredNotifications();
   
   // Mark notification as read
   const markAsRead = async (id: number) => {
@@ -145,41 +133,46 @@ export default function NotificationsPage() {
 
   return (
     <div className="p-5">
-      <div className="mb-5">
-        <h1 className="text-xl font-medium text-gray-900">Notifications</h1>
+      <div className="mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">Notifications</h1>
         <p className="text-gray-500 text-sm mt-1">Stay updated with the latest news and activity</p>
       </div>
-      
+
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* Tabs */}
-        <div className="flex items-center border-b border-gray-200 px-5">
-          <button 
-            onClick={() => setActiveTab('all')}
-            className={`px-4 py-3 text-sm font-medium ${activeTab === 'all' ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]' : 'text-gray-600 hover:text-gray-800'}`}
-          >
-            All
-          </button>
-          <button 
-            onClick={() => setActiveTab('unread')}
-            className={`px-4 py-3 text-sm font-medium ${activeTab === 'unread' ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]' : 'text-gray-600 hover:text-gray-800'}`}
-          >
-            Unread
-          </button>
-          <button 
-            onClick={() => setActiveTab('read')}
-            className={`px-4 py-3 text-sm font-medium ${activeTab === 'read' ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]' : 'text-gray-600 hover:text-gray-800'}`}
-          >
-            Read
-          </button>
-          <div className="ml-auto flex items-center">
-            <button 
-              onClick={handleMarkAllAsRead}
-              className="text-sm text-gray-600 hover:text-[#FF8A00] flex items-center"
-              disabled={loading || notifications.length === 0}
-            >
-              <Check size={14} className="mr-1" />
-              Mark all as read
-            </button>
+        {/* Filters */}
+        <div className="px-5 py-4">
+          <NotificationFilters
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            selectedType={selectedType}
+            onTypeChange={setSelectedType}
+            selectedPriority={selectedPriority}
+            onPriorityChange={setSelectedPriority}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            showFilters={showFilters}
+            onToggleFilters={() => setShowFilters(!showFilters)}
+          />
+        </div>
+
+        {/* Actions Bar */}
+        <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              {filteredNotifications.length} notification{filteredNotifications.length !== 1 ? 's' : ''}
+              {activeTab !== 'all' && ` (${activeTab})`}
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleMarkAllAsRead}
+                className="text-sm text-gray-600 hover:text-[#FF8A00] flex items-center transition-colors"
+                disabled={loading || notifications.filter(n => !n.isRead).length === 0}
+              >
+                <CheckCircle size={14} className="mr-1" />
+                Mark all as read
+              </button>
+            </div>
           </div>
         </div>
         
@@ -198,66 +191,48 @@ export default function NotificationsPage() {
         )}
         
         {/* Notifications List */}
-        <div>
+        <div className="divide-y divide-gray-100">
           {!loading && filteredNotifications.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-0">
               {filteredNotifications.map((notification) => (
-                <div 
-                  key={notification.id} 
-                  className={`border-b border-gray-100 pb-3 last:border-0 last:pb-0 ${!notification.isRead ? 'bg-gray-50 -mx-5 px-5 py-3 mb-3' : ''}`}
-                >
-                  <div className="flex items-start">
-                    <div className="mr-3 mt-1 flex-shrink-0">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <h3 className={`text-sm font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
-                          {notification.title}
-                        </h3>
-                        <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                          {formatDate(notification.date)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
-                      <div className="flex items-center space-x-4">
-                        {!notification.isRead && (
-                          <button 
-                            onClick={() => markAsRead(notification.id)}
-                            className="text-xs text-[#FF8A00] hover:text-[#e67e00] flex items-center"
-                            disabled={loading}
-                          >
-                            <Check size={12} className="mr-1" />
-                            Mark as read
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => handleDeleteNotification(notification.id)}
-                          className="text-xs text-gray-500 hover:text-red-500 flex items-center"
-                          disabled={loading}
-                        >
-                          <Trash2 size={12} className="mr-1" />
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                <div key={notification.id} className="px-5">
+                  <NotificationCard
+                    notification={notification}
+                    onMarkAsRead={markAsRead}
+                    onDelete={handleDeleteNotification}
+                    className="border-0 rounded-none"
+                  />
                 </div>
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center text-center py-8">
-              <div className="bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center mb-3">
-                <Bell size={20} className="text-gray-400" />
+            <div className="flex flex-col items-center justify-center text-center py-12 px-5">
+              <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mb-4">
+                <Bell size={24} className="text-gray-400" />
               </div>
-              <h3 className="text-gray-700 font-medium mb-1">No notifications</h3>
-              <p className="text-gray-500 text-sm">
-                {activeTab === 'unread' 
-                  ? "You've read all your notifications" 
-                  : activeTab === 'read'
-                    ? "No read notifications yet"
-                    : "You don't have any notifications yet"}
+              <h3 className="text-lg font-medium text-gray-700 mb-2">
+                {loading ? 'Loading notifications...' : 'No notifications found'}
+              </h3>
+              <p className="text-gray-500 text-sm max-w-sm">
+                {loading ? 'Please wait while we fetch your notifications.' :
+                 searchQuery ? `No notifications match "${searchQuery}". Try adjusting your search or filters.` :
+                 activeTab === 'unread' ? "You've read all your notifications! Check back later for updates." :
+                 activeTab === 'read' ? "No read notifications yet. Notifications you've read will appear here." :
+                 "You don't have any notifications yet. We'll notify you when there's something new."}
               </p>
+
+              {(searchQuery || selectedType || selectedPriority) && !loading && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedType(undefined);
+                    setSelectedPriority(undefined);
+                  }}
+                  className="mt-4 text-sm text-[#FF8A00] hover:text-[#e67e00] font-medium"
+                >
+                  Clear filters
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -126,12 +126,12 @@ export default function BidDetailPage() {
   // Handle marking bid as won
   const handleMarkAsWon = async () => {
     if (!bid || !id) return;
-    
+
     setIsUpdatingStatus(true);
-    
+
     try {
       const response = await markBidAsWon(id.toString());
-      
+
       if (response.error) {
         toast.error('Failed to mark bid as won', {
           description: response.error,
@@ -140,7 +140,7 @@ export default function BidDetailPage() {
         toast.success('Bid marked as won', {
           description: 'The bid has been marked as won and other bids for this auction have been marked as lost',
         });
-        
+
         // Refresh bid details to get updated data
         await fetchBidDetails();
       }
@@ -150,6 +150,27 @@ export default function BidDetailPage() {
       });
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  // Handle status update from dropdown
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!bid || !id || newStatus === bid.status) return;
+
+    switch (newStatus) {
+      case 'active':
+        await handleApproveBid();
+        break;
+      case 'rejected':
+        await handleRejectBid();
+        break;
+      case 'won':
+        await handleMarkAsWon();
+        break;
+      default:
+        toast.error('Status update not supported', {
+          description: `Cannot update status to ${newStatus}`,
+        });
     }
   };
 

@@ -108,7 +108,7 @@ export default function AuctionDetail() {
               subcategory: adData.subcategory_name,
               basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
               currentBid: '', // Will be updated if we fetch bids
-              status: adData.status === 'suspended' ? 'suspended' : adData.is_active ? 'active' : 'inactive',
+              status: adData.is_active ? 'active' : 'inactive',
               timeLeft: adData.time_remaining || adData.auction_duration_display,
               volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
               image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
@@ -119,7 +119,7 @@ export default function AuctionDetail() {
               // Enhanced data
               company: adData.company_name,
               seller: adData.posted_by,
-              auctionStatus: adData.status === 'suspended' ? 'Suspended' : adData.auction_status,
+              auctionStatus: adData.auction_status,
               stepCompletionStatus: adData.step_completion_status,
               isComplete: adData.is_complete,
               currentStep: adData.current_step,
