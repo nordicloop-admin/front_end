@@ -108,7 +108,7 @@ export default function AuctionDetail() {
               subcategory: adData.subcategory_name,
               basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
               currentBid: '', // Will be updated if we fetch bids
-              status: adData.is_active ? 'active' : 'inactive',
+              status: adData.status === 'suspended' ? 'suspended' : adData.is_active ? 'active' : 'inactive',
               timeLeft: adData.time_remaining || adData.auction_duration_display,
               volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
               image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
@@ -119,7 +119,7 @@ export default function AuctionDetail() {
               // Enhanced data
               company: adData.company_name,
               seller: adData.posted_by,
-              auctionStatus: adData.auction_status,
+              auctionStatus: adData.status === 'suspended' ? 'Suspended' : adData.auction_status,
               stepCompletionStatus: adData.step_completion_status,
               isComplete: adData.is_complete,
               currentStep: adData.current_step,
@@ -453,6 +453,7 @@ export default function AuctionDetail() {
               <span className={`px-3 py-1 rounded-md text-sm font-medium border ${
                 auction.auctionStatus === 'Active' ? 'bg-green-50 text-green-700 border-green-200' :
                 auction.auctionStatus === 'Draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                auction.auctionStatus === 'Suspended' || auction.status === 'suspended' ? 'bg-red-50 text-red-700 border-red-200' :
                 auction.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
               }`}>
                 {auction.auctionStatus || (auction.status === 'active' ? 'Active' : 'Inactive')}
@@ -471,11 +472,13 @@ export default function AuctionDetail() {
                           : 'bg-gray-400'
                     }`}></div>
                     <span className="text-sm font-medium text-gray-600">
-                      {auction.status === 'active' || auction.auctionStatus === 'Active' 
-                        ? 'Live' 
-                        : auction.isComplete 
-                          ? 'Ready to Publish' 
-                          : 'Draft'
+                      {auction.status === 'suspended' || auction.auctionStatus === 'Suspended'
+                        ? 'Suspended'
+                        : auction.status === 'active' || auction.auctionStatus === 'Active' 
+                          ? 'Live' 
+                          : auction.isComplete 
+                            ? 'Ready to Publish' 
+                            : 'Draft'
                       }
                     </span>
                   </div>
@@ -830,9 +833,10 @@ export default function AuctionDetail() {
                   <span className={`px-2 py-1 rounded text-xs font-medium ${
                     auction.auctionStatus === 'Active' ? 'bg-green-50 text-green-700' :
                     auction.auctionStatus === 'Draft' ? 'bg-yellow-50 text-yellow-700' :
-                    auction.status === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-700'
+                    auction.auctionStatus === 'Suspended' ? 'bg-red-50 text-red-700' :
+                    'bg-gray-50 text-gray-700'
                   }`}>
-                    {auction.auctionStatus || (auction.status === 'active' ? 'Active' : 'Inactive')}
+                    {auction.auctionStatus || (auction.status === 'suspended' ? 'Suspended' : auction.status === 'active' ? 'Active' : 'Inactive')}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">

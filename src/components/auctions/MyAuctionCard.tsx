@@ -13,6 +13,8 @@ interface MyAuctionCardProps {
   basePrice: string;
   timeLeft: string | undefined;
   image: string;
+  status?: string;
+  auctionStatus?: string;
   onEditClick?: () => void;
 }
 
@@ -24,6 +26,8 @@ export default function MyAuctionCard({
   basePrice,
   timeLeft,
   image,
+  status,
+  auctionStatus,
   onEditClick,
 }: MyAuctionCardProps) {
   return (
@@ -47,7 +51,19 @@ export default function MyAuctionCard({
         <div className="flex flex-1 justify-between p-3">
           {/* Content Section */}
           <div className="flex-1 pr-4">
-            <h2 className="text-sm font-medium text-gray-900 line-clamp-1">{name}</h2>
+            <div className="flex justify-between items-start">
+              <h2 className="text-sm font-medium text-gray-900 line-clamp-1">{name}</h2>
+              {auctionStatus && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-sm font-medium ${
+                  status === 'suspended' ? 'bg-red-50 text-red-700' :
+                  auctionStatus === 'Active' ? 'bg-green-50 text-green-700' : 
+                  auctionStatus === 'Suspended' ? 'bg-red-50 text-red-700' : 
+                  'bg-yellow-50 text-yellow-700'
+                }`}>
+                  {status === 'suspended' ? 'Suspended' : auctionStatus}
+                </span>
+              )}
+            </div>
             <div className="flex items-center text-xs text-gray-500 mt-1">
               <span>Category: {category}</span>
               <span className="mx-1.5">•</span>
