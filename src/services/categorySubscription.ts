@@ -37,8 +37,8 @@ export interface CategorySubscription {
  * Interface for creating a category subscription
  */
 export interface CreateCategorySubscription {
-  category_id: number;
-  subcategory_id?: number | null;
+  category: number;
+  subcategory?: number | null;
 }
 
 /**
