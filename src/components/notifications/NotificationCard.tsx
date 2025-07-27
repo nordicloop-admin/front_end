@@ -54,7 +54,7 @@ export default function NotificationCard({
   const CardContent = () => (
     <div className={cn(
       "relative transition-all duration-200 hover:shadow-sm",
-      !notification.isRead && "bg-gray-50/50",
+      !notification.is_read && "bg-gray-50/50",
       compact ? "p-3" : "p-4",
       className
     )}>
@@ -85,7 +85,7 @@ export default function NotificationCard({
               <div className="flex items-center space-x-2 mb-1">
                 <h3 className={cn(
                   "font-medium text-sm truncate",
-                  !notification.isRead ? "text-gray-900" : "text-gray-700"
+                  !notification.is_read ? "text-gray-900" : "text-gray-700"
                 )}>
                   {notification.title}
                 </h3>
@@ -125,7 +125,7 @@ export default function NotificationCard({
                   {typeConfig.label}
                 </div>
                 
-                {!notification.isRead && (
+                {!notification.is_read && (
                   <div className="w-2 h-2 bg-blue-500 rounded-full" />
                 )}
               </div>
@@ -134,9 +134,9 @@ export default function NotificationCard({
             {/* Actions */}
             {showActions && (
               <div className="flex items-center space-x-2 ml-4">
-                {notification.actionUrl && (
+                {notification.action_url && (
                   <Link
-                    href={notification.actionUrl}
+                    href={notification.action_url}
                     className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
                     title="View details"
                   >
@@ -144,7 +144,7 @@ export default function NotificationCard({
                   </Link>
                 )}
                 
-                {!notification.isRead && onMarkAsRead && (
+                {!notification.is_read && onMarkAsRead && (
                   <button
                     onClick={handleMarkAsRead}
                     className="p-1 text-gray-400 hover:text-green-500 transition-colors"
@@ -172,9 +172,9 @@ export default function NotificationCard({
   );
   
   // If there's an action URL and it's not compact, make the whole card clickable
-  if (notification.actionUrl && !compact) {
+  if (notification.action_url && !compact) {
     return (
-      <Link href={notification.actionUrl} className="block">
+      <Link href={notification.action_url} className="block">
         <div className="border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
           <CardContent />
         </div>

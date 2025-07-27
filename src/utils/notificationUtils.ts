@@ -248,8 +248,8 @@ export function sortNotificationsByPriority(notifications: Notification[]): Noti
   
   return [...notifications].sort((a, b) => {
     // First sort by read status (unread first)
-    if (a.isRead !== b.isRead) {
-      return a.isRead ? 1 : -1;
+    if (a.is_read !== b.is_read) {
+      return a.is_read ? 1 : -1;
     }
     
     // Then by priority
@@ -272,7 +272,7 @@ export function filterNotifications(
   filters: {
     type?: string;
     priority?: string;
-    isRead?: boolean;
+    is_read?: boolean;
     search?: string;
   }
 ): Notification[] {
@@ -280,12 +280,12 @@ export function filterNotifications(
     if (filters.type && notification.type !== filters.type) {
       return false;
     }
-    
+
     if (filters.priority && notification.priority !== filters.priority) {
       return false;
     }
-    
-    if (filters.isRead !== undefined && notification.isRead !== filters.isRead) {
+
+    if (filters.is_read !== undefined && notification.is_read !== filters.is_read) {
       return false;
     }
     

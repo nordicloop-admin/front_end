@@ -72,9 +72,9 @@ export default function NotificationDropdown({
       
       if (!response.error) {
         // Update local state
-        setNotifications(notifications.map(notification => 
-          notification.id === id ? { ...notification, isRead: true } : notification
-        ).filter(n => !n.isRead)); // Remove read notifications from unread list
+        setNotifications(notifications.map(notification =>
+          notification.id === id ? { ...notification, is_read: true } : notification
+        ).filter(n => !n.is_read)); // Remove read notifications from unread list
         
         // Update unread count
         onUnreadCountChange(Math.max(0, unreadCount - 1));

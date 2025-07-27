@@ -1,55 +1,52 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Bell, Check, Trash2, Send, Users, User, X } from 'lucide-react';
-import { 
-  getAllNotifications, 
-  createNotification, 
-  createNotificationForAllUsers, 
+import {
+  Bell,
+  Check,
+  Trash2,
+  Send,
+  User,
+  X,
+  Plus,
+  Search,
+  Calendar,
+  AlertCircle,
+  Copy
+} from 'lucide-react';
+import {
+  getAllNotifications,
+  createNotification,
+  createNotificationForAllUsers,
   deleteNotificationForAllUsers,
   Notification,
   CreateNotificationRequest
 } from '@/services/notifications';
 import { searchUsers } from '@/services/users';
-import { getNotificationIconComponent, getNotificationTypeConfig } from '@/utils/notificationUtils';
+import {
+  getNotificationIconComponent,
+  getNotificationTypeConfig,
+  getNotificationCategories,
+  formatNotificationDate
+} from '@/utils/notificationUtils';
 
-// Notification type options
-const notificationTypes = [
-  { value: 'feature', label: 'New Feature', color: 'blue' },
-  { value: 'system', label: 'System Update', color: 'amber' },
-  { value: 'auction', label: 'Auction Related', color: 'green' },
-  { value: 'promotion', label: 'Promotion', color: 'purple' },
-  { value: 'welcome', label: 'Welcome', color: 'gray' },
-  { value: 'subscription', label: 'Subscription', color: 'indigo' },
-  { value: 'security', label: 'Security', color: 'red' },
-  { value: 'account', label: 'Account', color: 'teal' },
-  { value: 'bid', label: 'Bid', color: 'emerald' },
-  { value: 'payment', label: 'Payment', color: 'cyan' },
-  { value: 'admin', label: 'Admin', color: 'orange' },
+// Priority options
+const priorityOptions = [
+  { value: 'low', label: 'Low Priority', color: 'gray', bgColor: 'bg-gray-100', textColor: 'text-gray-700' },
+  { value: 'normal', label: 'Normal Priority', color: 'blue', bgColor: 'bg-blue-100', textColor: 'text-blue-700' },
+  { value: 'high', label: 'High Priority', color: 'amber', bgColor: 'bg-amber-100', textColor: 'text-amber-700' },
+  { value: 'urgent', label: 'Urgent', color: 'red', bgColor: 'bg-red-100', textColor: 'text-red-700' },
 ];
 
-// Function to format date
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { 
-    year: 'numeric',
-    month: 'short', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
+// Subscription targeting options
+const subscriptionTargetOptions = [
+  { value: 'all', label: 'All Users' },
+  { value: 'free', label: 'Free Plan Users' },
+  { value: 'standard', label: 'Standard Plan Users' },
+  { value: 'premium', label: 'Premium Plan Users' }
+];
 
-// Get notification icon based on type
-const getNotificationIcon = (type: string) => {
-  const config = getNotificationTypeConfig(type);
-  const IconComponent = getNotificationIconComponent(type);
-  return (
-    <div className={`p-2 rounded-full ${config.bgColor}`}>
-      <IconComponent size={16} className={config.color} />
-    </div>
-  );
-};
+
 
 // User type for the component
 interface User {
@@ -59,19 +56,25 @@ interface User {
 }
 
 export default function AdminNotificationsPage() {
-  // State for notifications list
+  // State for notifications list with pagination
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+  const [hasPrevious, setHasPrevious] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // State for notification creation form
   const [formData, setFormData] = useState<CreateNotificationRequest>({
     title: '',
     message: '',
     type: 'system',
-    userId: null
+    priority: 'normal',
+    userId: null,
+    subscription_target: 'all'
   });
-  
+
   // State for user selection
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [userSearchQuery, setUserSearchQuery] = useState('');
@@ -79,33 +82,70 @@ export default function AdminNotificationsPage() {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [sendToAllUsers, setSendToAllUsers] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
-  
+
+  // State for subscription targeting
+  const [targetingMode, setTargetingMode] = useState<'all' | 'subscription' | 'specific'>('all');
+
   // State for form submission
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Fetch all notifications
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setLoading(true);
-        const response = await getAllNotifications();
-        
-        if (response.error) {
-          setError(response.error);
-        } else if (response.data) {
-          setNotifications(response.data);
-        }
-      } catch (_err) {
-        setError('Failed to load notifications');
-      } finally {
-        setLoading(false);
+  // State for UI controls
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>('');
+  const [selectedPriorityFilter, setSelectedPriorityFilter] = useState<string>('');
+
+
+  // Get notification categories
+  const notificationCategories = getNotificationCategories();
+
+  // Fetch notifications with pagination and filters
+  const fetchNotifications = useCallback(async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await getAllNotifications({
+        page,
+        page_size: 20,
+        type: selectedTypeFilter || undefined,
+        priority: selectedPriorityFilter || undefined,
+        search: searchQuery || undefined,
+      });
+
+      if (response.error) {
+        setError(response.error);
+      } else if (response.data) {
+        setNotifications(response.data.results);
+        setTotalCount(response.data.count);
+        setHasNext(!!response.data.next);
+        setHasPrevious(!!response.data.previous);
+        setCurrentPage(page);
       }
-    };
-    
-    fetchNotifications();
-  }, []);
+    } catch (_err) {
+      setError('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedTypeFilter, selectedPriorityFilter, searchQuery]);
+
+  // Initial fetch
+  useEffect(() => {
+    fetchNotifications(1);
+  }, [fetchNotifications]);
+
+  // Debounced search to avoid too many API calls
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (currentPage === 1) {
+        fetchNotifications(1);
+      } else {
+        setCurrentPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(handler);
+  }, [searchQuery, selectedTypeFilter, selectedPriorityFilter]);
   
   // Search users from API
   const searchUsersFromAPI = useCallback(async (query: string) => {
@@ -151,6 +191,13 @@ export default function AdminNotificationsPage() {
     setSubmitError(null);
   };
   
+  // Handle user search input
+  const handleUserSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setUserSearchQuery(query);
+    setShowUserDropdown(true);
+  };
+
   // Handle user selection
   const handleSelectUser = (user: User) => {
     setSelectedUser(user);
@@ -160,14 +207,7 @@ export default function AdminNotificationsPage() {
     setUserSearchQuery('');
   };
   
-  // Handle send to all users toggle
-  const handleSendToAllToggle = () => {
-    setSendToAllUsers(!sendToAllUsers);
-    if (!sendToAllUsers) {
-      setSelectedUser(null);
-      setFormData(prev => ({ ...prev, userId: null }));
-    }
-  };
+
   
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
@@ -203,16 +243,15 @@ export default function AdminNotificationsPage() {
           title: '',
           message: '',
           type: 'system',
+          priority: 'normal',
           userId: null
         });
         setSelectedUser(null);
         setSendToAllUsers(true);
-        
+        setShowCreateForm(false);
+
         // Refresh notifications list
-        const refreshResponse = await getAllNotifications();
-        if (refreshResponse.data) {
-          setNotifications(refreshResponse.data);
-        }
+        fetchNotifications(currentPage);
       }
     } catch (_err) {
       setSubmitError('Failed to create notification');
@@ -241,269 +280,597 @@ export default function AdminNotificationsPage() {
   };
 
   return (
-    <div className="p-5">
-      <div className="mb-5">
-        <h1 className="text-xl font-medium text-gray-900">Notification Management</h1>
-        <p className="text-gray-500 text-sm mt-1">Create and manage notifications for users</p>
+    <div>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-xl font-medium text-gray-900">Notification Management</h1>
+          <p className="text-gray-500 text-sm mt-1">Create and manage notifications for users</p>
+        </div>
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="bg-[#FF8A00] text-white px-4 py-2 rounded-md hover:bg-[#e67e00] transition-colors flex items-center space-x-2 text-sm"
+        >
+          <Plus size={16} />
+          <span>Create Notification</span>
+        </button>
       </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Create Notification Form */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-5">
-          <h2 className="text-lg font-medium mb-4">Create New Notification</h2>
-          
-          {submitSuccess && (
-            <div className="bg-green-50 text-green-700 p-3 rounded-md mb-4 flex items-center">
-              <Check size={16} className="mr-2" />
-              Notification created successfully
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="bg-white border border-gray-100 rounded-md p-5">
+          <div className="text-center">
+            <div className="text-lg font-semibold text-gray-900 mb-1">{totalCount}</div>
+            <div className="text-sm font-medium text-gray-600">Total Notifications</div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-100 rounded-md p-5">
+          <div className="text-center">
+            <div className="text-lg font-semibold text-gray-900 mb-1">
+              {notifications.filter(n => {
+                const notificationDate = new Date(n.date);
+                const now = new Date();
+                return notificationDate.getMonth() === now.getMonth() &&
+                       notificationDate.getFullYear() === now.getFullYear();
+              }).length}
             </div>
-          )}
-          
-          {submitError && (
-            <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4 flex items-center">
-              <X size={16} className="mr-2" />
-              {submitError}
+            <div className="text-sm font-medium text-gray-600">This Month</div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-100 rounded-md p-5">
+          <div className="text-center">
+            <div className="text-lg font-semibold text-gray-900 mb-1">
+              {notifications.filter(n => n.priority === 'high' || n.priority === 'urgent').length}
             </div>
-          )}
-          
-          <form onSubmit={handleSubmit}>
-            <div className="mb-4">
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                placeholder="Notification title"
-                required
-              />
+            <div className="text-sm font-medium text-gray-600">High Priority</div>
+          </div>
+        </div>
+
+        <div className="bg-white border border-gray-100 rounded-md p-5">
+          <div className="text-center">
+            <div className="text-lg font-semibold text-gray-900 mb-1">
+              {notifications.filter(n => !n.is_read).length}
             </div>
-            
-            <div className="mb-4">
-              <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-1">
-                Message <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                value={formData.message}
-                onChange={handleInputChange}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                placeholder="Notification message"
-                required
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
-                Type
-              </label>
+            <div className="text-sm font-medium text-gray-600">Unread</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <div className="bg-white border border-gray-100 rounded-md mb-6">
+        <div className="p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search notifications..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-80 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                />
+              </div>
+
               <select
-                id="type"
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                value={selectedTypeFilter}
+                onChange={(e) => setSelectedTypeFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
               >
-                {notificationTypes.map(type => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
+                <option value="">All Types</option>
+                {notificationCategories.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
               </select>
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Recipients
-              </label>
-              
-              <div className="flex items-center mb-3">
-                <input
-                  type="checkbox"
-                  id="sendToAll"
-                  checked={sendToAllUsers}
-                  onChange={handleSendToAllToggle}
-                  className="h-4 w-4 text-[#FF8A00] focus:ring-[#FF8A00] border-gray-300 rounded"
-                />
-                <label htmlFor="sendToAll" className="ml-2 text-sm text-gray-700 flex items-center">
-                  <Users size={16} className="mr-1" />
-                  Send to all users
-                </label>
-              </div>
-              
-              {!sendToAllUsers && (
-                <div className="relative">
-                  <div className="flex items-center border border-gray-300 rounded-md overflow-hidden">
-                    <div className="px-3 py-2 bg-gray-50 border-r border-gray-300">
-                      <User size={16} className="text-gray-500" />
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Search for a user..."
-                      value={userSearchQuery}
-                      onChange={(e) => {
-                        setUserSearchQuery(e.target.value);
-                        setShowUserDropdown(true);
-                      }}
-                      onFocus={() => setShowUserDropdown(true)}
-                      className="flex-1 px-3 py-2 focus:outline-none"
-                    />
-                    {selectedUser && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSelectedUser(null);
-                          setUserSearchQuery('');
-                          setFormData(prev => ({ ...prev, userId: null }));
-                        }}
-                        className="px-2 text-gray-400 hover:text-gray-600"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                  
-                  {selectedUser && (
-                    <div className="mt-2 p-2 bg-gray-50 border border-gray-200 rounded-md flex items-center">
-                      <div className="bg-[#FF8A00] text-white rounded-full w-6 h-6 flex items-center justify-center mr-2">
-                        {selectedUser.name.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium">{selectedUser.name}</div>
-                        <div className="text-xs text-gray-500">{selectedUser.company_name}</div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {showUserDropdown && !selectedUser && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                      {isSearching ? (
-                        <div className="px-4 py-3 text-sm text-gray-500 flex items-center justify-center">
-                          <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#FF8A00] mr-2"></div>
-                          Searching...
-                        </div>
-                      ) : userSearchResults.length > 0 ? (
-                        userSearchResults.map(user => (
-                          <div
-                            key={user.id}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center"
-                            onClick={() => handleSelectUser(user)}
-                          >
-                            <div className="bg-gray-200 rounded-full w-6 h-6 flex items-center justify-center mr-2">
-                              {user.name.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="text-sm font-medium">{user.name}</div>
-                              <div className="text-xs text-gray-500">{user.company_name}</div>
-                            </div>
-                          </div>
-                        ))
-                      ) : userSearchQuery ? (
-                        <div className="px-4 py-2 text-sm text-gray-500">No users found</div>
-                      ) : (
-                        <div className="px-4 py-2 text-sm text-gray-500">Type to search users</div>
-                      )}
-                    </div>
-                  )}
-                </div>
+
+              <select
+                value={selectedPriorityFilter}
+                onChange={(e) => setSelectedPriorityFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+              >
+                <option value="">All Priorities</option>
+                {priorityOptions.map((priority) => (
+                  <option key={priority.value} value={priority.value}>
+                    {priority.label}
+                  </option>
+                ))}
+              </select>
+
+              {(searchQuery || selectedTypeFilter || selectedPriorityFilter) && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setSelectedTypeFilter('');
+                    setSelectedPriorityFilter('');
+                  }}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-md transition-colors"
+                >
+                  <X size={16} />
+                </button>
               )}
             </div>
-            
-            <div className="mt-6">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-[#FF8A00] text-white py-2 px-4 rounded-md hover:bg-[#e67e00] transition-colors flex items-center justify-center"
-              >
-                {isSubmitting ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <Send size={16} className="mr-2" />
-                )}
-                Send Notification
-              </button>
+
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-gray-600">
+                Showing {notifications.length} of {totalCount} notifications
+              </span>
             </div>
-          </form>
-        </div>
-        
-        {/* Notifications List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="border-b border-gray-200 px-5 py-4">
-            <h2 className="text-lg font-medium">Recent Notifications</h2>
-          </div>
-          
-          {/* Error message */}
-          {error && (
-            <div className="p-4 text-red-600 text-sm">
-              {error}
-            </div>
-          )}
-          
-          {/* Loading state */}
-          {loading && (
-            <div className="flex justify-center items-center p-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF8A00]"></div>
-            </div>
-          )}
-          
-          {/* Notifications List */}
-          <div className="p-5">
-            {!loading && notifications.length > 0 ? (
-              <div className="space-y-4">
-                {notifications.map((notification) => (
-                  <div 
-                    key={notification.id} 
-                    className="border border-gray-100 rounded-md p-4"
-                  >
-                    <div className="flex items-start">
-                      <div className="mr-3 mt-1 flex-shrink-0">
-                        {getNotificationIcon(notification.type)}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 className="text-sm font-medium text-gray-900">
-                            {notification.title}
-                          </h3>
-                          <button 
-                            onClick={() => handleDeleteNotification(notification.id)}
-                            className="text-gray-400 hover:text-red-500"
-                            disabled={loading}
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2">{notification.message}</p>
-                        <div className="flex items-center justify-between text-xs text-gray-500">
-                          <span>{formatDate(notification.date)}</span>
-                          <span>
-                            {notification.userId ? `Sent to user #${notification.userId}` : 'Sent to all users'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : !loading && (
-              <div className="flex flex-col items-center justify-center text-center py-8">
-                <div className="bg-gray-100 rounded-full w-12 h-12 flex items-center justify-center mb-3">
-                  <Bell size={20} className="text-gray-400" />
-                </div>
-                <h3 className="text-gray-700 font-medium mb-1">No notifications</h3>
-                <p className="text-gray-500 text-sm">
-                  Create your first notification using the form
-                </p>
-              </div>
-            )}
           </div>
         </div>
       </div>
+      {/* Notifications List */}
+      <div className="bg-white border border-gray-100 rounded-md overflow-hidden">
+        {loading ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF8A00]"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Notifications</h3>
+            <p className="text-gray-600">{error}</p>
+          </div>
+        ) : notifications.length > 0 ? (
+          <>
+            <div className="divide-y divide-gray-200">
+              {notifications.map((notification) => {
+                const typeConfig = getNotificationTypeConfig(notification.type);
+                const NotificationIcon = getNotificationIconComponent(notification.type);
+
+                return (
+                  <div
+                    key={notification.id}
+                    className="p-6 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-4 flex-1">
+                        {/* Icon */}
+                        <div className={`p-3 rounded-lg ${typeConfig.bgColor}`}>
+                          <NotificationIcon className={`w-5 h-5 ${typeConfig.color}`} />
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h3 className="text-lg font-medium text-gray-900 truncate">
+                              {notification.title}
+                            </h3>
+
+                            {/* Read Status */}
+                            {!notification.is_read && (
+                              <div className="w-2 h-2 bg-[#FF8A00] rounded-full"></div>
+                            )}
+
+                            {/* Priority Badge */}
+                            {notification.priority === 'high' || notification.priority === 'urgent' ? (
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                notification.priority === 'urgent'
+                                  ? 'bg-red-100 text-red-700'
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {notification.priority}
+                              </span>
+                            ) : null}
+
+                            {/* Type Badge */}
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${typeConfig.bgColor} ${typeConfig.color}`}>
+                              {typeConfig.label}
+                            </span>
+                          </div>
+
+                          <p className="text-gray-600 mb-3">
+                            {notification.message}
+                          </p>
+
+                          <div className="flex items-center justify-between text-sm text-gray-500">
+                            <div className="flex items-center space-x-4">
+                              <span className="flex items-center space-x-1">
+                                <Calendar className="w-4 h-4" />
+                                <span>{formatNotificationDate(notification.date)}</span>
+                              </span>
+
+                              <span className="flex items-center space-x-1">
+                                <User className="w-4 h-4" />
+                                <span>
+                                  {notification.user ? `User #${notification.user}` : 'All Users'}
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex items-center space-x-2 ml-4">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${notification.title}\n\n${notification.message}`);
+                          }}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                          title="Copy content"
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteNotification(notification.id)}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                          title="Delete notification"
+                          disabled={loading}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination */}
+            {(hasNext || hasPrevious) && (
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => fetchNotifications(currentPage - 1)}
+                    disabled={!hasPrevious || loading}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => fetchNotifications(currentPage + 1)}
+                    disabled={!hasNext || loading}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Page <span className="font-medium">{currentPage}</span> of notifications
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => fetchNotifications(currentPage - 1)}
+                        disabled={!hasPrevious || loading}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <button
+                        onClick={() => fetchNotifications(currentPage + 1)}
+                        disabled={!hasNext || loading}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="text-center py-12">
+            <Bell className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Notifications Found</h3>
+            <p className="text-gray-600 mb-6">
+              {searchQuery || selectedTypeFilter || selectedPriorityFilter
+                ? 'No notifications match your current filters. Try adjusting your search criteria.'
+                : 'Get started by creating your first notification for users.'}
+            </p>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="bg-[#FF8A00] text-white px-6 py-2 rounded-md hover:bg-[#e67e00] transition-colors inline-flex items-center space-x-2"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create First Notification</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Create Notification Modal */}
+      {showCreateForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-gray-200 rounded-md max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-medium text-gray-900">Create New Notification</h2>
+                <button
+                  onClick={() => setShowCreateForm(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {submitSuccess && (
+                <div className="bg-green-50 text-green-700 p-3 rounded-md mb-4 flex items-center">
+                  <Check size={16} className="mr-2" />
+                  <span>Notification created successfully!</span>
+                </div>
+              )}
+
+              {submitError && (
+                <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4 flex items-center">
+                  <X size={16} className="mr-2" />
+                  <span>{submitError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                      Notification Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                      placeholder="Enter notification title..."
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
+                      Category <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="type"
+                      name="type"
+                      value={formData.type}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                      required
+                    >
+                      {notificationCategories.map((category) => (
+                        <option key={category.value} value={category.value}>
+                          {category.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
+                      Priority Level
+                    </label>
+                    <select
+                      id="priority"
+                      name="priority"
+                      value={formData.priority || 'normal'}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    >
+                      {priorityOptions.map((priority) => (
+                        <option key={priority.value} value={priority.value}>
+                          {priority.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Target Audience
+                    </label>
+                    <div className="space-y-3">
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="targeting"
+                          checked={targetingMode === 'all'}
+                          onChange={() => {
+                            setTargetingMode('all');
+                            setFormData({ ...formData, subscription_target: 'all', userId: null });
+                            setSendToAllUsers(true);
+                          }}
+                          className="w-4 h-4 text-[#FF8A00] border-gray-300 focus:ring-[#FF8A00]"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">All Users</span>
+                      </label>
+
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="targeting"
+                          checked={targetingMode === 'subscription'}
+                          onChange={() => {
+                            setTargetingMode('subscription');
+                            setFormData({ ...formData, userId: null });
+                            setSendToAllUsers(true);
+                          }}
+                          className="w-4 h-4 text-[#FF8A00] border-gray-300 focus:ring-[#FF8A00]"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">By Subscription Plan</span>
+                      </label>
+
+                      <label className="flex items-center">
+                        <input
+                          type="radio"
+                          name="targeting"
+                          checked={targetingMode === 'specific'}
+                          onChange={() => {
+                            setTargetingMode('specific');
+                            setFormData({ ...formData, subscription_target: 'all' });
+                            setSendToAllUsers(false);
+                          }}
+                          className="w-4 h-4 text-[#FF8A00] border-gray-300 focus:ring-[#FF8A00]"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Specific User</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subscription Plan Selector */}
+                {targetingMode === 'subscription' && (
+                  <div>
+                    <label htmlFor="subscriptionTarget" className="block text-sm font-medium text-gray-700 mb-2">
+                      Select Subscription Plan
+                    </label>
+                    <select
+                      id="subscriptionTarget"
+                      name="subscription_target"
+                      value={formData.subscription_target || 'all'}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    >
+                      {subscriptionTargetOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-sm text-gray-500 mt-2">
+                      This will send the notification to all users with the selected subscription plan.
+                    </p>
+                  </div>
+                )}
+
+                <div>
+                  <label htmlFor="message" className="block text-sm font-medium text-gray-700 mb-2">
+                    Message Content <span className="text-red-500">*</span>
+                  </label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent resize-none"
+                    placeholder="Enter your notification message here..."
+                    required
+                  />
+                  <p className="text-sm text-gray-500 mt-2">
+                    {formData.message.length}/500 characters
+                  </p>
+                </div>
+
+                {targetingMode === 'specific' && (
+                  <div>
+                    <label htmlFor="userSearch" className="block text-sm font-medium text-gray-700 mb-2">
+                      Select User <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        id="userSearch"
+                        value={userSearchQuery}
+                        onChange={handleUserSearch}
+                        onFocus={() => setShowUserDropdown(true)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                        placeholder="Search for a specific user..."
+                      />
+
+                      {selectedUser && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-md flex items-center justify-between">
+                          <div className="flex items-center">
+                            <div className="bg-[#FF8A00] text-white w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                              <User size={16} />
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">{selectedUser.name}</div>
+                              <div className="text-sm text-gray-500">{selectedUser.company_name}</div>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedUser(null);
+                              setFormData({ ...formData, userId: null });
+                            }}
+                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
+
+                      {showUserDropdown && userSearchQuery && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                          {isSearching ? (
+                            <div className="px-4 py-3 text-sm text-gray-500 flex items-center">
+                              <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#FF8A00] mr-2"></div>
+                              Searching users...
+                            </div>
+                          ) : userSearchResults.length > 0 ? (
+                            userSearchResults.map((user) => (
+                              <div
+                                key={user.id}
+                                onClick={() => handleSelectUser(user)}
+                                className="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center border-b border-gray-100 last:border-b-0"
+                              >
+                                <div className="bg-gray-100 w-8 h-8 rounded-full flex items-center justify-center mr-3">
+                                  <User size={14} className="text-gray-600" />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                                  <div className="text-xs text-gray-500">{user.company_name}</div>
+                                </div>
+                              </div>
+                            ))
+                          ) : userSearchQuery ? (
+                            <div className="px-4 py-3 text-sm text-gray-500">No users found matching &quot;{userSearchQuery}&quot;</div>
+                          ) : (
+                            <div className="px-4 py-3 text-sm text-gray-500">Type to search for users</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-6 border-t border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => setShowCreateForm(false)}
+                    className="px-6 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting || (targetingMode === 'specific' && !selectedUser)}
+                    className="px-8 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] transition-colors flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white"></div>
+                        <span>Sending...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send size={16} />
+                        <span>Send Notification</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
