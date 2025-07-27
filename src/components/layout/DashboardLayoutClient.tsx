@@ -13,7 +13,8 @@ import {
   Package,
   User,
   LogOut,
-  Megaphone
+  Megaphone,
+  MessageCircle
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
 import { getUserAdsCount } from '@/services/auction';
@@ -28,6 +29,7 @@ export default function DashboardLayoutClient({
   const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userAdsCount, setUserAdsCount] = useState<number>(0);
+  const [unreadChatsCount, setUnreadChatsCount] = useState<number>(0);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -44,8 +46,24 @@ export default function DashboardLayoutClient({
         // Error handling - silently fail
       }
     };
-    
+
     fetchUserAdsCount();
+  }, []);
+
+  // Fetch unread chats count
+  useEffect(() => {
+    const fetchUnreadChatsCount = async () => {
+      try {
+        // In a real app, this would be an API call
+        // For now, we'll simulate with sample data
+        const sampleUnreadCount = 3; // This would come from your API
+        setUnreadChatsCount(sampleUnreadCount);
+      } catch (_error) {
+        // Error handling - silently fail
+      }
+    };
+
+    fetchUnreadChatsCount();
   }, []);
 
   // Debug function to help troubleshoot user data issues
@@ -143,6 +161,20 @@ export default function DashboardLayoutClient({
             <span>Marketplace</span>
           </Link>
 
+
+          <Link
+            href="/dashboard/chats"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/chats' || pathname.startsWith('/dashboard/chats/') ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <MessageCircle size={18} className="mr-3" />
+            <span>Chats</span>
+            {unreadChatsCount > 0 && (
+              <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {unreadChatsCount}
+              </span>
+            )}
+          </Link>
 
           <Link
             href="/dashboard/notifications"
