@@ -51,13 +51,10 @@ export default function MyAuctions() {
     setError(null); // Clear any previous errors
 
     try {
-      console.log('Fetching user auctions...', { page, size });
       const response = await getUserAuctions({ page, page_size: size });
-      console.log('getUserAuctions response:', response);
 
       if (response.error) {
         // Error handling for user auctions fetch failures
-        console.error('API Error:', response.error, 'Status:', response.status);
 
         // Check if it's an authentication error
         if (response.status === 401) {
@@ -68,11 +65,9 @@ export default function MyAuctions() {
       } else if (response.data) {
         // Successfully fetched user auctions
         const result = response.data as PaginatedAuctionResult;
-        console.log('Processing auction data:', result);
 
         // Convert API auctions to the format expected by the UI
         const convertedAuctions = result.auctions.map(auction => {
-          console.log('Processing auction:', auction);
           // Determine the status based on API response
           let status = 'inactive';
           let auctionStatus = 'Inactive';
@@ -135,7 +130,6 @@ export default function MyAuctions() {
       }
     } catch (err) {
       // Error handling for overall fetch process
-      console.error('Catch block error:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch your auctions');
     } finally {
       setIsLoading(false);
