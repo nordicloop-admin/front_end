@@ -130,7 +130,7 @@ export default function CategorySubscriptionsPage() {
       setError(null);
       setSuccess(null);
       
-      const response = await subscribeToCategoryOrSubcategory({ category_id: categoryId });
+      const response = await subscribeToCategoryOrSubcategory({ category: categoryId });
       
       if (response.error) {
         setError(response.error);
@@ -157,8 +157,8 @@ export default function CategorySubscriptionsPage() {
       setSuccess(null);
       
       const response = await subscribeToCategoryOrSubcategory({ 
-        category_id: categoryId,
-        subcategory_id: subcategoryId
+        category: categoryId,
+        subcategory: subcategoryId
       });
       
       if (response.error) {

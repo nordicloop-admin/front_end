@@ -48,6 +48,7 @@ export default function MyAuctions() {
   // Fetch user auctions from the API
   const fetchUserAuctions = async (page: number = 1, size: number = 10) => {
     setIsLoading(true);
+    setError(null); // Clear any previous errors
 
     try {
       const response = await getUserAuctions({ page, page_size: size });
@@ -66,34 +67,47 @@ export default function MyAuctions() {
         const result = response.data as PaginatedAuctionResult;
 
         // Convert API auctions to the format expected by the UI
-        const convertedAuctions = result.auctions.map(auction => ({
-          id: auction.id.toString(),
-          name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
-          category: auction.category_name,
-          subcategory: auction.subcategory_name,
-          basePrice: auction.starting_bid_price || auction.total_starting_value,
-          currentBid: '', // API doesn't provide highest bid yet
-          status: auction.is_active ? 'active' : 'inactive',
-          timeLeft: 'Available', // API doesn't provide end date/time in this format
-          volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-          image: auction.material_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
+        const convertedAuctions = result.auctions.map(auction => {
+          // Determine the status based on API response
+          let status = 'inactive';
+          let auctionStatus = 'Inactive';
           
-          // Additional properties for edit modal functionality
-          description: auction.title || '',
-          keywords: '',
-          material_image: auction.material_image || undefined,
+          if (auction.status === 'suspended') {
+            status = 'suspended';
+            auctionStatus = 'Suspended';
+          } else if (auction.is_active) {
+            status = 'active';
+            auctionStatus = 'Active';
+          } else if (!auction.is_active) {
+            auctionStatus = 'Draft';
+          }
           
-          // Add step completion data for edit modal
-          stepCompletionStatus: auction.is_complete ? {
-            '1': true, '2': true, '3': true, '4': true, 
-            '5': true, '6': true, '7': true, '8': true
-          } : {
-            '1': false, '2': false, '3': false, '4': false, 
-            '5': false, '6': false, '7': false, '8': false
-          },
-          currentStep: auction.is_complete ? 8 : 1,
-          isComplete: auction.is_complete
-        }));
+          return {
+            id: auction.id.toString(),
+            name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+            category: auction.category_name,
+            subcategory: auction.subcategory_name,
+            basePrice: auction.starting_bid_price || auction.total_starting_value,
+            currentBid: '',
+            status: status,
+            auctionStatus: auctionStatus,
+            timeLeft: 'Available',
+            volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+            image: auction.material_image || '/images/marketplace/categories/plastics.jpg',
+            description: auction.title || '',
+            keywords: '',
+            material_image: auction.material_image || undefined,
+            stepCompletionStatus: auction.is_complete ? {
+              '1': true, '2': true, '3': true, '4': true, 
+              '5': true, '6': true, '7': true, '8': true
+            } : {
+              '1': false, '2': false, '3': false, '4': false, 
+              '5': false, '6': false, '7': false, '8': false
+            },
+            currentStep: auction.is_complete ? 8 : 1,
+            isComplete: auction.is_complete
+          };
+        });
 
         // Update the auctions state with the API data
         setAuctions(convertedAuctions);
@@ -286,6 +300,8 @@ export default function MyAuctions() {
                     basePrice={auction.basePrice}
                     timeLeft={auction.timeLeft}
                     image={auction.image}
+                    status={auction.status}
+                    auctionStatus={auction.auctionStatus}
                     onEditClick={() => handleEditClick(auction)}
                   />
                 ))}

@@ -11,6 +11,9 @@ export interface Notification {
   date: string;
   isRead: boolean;
   type: string;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  actionUrl?: string | null;
+  metadata?: Record<string, any>;
   userId?: number | null; // Optional user ID for targeted notifications
 }
 
@@ -18,6 +21,9 @@ export interface CreateNotificationRequest {
   title: string;
   message: string;
   type: string;
+  priority?: 'low' | 'normal' | 'high' | 'urgent';
+  actionUrl?: string | null;
+  metadata?: Record<string, any>;
   userId?: number | null; // Optional user ID for targeted notifications
 }
 
@@ -94,6 +100,51 @@ export async function getUnreadNotificationCount() {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while fetching unread notification count',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Get notification statistics for the current user
+ * @returns Notification statistics including counts by type and priority
+ */
+export async function getNotificationStats() {
+  try {
+    const response = await apiGet<{
+      total_count: number;
+      unread_count: number;
+      read_count: number;
+      type_counts: Record<string, number>;
+      priority_counts: Record<string, number>;
+    }>('/notifications/stats/', true);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching notification stats',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Mark all notifications of a specific type as read
+ * @param type The notification type to mark as read
+ * @returns Promise with success status and updated count
+ */
+export async function markNotificationTypeAsRead(type: string) {
+  try {
+    const response = await apiPost<{
+      success: boolean;
+      updated_count: number;
+      type: string;
+    }>('/notifications/mark-type-as-read/', { type }, true);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while marking notifications as read',
       status: 500
     };
   }

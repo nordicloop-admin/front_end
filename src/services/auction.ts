@@ -177,6 +177,9 @@ export interface AuctionItem {
   created_at: string;
   is_active: boolean;
   is_complete: boolean;
+  status?: string;
+  suspended_by_admin?: boolean;
+  auction_status?: string;
 }
 
 /**
@@ -187,9 +190,9 @@ export interface PaginatedAuctionResponse {
   next: string | null;
   previous: string | null;
   results: AuctionItem[];
-  page_size: number;
-  total_pages: number;
-  current_page: number;
+  page_size?: number;
+  total_pages?: number;
+  current_page?: number;
 }
 
 /**

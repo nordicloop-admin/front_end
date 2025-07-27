@@ -35,6 +35,7 @@ interface AdminAuction {
   company?: string;
   location?: string;
   endDate?: string;
+  suspended_by_admin?: boolean;
 }
 
 /**

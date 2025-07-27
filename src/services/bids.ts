@@ -1,7 +1,7 @@
 /**
  * Bids service for handling admin bid management
  */
-import { apiGet, apiPut } from './api';
+import { apiGet, apiPut, apiPost } from './api';
 
 /**
  * Interface for admin bid list response
@@ -28,7 +28,7 @@ interface AdminBid {
   bidAmount: number;
   volume: number;
   unit: string;
-  status: 'active' | 'pending' | 'outbid' | 'rejected' | 'won';
+  status: 'active' | 'pending' | 'outbid' | 'rejected' | 'won' | 'cancelled' | 'lost';
   bidDate: string;
   bidderCompany?: string;
   bidderPhone?: string;
@@ -134,6 +134,75 @@ export async function updateBidStatus(bidId: string, newStatus: string) {
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred while updating bid status',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Approve a bid (sets status to 'active')
+ * @param bidId The bid ID to approve
+ * @returns Response with updated bid or error
+ */
+export async function approveBid(bidId: string) {
+  try {
+    const response = await apiPost<AdminBid>(
+      `/bids/admin/bids/${bidId}/approve/`,
+      {},
+      true
+    );
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while approving the bid',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Reject a bid (sets status to 'cancelled')
+ * @param bidId The bid ID to reject
+ * @returns Response with updated bid or error
+ */
+export async function rejectBid(bidId: string) {
+  try {
+    const response = await apiPost<AdminBid>(
+      `/bids/admin/bids/${bidId}/reject/`,
+      {},
+      true
+    );
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while rejecting the bid',
+      status: 500
+    };
+  }
+}
+
+/**
+ * Mark a bid as won (sets status to 'won' and marks other bids for the same ad as 'lost')
+ * @param bidId The bid ID to mark as won
+ * @returns Response with updated bid or error
+ */
+export async function markBidAsWon(bidId: string) {
+  try {
+    const response = await apiPost<AdminBid>(
+      `/bids/admin/bids/${bidId}/mark-as-won/`,
+      {},
+      true
+    );
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while marking the bid as won',
       status: 500
     };
   }
