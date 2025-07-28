@@ -85,6 +85,7 @@ export const SECTOR_CHOICES = [
   { value: 'packaging', label: 'Packaging & Printing' },
   { value: 'recycling', label: 'Recycling & Waste Management' },
   { value: 'energy', label: 'Energy & Utilities' },
+  { value: 'broker', label: 'Broker' },
 ];
 
 export const COUNTRY_CHOICES = [

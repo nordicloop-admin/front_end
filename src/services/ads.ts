@@ -53,6 +53,7 @@ export interface Step7Data {
   auction_duration: number;
   reserve_price?: number;
   custom_auction_duration?: number;
+  allow_broker_bids?: boolean;
 }
 
 export interface Step8Data {

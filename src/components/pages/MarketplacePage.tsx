@@ -9,6 +9,7 @@ import { LocationFilter } from '@/components/marketplace/LocationFilter';
 import { TimeFilter } from '@/components/marketplace/TimeFilter';
 import { FormFilter } from '@/components/marketplace/FormFilter';
 import { QuantityFilter } from '@/components/marketplace/QuantityFilter';
+import { BrokerFilter } from '@/components/marketplace/BrokerFilter';
 import { SortDropdown } from '@/components/marketplace/SortDropdown';
 import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
@@ -189,6 +190,7 @@ const MarketplacePage = () => {
   const [selectedDateFilter, setSelectedDateFilter] = useState('All time');
   const [minQuantity, setMinQuantity] = useState(0);
   const [maxQuantity, setMaxQuantity] = useState(10000);
+  const [selectedBrokerFilter, setSelectedBrokerFilter] = useState('all');
   
   // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
@@ -234,7 +236,16 @@ const MarketplacePage = () => {
     setError(null);
 
     try {
-      const response = await getAuctions({ page, page_size: size });
+      const brokerParams = {
+        exclude_brokers: selectedBrokerFilter === 'exclude_brokers',
+        only_brokers: selectedBrokerFilter === 'only_brokers'
+      };
+
+      const response = await getAuctions({
+        page,
+        page_size: size,
+        ...brokerParams
+      });
 
       if (response.error) {
         setError(response.error);
@@ -257,10 +268,10 @@ const MarketplacePage = () => {
     }
   };
 
-  // Initial fetch
+  // Initial fetch and refetch when filters change
   useEffect(() => {
     fetchAuctions(currentPage, pageSize);
-  }, [currentPage, pageSize]);
+  }, [currentPage, pageSize, selectedBrokerFilter]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -342,6 +353,11 @@ const MarketplacePage = () => {
             toggleFormSelection={toggleFormSelection}
           />
 
+          <BrokerFilter
+            selectedBrokerFilter={selectedBrokerFilter}
+            setBrokerFilter={setSelectedBrokerFilter}
+          />
+
           <TimeFilter
             selectedDateFilter={selectedDateFilter}
             setSelectedDateFilter={setSelectedDateFilter}
@@ -391,6 +407,7 @@ const MarketplacePage = () => {
                     setSelectedLocation('All Locations');
                     setSelectedForms([]);
                     setSelectedDateFilter('All time');
+                    setSelectedBrokerFilter('all');
                   }}
                   className="mt-2 text-[#FF8A00] hover:underline"
                 >

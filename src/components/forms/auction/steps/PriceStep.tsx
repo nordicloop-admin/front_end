@@ -29,7 +29,7 @@ export function PriceStep({ formData, updateFormData }: Props) {
   const [showCustomDuration, setShowCustomDuration] = useState(formData.price.auctionDuration === 'custom');
   const [customEndDate, setCustomEndDate] = useState(formData.price.customEndDate || '');
 
-  const handlePriceUpdate = (field: string, value: string | number) => {
+  const handlePriceUpdate = (field: string, value: string | number | boolean) => {
     updateFormData({
       price: {
         ...formData.price,
@@ -313,6 +313,27 @@ export function PriceStep({ formData, updateFormData }: Props) {
         <p className="text-xs text-gray-500 mt-1">
           If no bids reach this price, the auction will not complete
         </p>
+      </div>
+
+      {/* Broker Bid Permission */}
+      <div className="pt-4 border-t border-gray-200">
+        <div className="flex items-start space-x-3">
+          <input
+            type="checkbox"
+            id="allowBrokerBids"
+            checked={formData.price.allowBrokerBids ?? true}
+            onChange={(e) => handlePriceUpdate('allowBrokerBids', e.target.checked)}
+            className="mt-1 h-4 w-4 text-[#FF8A00] focus:ring-[#FF8A00] border-gray-300 rounded"
+          />
+          <div className="flex-1">
+            <label htmlFor="allowBrokerBids" className="block text-sm font-medium text-gray-700">
+              Allow brokers to bid on this material
+            </label>
+            <p className="text-xs text-gray-500 mt-1">
+              If unchecked, brokers will not be able to place bids on this auction
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Price Summary */}
