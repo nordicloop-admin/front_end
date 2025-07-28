@@ -9,7 +9,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/a
 /**
  * Interface for API response
  */
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   data: T | null;
   error: string | null;
   status: number;
@@ -288,12 +288,40 @@ export async function apiDelete<T>(
       method: 'DELETE',
       headers,
     });
-
-    const data = await response.json();
+    
+    // For 204 No Content responses, don't try to parse JSON
+    if (response.status === 204) {
+      return {
+        data: null,
+        error: null,
+        status: response.status,
+      };
+    }
+    
+    // Check if there's content to parse
+    const contentType = response.headers.get('content-type');
+    let data = null;
+    
+    if (contentType && contentType.includes('application/json')) {
+      // Only try to parse JSON if there's JSON content
+      const text = await response.text();
+      if (text) {
+        try {
+          data = JSON.parse(text);
+        } catch (_e) {
+          // If parsing fails, return the error
+          return {
+            data: null,
+            error: 'Failed to parse JSON response',
+            status: response.status,
+          };
+        }
+      }
+    }
 
     return {
       data: response.ok ? data : null,
-      error: response.ok ? null : data.message || 'An error occurred',
+      error: response.ok ? null : (data?.message || 'An error occurred'),
       status: response.status,
     };
   } catch (error) {

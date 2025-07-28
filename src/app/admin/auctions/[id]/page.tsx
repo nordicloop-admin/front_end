@@ -9,6 +9,7 @@ import { getAdminAuction, AdminAuction, updateAuctionStatus } from '@/services/a
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { toast } from 'sonner';
+import { adminAdsService } from '@/services/adminAds';
 
 export default function AuctionDetailPage() {
   const _router = useRouter();
@@ -92,22 +93,91 @@ export default function AuctionDetailPage() {
     setIsUpdatingStatus(true);
     
     try {
-      const response = await updateAuctionStatus(id.toString(), newStatus);
+      let response;
       
-      if (response.error) {
-        toast.error('Failed to update status', {
-          description: response.error,
-        });
-      } else {
-        toast.success('Auction status updated', {
-          description: `The auction status has been updated to ${newStatus}`,
-        });
+      if (newStatus === 'active') {
+        // Use adminAdsService for approval
+        response = await adminAdsService.approveAd(parseInt(id.toString()));
         
-        // Update local state
-        setAuction({
-          ...auction,
-          status: newStatus as 'pending' | 'active' | 'closed' | 'suspended'
-        });
+        if (response.error || !response.success) {
+          toast.error('Failed to approve ad', {
+            description: response.error || 'An error occurred during approval',
+          });
+        } else {
+          toast.success('Ad approved successfully', {
+            description: response.message || 'The ad has been approved and activated',
+          });
+          
+          // Update local state with data from response
+          if (response.data?.ad) {
+            setAuction({
+              ...auction,
+              status: response.data.ad.status as 'active',
+              suspended_by_admin: response.data.ad.suspended_by_admin
+            });
+          } else {
+            // Fallback if response doesn't contain expected data
+            setAuction({
+              ...auction,
+              status: 'active',
+              suspended_by_admin: false
+            });
+          }
+          
+          // Refresh auction details to get the latest data
+          fetchAuctionDetails();
+        }
+      } else if (newStatus === 'suspended') {
+        // Use adminAdsService for suspension
+        response = await adminAdsService.suspendAd(parseInt(id.toString()));
+        
+        if (response.error || !response.success) {
+          toast.error('Failed to suspend ad', {
+            description: response.error || 'An error occurred during suspension',
+          });
+        } else {
+          toast.success('Ad suspended successfully', {
+            description: response.message || 'The ad has been suspended',
+          });
+          
+          // Update local state with data from response
+          if (response.data?.ad) {
+            setAuction({
+              ...auction,
+              status: response.data.ad.status as 'suspended',
+              suspended_by_admin: response.data.ad.suspended_by_admin
+            });
+          } else {
+            // Fallback if response doesn't contain expected data
+            setAuction({
+              ...auction,
+              status: 'suspended',
+              suspended_by_admin: true
+            });
+          }
+          
+          // Refresh auction details to get the latest data
+          fetchAuctionDetails();
+        }
+      } else {
+        // Use regular auction status update for other statuses
+        response = await updateAuctionStatus(id.toString(), newStatus);
+        
+        if (response.error) {
+          toast.error('Failed to update status', {
+            description: response.error,
+          });
+        } else {
+          toast.success('Auction status updated', {
+            description: `The auction status has been updated to ${newStatus}`,
+          });
+          
+          // Update local state
+          setAuction({
+            ...auction,
+            status: newStatus as 'pending' | 'active' | 'closed' | 'suspended'
+          });
+        }
       }
     } catch (_err) {
       toast.error('Failed to update status', {
@@ -474,6 +544,13 @@ export default function AuctionDetailPage() {
                   className="w-full py-2 rounded-md font-medium transition-colors text-sm border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Close Auction
+                </button>
+                <button
+                  onClick={() => fetchAuctionDetails()}
+                  disabled={isUpdatingStatus}
+                  className="w-full py-2 rounded-md font-medium transition-colors text-sm border border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <RefreshCw className="w-4 h-4 mr-1" /> Refresh Data
                 </button>
               </div>
             </div>

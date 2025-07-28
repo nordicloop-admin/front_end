@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { registerCompany } from '@/utils/airtable';
+import { registerCompany } from '@/services/company';
 import { generateInvitationToken } from '@/utils/auth';
 import { sendInvitationEmail } from '@/utils/email';
 import logger from '@/utils/logger';
@@ -71,8 +71,17 @@ export async function POST(request: Request) {
       companyData.contact2Position = data.contact2Position;
     }
 
-    // Register the company in Airtable
-    const companyId = await registerCompany(companyData);
+    // Register the company via Django backend
+    const registrationResponse = await registerCompany(companyData);
+
+    if (registrationResponse.error) {
+      return NextResponse.json(
+        { success: false, message: registrationResponse.error },
+        { status: 400 }
+      );
+    }
+
+    const companyId = registrationResponse.data?.id;
 
     // Generate an invitation token for the contact person
     const invitationToken = generateInvitationToken(data.contactEmail);

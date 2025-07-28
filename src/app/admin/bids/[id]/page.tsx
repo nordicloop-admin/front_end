@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, User, Package, AlertCircle, ChevronDown } from 'lucide-react';
-import { getAdminBid, AdminBid, updateBidStatus } from '@/services/bids';
+import { getAdminBid, AdminBid, approveBid, rejectBid, markBidAsWon } from '@/services/bids';
 import { toast } from 'sonner';
 
 export default function BidDetailPage() {
@@ -63,36 +63,114 @@ export default function BidDetailPage() {
     });
   };
 
-  // Handle status update
-  const handleStatusUpdate = async (newStatus: string) => {
+  // Handle bid approval
+  const handleApproveBid = async () => {
     if (!bid || !id) return;
     
     setIsUpdatingStatus(true);
     
     try {
-      const response = await updateBidStatus(id.toString(), newStatus);
+      const response = await approveBid(id.toString());
       
       if (response.error) {
-        toast.error('Failed to update status', {
+        toast.error('Failed to approve bid', {
           description: response.error,
         });
       } else {
-        toast.success('Bid status updated', {
-          description: `The bid status has been updated to ${newStatus}`,
+        toast.success('Bid approved', {
+          description: 'The bid has been successfully approved',
         });
         
-        // Update local state
-        setBid({
-          ...bid,
-          status: newStatus as 'active' | 'pending' | 'outbid' | 'rejected' | 'won'
-        });
+        // Refresh bid details to get updated data
+        await fetchBidDetails();
       }
     } catch (_err) {
-      toast.error('Failed to update status', {
+      toast.error('Failed to approve bid', {
         description: 'An unexpected error occurred',
       });
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  // Handle bid rejection
+  const handleRejectBid = async () => {
+    if (!bid || !id) return;
+    
+    setIsUpdatingStatus(true);
+    
+    try {
+      const response = await rejectBid(id.toString());
+      
+      if (response.error) {
+        toast.error('Failed to reject bid', {
+          description: response.error,
+        });
+      } else {
+        toast.success('Bid rejected', {
+          description: 'The bid has been successfully rejected',
+        });
+        
+        // Refresh bid details to get updated data
+        await fetchBidDetails();
+      }
+    } catch (_err) {
+      toast.error('Failed to reject bid', {
+        description: 'An unexpected error occurred',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  // Handle marking bid as won
+  const handleMarkAsWon = async () => {
+    if (!bid || !id) return;
+
+    setIsUpdatingStatus(true);
+
+    try {
+      const response = await markBidAsWon(id.toString());
+
+      if (response.error) {
+        toast.error('Failed to mark bid as won', {
+          description: response.error,
+        });
+      } else {
+        toast.success('Bid marked as won', {
+          description: 'The bid has been marked as won and other bids for this auction have been marked as lost',
+        });
+
+        // Refresh bid details to get updated data
+        await fetchBidDetails();
+      }
+    } catch (_err) {
+      toast.error('Failed to mark bid as won', {
+        description: 'An unexpected error occurred',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  // Handle status update from dropdown
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!bid || !id || newStatus === bid.status) return;
+
+    switch (newStatus) {
+      case 'active':
+        await handleApproveBid();
+        break;
+      case 'rejected':
+        await handleRejectBid();
+        break;
+      case 'won':
+        await handleMarkAsWon();
+        break;
+      default:
+        toast.error('Status update not supported', {
+          description: `Cannot update status to ${newStatus}`,
+        });
     }
   };
 
@@ -106,9 +184,12 @@ export default function BidDetailPage() {
       case 'outbid':
         return 'bg-gray-50 text-gray-700 border-gray-200';
       case 'rejected':
+      case 'cancelled':
         return 'bg-red-50 text-red-700 border-red-200';
       case 'won':
         return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'lost':
+        return 'bg-gray-50 text-gray-700 border-gray-200';
       default:
         return 'bg-gray-50 text-gray-700 border-gray-200';
     }
@@ -344,21 +425,21 @@ export default function BidDetailPage() {
               <h3 className="text-sm font-medium text-gray-900 mb-4">Admin Actions</h3>
               <div className="space-y-3">
                 <button
-                  onClick={() => handleStatusUpdate('active')}
+                  onClick={handleApproveBid}
                   disabled={bid.status === 'active' || isUpdatingStatus}
                   className="w-full py-2 rounded-md font-medium transition-colors text-sm border border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Approve Bid
                 </button>
                 <button
-                  onClick={() => handleStatusUpdate('rejected')}
-                  disabled={bid.status === 'rejected' || isUpdatingStatus}
+                  onClick={handleRejectBid}
+                  disabled={bid.status === 'rejected' || bid.status === 'cancelled' || isUpdatingStatus}
                   className="w-full py-2 rounded-md font-medium transition-colors text-sm border border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Reject Bid
                 </button>
                 <button
-                  onClick={() => handleStatusUpdate('won')}
+                  onClick={handleMarkAsWon}
                   disabled={bid.status === 'won' || isUpdatingStatus}
                   className="w-full py-2 rounded-md font-medium transition-colors text-sm border border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -377,8 +458,9 @@ export default function BidDetailPage() {
                     bid.status === 'active' ? 'bg-green-100 text-green-800' :
                     bid.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                     bid.status === 'outbid' ? 'bg-gray-100 text-gray-800' :
-                    bid.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                    bid.status === 'rejected' || bid.status === 'cancelled' ? 'bg-red-100 text-red-800' :
                     bid.status === 'won' ? 'bg-blue-100 text-blue-800' :
+                    bid.status === 'lost' ? 'bg-gray-100 text-gray-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
                     {bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Filter, ChevronDown, ChevronUp, Clock, RefreshCw } from 'lucide-react';
+import CustomDropdown from '@/components/ui/CustomDropdown';
 import { getAdminBids, AdminBid } from '@/services/bids';
 
 export default function BidsPage() {
@@ -277,18 +278,19 @@ export default function BidsPage() {
           
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+            <CustomDropdown
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'outbid', label: 'Outbid' },
+                { value: 'rejected', label: 'Rejected' },
+                { value: 'won', label: 'Won' }
+              ]}
               value={selectedStatus}
-              onChange={handleStatusChange}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="outbid">Outbid</option>
-              <option value="rejected">Rejected</option>
-              <option value="won">Won</option>
-            </select>
+              onChange={(value) => handleStatusChange({ target: { value } } as any)}
+              placeholder="All Status"
+            />
           </div>
         </div>
       </div>
@@ -362,9 +364,9 @@ export default function BidsPage() {
                   <tr key={bid.id} className={bid.status === 'pending' ? "bg-yellow-50" : ""}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{bid.itemName}</div>
-                      <Link href={`/admin/marketplace/${bid.itemId}`} className="text-xs text-blue-600 hover:text-blue-900">
+                      {/* <Link href={`/admin/marketplace/${bid.itemId}`} className="text-xs text-blue-600 hover:text-blue-900">
                         View Item
-                      </Link>
+                      </Link> */}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">

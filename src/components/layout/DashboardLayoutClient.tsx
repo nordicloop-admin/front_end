@@ -12,7 +12,6 @@ import {
   FileText,
   Package,
   Bell,
-  MapPin,
   User,
   LogOut,
   Megaphone
@@ -192,12 +191,12 @@ export default function DashboardLayoutClient({
           </Link>
 
           <Link
-            href="/dashboard/announcements"
-            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/announcements' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            href="/dashboard/notifications"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/notifications' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
             <Megaphone size={18} className="mr-3" />
-            <span>Announcements</span>
+            <span>Notifications</span>
           </Link>
 
           <Link
@@ -210,13 +209,43 @@ export default function DashboardLayoutClient({
           </Link>
 
           <Link
-            href="/dashboard/addresses"
-            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/addresses' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            href="/dashboard/category-subscriptions"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/category-subscriptions' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
-            <MapPin size={18} className="mr-3" />
-            <span>Addresses</span>
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="mr-3"
+            >
+              <path
+                d="M4 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M14 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1V5z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M4 15a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-4z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+              <path
+                d="M14 15a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-4z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              />
+            </svg>
+            <span>Category Alerts</span>
           </Link>
+
+
 
           <Link
             href="/dashboard/profile"
@@ -230,13 +259,13 @@ export default function DashboardLayoutClient({
 
         {/* Become Vendor Section */}
         <div className="p-4 border-t border-gray-100 flex-shrink-0">
-          <div className="mb-1.5 text-sm font-medium">Become vendor</div>
+          {/* <div className="mb-1.5 text-sm font-medium">Become vendor</div>
           <p className="text-xs text-gray-500 mb-3">
             Vendors can sell products and manage a store with a vendor dashboard.
           </p>
           <button className="w-full bg-[#FF8A00] text-white py-2 px-4 rounded-md hover:bg-[#e67e00] transition-colors mb-4 text-sm">
             Become vendor
-          </button>
+          </button> */}
 
           {/* Logout Button */}
           <button

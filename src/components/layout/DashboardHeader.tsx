@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,7 +8,6 @@ import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 import {
   Bell,
-  MapPin,
   User,
   LogOut,
   Search,
@@ -18,6 +17,8 @@ import {
   Building,
   Settings
 } from 'lucide-react';
+import { getUnreadNotificationCount } from '@/services/notifications';
+import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 
 interface DashboardHeaderProps {
   onMobileMenuToggle?: () => void;
@@ -30,6 +31,7 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
   const { logout, user } = useAuth();
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [workspaceDropdownOpen, setWorkspaceDropdownOpen] = useState(false);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState<number>(0);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -49,6 +51,28 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
       router.push('/dashboard');
     }
   };
+  
+  // Fetch unread notification count
+  useEffect(() => {
+    const fetchUnreadNotificationCount = async () => {
+      try {
+        const response = await getUnreadNotificationCount();
+        if (response.data) {
+          setUnreadNotificationCount(response.data.count);
+        }
+      } catch (_error) {
+        // Error handling - silently fail
+      }
+    };
+    
+    fetchUnreadNotificationCount();
+    
+    // Set up interval to refresh the count every minute
+    const intervalId = setInterval(fetchUnreadNotificationCount, 60000);
+    
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   const isAdminPath = pathname.startsWith('/admin');
 
@@ -145,10 +169,11 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
           </div>
         )}
 
-        {/* Notification Button */}
-        <button className="p-2 text-gray-500 hover:text-gray-700 relative">
-          <Bell size={18} />
-        </button>
+        {/* Notification Dropdown */}
+        <NotificationDropdown
+          unreadCount={unreadNotificationCount}
+          onUnreadCountChange={setUnreadNotificationCount}
+        />
 
         {/* User Dropdown */}
         <div className="flex items-center relative">
@@ -196,14 +221,7 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
                     Profile Settings
                   </Link>
                   
-                  <Link
-                    href="/dashboard/addresses"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <MapPin size={16} className="mr-3" />
-                    My Addresses
-                  </Link>
+
                   
                   <Link
                     href="/dashboard/subscriptions"

@@ -1,7 +1,7 @@
 /**
  * Company service for handling company registration and management
  */
-import { apiPost, apiGet } from './api';
+import { apiPost, apiGet, apiPut as _apiPut, apiDelete as _apiDelete } from './api';
 import { CompanyRegistration } from '@/types/auth';
 
 /**
@@ -15,16 +15,10 @@ interface CompanyRegistrationResponse {
   sector: string;
   country: string;
   website: string;
-  primary_first_name: string;
-  primary_last_name: string;
-  primary_email: string;
-  primary_position: string;
-  secondary_first_name?: string;
-  secondary_last_name?: string;
-  secondary_email?: string;
-  secondary_position?: string;
   registration_date: string;
   status: string;
+  // Note: Contact information is now managed through User model
+  // and will be available through the contacts endpoint
 }
 
 /**
@@ -66,6 +60,8 @@ interface AdminCompany {
 interface AdminCompanyParams {
   search?: string;
   status?: 'all' | 'pending' | 'approved' | 'rejected';
+  sector?: string;
+  country?: string;
   page?: number;
   page_size?: number;
 }
@@ -117,11 +113,19 @@ export async function getAdminCompanies(params: AdminCompanyParams = {}) {
     if (params.status && params.status !== 'all') {
       queryParams.append('status', params.status);
     }
-    
+
+    if (params.sector && params.sector !== 'all') {
+      queryParams.append('sector', params.sector);
+    }
+
+    if (params.country && params.country !== 'all') {
+      queryParams.append('country', params.country);
+    }
+
     if (params.page) {
       queryParams.append('page', params.page.toString());
     }
-    
+
     if (params.page_size) {
       queryParams.append('page_size', params.page_size.toString());
     }
@@ -237,6 +241,40 @@ export async function updateCompanyStatus(companyId: string, status: 'approved' 
 }
 
 /**
+ * Interface for filter option
+ */
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
+/**
+ * Interface for company filter options response
+ */
+interface CompanyFilterOptions {
+  sectors: FilterOption[];
+  countries: FilterOption[];
+  statuses: FilterOption[];
+}
+
+/**
+ * Get available filter options for companies
+ * @returns The filter options response
+ */
+export async function getCompanyFilterOptions() {
+  try {
+    const response = await apiGet<CompanyFilterOptions>('/company/filters/');
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to load filter options',
+      status: 500
+    };
+  }
+}
+
+/**
  * Generate a signup token for a user
  * @param email The user's email
  * @returns A base64 encoded token
@@ -251,4 +289,11 @@ export function generateSignupToken(email: string): string {
 }
 
 // Export types for use in components
-export type { AdminCompany, AdminCompanyListResponse, AdminCompanyParams, CompanyStatusUpdateResponse };
+export type {
+  AdminCompany,
+  AdminCompanyListResponse,
+  AdminCompanyParams,
+  CompanyStatusUpdateResponse,
+  FilterOption,
+  CompanyFilterOptions
+};

@@ -223,13 +223,7 @@ export default function AdminDashboard() {
               <Plus size={16} className="text-gray-400 mr-3" />
               <span className="text-sm">Add New Company</span>
             </Link>
-            <Link
-              href="/admin/users/new"
-              className="flex items-center px-4 py-2.5 border border-gray-100 rounded-md hover:bg-gray-50 transition-colors"
-            >
-              <Plus size={16} className="text-gray-400 mr-3" />
-              <span className="text-sm">Add New User</span>
-            </Link>
+
           </div>
         </div>
 
