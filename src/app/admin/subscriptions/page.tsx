@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search, Filter, ChevronDown, ChevronUp, CreditCard, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import CustomDropdown from '@/components/ui/CustomDropdown';
 import { getAdminSubscriptions, AdminSubscription } from '@/services/subscriptions';
 
 // Subscription plan details
@@ -362,31 +363,33 @@ export default function SubscriptionsPage() {
 
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+            <CustomDropdown
+              options={[
+                { value: 'all', label: 'All Plans' },
+                { value: 'free', label: 'Free Plan' },
+                { value: 'standard', label: 'Standard Plan' },
+                { value: 'premium', label: 'Premium Plan' }
+              ]}
               value={selectedPlan}
-              onChange={handlePlanChange}
-            >
-              <option value="all">All Plans</option>
-              <option value="free">Free Plan</option>
-              <option value="standard">Standard Plan</option>
-              <option value="premium">Premium Plan</option>
-            </select>
+              onChange={(value) => handlePlanChange({ target: { value } } as any)}
+              placeholder="All Plans"
+            />
           </div>
 
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+            <CustomDropdown
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'expired', label: 'Expired' },
+                { value: 'payment_failed', label: 'Payment Failed' },
+                { value: 'cancelled', label: 'Cancelled' }
+              ]}
               value={selectedStatus}
-              onChange={handleStatusChange}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="expired">Expired</option>
-              <option value="payment_failed">Payment Failed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+              onChange={(value) => handleStatusChange({ target: { value } } as any)}
+              placeholder="All Status"
+            />
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Search, Filter, ChevronDown, ChevronUp, Clock, RefreshCw, Package } from 'lucide-react';
+import CustomDropdown from '@/components/ui/CustomDropdown';
 import { getAdminAuctions, AdminAuction } from '@/services/auctions';
 
 export default function AuctionsPage() {
@@ -68,17 +69,19 @@ export default function AuctionsPage() {
       const response = await getAdminAuctions(params);
 
       if (response.data) {
-        setAuctions(response.data.results);
+        setAuctions(response.data.results || []);
         setPagination({
-          count: response.data.count,
-          totalPages: response.data.total_pages,
-          currentPage: response.data.current_page,
-          pageSize: response.data.page_size
+          count: response.data.count || 0,
+          totalPages: response.data.total_pages || 1,
+          currentPage: response.data.current_page || 1,
+          pageSize: response.data.page_size || 10
         });
       } else {
+        setAuctions([]);
         setError(response.error || 'Failed to fetch auctions');
       }
     } catch (_err) {
+      setAuctions([]);
       setError('An unexpected error occurred while fetching auctions');
     } finally {
       setLoading(false);
@@ -122,7 +125,7 @@ export default function AuctionsPage() {
     
     setSortConfig({ key, direction });
     
-    const sortedAuctions = [...auctions].sort((a, b) => {
+    const sortedAuctions = [...(auctions || [])].sort((a, b) => {
       const aValue = a[key as keyof AdminAuction];
       const bValue = b[key as keyof AdminAuction];
       
@@ -171,7 +174,7 @@ export default function AuctionsPage() {
   };
 
   // Count auctions that need review (pending status)
-  const pendingReviewCount = auctions.filter(auction => auction.status === 'pending').length;
+  const pendingReviewCount = (auctions || []).filter(auction => auction.status === 'pending').length;
 
   // Generate pagination
   const renderPagination = () => {
@@ -278,17 +281,18 @@ export default function AuctionsPage() {
           
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-400" />
-            <select
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+            <CustomDropdown
+              options={[
+                { value: 'all', label: 'All Status' },
+                { value: 'active', label: 'Active' },
+                { value: 'pending', label: 'Pending' },
+                { value: 'closed', label: 'Closed' },
+                { value: 'suspended', label: 'Suspended' }
+              ]}
               value={selectedStatus}
-              onChange={handleStatusChange}
-            >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="closed">Closed</option>
-              <option value="suspended">Suspended</option>
-            </select>
+              onChange={(value) => handleStatusChange({ target: { value } } as any)}
+              placeholder="All Status"
+            />
           </div>
         </div>
       </div>
