@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { getAdminCompanies, updateCompanyStatus, getCompanyFilterOptions, type AdminCompany, type AdminCompanyParams, type FilterOption } from '@/services/company';
+import CustomDropdown from '@/components/ui/CustomDropdown';
 
 export default function CompaniesPage() {
   const searchParams = useSearchParams();
@@ -347,60 +348,45 @@ export default function CompaniesPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                <select
+                <CustomDropdown
+                  options={[
+                    { value: 'all', label: 'All Status' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'approved', label: 'Approved' },
+                    { value: 'rejected', label: 'Rejected' }
+                  ]}
                   value={selectedStatus}
-                  onChange={(e) => handleStatusChange(e.target.value)}
-                  className={`px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent ${
-                    selectedStatus !== 'all'
-                      ? 'border-[#FF8A00] bg-orange-50'
-                      : 'border-gray-300'
-                  }`}
-                >
-                  <option value="all">All Status</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                </select>
+                  onChange={handleStatusChange}
+                  placeholder="All Status"
+                />
 
-                <select
+                <CustomDropdown
+                  options={[
+                    {
+                      value: 'all',
+                      label: filterOptionsLoading ? 'Loading...' : 'All Sectors'
+                    },
+                    ...sectors
+                  ]}
                   value={selectedSector}
-                  onChange={(e) => handleSectorChange(e.target.value)}
+                  onChange={handleSectorChange}
                   disabled={filterOptionsLoading}
-                  className={`px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50 ${
-                    selectedSector !== 'all'
-                      ? 'border-[#FF8A00] bg-orange-50'
-                      : 'border-gray-300'
-                  }`}
-                >
-                  <option value="all">
-                    {filterOptionsLoading ? 'Loading...' : 'All Sectors'}
-                  </option>
-                  {sectors.map((sector) => (
-                    <option key={sector.value} value={sector.value}>
-                      {sector.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="All Sectors"
+                />
 
-                <select
+                <CustomDropdown
+                  options={[
+                    {
+                      value: 'all',
+                      label: filterOptionsLoading ? 'Loading...' : 'All Countries'
+                    },
+                    ...countries
+                  ]}
                   value={selectedCountry}
-                  onChange={(e) => handleCountryChange(e.target.value)}
+                  onChange={handleCountryChange}
                   disabled={filterOptionsLoading}
-                  className={`px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50 ${
-                    selectedCountry !== 'all'
-                      ? 'border-[#FF8A00] bg-orange-50'
-                      : 'border-gray-300'
-                  }`}
-                >
-                  <option value="all">
-                    {filterOptionsLoading ? 'Loading...' : 'All Countries'}
-                  </option>
-                  {countries.map((country) => (
-                    <option key={country.value} value={country.value}>
-                      {country.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="All Countries"
+                />
 
                 {(searchTerm || selectedStatus !== 'all' || selectedSector !== 'all' || selectedCountry !== 'all') && (
                   <button
