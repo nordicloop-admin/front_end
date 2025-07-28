@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getAdminCompanies, updateCompanyStatus, type AdminCompany, type AdminCompanyParams } from '@/services/company';
+import { getAdminCompanies, updateCompanyStatus, getCompanyFilterOptions, type AdminCompany, type AdminCompanyParams, type FilterOption } from '@/services/company';
 
 export default function CompaniesPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const statusFilter = searchParams.get('status');
+  const sectorFilter = searchParams.get('sector');
+  const countryFilter = searchParams.get('country');
   const pageParam = searchParams.get('page');
 
   const [companies, setCompanies] = useState<AdminCompany[]>([]);
@@ -16,8 +18,15 @@ export default function CompaniesPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState(statusFilter || 'all');
+  const [selectedSector, setSelectedSector] = useState(sectorFilter || 'all');
+  const [selectedCountry, setSelectedCountry] = useState(countryFilter || 'all');
   const [currentPage, setCurrentPage] = useState(pageParam ? parseInt(pageParam) : 1);
   const [updatingCompanyId, setUpdatingCompanyId] = useState<string | null>(null);
+
+  // Filter options
+  const [sectors, setSectors] = useState<FilterOption[]>([]);
+  const [countries, setCountries] = useState<FilterOption[]>([]);
+  const [filterOptionsLoading, setFilterOptionsLoading] = useState(true);
   const [pagination, setPagination] = useState({
     count: 0,
     next: null as string | null,
@@ -37,6 +46,26 @@ export default function CompaniesPage() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
+  // Load filter options
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      setFilterOptionsLoading(true);
+      try {
+        const response = await getCompanyFilterOptions();
+        if (response.data) {
+          setSectors(response.data.sectors);
+          setCountries(response.data.countries);
+        }
+      } catch (error) {
+        console.error('Failed to load filter options:', error);
+      } finally {
+        setFilterOptionsLoading(false);
+      }
+    };
+
+    loadFilterOptions();
+  }, []);
+
   // Load companies data
   useEffect(() => {
     const loadCompanies = async () => {
@@ -54,6 +83,14 @@ export default function CompaniesPage() {
 
       if (selectedStatus !== 'all') {
         params.status = selectedStatus as 'pending' | 'approved' | 'rejected';
+      }
+
+      if (selectedSector !== 'all') {
+        params.sector = selectedSector;
+      }
+
+      if (selectedCountry !== 'all') {
+        params.country = selectedCountry;
       }
 
       try {
@@ -81,26 +118,44 @@ export default function CompaniesPage() {
     };
 
     loadCompanies();
-  }, [debouncedSearchTerm, selectedStatus, currentPage]);
+  }, [debouncedSearchTerm, selectedStatus, selectedSector, selectedCountry, currentPage]);
 
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    
+
     if (selectedStatus !== 'all') {
       params.set('status', selectedStatus);
     }
-    
+
+    if (selectedSector !== 'all') {
+      params.set('sector', selectedSector);
+    }
+
+    if (selectedCountry !== 'all') {
+      params.set('country', selectedCountry);
+    }
+
     if (currentPage > 1) {
       params.set('page', currentPage.toString());
     }
 
     const newUrl = `/admin/companies${params.toString() ? `?${params.toString()}` : ''}`;
     router.replace(newUrl, { scroll: false });
-  }, [selectedStatus, currentPage, router]);
+  }, [selectedStatus, selectedSector, selectedCountry, currentPage, router]);
 
   const handleStatusChange = (newStatus: string) => {
     setSelectedStatus(newStatus);
+    setCurrentPage(1); // Reset to first page when changing filters
+  };
+
+  const handleSectorChange = (newSector: string) => {
+    setSelectedSector(newSector);
+    setCurrentPage(1); // Reset to first page when changing filters
+  };
+
+  const handleCountryChange = (newCountry: string) => {
+    setSelectedCountry(newCountry);
     setCurrentPage(1); // Reset to first page when changing filters
   };
 
@@ -139,6 +194,14 @@ export default function CompaniesPage() {
 
         if (selectedStatus !== 'all') {
           params.status = selectedStatus as 'pending' | 'approved' | 'rejected';
+        }
+
+        if (selectedSector !== 'all') {
+          params.sector = selectedSector;
+        }
+
+        if (selectedCountry !== 'all') {
+          params.country = selectedCountry;
         }
 
         const refreshResponse = await getAdminCompanies(params);
@@ -268,8 +331,9 @@ export default function CompaniesPage() {
 
       <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
         <div className="p-4 border-b">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="relative flex-1">
+          <div className="flex flex-col gap-4">
+            {/* Search Bar */}
+            <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -278,24 +342,68 @@ export default function CompaniesPage() {
               <input
                 type="text"
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Search companies..."
+                placeholder="Search by company name, VAT, email, country, or user name..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center">
-              <label htmlFor="status" className="mr-2 text-sm font-medium text-gray-700">Status:</label>
-              <select
-                id="status"
-                className="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
-                value={selectedStatus}
-                onChange={(e) => handleStatusChange(e.target.value)}
-              >
-                <option value="all">All</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
+
+            {/* Filters */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex items-center">
+                <label htmlFor="status" className="mr-2 text-sm font-medium text-gray-700 whitespace-nowrap">Status:</label>
+                <select
+                  id="status"
+                  className="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md min-w-[120px]"
+                  value={selectedStatus}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                >
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+
+              <div className="flex items-center">
+                <label htmlFor="sector" className="mr-2 text-sm font-medium text-gray-700 whitespace-nowrap">Sector:</label>
+                <select
+                  id="sector"
+                  className="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md min-w-[180px]"
+                  value={selectedSector}
+                  onChange={(e) => handleSectorChange(e.target.value)}
+                  disabled={filterOptionsLoading}
+                >
+                  <option value="all">
+                    {filterOptionsLoading ? 'Loading sectors...' : 'All Sectors'}
+                  </option>
+                  {sectors.map((sector) => (
+                    <option key={sector.value} value={sector.value}>
+                      {sector.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-center">
+                <label htmlFor="country" className="mr-2 text-sm font-medium text-gray-700 whitespace-nowrap">Country:</label>
+                <select
+                  id="country"
+                  className="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md min-w-[140px]"
+                  value={selectedCountry}
+                  onChange={(e) => handleCountryChange(e.target.value)}
+                  disabled={filterOptionsLoading}
+                >
+                  <option value="all">
+                    {filterOptionsLoading ? 'Loading countries...' : 'All Countries'}
+                  </option>
+                  {countries.map((country) => (
+                    <option key={country.value} value={country.value}>
+                      {country.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
         </div>
