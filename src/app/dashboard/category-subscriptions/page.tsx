@@ -31,10 +31,14 @@ export default function CategorySubscriptionsPage() {
   const [isCategoriesLoading, setIsCategoriesLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
   const [expandedSubscriptions, setExpandedSubscriptions] = useState<number[]>([]);
   const [showCategories, setShowCategories] = useState(false);
+
+  // Individual loading states for better UX
+  const [loadingCategories, setLoadingCategories] = useState<Set<number>>(new Set());
+  const [loadingSubcategories, setLoadingSubcategories] = useState<Set<string>>(new Set());
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState<Set<number>>(new Set());
 
   // Search and filter state
   const [searchQuery, setSearchQuery] = useState('');
@@ -154,7 +158,7 @@ export default function CategorySubscriptionsPage() {
   // Subscribe to a category
   const handleSubscribeToCategory = async (categoryId: number) => {
     try {
-      setIsUpdating(true);
+      setLoadingCategories(prev => new Set(prev).add(categoryId));
       setError(null);
       setSuccess(null);
 
@@ -173,14 +177,19 @@ export default function CategorySubscriptionsPage() {
     } catch (_err) {
       setError('Failed to subscribe to category');
     } finally {
-      setIsUpdating(false);
+      setLoadingCategories(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(categoryId);
+        return newSet;
+      });
     }
   };
 
   // Subscribe to a subcategory
   const handleSubscribeToSubcategory = async (categoryId: number, subcategoryId: number) => {
     try {
-      setIsUpdating(true);
+      const subcategoryKey = `${categoryId}-${subcategoryId}`;
+      setLoadingSubcategories(prev => new Set(prev).add(subcategoryKey));
       setError(null);
       setSuccess(null);
 
@@ -202,14 +211,19 @@ export default function CategorySubscriptionsPage() {
     } catch (_err) {
       setError('Failed to subscribe to subcategory');
     } finally {
-      setIsUpdating(false);
+      const subcategoryKey = `${categoryId}-${subcategoryId}`;
+      setLoadingSubcategories(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subcategoryKey);
+        return newSet;
+      });
     }
   };
 
   // Unsubscribe from a category or subcategory
   const handleUnsubscribe = async (subscriptionId: number) => {
     try {
-      setIsUpdating(true);
+      setLoadingSubscriptions(prev => new Set(prev).add(subscriptionId));
       setError(null);
       setSuccess(null);
 
@@ -224,7 +238,11 @@ export default function CategorySubscriptionsPage() {
     } catch (_err) {
       setError('Failed to unsubscribe');
     } finally {
-      setIsUpdating(false);
+      setLoadingSubscriptions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(subscriptionId);
+        return newSet;
+      });
     }
   };
 
@@ -301,11 +319,11 @@ export default function CategorySubscriptionsPage() {
                             e.stopPropagation();
                             handleUnsubscribe(subscription.id);
                           }}
-                          disabled={isUpdating}
+                          disabled={loadingSubscriptions.has(subscription.id)}
                           className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                           title="Remove alert"
                         >
-                          {isUpdating ? (
+                          {loadingSubscriptions.has(subscription.id) ? (
                             <Loader2 size={14} className="animate-spin" />
                           ) : (
                             <Minus size={14} />
@@ -470,11 +488,11 @@ export default function CategorySubscriptionsPage() {
                                   const subscriptionId = getSubscriptionId(category.name);
                                   if (subscriptionId) handleUnsubscribe(subscriptionId);
                                 }}
-                                disabled={isUpdating}
+                                disabled={loadingCategories.has(category.id)}
                                 className="p-1 text-green-600 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                                 title="Remove category alert"
                               >
-                                {isUpdating ? (
+                                {loadingCategories.has(category.id) ? (
                                   <Loader2 size={14} className="animate-spin" />
                                 ) : (
                                   <Check size={14} />
@@ -486,11 +504,11 @@ export default function CategorySubscriptionsPage() {
                                   e.stopPropagation();
                                   handleSubscribeToCategory(category.id);
                                 }}
-                                disabled={isUpdating}
+                                disabled={loadingCategories.has(category.id)}
                                 className="p-1 text-gray-400 hover:text-[#FF8A00] hover:bg-orange-50 rounded transition-colors"
                                 title="Add category alert"
                               >
-                                {isUpdating ? (
+                                {loadingCategories.has(category.id) ? (
                                   <Loader2 size={14} className="animate-spin" />
                                 ) : (
                                   <Plus size={14} />
@@ -546,11 +564,11 @@ export default function CategorySubscriptionsPage() {
                                             const subscriptionId = getSubscriptionId(category.name, subcategory.name);
                                             if (subscriptionId) handleUnsubscribe(subscriptionId);
                                           }}
-                                          disabled={isUpdating}
+                                          disabled={loadingSubcategories.has(`${category.id}-${subcategory.id}`)}
                                           className="p-1 text-green-600 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
                                           title="Remove subcategory alert"
                                         >
-                                          {isUpdating ? (
+                                          {loadingSubcategories.has(`${category.id}-${subcategory.id}`) ? (
                                             <Loader2 size={12} className="animate-spin" />
                                           ) : (
                                             <Check size={12} />
@@ -559,11 +577,11 @@ export default function CategorySubscriptionsPage() {
                                       ) : (
                                         <button
                                           onClick={() => handleSubscribeToSubcategory(category.id, subcategory.id)}
-                                          disabled={isUpdating}
+                                          disabled={loadingSubcategories.has(`${category.id}-${subcategory.id}`)}
                                           className="p-1 text-gray-400 hover:text-[#FF8A00] hover:bg-orange-50 rounded transition-colors"
                                           title="Add subcategory alert"
                                         >
-                                          {isUpdating ? (
+                                          {loadingSubcategories.has(`${category.id}-${subcategory.id}`) ? (
                                             <Loader2 size={12} className="animate-spin" />
                                           ) : (
                                             <Plus size={12} />
