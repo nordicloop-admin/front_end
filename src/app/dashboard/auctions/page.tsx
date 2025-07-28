@@ -109,7 +109,7 @@ export default function Auctions() {
       } else if (response.data) {
         // Successfully fetched auctions
         const result = response.data as PaginatedAuctionResult;
-        setApiAuctions(result.auctions);
+        setApiAuctions(result.auctions || []);
         setPaginationData({
           count: result.pagination.count,
           totalPages: result.pagination.total_pages,
@@ -118,6 +118,7 @@ export default function Auctions() {
         });
       } else {
         // No auction data available
+        setApiAuctions([]);
         setError('No auctions found');
       }
     } catch (err) {
@@ -161,7 +162,7 @@ export default function Auctions() {
   };
 
   // Convert API auctions to the format expected by the UI
-  const convertedAuctions = apiAuctions.map(auction => ({
+  const convertedAuctions = (apiAuctions || []).map(auction => ({
     id: auction.id.toString(),
     name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
     category: auction.category_name,
@@ -175,10 +176,10 @@ export default function Auctions() {
   }));
 
   // Use API auctions if available, otherwise fall back to mock data
-  const auctionsToDisplay = apiAuctions.length > 0 ? convertedAuctions : marketplaceAuctions;
+  const auctionsToDisplay = (apiAuctions && apiAuctions.length > 0) ? convertedAuctions : marketplaceAuctions;
 
   // Filter auctions based on search term and category
-  const filteredAuctions = auctionsToDisplay.filter(auction => {
+  const filteredAuctions = (auctionsToDisplay || []).filter(auction => {
     const matchesSearch = searchTerm === '' ||
       auction.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (auction.seller && auction.seller.toLowerCase().includes(searchTerm.toLowerCase())) ||

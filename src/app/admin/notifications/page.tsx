@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Copy
 } from 'lucide-react';
+import CustomDropdown from '@/components/ui/CustomDropdown';
 import {
   getAllNotifications,
   createNotification,
@@ -145,7 +146,7 @@ export default function AdminNotificationsPage() {
     }, 500);
 
     return () => clearTimeout(handler);
-  }, [searchQuery, selectedTypeFilter, selectedPriorityFilter]);
+  }, [searchQuery, selectedTypeFilter, selectedPriorityFilter, currentPage, fetchNotifications]);
   
   // Search users from API
   const searchUsersFromAPI = useCallback(async (query: string) => {
@@ -354,31 +355,31 @@ export default function AdminNotificationsPage() {
                 />
               </div>
 
-              <select
+              <CustomDropdown
+                options={[
+                  { value: '', label: 'All Types' },
+                  ...notificationCategories.map(category => ({
+                    value: category.value,
+                    label: category.label
+                  }))
+                ]}
                 value={selectedTypeFilter}
-                onChange={(e) => setSelectedTypeFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              >
-                <option value="">All Types</option>
-                {notificationCategories.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedTypeFilter}
+                placeholder="All Types"
+              />
 
-              <select
+              <CustomDropdown
+                options={[
+                  { value: '', label: 'All Priorities' },
+                  ...priorityOptions.map(priority => ({
+                    value: priority.value,
+                    label: priority.label
+                  }))
+                ]}
                 value={selectedPriorityFilter}
-                onChange={(e) => setSelectedPriorityFilter(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              >
-                <option value="">All Priorities</option>
-                {priorityOptions.map((priority) => (
-                  <option key={priority.value} value={priority.value}>
-                    {priority.label}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedPriorityFilter}
+                placeholder="All Priorities"
+              />
 
               {(searchQuery || selectedTypeFilter || selectedPriorityFilter) && (
                 <button
@@ -631,20 +632,15 @@ export default function AdminNotificationsPage() {
                     <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-2">
                       Category <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      id="type"
-                      name="type"
+                    <CustomDropdown
+                      options={notificationCategories.map(category => ({
+                        value: category.value,
+                        label: category.label
+                      }))}
                       value={formData.type}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                      required
-                    >
-                      {notificationCategories.map((category) => (
-                        <option key={category.value} value={category.value}>
-                          {category.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => handleInputChange({ target: { name: 'type', value } } as any)}
+                      placeholder="Select notification type"
+                    />
                   </div>
                 </div>
 
