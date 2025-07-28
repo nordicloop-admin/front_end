@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { Search, X } from 'lucide-react';
 import { getAdminCompanies, updateCompanyStatus, getCompanyFilterOptions, type AdminCompany, type AdminCompanyParams, type FilterOption } from '@/services/company';
 
 export default function CompaniesPage() {
@@ -329,53 +330,50 @@ export default function CompaniesPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden mb-8">
-        <div className="p-4 border-b">
-          <div className="flex flex-col gap-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
+      {/* Search and Filters */}
+      <div className="bg-white border border-gray-200 rounded-lg mb-6">
+        <div className="p-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Search companies..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 py-2 w-full sm:w-80 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                />
               </div>
-              <input
-                type="text"
-                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                placeholder="Search by company name, VAT, email, country, or user name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <div className="flex items-center">
-                <label htmlFor="status" className="mr-2 text-sm font-medium text-gray-700 whitespace-nowrap">Status:</label>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <select
-                  id="status"
-                  className="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md min-w-[120px]"
                   value={selectedStatus}
                   onChange={(e) => handleStatusChange(e.target.value)}
+                  className={`px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent ${
+                    selectedStatus !== 'all'
+                      ? 'border-[#FF8A00] bg-orange-50'
+                      : 'border-gray-300'
+                  }`}
                 >
-                  <option value="all">All</option>
+                  <option value="all">All Status</option>
                   <option value="pending">Pending</option>
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
-              </div>
 
-              <div className="flex items-center">
-                <label htmlFor="sector" className="mr-2 text-sm font-medium text-gray-700 whitespace-nowrap">Sector:</label>
                 <select
-                  id="sector"
-                  className="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md min-w-[180px]"
                   value={selectedSector}
                   onChange={(e) => handleSectorChange(e.target.value)}
                   disabled={filterOptionsLoading}
+                  className={`px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50 ${
+                    selectedSector !== 'all'
+                      ? 'border-[#FF8A00] bg-orange-50'
+                      : 'border-gray-300'
+                  }`}
                 >
                   <option value="all">
-                    {filterOptionsLoading ? 'Loading sectors...' : 'All Sectors'}
+                    {filterOptionsLoading ? 'Loading...' : 'All Sectors'}
                   </option>
                   {sectors.map((sector) => (
                     <option key={sector.value} value={sector.value}>
@@ -383,19 +381,19 @@ export default function CompaniesPage() {
                     </option>
                   ))}
                 </select>
-              </div>
 
-              <div className="flex items-center">
-                <label htmlFor="country" className="mr-2 text-sm font-medium text-gray-700 whitespace-nowrap">Country:</label>
                 <select
-                  id="country"
-                  className="block w-full pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md min-w-[140px]"
                   value={selectedCountry}
                   onChange={(e) => handleCountryChange(e.target.value)}
                   disabled={filterOptionsLoading}
+                  className={`px-3 py-2 border rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50 ${
+                    selectedCountry !== 'all'
+                      ? 'border-[#FF8A00] bg-orange-50'
+                      : 'border-gray-300'
+                  }`}
                 >
                   <option value="all">
-                    {filterOptionsLoading ? 'Loading countries...' : 'All Countries'}
+                    {filterOptionsLoading ? 'Loading...' : 'All Countries'}
                   </option>
                   {countries.map((country) => (
                     <option key={country.value} value={country.value}>
@@ -403,10 +401,40 @@ export default function CompaniesPage() {
                     </option>
                   ))}
                 </select>
+
+                {(searchTerm || selectedStatus !== 'all' || selectedSector !== 'all' || selectedCountry !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedStatus('all');
+                      setSelectedSector('all');
+                      setSelectedCountry('all');
+                    }}
+                    className="p-2 text-gray-400 hover:text-gray-600 rounded-md transition-colors self-start"
+                    title="Clear all filters"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
+            </div>
+
+            <div className="text-sm text-gray-600 text-center lg:text-right flex items-center justify-center lg:justify-end gap-2">
+              {loading && (
+                <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-[#FF8A00]"></div>
+              )}
+              <span>
+                Showing {(currentPage - 1) * pagination.page_size + 1} to{' '}
+                {Math.min(currentPage * pagination.page_size, pagination.count)} of{' '}
+                {pagination.count} companies
+              </span>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Companies Table */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-8">
 
         {loading ? (
           <div className="p-8 text-center">
@@ -519,8 +547,15 @@ export default function CompaniesPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                        No companies found
+                      <td colSpan={7} className="px-6 py-12 text-center">
+                        <div className="text-gray-500">
+                          <div className="text-lg font-medium text-gray-900 mb-2">No Companies Found</div>
+                          <p className="text-sm text-gray-600">
+                            {searchTerm || selectedStatus !== 'all' || selectedSector !== 'all' || selectedCountry !== 'all'
+                              ? 'No companies match your current filters. Try adjusting your search criteria.'
+                              : 'No companies have been registered yet.'}
+                          </p>
+                        </div>
                       </td>
                     </tr>
                   )}
