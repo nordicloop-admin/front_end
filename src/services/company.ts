@@ -15,16 +15,10 @@ interface CompanyRegistrationResponse {
   sector: string;
   country: string;
   website: string;
-  primary_first_name: string;
-  primary_last_name: string;
-  primary_email: string;
-  primary_position: string;
-  secondary_first_name?: string;
-  secondary_last_name?: string;
-  secondary_email?: string;
-  secondary_position?: string;
   registration_date: string;
   status: string;
+  // Note: Contact information is now managed through User model
+  // and will be available through the contacts endpoint
 }
 
 /**
