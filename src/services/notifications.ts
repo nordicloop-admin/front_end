@@ -9,12 +9,14 @@ export interface Notification {
   title: string;
   message: string;
   date: string;
-  isRead: boolean;
+  is_read: boolean;
   type: string;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
-  actionUrl?: string | null;
+  action_url?: string | null;
   metadata?: Record<string, any>;
-  userId?: number | null; // Optional user ID for targeted notifications
+  user?: number | null; // User ID for targeted notifications (null for all users)
+  company_name?: string | null; // Company name for display purposes
+  subscription_target?: 'all' | 'free' | 'standard' | 'premium';
 }
 
 export interface CreateNotificationRequest {
@@ -22,9 +24,10 @@ export interface CreateNotificationRequest {
   message: string;
   type: string;
   priority?: 'low' | 'normal' | 'high' | 'urgent';
-  actionUrl?: string | null;
+  action_url?: string | null;
   metadata?: Record<string, any>;
-  userId?: number | null; // Optional user ID for targeted notifications
+  userId?: number | null; // Optional user ID for targeted notifications (will be converted to 'user' in API)
+  subscription_target?: 'all' | 'free' | 'standard' | 'premium';
 }
 
 /**
@@ -72,11 +75,32 @@ export async function deleteNotification(notificationId: number) {
 // Admin functions
 
 /**
- * Get all notifications (admin only)
- * @returns Promise with all notifications data
+ * Get all notifications with pagination and filters (admin only)
+ * @param params - Query parameters for pagination and filtering
+ * @returns Promise with paginated notifications data
  */
-export async function getAllNotifications() {
-  return apiGet<Notification[]>('/notifications/list-all/', true);
+export async function getAllNotifications(params?: {
+  page?: number;
+  page_size?: number;
+  type?: string;
+  priority?: string;
+  search?: string;
+}) {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+  if (params?.type) queryParams.append('type', params.type);
+  if (params?.priority) queryParams.append('priority', params.priority);
+  if (params?.search) queryParams.append('search', params.search);
+
+  const url = `/notifications/list-all/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return apiGet<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Notification[];
+  }>(url, true);
 }
 
 /**

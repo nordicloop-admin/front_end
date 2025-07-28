@@ -14,7 +14,7 @@ const mockNotifications = [
     title: "Welcome to Nordic Loop",
     message: "Thank you for joining our community! Explore our marketplace and start creating your first auction.",
     date: "2025-07-01T10:00:00",
-    isRead: true,
+    is_read: true,
     type: "welcome"
   }
 ];
@@ -63,9 +63,9 @@ export default function NotificationsPage() {
 
     // Filter by tab
     if (activeTab === 'unread') {
-      filtered = filtered.filter(notification => !notification.isRead);
+      filtered = filtered.filter(notification => !notification.is_read);
     } else if (activeTab === 'read') {
-      filtered = filtered.filter(notification => notification.isRead);
+      filtered = filtered.filter(notification => notification.is_read);
     }
 
     // Apply additional filters
@@ -90,8 +90,8 @@ export default function NotificationsPage() {
         setError(response.error);
       } else {
         // Update local state
-        setNotifications(notifications.map(notification => 
-          notification.id === id ? { ...notification, isRead: true } : notification
+        setNotifications(notifications.map(notification =>
+          notification.id === id ? { ...notification, is_read: true } : notification
         ));
       }
     } catch (_err) {
@@ -124,7 +124,7 @@ export default function NotificationsPage() {
         setError(response.error);
       } else {
         // Update local state
-        setNotifications(notifications.map(notification => ({ ...notification, isRead: true })));
+        setNotifications(notifications.map(notification => ({ ...notification, is_read: true })));
       }
     } catch (_err) {
       setError('Failed to mark all notifications as read');
@@ -167,7 +167,7 @@ export default function NotificationsPage() {
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-sm text-gray-600 hover:text-[#FF8A00] flex items-center transition-colors"
-                disabled={loading || notifications.filter(n => !n.isRead).length === 0}
+                disabled={loading || notifications.filter(n => !n.is_read).length === 0}
               >
                 <CheckCircle size={14} className="mr-1" />
                 Mark all as read
