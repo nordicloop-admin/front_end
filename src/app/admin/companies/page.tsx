@@ -58,8 +58,8 @@ export default function CompaniesPage() {
           setSectors(response.data.sectors);
           setCountries(response.data.countries);
         }
-      } catch (error) {
-        console.error('Failed to load filter options:', error);
+      } catch (_error) {
+        // Failed to load filter options - silently handle error
       } finally {
         setFilterOptionsLoading(false);
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 
 interface DropdownOption {
@@ -43,6 +43,12 @@ export default function CustomDropdown({
     };
   }, []);
 
+  const handleSelect = useCallback((optionValue: string) => {
+    onChange(optionValue);
+    setIsOpen(false);
+    setFocusedIndex(-1);
+  }, [onChange]);
+
   // Handle keyboard navigation
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -80,16 +86,10 @@ export default function CustomDropdown({
         document.removeEventListener('keydown', handleKeyDown);
       };
     }
-  }, [isOpen, focusedIndex, options]);
+  }, [isOpen, focusedIndex, options, handleSelect]);
 
   const selectedOption = options.find(option => option.value === value);
   const isActive = value !== 'all' && value !== '';
-
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setFocusedIndex(-1);
-  };
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
