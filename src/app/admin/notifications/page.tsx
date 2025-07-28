@@ -284,8 +284,8 @@ export default function AdminNotificationsPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-xl font-medium text-gray-900">Notification Management</h1>
-          <p className="text-gray-500 text-sm mt-1">Create and manage notifications for users</p>
+          <h1 className="text-2xl font-semibold text-gray-900">Notification Management</h1>
+          <p className="text-gray-600 mt-1">Create and manage notifications for users</p>
         </div>
         <button
           onClick={() => setShowCreateForm(true)}
@@ -298,16 +298,16 @@ export default function AdminNotificationsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div className="bg-white border border-gray-100 rounded-md p-5">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900 mb-1">{totalCount}</div>
-            <div className="text-sm font-medium text-gray-600">Total Notifications</div>
+            <div className="text-2xl font-semibold text-gray-900 mb-1">{totalCount}</div>
+            <div className="text-sm text-gray-600">Total Notifications</div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-md p-5">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900 mb-1">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {notifications.filter(n => {
                 const notificationDate = new Date(n.date);
                 const now = new Date();
@@ -315,31 +315,31 @@ export default function AdminNotificationsPage() {
                        notificationDate.getFullYear() === now.getFullYear();
               }).length}
             </div>
-            <div className="text-sm font-medium text-gray-600">This Month</div>
+            <div className="text-sm text-gray-600">This Month</div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-md p-5">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900 mb-1">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {notifications.filter(n => n.priority === 'high' || n.priority === 'urgent').length}
             </div>
-            <div className="text-sm font-medium text-gray-600">High Priority</div>
+            <div className="text-sm text-gray-600">High Priority</div>
           </div>
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-md p-5">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-center">
-            <div className="text-lg font-semibold text-gray-900 mb-1">
+            <div className="text-2xl font-semibold text-gray-900 mb-1">
               {notifications.filter(n => !n.is_read).length}
             </div>
-            <div className="text-sm font-medium text-gray-600">Unread</div>
+            <div className="text-sm text-gray-600">Unread</div>
           </div>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white border border-gray-100 rounded-md mb-6">
+      <div className="bg-white border border-gray-200 rounded-lg mb-6">
         <div className="p-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center space-x-4">
@@ -403,7 +403,7 @@ export default function AdminNotificationsPage() {
         </div>
       </div>
       {/* Notifications List */}
-      <div className="bg-white border border-gray-100 rounded-md overflow-hidden">
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF8A00]"></div>
@@ -424,19 +424,19 @@ export default function AdminNotificationsPage() {
                 return (
                   <div
                     key={notification.id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    className="p-4 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start space-x-4 flex-1">
                         {/* Icon */}
-                        <div className={`p-3 rounded-lg ${typeConfig.bgColor}`}>
-                          <NotificationIcon className={`w-5 h-5 ${typeConfig.color}`} />
+                        <div className={`p-2 rounded-lg ${typeConfig.bgColor}`}>
+                          <NotificationIcon className={`w-4 h-4 ${typeConfig.color}`} />
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-3 mb-2">
-                            <h3 className="text-lg font-medium text-gray-900 truncate">
+                            <h3 className="text-base font-medium text-gray-900 truncate">
                               {notification.title}
                             </h3>
 
@@ -462,7 +462,7 @@ export default function AdminNotificationsPage() {
                             </span>
                           </div>
 
-                          <p className="text-gray-600 mb-3">
+                          <p className="text-sm text-gray-600 mb-3">
                             {notification.message}
                           </p>
 
@@ -476,7 +476,7 @@ export default function AdminNotificationsPage() {
                               <span className="flex items-center space-x-1">
                                 <User className="w-4 h-4" />
                                 <span>
-                                  {notification.user ? `User #${notification.user}` : 'All Users'}
+                                  {notification.company_name ? notification.company_name : 'All Users'}
                                 </span>
                               </span>
                             </div>

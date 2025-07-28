@@ -15,6 +15,7 @@ export interface Notification {
   action_url?: string | null;
   metadata?: Record<string, any>;
   user?: number | null; // User ID for targeted notifications (null for all users)
+  company_name?: string | null; // Company name for display purposes
   subscription_target?: 'all' | 'free' | 'standard' | 'premium';
 }
 
