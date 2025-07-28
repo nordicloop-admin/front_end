@@ -145,7 +145,7 @@ export default function AdminNotificationsPage() {
     }, 500);
 
     return () => clearTimeout(handler);
-  }, [searchQuery, selectedTypeFilter, selectedPriorityFilter]);
+  }, [searchQuery, selectedTypeFilter, selectedPriorityFilter, currentPage, fetchNotifications]);
   
   // Search users from API
   const searchUsersFromAPI = useCallback(async (query: string) => {
