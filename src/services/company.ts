@@ -1,7 +1,7 @@
 /**
  * Company service for handling company registration and management
  */
-import { apiPost, apiGet } from './api';
+import { apiPost, apiGet, apiPut, apiDelete } from './api';
 import { CompanyRegistration } from '@/types/auth';
 
 /**
@@ -251,4 +251,9 @@ export function generateSignupToken(email: string): string {
 }
 
 // Export types for use in components
-export type { AdminCompany, AdminCompanyListResponse, AdminCompanyParams, CompanyStatusUpdateResponse };
+export type {
+  AdminCompany,
+  AdminCompanyListResponse,
+  AdminCompanyParams,
+  CompanyStatusUpdateResponse
+};

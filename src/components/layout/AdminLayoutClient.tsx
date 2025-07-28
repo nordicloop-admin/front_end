@@ -156,17 +156,7 @@ export default function AdminLayoutClient({
             )}
           </Link>
 
-          <Link
-            href="/admin/users"
-            className={`flex items-center px-4 py-2.5 ${pathname === '/admin/users' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
-            onClick={isMobile ? toggleSidebar : undefined}
-          >
-            <svg className="h-[18px] w-[18px] mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="8" r="4" stroke={pathname === '/admin/users' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
-              <path d="M20 19C20 16.2386 16.4183 14 12 14C7.58172 14 4 16.2386 4 19" stroke={pathname === '/admin/users' ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
-            </svg>
-            <span>Users</span>
-          </Link>
+
 
           <Link
             href="/admin/subscriptions"
