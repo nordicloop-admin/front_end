@@ -7,6 +7,7 @@ declare global {
   interface Window {
     google: any;
     initGoogleMapsAPI: () => void;
+    googleMapsLoading: boolean;
   }
 }
 
@@ -28,38 +29,58 @@ export function useGoogleMaps() {
   useEffect(() => {
     // Skip in SSR
     if (typeof window === 'undefined') return;
-    
+
     // If already loaded, return early
     if (window.google?.maps) {
       setIsLoaded(true);
       return;
     }
 
+    // If already loading, wait for it to complete
+    if (window.googleMapsLoading) {
+      const checkLoaded = () => {
+        if (window.google?.maps) {
+          setIsLoaded(true);
+        } else {
+          setTimeout(checkLoaded, 100);
+        }
+      };
+      checkLoaded();
+      return;
+    }
+
+    // Mark as loading
+    window.googleMapsLoading = true;
+
     // Google Maps API Key
     const googleMapsApiKey = 'AIzaSyDIlas6KRQPk1mIFlHzTZt2lH3w6b1bZw8';
-    
+
     // Define the callback function
     window.initGoogleMapsAPI = () => {
+      console.log('Google Maps API loaded successfully');
+      window.googleMapsLoading = false;
       setIsLoaded(true);
     };
 
     // Create and append the script
+    console.log('Creating Google Maps script...');
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&callback=initGoogleMapsAPI`;
     script.async = true;
     script.defer = true;
-    script.onerror = () => {
+    script.onerror = (error) => {
+      console.error('Failed to load Google Maps API:', error);
+      window.googleMapsLoading = false;
       setLoadError(new Error('Failed to load Google Maps API'));
     };
 
+    console.log('Appending Google Maps script to head...');
     document.head.appendChild(script);
 
     // Cleanup function
     return () => {
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
-      window.initGoogleMapsAPI = () => {};
+      // Don't remove the script as other components might be using it
+      // Just reset the callback if this is the last component
     };
   }, []);
 
