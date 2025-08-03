@@ -242,7 +242,7 @@ export default function DashboardLayoutClient({
                 strokeWidth="1.5"
               />
             </svg>
-            <span>Category Alerts</span>
+            <span>Wishlist</span>
           </Link>
 
 
