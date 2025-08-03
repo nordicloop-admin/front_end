@@ -322,6 +322,7 @@ interface EditAuctionModalProps {
   onClose: () => void;
   onSubmit: (auctionData: AuctionData) => Promise<void>;
   auction: AuctionData;
+  materialType?: string; // Optional: if provided, use this instead of waiting for API
 }
 
 interface StepData {
@@ -406,7 +407,7 @@ const getStepsByMaterialType = (materialType: string) => {
   ];
 };
 
-export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }: EditAuctionModalProps) {
+export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, materialType }: EditAuctionModalProps) {
   const [activeStep, setActiveStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepData, setStepData] = useState<StepData>({});
@@ -415,7 +416,21 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [_error, setError] = useState<string | null>(null);
-  const [steps, setSteps] = useState(allSteps); // Dynamic steps based on material type
+  // Initialize steps based on provided materialType or auction category
+  // Default to non-plastic steps (4 steps) if no material type is available yet
+  const initialMaterialType = materialType || auction?.category?.toLowerCase() || '';
+  const [steps, setSteps] = useState(() => {
+    if (!initialMaterialType) {
+      // Default to 4 steps while waiting for data (better UX than showing all 8)
+      return [
+        allSteps[0], // Material Type
+        { id: 6, title: 'Location & Logistics', description: 'Location and delivery options' },
+        { id: 7, title: 'Quantity & Price', description: 'Pricing and quantity details' },
+        { id: 8, title: 'Title & Description', description: 'Final details and images' }
+      ];
+    }
+    return getStepsByMaterialType(initialMaterialType);
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // NEW: Validation state for better UX (synchronized with AlternativeAuctionForm)
@@ -611,8 +626,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         images: []
       });
 
-      // Set steps based on material type
-      setSteps(getStepsByMaterialType(materialType));
+      // Set steps based on material type (only if not already set correctly)
+      const expectedSteps = getStepsByMaterialType(materialType);
+      if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
+        setSteps(expectedSteps);
+      }
     }
   }, [auction, categoriesLoaded]);
 

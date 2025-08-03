@@ -55,6 +55,34 @@ interface AdminCompany {
 }
 
 /**
+ * Interface for transaction history item
+ */
+interface TransactionHistoryItem {
+  id: number;
+  ad_name: string;
+  bid_amount: number;
+  volume: number;
+  total_value: number;
+  date: string;
+  buyer_name: string;
+}
+
+/**
+ * Interface for company statistics data
+ */
+interface CompanyStatistics {
+  active_ads: number;
+  total_bids: number;
+  completed_deals: number;
+  total_ads: number;
+  pending_ads: number;
+  winning_bids: number;
+  company_id: string;
+  company_name: string;
+  recent_transactions: TransactionHistoryItem[];
+}
+
+/**
  * Interface for admin company query parameters
  */
 interface AdminCompanyParams {
@@ -275,6 +303,25 @@ export async function getCompanyFilterOptions() {
 }
 
 /**
+ * Get company statistics for admin
+ * @param companyId The company ID
+ * @returns The company statistics data
+ */
+export async function getCompanyStatistics(companyId: string) {
+  try {
+    const response = await apiGet<CompanyStatistics>(`/company/admin/companies/${companyId}/stats/`, true);
+
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching company statistics',
+      status: 500
+    };
+  }
+}
+
+/**
  * Generate a signup token for a user
  * @param email The user's email
  * @returns A base64 encoded token
@@ -294,6 +341,8 @@ export type {
   AdminCompanyListResponse,
   AdminCompanyParams,
   CompanyStatusUpdateResponse,
+  CompanyStatistics,
+  TransactionHistoryItem,
   FilterOption,
   CompanyFilterOptions
 };

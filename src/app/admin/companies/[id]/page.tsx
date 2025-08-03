@@ -3,15 +3,17 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getAdminCompany, updateCompanyStatus, type AdminCompany } from '@/services/company';
-import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2 } from 'lucide-react';
+import { getAdminCompany, updateCompanyStatus, getCompanyStatistics, type AdminCompany, type CompanyStatistics, type TransactionHistoryItem } from '@/services/company';
+import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink } from 'lucide-react';
 
 export default function CompanyDetailPage() {
   const params = useParams();
   const companyId = params.id as string;
 
   const [company, setCompany] = useState<AdminCompany | null>(null);
+  const [statistics, setStatistics] = useState<CompanyStatistics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
 
@@ -37,7 +39,27 @@ export default function CompanyDetailPage() {
       }
     };
 
+    const loadStatistics = async () => {
+      if (!companyId) return;
+
+      setStatsLoading(true);
+
+      try {
+        const response = await getCompanyStatistics(companyId);
+
+        if (response.data) {
+          setStatistics(response.data);
+        }
+      } catch (_err) {
+        // Statistics are not critical, so we don't show error for this
+        console.error('Failed to load company statistics');
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
     loadCompany();
+    loadStatistics();
   }, [companyId]);
 
   const handleStatusUpdate = async (newStatus: 'approved' | 'rejected') => {
@@ -354,22 +376,156 @@ export default function CompanyDetailPage() {
 
           {/* Company Stats */}
           <div className="bg-white border border-gray-100 rounded-md p-6">
-            <h2 className="text-sm font-medium mb-4">Statistics</h2>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Active Ads</span>
-                <span className="font-medium">0</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Bids</span>
-                <span className="font-medium">0</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Completed Deals</span>
-                <span className="font-medium">0</span>
-              </div>
+            <div className="flex items-center mb-4">
+              <BarChart3 className="text-[#FF8A00] mr-2" size={20} />
+              <h2 className="text-sm font-medium">Statistics</h2>
             </div>
+
+            {statsLoading ? (
+              <div className="space-y-3">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Active Ads</span>
+                  <div className="flex items-center">
+                    <span className="font-medium mr-2">
+                      {statistics?.active_ads || 0}
+                    </span>
+                    {statistics && statistics.active_ads > 0 && (
+                      <Link
+                        href={`/admin/auctions?search=${encodeURIComponent(company?.companyName || statistics.company_name)}`}
+                        className="text-[#FF8A00] hover:text-[#e67700] transition-colors"
+                        title="View company auctions"
+                      >
+                        <ExternalLink size={14} />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Total Bids</span>
+                  <div className="flex items-center">
+                    <span className="font-medium mr-2">
+                      {statistics?.total_bids || 0}
+                    </span>
+                    {statistics && statistics.total_bids > 0 && (
+                      <Link
+                        href={`/admin/bids?search=${encodeURIComponent(company?.companyName || statistics.company_name)}`}
+                        className="text-[#FF8A00] hover:text-[#e67700] transition-colors"
+                        title="View company bids"
+                      >
+                        <ExternalLink size={14} />
+                      </Link>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Completed Deals</span>
+                  <span className="font-medium">
+                    {statistics?.completed_deals || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Winning Bids</span>
+                  <span className="font-medium">
+                    {statistics?.winning_bids || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Total Ads</span>
+                  <span className="font-medium">
+                    {statistics?.total_ads || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Pending Ads</span>
+                  <span className="font-medium">
+                    {statistics?.pending_ads || 0}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Transaction History */}
+          <div className="bg-white border border-gray-100 rounded-md p-6">
+            <h2 className="text-sm font-medium mb-4">Transaction History</h2>
+
+            {statsLoading ? (
+              <div className="animate-pulse space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {statistics && statistics.recent_transactions && statistics.recent_transactions.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="text-sm text-gray-600 mb-3">
+                      Recent completed transactions:
+                    </div>
+                    {statistics.recent_transactions.map((transaction: TransactionHistoryItem) => (
+                      <div key={transaction.id} className="border border-gray-100 rounded-md p-3 bg-gray-50">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-gray-900 truncate">
+                              {transaction.ad_name}
+                            </h4>
+                            <p className="text-xs text-gray-600">
+                              Buyer: {transaction.buyer_name}
+                            </p>
+                          </div>
+                          <div className="text-right ml-4">
+                            <p className="text-sm font-medium text-green-600">
+                              €{transaction.total_value.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(transaction.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span>Volume: {transaction.volume} units</span>
+                          <span>Price: €{transaction.bid_amount}/unit</span>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Total Successful Transactions:</span>
+                        <span className="font-medium text-green-600">
+                          {statistics.completed_deals}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm mt-1">
+                        <span className="text-gray-600">Active Negotiations:</span>
+                        <span className="font-medium text-blue-600">
+                          {statistics.winning_bids}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <div className="text-sm text-gray-500 italic">
+                      No completed transactions yet
+                    </div>
+                    {statistics && statistics.winning_bids > 0 && (
+                      <div className="text-xs text-gray-400 mt-2">
+                        {statistics.winning_bids} active negotiation{statistics.winning_bids !== 1 ? 's' : ''} in progress
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
