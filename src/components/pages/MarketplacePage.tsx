@@ -10,6 +10,8 @@ import { TimeFilter } from '@/components/marketplace/TimeFilter';
 import { FormFilter } from '@/components/marketplace/FormFilter';
 import { QuantityFilter } from '@/components/marketplace/QuantityFilter';
 import { BrokerFilter } from '@/components/marketplace/BrokerFilter';
+import { OriginFilter } from '@/components/marketplace/OriginFilter';
+import { ContaminationFilter } from '@/components/marketplace/ContaminationFilter';
 import { SortDropdown } from '@/components/marketplace/SortDropdown';
 import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
@@ -191,7 +193,14 @@ const MarketplacePage = () => {
   const [minQuantity, setMinQuantity] = useState(0);
   const [maxQuantity, setMaxQuantity] = useState(10000);
   const [selectedBrokerFilter, setSelectedBrokerFilter] = useState('all');
-  
+  const [selectedOrigin, setSelectedOrigin] = useState('');
+  const [selectedContamination, setSelectedContamination] = useState('');
+
+  // Filter state for API calls
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [subcategoryIds, setSubcategoryIds] = useState<number[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+
   // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -212,6 +221,24 @@ const MarketplacePage = () => {
     } else {
       setSelectedForms([...selectedForms, form]);
     }
+  };
+
+  // Filter callback functions
+  const handleCategoryChange = (categoryId: number | null, subcategoryIds: number[]) => {
+    setCategoryId(categoryId);
+    setSubcategoryIds(subcategoryIds);
+  };
+
+  const handleLocationChange = (countries: string[]) => {
+    setSelectedCountries(countries);
+  };
+
+  const handleOriginChange = (origin: string | null) => {
+    setSelectedOrigin(origin || '');
+  };
+
+  const handleContaminationChange = (contamination: string | null) => {
+    setSelectedContamination(contamination || '');
   };
 
   // Calculate time left for an auction
@@ -236,15 +263,20 @@ const MarketplacePage = () => {
     setError(null);
 
     try {
-      const brokerParams = {
+      const filterParams = {
         exclude_brokers: selectedBrokerFilter === 'exclude_brokers',
-        only_brokers: selectedBrokerFilter === 'only_brokers'
+        only_brokers: selectedBrokerFilter === 'only_brokers',
+        category: categoryId || undefined,
+        subcategory: subcategoryIds.length === 1 ? subcategoryIds[0] : undefined,
+        origin: selectedOrigin || undefined,
+        contamination: selectedContamination || undefined,
+        country: selectedCountries.length > 0 ? selectedCountries[0] : undefined, // API supports single country
       };
 
       const response = await getAuctions({
         page,
         page_size: size,
-        ...brokerParams
+        ...filterParams
       });
 
       if (response.error) {
@@ -271,7 +303,8 @@ const MarketplacePage = () => {
   // Initial fetch and refetch when filters change
   useEffect(() => {
     fetchAuctions(currentPage, pageSize);
-  }, [currentPage, pageSize, selectedBrokerFilter]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, selectedBrokerFilter, categoryId, subcategoryIds, selectedOrigin, selectedContamination, selectedCountries]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -297,16 +330,9 @@ const MarketplacePage = () => {
     image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
   }));
 
-  // Filter auctions based on search term and category
-  const filteredAuctions = convertedAuctions.filter(auction => {
-    const matchesCategory = selectedCategory === 'All materials' ||
-      (auction.category && auction.category === selectedCategory);
-
-    const matchesLocation = selectedLocation === 'All Locations' ||
-      (auction.countryOfOrigin && auction.countryOfOrigin === selectedLocation);
-
-    return matchesCategory && matchesLocation;
-  });
+  // Since we're now using server-side filtering, we use the API results directly
+  // The server already filters based on category, location, origin, contamination, etc.
+  const filteredAuctions = convertedAuctions;
 
   return (
     <div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
@@ -334,11 +360,25 @@ const MarketplacePage = () => {
           <CategoryFilter
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
+            onCategoryChange={handleCategoryChange}
           />
 
           <LocationFilter
             selectedLocation={selectedLocation}
             setSelectedLocation={setSelectedLocation}
+            onLocationChange={handleLocationChange}
+          />
+
+          <OriginFilter
+            selectedOrigin={selectedOrigin}
+            setOrigin={setSelectedOrigin}
+            onOriginChange={handleOriginChange}
+          />
+
+          <ContaminationFilter
+            selectedContamination={selectedContamination}
+            setContamination={setSelectedContamination}
+            onContaminationChange={handleContaminationChange}
           />
 
           <QuantityFilter
@@ -408,6 +448,11 @@ const MarketplacePage = () => {
                     setSelectedForms([]);
                     setSelectedDateFilter('All time');
                     setSelectedBrokerFilter('all');
+                    setSelectedOrigin('');
+                    setSelectedContamination('');
+                    setCategoryId(null);
+                    setSubcategoryIds([]);
+                    setSelectedCountries([]);
                   }}
                   className="mt-2 text-[#FF8A00] hover:underline"
                 >

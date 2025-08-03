@@ -3,35 +3,51 @@
 import React, { useState, useEffect } from 'react';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { ChevronRight } from '@/components/ui/Icons';
-import categoriesData from '@/data/categories.json';
-
-interface Category {
-  id: string;
-  name: string;
-  subcategories: {
-    id: string;
-    name: string;
-  }[];
-}
+import { getCategories, Category } from '@/services/auction';
 
 interface CategoryFilterProps {
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
+  onCategoryChange: (categoryId: number | null, subcategoryIds: number[]) => void;
 }
 
-export function CategoryFilter({ selectedCategory, setSelectedCategory }: CategoryFilterProps) {
+export function CategoryFilter({ selectedCategory, setSelectedCategory, onCategoryChange }: CategoryFilterProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryObj, setSelectedCategoryObj] = useState<Category | null>(null);
   const [showSubcategories, setShowSubcategories] = useState(false);
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCategories(categoriesData.categories);
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await getCategories();
+        if (response.data) {
+          // Add "All materials" option at the beginning
+          const allMaterialsCategory: Category = {
+            id: 0,
+            name: "All materials",
+            subcategories: []
+          };
+          setCategories([allMaterialsCategory, ...response.data]);
+        }
+      } catch (_error) {
+        // Handle error silently or show user-friendly message
+        setCategories([{ id: 0, name: "All materials", subcategories: [] }]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchCategories();
+  }, []);
+
+  useEffect(() => {
     // Find the selected category object
-    const categoryObj = categoriesData.categories.find(cat => cat.name === selectedCategory);
+    const categoryObj = categories.find(cat => cat.name === selectedCategory);
     setSelectedCategoryObj(categoryObj || null);
-  }, [selectedCategory]);
+  }, [selectedCategory, categories]);
 
   // Split categories into two columns
   const leftCategories = categories.slice(0, Math.ceil(categories.length / 2));
@@ -53,12 +69,12 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
     setShowSubcategories(false);
   };
 
-  const handleSubcategoryToggle = (subcategoryName: string) => {
+  const handleSubcategoryToggle = (subcategoryId: number) => {
     setSelectedSubcategories(prev => {
-      if (prev.includes(subcategoryName)) {
-        return prev.filter(name => name !== subcategoryName);
+      if (prev.includes(subcategoryId)) {
+        return prev.filter(id => id !== subcategoryId);
       } else {
-        return [...prev, subcategoryName];
+        return [...prev, subcategoryId];
       }
     });
   };
@@ -70,7 +86,7 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
         setSelectedSubcategories([]);
       } else {
         // Otherwise, select all
-        setSelectedSubcategories(selectedCategoryObj.subcategories.map(sub => sub.name));
+        setSelectedSubcategories(selectedCategoryObj.subcategories.map(sub => sub.id));
       }
     }
   };
@@ -79,9 +95,16 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
     if (selectedSubcategories.length > 0) {
       // If subcategories are selected, use them
       setSelectedCategory(`${selectedCategoryObj?.name} (${selectedSubcategories.length})`);
+      onCategoryChange(selectedCategoryObj?.id || null, selectedSubcategories);
     } else if (selectedCategoryObj) {
       // If no subcategories selected, use the main category
       setSelectedCategory(selectedCategoryObj.name);
+      if (selectedCategoryObj.id === 0) {
+        // "All materials" selected
+        onCategoryChange(null, []);
+      } else {
+        onCategoryChange(selectedCategoryObj.id, []);
+      }
     }
     setShowSubcategories(false);
   };
@@ -107,7 +130,11 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
       label={selectedCategory}
       contentClassName="w-[750px]"
     >
-      {!showSubcategories ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-sm text-gray-500">Loading categories...</div>
+        </div>
+      ) : !showSubcategories ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-0 max-h-[400px] overflow-y-auto">
           {/* Left Column */}
           <div>
@@ -168,12 +195,12 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
                 <div key={subcategory.id} className="flex items-center mb-4">
                   <input
                     type="checkbox"
-                    id={subcategory.id}
+                    id={`sub-${subcategory.id}`}
                     className="h-4 w-4 border-gray-300 rounded"
-                    checked={selectedSubcategories.includes(subcategory.name)}
-                    onChange={() => handleSubcategoryToggle(subcategory.name)}
+                    checked={selectedSubcategories.includes(subcategory.id)}
+                    onChange={() => handleSubcategoryToggle(subcategory.id)}
                   />
-                  <label htmlFor={subcategory.id} className="ml-2 text-sm text-gray-700">
+                  <label htmlFor={`sub-${subcategory.id}`} className="ml-2 text-sm text-gray-700">
                     {subcategory.name}
                   </label>
                 </div>
@@ -186,12 +213,12 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
                 <div key={subcategory.id} className="flex items-center mb-4">
                   <input
                     type="checkbox"
-                    id={subcategory.id}
+                    id={`sub-${subcategory.id}`}
                     className="h-4 w-4 border-gray-300 rounded"
-                    checked={selectedSubcategories.includes(subcategory.name)}
-                    onChange={() => handleSubcategoryToggle(subcategory.name)}
+                    checked={selectedSubcategories.includes(subcategory.id)}
+                    onChange={() => handleSubcategoryToggle(subcategory.id)}
                   />
-                  <label htmlFor={subcategory.id} className="ml-2 text-sm text-gray-700">
+                  <label htmlFor={`sub-${subcategory.id}`} className="ml-2 text-sm text-gray-700">
                     {subcategory.name}
                   </label>
                 </div>
@@ -204,12 +231,12 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
                 <div key={subcategory.id} className="flex items-center mb-4">
                   <input
                     type="checkbox"
-                    id={subcategory.id}
+                    id={`sub-${subcategory.id}`}
                     className="h-4 w-4 border-gray-300 rounded"
-                    checked={selectedSubcategories.includes(subcategory.name)}
-                    onChange={() => handleSubcategoryToggle(subcategory.name)}
+                    checked={selectedSubcategories.includes(subcategory.id)}
+                    onChange={() => handleSubcategoryToggle(subcategory.id)}
                   />
-                  <label htmlFor={subcategory.id} className="ml-2 text-sm text-gray-700">
+                  <label htmlFor={`sub-${subcategory.id}`} className="ml-2 text-sm text-gray-700">
                     {subcategory.name}
                   </label>
                 </div>

@@ -19,9 +19,10 @@ interface Region {
 interface LocationFilterProps {
   selectedLocation: string;
   setSelectedLocation: (location: string) => void;
+  onLocationChange: (countries: string[]) => void;
 }
 
-export function LocationFilter({ selectedLocation, setSelectedLocation }: LocationFilterProps) {
+export function LocationFilter({ selectedLocation, setSelectedLocation, onLocationChange }: LocationFilterProps) {
   const [countries, setCountries] = useState<Country[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -102,10 +103,13 @@ export function LocationFilter({ selectedLocation, setSelectedLocation }: Locati
   const handleApply = () => {
     if (locationType === 'near-me') {
       setSelectedLocation('Near me');
+      onLocationChange([]); // Near me doesn't filter by specific countries
     } else if (selectedCountries.length > 0) {
       setSelectedLocation(`${selectedCountries.length} countries selected`);
+      onLocationChange(selectedCountries);
     } else {
       setSelectedLocation('All Locations');
+      onLocationChange([]);
     }
   };
 
