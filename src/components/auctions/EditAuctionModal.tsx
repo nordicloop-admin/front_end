@@ -378,7 +378,8 @@ interface StepData {
   currentImageUrl?: string; // Current image from backend
 }
 
-const steps = [
+// All possible steps
+const allSteps = [
   { id: 1, title: 'Material Type', description: 'Category, packaging, and frequency' },
   { id: 2, title: 'Specifications', description: 'Grade, color, form, and details' },
   { id: 3, title: 'Material Origin', description: 'Source and origin information' },
@@ -389,6 +390,22 @@ const steps = [
   { id: 8, title: 'Title & Description', description: 'Final details and images' }
 ];
 
+// Function to get steps based on material type
+const getStepsByMaterialType = (materialType: string) => {
+  // For plastics, show all steps
+  if (materialType.toLowerCase() === 'plastic' || materialType.toLowerCase() === 'plastics') {
+    return allSteps;
+  }
+
+  // For all other materials, skip steps 2-5
+  return [
+    allSteps[0], // Material Type
+    { id: 6, title: 'Location & Logistics', description: 'Location and delivery options' },
+    { id: 7, title: 'Quantity & Price', description: 'Pricing and quantity details' },
+    { id: 8, title: 'Title & Description', description: 'Final details and images' }
+  ];
+};
+
 export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }: EditAuctionModalProps) {
   const [activeStep, setActiveStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -398,6 +415,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [_error, setError] = useState<string | null>(null);
+  const [steps, setSteps] = useState(allSteps); // Dynamic steps based on material type
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // NEW: Validation state for better UX (synchronized with AlternativeAuctionForm)
@@ -565,24 +583,26 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         }
       }
       
+      const materialType = auction.category.toLowerCase();
+
       setStepData({
         // Step 1
         category: auction.category,
         subcategory: auction.subcategory,
-        materialType: auction.category.toLowerCase(),
-        
+        materialType: materialType,
+
         // Step 2: Initialize specifications data
         grade: grade || '',
         color: color || '',
         form: form || '',
         additionalSpecs: additionalSpecs,
-        
+
         // Step 7
         availableQuantity: volumeValue,
         unit: volumeUnit,
         startingPrice: basePriceValue,
         currency: 'SEK',
-        
+
         // Step 8
         title: auction.name,
         description: auction.description,
@@ -590,18 +610,34 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         currentImageUrl: auction.material_image || auction.image,
         images: []
       });
+
+      // Set steps based on material type
+      setSteps(getStepsByMaterialType(materialType));
     }
   }, [auction, categoriesLoaded]);
 
   const handleStepDataChange = (updates: Partial<StepData>) => {
     setStepData(prev => ({ ...prev, ...updates }));
     setHasChanges(true);
-    
+
+    // If material type is being updated, update the steps
+    if (updates.materialType || updates.category) {
+      const materialType = updates.materialType || updates.category?.toLowerCase() || '';
+      const newSteps = getStepsByMaterialType(materialType);
+      setSteps(newSteps);
+
+      // If current active step is not available in new steps, go to step 1
+      const currentStepExists = newSteps.some(step => step.id === activeStep);
+      if (!currentStepExists) {
+        setActiveStep(1);
+      }
+    }
+
     // Clear validation errors when user starts fixing them (synchronized with AlternativeAuctionForm)
     if (showValidationErrors) {
       const clearedErrors = { ...validationErrors };
       let hasChanges = false;
-      
+
       // Clear errors for fields being updated
       Object.keys(updates).forEach(field => {
         if (clearedErrors[field]) {
@@ -609,7 +645,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           hasChanges = true;
         }
       });
-      
+
       if (hasChanges) {
         setValidationErrors(clearedErrors);
         if (Object.keys(clearedErrors).length === 0) {
@@ -2254,7 +2290,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Edit Auction</h2>
             <p className="text-sm text-gray-600">
-              {auction.name} - Step {activeStep} of {steps.length}
+              {auction.name} - Step {steps.findIndex(step => step.id === activeStep) + 1} of {steps.length}
             </p>
           </div>
           <button
@@ -2382,17 +2418,27 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
-                  disabled={activeStep === 1}
+                  onClick={() => {
+                    const currentIndex = steps.findIndex(step => step.id === activeStep);
+                    if (currentIndex > 0) {
+                      setActiveStep(steps[currentIndex - 1].id);
+                    }
+                  }}
+                  disabled={steps.findIndex(step => step.id === activeStep) === 0}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Previous</span>
                 </button>
-                
+
                 <button
-                  onClick={() => setActiveStep(Math.min(steps.length, activeStep + 1))}
-                  disabled={activeStep === steps.length}
+                  onClick={() => {
+                    const currentIndex = steps.findIndex(step => step.id === activeStep);
+                    if (currentIndex < steps.length - 1) {
+                      setActiveStep(steps[currentIndex + 1].id);
+                    }
+                  }}
+                  disabled={steps.findIndex(step => step.id === activeStep) === steps.length - 1}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <span>Next</span>
