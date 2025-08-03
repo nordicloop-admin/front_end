@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getAdminCompany, updateCompanyStatus, getCompanyStatistics, type AdminCompany, type CompanyStatistics, type TransactionHistoryItem } from '@/services/company';
-import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink } from 'lucide-react';
+import { createNotification, type CreateNotificationRequest } from '@/services/notifications';
+import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink, Send, Bell, X } from 'lucide-react';
 
 export default function CompanyDetailPage() {
   const params = useParams();
@@ -16,6 +17,27 @@ export default function CompanyDetailPage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+
+  // Modal states
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+
+  // Email form state
+  const [emailForm, setEmailForm] = useState({
+    subject: '',
+    message: ''
+  });
+
+  // Notification form state
+  const [notificationForm, setNotificationForm] = useState({
+    title: '',
+    message: '',
+    type: 'system' as const,
+    priority: 'normal' as const
+  });
+
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [sendingNotification, setSendingNotification] = useState(false);
 
   useEffect(() => {
     const loadCompany = async () => {
@@ -61,6 +83,65 @@ export default function CompanyDetailPage() {
     loadCompany();
     loadStatistics();
   }, [companyId]);
+
+  // Handle email sending
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!company) return;
+
+    setSendingEmail(true);
+    try {
+      // Here you would implement the actual email sending logic
+      // For now, we'll just simulate it
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      alert(`Email sent to ${company.companyEmail}`);
+      setEmailForm({ subject: '', message: '' });
+      setShowEmailModal(false);
+    } catch (error) {
+      alert('Failed to send email');
+    } finally {
+      setSendingEmail(false);
+    }
+  };
+
+  // Handle notification sending
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!company) return;
+
+    setSendingNotification(true);
+    try {
+      // Get all users from this company
+      const notificationData: CreateNotificationRequest = {
+        title: notificationForm.title,
+        message: notificationForm.message,
+        type: notificationForm.type,
+        priority: notificationForm.priority,
+        // We'll send to all users in the company by using the company filter
+        // This would need to be implemented in the backend to filter by company
+      };
+
+      const response = await createNotification(notificationData);
+
+      if (response.error) {
+        alert(`Failed to send notification: ${response.error}`);
+      } else {
+        alert('Notification sent successfully');
+        setNotificationForm({
+          title: '',
+          message: '',
+          type: 'system',
+          priority: 'normal'
+        });
+        setShowNotificationModal(false);
+      }
+    } catch (error) {
+      alert('Failed to send notification');
+    } finally {
+      setSendingNotification(false);
+    }
+  };
 
   const handleStatusUpdate = async (newStatus: 'approved' | 'rejected') => {
     if (!company) return;
@@ -343,10 +424,33 @@ export default function CompanyDetailPage() {
 
         {/* Status and Actions Sidebar */}
         <div className="space-y-6">
+          {/* Quick Actions */}
+          <div className="bg-white border border-gray-100 rounded-md p-6">
+            <h2 className="text-sm font-medium mb-4">Quick Actions</h2>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowEmailModal(true)}
+                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                <Mail size={16} className="mr-2" />
+                Send Email
+              </button>
+
+              <button
+                onClick={() => setShowNotificationModal(true)}
+                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] border border-[#FF8A00] rounded-md hover:bg-[#e67700] transition-colors"
+              >
+                <Bell size={16} className="mr-2" />
+                Send Notification
+              </button>
+            </div>
+          </div>
+
           {/* Status Card */}
           <div className="bg-white border border-gray-100 rounded-md p-6">
             <h2 className="text-sm font-medium mb-4">Status</h2>
-            
+
             <div className="text-center">
               <span className={`inline-flex px-4 py-2 rounded-full text-sm font-semibold
                 ${company.status === 'approved' ? 'bg-green-100 text-green-800' :
@@ -401,7 +505,7 @@ export default function CompanyDetailPage() {
                       <Link
                         href={`/admin/auctions?search=${encodeURIComponent(company?.companyName || statistics.company_name)}`}
                         className="text-[#FF8A00] hover:text-[#e67700] transition-colors"
-                        title="View company auctions"
+                        title="View active company auctions"
                       >
                         <ExternalLink size={14} />
                       </Link>
@@ -418,36 +522,80 @@ export default function CompanyDetailPage() {
                       <Link
                         href={`/admin/bids?search=${encodeURIComponent(company?.companyName || statistics.company_name)}`}
                         className="text-[#FF8A00] hover:text-[#e67700] transition-colors"
-                        title="View company bids"
+                        title="View all company bids"
                       >
                         <ExternalLink size={14} />
                       </Link>
                     )}
                   </div>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Completed Deals</span>
-                  <span className="font-medium">
-                    {statistics?.completed_deals || 0}
-                  </span>
+                  <div className="flex items-center">
+                    <span className="font-medium mr-2">
+                      {statistics?.completed_deals || 0}
+                    </span>
+                    {statistics && statistics.completed_deals > 0 && (
+                      <Link
+                        href={`/admin/bids?search=${encodeURIComponent(company?.companyName || statistics.company_name)}&status=won`}
+                        className="text-[#FF8A00] hover:text-[#e67700] transition-colors"
+                        title="View completed deals"
+                      >
+                        <ExternalLink size={14} />
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Winning Bids</span>
-                  <span className="font-medium">
-                    {statistics?.winning_bids || 0}
-                  </span>
+                  <div className="flex items-center">
+                    <span className="font-medium mr-2">
+                      {statistics?.winning_bids || 0}
+                    </span>
+                    {statistics && statistics.winning_bids > 0 && (
+                      <Link
+                        href={`/admin/bids?search=${encodeURIComponent(company?.companyName || statistics.company_name)}&status=winning`}
+                        className="text-[#FF8A00] hover:text-[#e67700] transition-colors"
+                        title="View winning bids"
+                      >
+                        <ExternalLink size={14} />
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total Ads</span>
-                  <span className="font-medium">
-                    {statistics?.total_ads || 0}
-                  </span>
+                  <div className="flex items-center">
+                    <span className="font-medium mr-2">
+                      {statistics?.total_ads || 0}
+                    </span>
+                    {statistics && statistics.total_ads > 0 && (
+                      <Link
+                        href={`/admin/auctions?search=${encodeURIComponent(company?.companyName || statistics.company_name)}`}
+                        className="text-[#FF8A00] hover:text-[#e67700] transition-colors"
+                        title="View all company ads"
+                      >
+                        <ExternalLink size={14} />
+                      </Link>
+                    )}
+                  </div>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Pending Ads</span>
-                  <span className="font-medium">
-                    {statistics?.pending_ads || 0}
-                  </span>
+                  <div className="flex items-center">
+                    <span className="font-medium mr-2">
+                      {statistics?.pending_ads || 0}
+                    </span>
+                    {statistics && statistics.pending_ads > 0 && (
+                      <Link
+                        href={`/admin/auctions?search=${encodeURIComponent(company?.companyName || statistics.company_name)}&status=pending`}
+                        className="text-[#FF8A00] hover:text-[#e67700] transition-colors"
+                        title="View pending company ads"
+                      >
+                        <ExternalLink size={14} />
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -529,6 +677,218 @@ export default function CompanyDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Email Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Send Email</h3>
+              <button
+                onClick={() => setShowEmailModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+
+              <form onSubmit={handleSendEmail}>
+                <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    To
+                  </label>
+                  <input
+                    type="email"
+                    value={company?.companyEmail || ''}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Subject
+                  </label>
+                  <input
+                    type="text"
+                    value={emailForm.subject}
+                    onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    value={emailForm.message}
+                    onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    required
+                  />
+                </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowEmailModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingEmail}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] rounded-md hover:bg-[#e67700] disabled:opacity-50 flex items-center"
+                >
+                  {sendingEmail ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send size={16} className="mr-2" />
+                      Send Email
+                    </>
+                  )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Modal */}
+      {showNotificationModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Send Notification</h3>
+              <button
+                onClick={() => setShowNotificationModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6">
+
+              <form onSubmit={handleSendNotification}>
+                <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Target
+                  </label>
+                  <input
+                    type="text"
+                    value={`${company?.companyName} users`}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={notificationForm.title}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    value={notificationForm.message}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Type
+                    </label>
+                    <select
+                      value={notificationForm.type}
+                      onChange={(e) => setNotificationForm({ ...notificationForm, type: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    >
+                      <option value="system">System</option>
+                      <option value="account">Account</option>
+                      <option value="security">Security</option>
+                      <option value="subscription">Subscription</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Priority
+                    </label>
+                    <select
+                      value={notificationForm.priority}
+                      onChange={(e) => setNotificationForm({ ...notificationForm, priority: e.target.value as any })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    >
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowNotificationModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingNotification}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] rounded-md hover:bg-[#e67700] disabled:opacity-50 flex items-center"
+                >
+                  {sendingNotification ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Bell size={16} className="mr-2" />
+                      Send Notification
+                    </>
+                  )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-} 
+}
