@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getAdminCompany, updateCompanyStatus, getCompanyStatistics, type AdminCompany, type CompanyStatistics, type TransactionHistoryItem } from '@/services/company';
 import { createNotification, type CreateNotificationRequest } from '@/services/notifications';
-import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink, Send, Bell, X } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink, Bell, X } from 'lucide-react';
 
 export default function CompanyDetailPage() {
   const params = useParams();
@@ -19,14 +19,7 @@ export default function CompanyDetailPage() {
   const [updating, setUpdating] = useState(false);
 
   // Modal states
-  const [showEmailModal, setShowEmailModal] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
-
-  // Email form state
-  const [emailForm, setEmailForm] = useState({
-    subject: '',
-    message: ''
-  });
 
   // Notification form state
   const [notificationForm, setNotificationForm] = useState({
@@ -36,7 +29,6 @@ export default function CompanyDetailPage() {
     priority: 'normal' as const
   });
 
-  const [sendingEmail, setSendingEmail] = useState(false);
   const [sendingNotification, setSendingNotification] = useState(false);
 
   useEffect(() => {
@@ -84,26 +76,7 @@ export default function CompanyDetailPage() {
     loadStatistics();
   }, [companyId]);
 
-  // Handle email sending
-  const handleSendEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!company) return;
 
-    setSendingEmail(true);
-    try {
-      // Here you would implement the actual email sending logic
-      // For now, we'll just simulate it
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      alert(`Email sent to ${company.companyEmail}`);
-      setEmailForm({ subject: '', message: '' });
-      setShowEmailModal(false);
-    } catch (error) {
-      alert('Failed to send email');
-    } finally {
-      setSendingEmail(false);
-    }
-  };
 
   // Handle notification sending
   const handleSendNotification = async (e: React.FormEvent) => {
@@ -430,14 +403,6 @@ export default function CompanyDetailPage() {
 
             <div className="space-y-3">
               <button
-                onClick={() => setShowEmailModal(true)}
-                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-              >
-                <Mail size={16} className="mr-2" />
-                Send Email
-              </button>
-
-              <button
                 onClick={() => setShowNotificationModal(true)}
                 className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] border border-[#FF8A00] rounded-md hover:bg-[#e67700] transition-colors"
               >
@@ -461,22 +426,7 @@ export default function CompanyDetailPage() {
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="bg-white border border-gray-100 rounded-md p-6">
-            <h2 className="text-sm font-medium mb-4">Quick Actions</h2>
-            
-            <div className="space-y-2">
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
-                Send Email
-              </button>
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
-                View Activity Log
-              </button>
-              <button className="w-full text-left px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors text-sm">
-                Export Details
-              </button>
-            </div>
-          </div>
+
 
           {/* Company Stats */}
           <div className="bg-white border border-gray-100 rounded-md p-6">
@@ -678,94 +628,7 @@ export default function CompanyDetailPage() {
         </div>
       </div>
 
-      {/* Email Modal */}
-      {showEmailModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Send Email</h3>
-              <button
-                onClick={() => setShowEmailModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
 
-            <div className="p-6">
-
-              <form onSubmit={handleSendEmail}>
-                <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    To
-                  </label>
-                  <input
-                    type="email"
-                    value={company?.companyEmail || ''}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Subject
-                  </label>
-                  <input
-                    type="text"
-                    value={emailForm.subject}
-                    onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Message
-                  </label>
-                  <textarea
-                    value={emailForm.message}
-                    onChange={(e) => setEmailForm({ ...emailForm, message: e.target.value })}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                    required
-                  />
-                </div>
-                </div>
-
-                <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowEmailModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={sendingEmail}
-                  className="px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] rounded-md hover:bg-[#e67700] disabled:opacity-50 flex items-center"
-                >
-                  {sendingEmail ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={16} className="mr-2" />
-                      Send Email
-                    </>
-                  )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Notification Modal */}
       {showNotificationModal && (

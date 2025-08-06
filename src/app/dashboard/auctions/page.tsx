@@ -5,8 +5,10 @@ import { Search, Filter, Clock, ArrowUpRight, AlertCircle, Loader2 } from 'lucid
 import Image from 'next/image';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 import useBidding from '@/hooks/useBidding';
-import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
+import { getAuctions, getUserAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
+import { getUser } from '@/services/auth';
+import { getUserBids, BidItem } from '@/services/bid';
 
 // Mock data for marketplace auctions
 const marketplaceAuctions = [
@@ -78,8 +80,11 @@ export default function Auctions() {
 
   // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
+  const [userAuctions, setUserAuctions] = useState<AuctionItem[]>([]);
+  const [userBids, setUserBids] = useState<BidItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [paginationData, setPaginationData] = useState({
@@ -95,7 +100,14 @@ export default function Auctions() {
     setError(null);
 
     try {
+      // Fetch all auctions
       const response = await getAuctions({ page, page_size: size });
+
+      // Fetch user's own auctions
+      const userResponse = await getUserAuctions();
+
+      // Fetch user's bids
+      const bidsResponse = await getUserBids();
 
       if (response.error) {
         // Error handling for auction fetch failures
@@ -110,6 +122,7 @@ export default function Auctions() {
         // Successfully fetched auctions
         const result = response.data as PaginatedAuctionResult;
         setApiAuctions(result.auctions || []);
+        console.log('All auctions loaded:', result.auctions?.length || 0, result.auctions);
         setPaginationData({
           count: result.pagination.count,
           totalPages: result.pagination.total_pages,
@@ -120,6 +133,23 @@ export default function Auctions() {
         // No auction data available
         setApiAuctions([]);
         setError('No auctions found');
+      }
+
+      // Set user auctions (even if there's an error, we might still have user auctions)
+      if (userResponse.data) {
+        const userResult = userResponse.data as PaginatedAuctionResult;
+        setUserAuctions(userResult.auctions || []);
+        console.log('User auctions loaded:', userResult.auctions?.length || 0, userResult.auctions);
+      } else {
+        console.log('No user auctions data:', userResponse.error);
+      }
+
+      // Set user bids
+      if (bidsResponse.data) {
+        setUserBids(bidsResponse.data.bids || []);
+        console.log('User bids loaded:', bidsResponse.data.bids?.length || 0, bidsResponse.data.bids);
+      } else {
+        console.log('No user bids data:', bidsResponse.error);
       }
     } catch (err) {
       // Handle unexpected errors
@@ -133,6 +163,12 @@ export default function Auctions() {
   useEffect(() => {
     fetchAuctions(currentPage, pageSize);
   }, [currentPage, pageSize]);
+
+  // Get current user
+  useEffect(() => {
+    const user = getUser();
+    setCurrentUser(user);
+  }, []);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -162,18 +198,43 @@ export default function Auctions() {
   };
 
   // Convert API auctions to the format expected by the UI
-  const convertedAuctions = (apiAuctions || []).map(auction => ({
-    id: auction.id.toString(),
-    name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
-    category: auction.category_name,
-    basePrice: auction.starting_bid_price || auction.total_starting_value,
-    highestBid: null, // API doesn't provide highest bid yet
-    timeLeft: 'Available', // API doesn't provide end date/time in this format
-    volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-    seller: 'Unknown', // API doesn't provide seller info yet
-    countryOfOrigin: auction.location_summary || 'Unknown',
-    image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
-  }));
+  const convertedAuctions = (apiAuctions || []).map(auction => {
+    // Check if this auction belongs to the current user
+    // Make sure we're comparing the same data types
+    const isMyAuction = userAuctions.some(userAuction =>
+      userAuction.id === auction.id || userAuction.id.toString() === auction.id.toString()
+    );
+
+    // Check if user has bid on this auction
+    // Make sure we're comparing the same data types for ad_id
+    const userBid = userBids.find(bid =>
+      bid.ad_id === auction.id || bid.ad_id.toString() === auction.id.toString()
+    );
+    const hasBid = !!userBid;
+
+    // Debug logging (remove in production)
+    if (isMyAuction) {
+      console.log('Found my auction:', auction.id, auction.title);
+    }
+    if (hasBid) {
+      console.log('Found my bid on auction:', auction.id, auction.title, userBid);
+    }
+
+    return {
+      id: auction.id.toString(),
+      name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+      category: auction.category_name,
+      basePrice: auction.starting_bid_price || auction.total_starting_value,
+      highestBid: null, // API doesn't provide highest bid yet
+      timeLeft: 'Available', // API doesn't provide end date/time in this format
+      volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+      seller: 'Unknown', // API doesn't provide seller info yet
+      countryOfOrigin: auction.location_summary || 'Unknown',
+      image: auction.material_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
+      isMyAuction: isMyAuction,
+      hasBid: hasBid
+    };
+  });
 
   // Use API auctions if available, otherwise fall back to mock data
   const auctionsToDisplay = (apiAuctions && apiAuctions.length > 0) ? convertedAuctions : marketplaceAuctions;
@@ -193,7 +254,30 @@ export default function Auctions() {
 
   return (
     <div className="p-5">
-      <h1 className="text-xl font-medium mb-5">Available Auctions</h1>
+      <div className="mb-5">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-xl font-medium">All Active Auctions</h1>
+            <p className="text-sm text-gray-600 mt-1">Browse all active auctions in the marketplace. Your auctions and bids are highlighted with colored borders and badges.</p>
+          </div>
+          {!isLoading && (
+            <div className="flex gap-4 text-sm">
+              <div className="text-center">
+                <div className="font-medium text-[#FF8A00]">{userAuctions.length}</div>
+                <div className="text-gray-500">Your Auctions</div>
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-blue-600">{userBids.length}</div>
+                <div className="text-gray-500">Your Bids</div>
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-gray-900">{paginationData.count}</div>
+                <div className="text-gray-500">Total Active</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-3 mb-5">
@@ -245,6 +329,23 @@ export default function Auctions() {
         ))}
       </div>
 
+      {/* Legend for Visual Markers */}
+      {!isLoading && !error && (userAuctions.length > 0 || userBids.length > 0) && (
+        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-5">
+          <h3 className="text-sm font-medium text-blue-900 mb-2">Look for these banners:</h3>
+          <div className="flex flex-wrap gap-4 text-xs">
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-emerald-500 rounded mr-2"></div>
+              <span className="text-blue-800">"Your Auction" = Auctions you created</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>
+              <span className="text-blue-800">"You Bidded" = Auctions you placed bids on</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Loading State */}
       {isLoading && (
         <div className="bg-white border border-gray-100 rounded-md p-6 flex justify-center items-center">
@@ -275,7 +376,7 @@ export default function Auctions() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {filteredAuctions.map((auction) => (
-              <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden">
+              <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden hover:shadow-md transition-all duration-200">
                 <div className="relative h-40 w-full">
                   <Image
                     src={auction.image}
@@ -286,6 +387,21 @@ export default function Auctions() {
                   <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs">
                     {auction.category}
                   </div>
+
+                  {/* Simple Banner for User's Own Auction */}
+                  {auction.isMyAuction && (
+                    <div className="absolute bottom-2 left-2 bg-emerald-500 text-white px-2 py-1 rounded text-xs font-medium shadow-sm">
+                      Your Auction
+                    </div>
+                  )}
+
+                  {/* Simple Banner for User's Bid */}
+                  {auction.hasBid && !auction.isMyAuction && (
+                    <div className="absolute bottom-2 left-2 bg-purple-500 text-white px-2 py-1 rounded text-xs font-medium shadow-sm">
+                      You Bidded
+                    </div>
+                  )}
+
                   <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white flex items-center">
                     <Clock size={12} className="mr-1" />
                     {auction.timeLeft}

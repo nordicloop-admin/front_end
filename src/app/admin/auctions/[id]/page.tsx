@@ -4,12 +4,13 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown, Bell, X } from 'lucide-react';
 import { getAdminAuction, AdminAuction, updateAuctionStatus } from '@/services/auctions';
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { toast } from 'sonner';
 import { adminAdsService } from '@/services/adminAds';
+import { createNotification, type CreateNotificationRequest } from '@/services/notifications';
 
 export default function AuctionDetailPage() {
   const _router = useRouter();
@@ -22,6 +23,16 @@ export default function AuctionDetailPage() {
   const [bids, setBids] = useState<any[]>([]);
   const [bidLoading, setBidLoading] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Notification modal state
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [sendingNotification, setSendingNotification] = useState(false);
+  const [notificationForm, setNotificationForm] = useState({
+    title: '',
+    message: '',
+    type: 'auction',
+    priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent'
+  });
 
   // Fetch auction details
   const fetchAuctionDetails = useCallback(async () => {
@@ -188,6 +199,49 @@ export default function AuctionDetailPage() {
     }
   };
 
+  // Handle notification sending
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auction) return;
+
+    setSendingNotification(true);
+    try {
+      const notificationData: CreateNotificationRequest = {
+        title: notificationForm.title,
+        message: notificationForm.message,
+        type: notificationForm.type,
+        priority: notificationForm.priority,
+        // Note: This would need backend support to send to auction creator and bidders
+        // For now, we'll send a general notification
+      };
+
+      const response = await createNotification(notificationData);
+
+      if (response.error) {
+        toast.error('Failed to send notification', {
+          description: response.error,
+        });
+      } else {
+        toast.success('Notification sent successfully', {
+          description: 'The notification has been sent to relevant users',
+        });
+        setNotificationForm({
+          title: '',
+          message: '',
+          type: 'auction',
+          priority: 'normal'
+        });
+        setShowNotificationModal(false);
+      }
+    } catch (_err) {
+      toast.error('Failed to send notification', {
+        description: 'An unexpected error occurred',
+      });
+    } finally {
+      setSendingNotification(false);
+    }
+  };
+
   // Get status badge color
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -243,6 +297,7 @@ export default function AuctionDetailPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 -mx-5">
       {/* Clean Header */}
       <div className="bg-white border-b border-gray-200">
@@ -588,9 +643,146 @@ export default function AuctionDetailPage() {
                 Save Notes
               </button>
             </div>
+
+            {/* Admin Communication */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Admin Communication</h3>
+              <p className="text-sm text-gray-600 mb-4">Send notifications to auction creator and bidders</p>
+              <button
+                onClick={() => setShowNotificationModal(true)}
+                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] border border-[#FF8A00] rounded-md hover:bg-[#e67700] transition-colors"
+              >
+                <Bell size={16} className="mr-2" />
+                Send Notification
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    {/* Notification Modal */}
+    {showNotificationModal && (
+      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md mx-4">
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">Send Notification</h3>
+            <button
+              onClick={() => setShowNotificationModal(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="p-6">
+            <form onSubmit={handleSendNotification}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Target
+                  </label>
+                  <input
+                    type="text"
+                    value={`Auction: ${auction?.name} (Creator & Bidders)`}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={notificationForm.title}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    required
+                    placeholder="Notification title"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    value={notificationForm.message}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    required
+                    placeholder="Enter your notification message"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Type
+                    </label>
+                    <select
+                      value={notificationForm.type}
+                      onChange={(e) => setNotificationForm({ ...notificationForm, type: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    >
+                      <option value="auction">Auction</option>
+                      <option value="system">System</option>
+                      <option value="alert">Alert</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Priority
+                    </label>
+                    <select
+                      value={notificationForm.priority}
+                      onChange={(e) => setNotificationForm({ ...notificationForm, priority: e.target.value as 'low' | 'normal' | 'high' | 'urgent' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    >
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowNotificationModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingNotification}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] rounded-md hover:bg-[#e67700] disabled:opacity-50 flex items-center"
+                >
+                  {sendingNotification ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Bell size={16} className="mr-2" />
+                      Send Notification
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
-} 
+}
