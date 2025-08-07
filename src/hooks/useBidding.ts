@@ -199,11 +199,17 @@ export default function useBidding(): UseBiddingReturn {
 
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
-      
-      // Show error message
+
+      // Check if this is a broker restriction error
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      const isBrokerRestriction = errorMessage.includes('chosen not to sell this material to brokers');
+
+      // Show appropriate error message
       const isUpdate = !!selectedAuction?.bidId;
       toast.error(`Failed to ${isUpdate ? 'update' : 'place'} bid`, {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: isBrokerRestriction
+          ? 'This company has chosen not to sell this material to brokers.'
+          : errorMessage,
         duration: 5000,
       });
     }

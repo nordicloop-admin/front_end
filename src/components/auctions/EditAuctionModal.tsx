@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
@@ -9,6 +9,7 @@ import { adUpdateService } from '@/services/ads';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { convertLabelToValue } from '@/utils/adValidation';
+import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
 import { toast } from 'sonner';
 
 // Import comprehensive data from the auction creation form
@@ -240,11 +241,36 @@ const processingMethods = [
 ];
 
 const deliveryOptions = [
-  'Pickup Only',
-  'Local Delivery',
-  'National Shipping',
-  'International Shipping',
-  'Freight Forwarding'
+  {
+    id: 'pickup-only',
+    name: 'Pickup Only',
+    description: 'Buyer arranges pickup from your location',
+    icon: Package
+  },
+  {
+    id: 'local-delivery',
+    name: 'Local Delivery',
+    description: 'You can deliver within local area',
+    icon: Truck
+  },
+  {
+    id: 'national-shipping',
+    name: 'National Shipping',
+    description: 'You can arrange national shipping',
+    icon: Truck
+  },
+  {
+    id: 'international-shipping',
+    name: 'International Shipping',
+    description: 'You can arrange international shipping',
+    icon: Truck
+  },
+  {
+    id: 'freight-forwarding',
+    name: 'Freight Forwarding',
+    description: 'Professional freight services available',
+    icon: Truck
+  }
 ];
 
 const currencies = ['SEK', 'EUR', 'USD', 'NOK', 'DKK'];
@@ -296,6 +322,7 @@ interface EditAuctionModalProps {
   onClose: () => void;
   onSubmit: (auctionData: AuctionData) => Promise<void>;
   auction: AuctionData;
+  materialType?: string; // Optional: if provided, use this instead of waiting for API
 }
 
 interface StepData {
@@ -352,7 +379,8 @@ interface StepData {
   currentImageUrl?: string; // Current image from backend
 }
 
-const steps = [
+// All possible steps
+const allSteps = [
   { id: 1, title: 'Material Type', description: 'Category, packaging, and frequency' },
   { id: 2, title: 'Specifications', description: 'Grade, color, form, and details' },
   { id: 3, title: 'Material Origin', description: 'Source and origin information' },
@@ -363,7 +391,23 @@ const steps = [
   { id: 8, title: 'Title & Description', description: 'Final details and images' }
 ];
 
-export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }: EditAuctionModalProps) {
+// Function to get steps based on material type
+const getStepsByMaterialType = (materialType: string) => {
+  // For plastics, show all steps
+  if (materialType.toLowerCase() === 'plastic' || materialType.toLowerCase() === 'plastics') {
+    return allSteps;
+  }
+
+  // For all other materials, skip steps 2-5
+  return [
+    allSteps[0], // Material Type
+    { id: 6, title: 'Location & Logistics', description: 'Location and delivery options' },
+    { id: 7, title: 'Quantity & Price', description: 'Pricing and quantity details' },
+    { id: 8, title: 'Title & Description', description: 'Final details and images' }
+  ];
+};
+
+export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, materialType }: EditAuctionModalProps) {
   const [activeStep, setActiveStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepData, setStepData] = useState<StepData>({});
@@ -372,11 +416,36 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [_error, setError] = useState<string | null>(null);
+  // Initialize steps based on provided materialType or auction category
+  // Default to non-plastic steps (4 steps) if no material type is available yet
+  const initialMaterialType = materialType || auction?.category?.toLowerCase() || '';
+  const [steps, setSteps] = useState(() => {
+    if (!initialMaterialType) {
+      // Default to 4 steps while waiting for data (better UX than showing all 8)
+      return [
+        allSteps[0], // Material Type
+        { id: 6, title: 'Location & Logistics', description: 'Location and delivery options' },
+        { id: 7, title: 'Quantity & Price', description: 'Pricing and quantity details' },
+        { id: 8, title: 'Title & Description', description: 'Final details and images' }
+      ];
+    }
+    return getStepsByMaterialType(initialMaterialType);
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // NEW: Validation state for better UX (synchronized with AlternativeAuctionForm)
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [showValidationErrors, setShowValidationErrors] = useState(false);
+
+  // Google Maps integration state
+  const [_addressInput, setAddressInput] = useState('');
+  const [locationError, setLocationError] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement>(null!);
+
+  // Load Google Maps API
+  const { isLoaded, loadError } = useGoogleMaps();
+  const { getPlaceDetails, selectedPlace } = usePlacesAutocomplete(addressInputRef, isLoaded && isOpen);
 
   // Load categories on component mount
   useEffect(() => {
@@ -397,6 +466,76 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
     loadCategories();
   }, []);
+
+  // Handle Google Maps place selection
+  useEffect(() => {
+    if (selectedPlace) {
+      handleStepDataChange({
+        location: {
+          ...stepData.location,
+          country: selectedPlace.countryCode,
+          region: selectedPlace.region,
+          city: selectedPlace.city,
+          fullAddress: selectedPlace.formattedAddress
+        }
+      });
+      setLocationError('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlace]);
+
+  // Reinitialize Google Maps autocomplete when modal opens and we're on location step
+  useEffect(() => {
+    if (isOpen && activeStep === 6 && isLoaded && addressInputRef.current && window.google?.maps?.places) {
+      try {
+        // Create autocomplete instance
+        const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+          types: ['address'],
+          fields: ['address_components', 'formatted_address', 'geometry', 'name'],
+          componentRestrictions: { country: 'se' } // Restrict to Sweden
+        });
+
+        // Add listener for place_changed event
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place && place.address_components) {
+            // Extract address components
+            let city = '';
+            let region = '';
+            const _country = '';
+            let countryCode = '';
+
+            place.address_components.forEach((component: any) => {
+              const types = component.types;
+
+              if (types.includes('locality') || types.includes('postal_town')) {
+                city = component.long_name;
+              } else if (types.includes('administrative_area_level_1')) {
+                region = component.long_name;
+              } else if (types.includes('country')) {
+                // country = component.long_name;
+                countryCode = component.short_name.toLowerCase();
+              }
+            });
+
+            handleStepDataChange({
+              location: {
+                ...stepData.location,
+                country: countryCode,
+                region: region,
+                city: city,
+                fullAddress: place.formatted_address || ''
+              }
+            });
+            setLocationError('');
+          }
+        });
+      } catch (_error) {
+        // Failed to initialize Google Maps autocomplete
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, activeStep, isLoaded]);
 
   // Initialize form data from auction
   useEffect(() => {
@@ -460,24 +599,26 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         }
       }
       
+      const materialType = auction.category.toLowerCase();
+
       setStepData({
         // Step 1
         category: auction.category,
         subcategory: auction.subcategory,
-        materialType: auction.category.toLowerCase(),
-        
+        materialType: materialType,
+
         // Step 2: Initialize specifications data
         grade: grade || '',
         color: color || '',
         form: form || '',
         additionalSpecs: additionalSpecs,
-        
+
         // Step 7
         availableQuantity: volumeValue,
         unit: volumeUnit,
         startingPrice: basePriceValue,
         currency: 'SEK',
-        
+
         // Step 8
         title: auction.name,
         description: auction.description,
@@ -485,18 +626,37 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         currentImageUrl: auction.material_image || auction.image,
         images: []
       });
-    }
-  }, [auction, categoriesLoaded]);
 
-  const handleStepDataChange = (updates: Partial<StepData>) => {
+      // Set steps based on material type (only if not already set correctly)
+      const expectedSteps = getStepsByMaterialType(materialType);
+      if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
+        setSteps(expectedSteps);
+      }
+    }
+  }, [auction, categoriesLoaded, steps]);
+
+  const handleStepDataChange = useCallback((updates: Partial<StepData>) => {
     setStepData(prev => ({ ...prev, ...updates }));
     setHasChanges(true);
-    
+
+    // If material type is being updated, update the steps
+    if (updates.materialType || updates.category) {
+      const materialType = updates.materialType || updates.category?.toLowerCase() || '';
+      const newSteps = getStepsByMaterialType(materialType);
+      setSteps(newSteps);
+
+      // If current active step is not available in new steps, go to step 1
+      const currentStepExists = newSteps.some(step => step.id === activeStep);
+      if (!currentStepExists) {
+        setActiveStep(1);
+      }
+    }
+
     // Clear validation errors when user starts fixing them (synchronized with AlternativeAuctionForm)
     if (showValidationErrors) {
       const clearedErrors = { ...validationErrors };
       let hasChanges = false;
-      
+
       // Clear errors for fields being updated
       Object.keys(updates).forEach(field => {
         if (clearedErrors[field]) {
@@ -504,7 +664,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           hasChanges = true;
         }
       });
-      
+
       if (hasChanges) {
         setValidationErrors(clearedErrors);
         if (Object.keys(clearedErrors).length === 0) {
@@ -512,7 +672,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         }
       }
     }
-  };
+  }, [activeStep, showValidationErrors, validationErrors]);
 
   // Handle image file upload
   const handleImageUpload = (files: FileList | null) => {
@@ -548,6 +708,37 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   // Create preview URL for uploaded image
   const createImageUrl = (file: File) => {
     return URL.createObjectURL(file);
+  };
+
+  // Google Maps address selection handler
+  const handleAddressSelect = async () => {
+    if (!isLoaded) return;
+
+    setIsSearching(true);
+
+    try {
+      const placeResult = await getPlaceDetails();
+
+      if (placeResult) {
+        handleStepDataChange({
+          location: {
+            ...stepData.location,
+            country: placeResult.countryCode,
+            region: placeResult.region,
+            city: placeResult.city,
+            fullAddress: placeResult.formattedAddress
+          }
+        });
+        setLocationError('');
+      } else {
+        setLocationError('Please select a valid address from the suggestions');
+      }
+    } catch (_error) {
+      // Handle error silently
+      setLocationError('Failed to get location details');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   // Submit changes to backend
@@ -1239,109 +1430,262 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
       case 6:
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Location & Logistics
+              </h3>
+              <p className="text-gray-600">
+                Specify material location and delivery options for buyers
+              </p>
+            </div>
+
+            {/* Location Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Country *
-                </label>
-                <input
-                  type="text"
-                  value={stepData.location?.country || ''}
-                  onChange={(e) => handleStepDataChange({ 
-                    location: { ...stepData.location, country: e.target.value }
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="Enter country"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Region/State
-                </label>
-                <input
-                  type="text"
-                  value={stepData.location?.region || ''}
-                  onChange={(e) => handleStepDataChange({ 
-                    location: { ...stepData.location, region: e.target.value }
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="Enter region or state"
-                />
+                <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <MapPinned className="mr-2 h-5 w-5 text-[#FF8A00]" />
+                  Material Location
+                </h4>
+
+                {/* Google Maps Autocomplete */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Search Address in Sweden *
+                    </label>
+                    <div className="relative">
+                      <input
+                        ref={addressInputRef}
+                        type="text"
+                        placeholder="Start typing your address in Sweden..."
+                        className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${locationError ? 'border-red-500' : 'border-gray-300'}`}
+                        onChange={(e) => {
+                          setAddressInput(e.target.value);
+                          if (locationError) {
+                            setLocationError('');
+                          }
+                        }}
+                        disabled={!isLoaded || isSearching}
+                      />
+                      <button
+                        onClick={handleAddressSelect}
+                        disabled={!isLoaded || isSearching}
+                        className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${!isLoaded || isSearching ? 'text-gray-400 cursor-not-allowed' : 'text-[#FF8A00] hover:bg-orange-50'}`}
+                      >
+                        {isSearching ? (
+                          <div className="animate-spin h-5 w-5 border-2 border-[#FF8A00] border-t-transparent rounded-full"></div>
+                        ) : (
+                          <Search className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                    {locationError && (
+                      <p className="mt-1 text-sm text-red-600">{locationError}</p>
+                    )}
+                    {!isLoaded && !loadError && (
+                      <p className="mt-1 text-sm text-gray-500">Loading Google Maps...</p>
+                    )}
+                    {loadError && (
+                      <p className="mt-1 text-sm text-red-600">Failed to load Google Maps. Please enter location manually.</p>
+                    )}
+                  </div>
+
+                  {/* Selected Location Summary */}
+                  {stepData.location?.country && stepData.location?.city && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h5 className="font-medium text-gray-900 mb-2 flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                        Selected Location
+                      </h5>
+                      <div className="space-y-2 text-sm">
+                        {stepData.location.fullAddress && (
+                          <div className="flex">
+                            <MapPin className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0 mt-1" />
+                            <span className="text-gray-700">{stepData.location.fullAddress}</span>
+                          </div>
+                        )}
+                        <div className="flex">
+                          <Globe className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0 mt-1" />
+                          <span className="text-gray-700">
+                            {stepData.location.city}
+                            {stepData.location.region && `, ${stepData.location.region}`}
+                            {stepData.location.country && `, ${stepData.location.country.toUpperCase()}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual Location Input (Fallback) */}
+                  {loadError && (
+                    <div className="space-y-4 mt-4 border-t border-gray-200 pt-4">
+                      <h5 className="font-medium text-gray-900">Manual Location Entry</h5>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Country *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter country"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                          value={stepData.location?.country || ''}
+                          onChange={(e) => handleStepDataChange({
+                            location: { ...stepData.location, country: e.target.value }
+                          })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Region/State
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter region or state"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                          value={stepData.location?.region || ''}
+                          onChange={(e) => handleStepDataChange({
+                            location: { ...stepData.location, region: e.target.value }
+                          })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter city"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                          value={stepData.location?.city || ''}
+                          onChange={(e) => handleStepDataChange({
+                            location: { ...stepData.location, city: e.target.value }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* Pickup Available */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                City *
-              </label>
-              <input
-                type="text"
-                value={stepData.location?.city || ''}
-                onChange={(e) => handleStepDataChange({ 
-                  location: { ...stepData.location, city: e.target.value }
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                placeholder="Enter city"
-              />
-            </div>
-            
-            <div>
-              <label className="flex items-center space-x-2">
+              <label className="flex items-center space-x-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={stepData.location?.pickupAvailable || false}
-                  onChange={(e) => handleStepDataChange({ 
+                  onChange={(e) => handleStepDataChange({
                     location: { ...stepData.location, pickupAvailable: e.target.checked }
                   })}
-                  className="rounded border-gray-300 text-[#FF8A00] focus:ring-[#FF8A00]"
+                  className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
                 />
-                <span className="text-sm text-gray-700">Pickup available at location</span>
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Pickup Available</span>
+                  <p className="text-xs text-gray-500">Buyers can collect material from your location</p>
+                </div>
               </label>
             </div>
 
+            {/* Delivery Options */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <h4 className="text-lg font-medium text-gray-900 mb-4">
                 Delivery Options
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {deliveryOptions.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => {
-                      const currentOptions = stepData.location?.deliveryOptions || [];
-                      const isSelected = currentOptions.includes(option);
-                      
-                      if (isSelected) {
-                        handleStepDataChange({ 
-                          location: {
-                            ...stepData.location,
-                            deliveryOptions: currentOptions.filter(o => o !== option)
+              </h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Select all the delivery options that apply to this material.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {deliveryOptions.map((option) => {
+                  const Icon = option.icon;
+                  const isSelected = stepData.location?.deliveryOptions?.includes(option.id) || false;
+
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() => {
+                        const currentOptions = stepData.location?.deliveryOptions || [];
+                        const isSelected = currentOptions.includes(option.id);
+
+                        if (isSelected) {
+                          handleStepDataChange({
+                            location: {
+                              ...stepData.location,
+                              deliveryOptions: currentOptions.filter(o => o !== option.id)
+                            }
+                          });
+                        } else {
+                          handleStepDataChange({
+                            location: {
+                              ...stepData.location,
+                              deliveryOptions: [...currentOptions, option.id]
+                            }
+                          });
+                        }
+                      }}
+                      className={`
+                        p-4 rounded-lg border-2 text-left transition-all
+                        ${isSelected
+                          ? 'border-[#FF8A00] bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }
+                      `}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`
+                          p-2 rounded-full
+                          ${isSelected
+                            ? 'bg-[#FF8A00] text-white'
+                            : 'bg-gray-100 text-gray-600'
                           }
-                        });
-                      } else {
-                        handleStepDataChange({ 
-                          location: {
-                            ...stepData.location,
-                            deliveryOptions: [...currentOptions, option]
-                          }
-                        });
-                      }
-                    }}
-                    className={`
-                      p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                      ${stepData.location?.deliveryOptions?.includes(option)
-                        ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }
-                    `}
-                  >
-                    {option}
-                  </button>
-                ))}
+                        `}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center">
+                            <h5 className="font-medium text-gray-900">{option.name}</h5>
+                            {isSelected && (
+                              <CheckCircle className="w-4 h-4 ml-2 text-[#FF8A00]" />
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">{option.description}</p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
+            {/* Information Box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900">Why location matters</h4>
+                  <div className="text-sm text-blue-700 mt-1">
+                    <p className="mb-1">• Accurate location helps buyers calculate logistics costs</p>
+                    <p className="mb-1">• Currently, the Nordic Loop Marketplace only serves locations within Sweden</p>
+                    <p className="mb-1">• Specify delivery options to make your listing more attractive</p>
+                    <p>• For sensitive materials, you can choose to reveal exact location only to serious buyers</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Validation Message */}
+            {(!stepData.location?.country || !stepData.location?.city) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <p className="text-sm text-yellow-600">
+                  Please specify the location (country and city) where the material is available.
+                </p>
+              </div>
+            )}
           </div>
         );
 
@@ -1779,19 +2123,29 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       fieldErrors.title = [titleError];
     }
     
-    // Description validation (minimum 50 characters)
-    if (!stepData.description || stepData.description.trim().length < 50) {
-      const descError = 'Description must be at least 50 characters long';
+    // Description validation (minimum 30 characters - matching create form)
+    if (!stepData.description || stepData.description.trim().length < 30) {
+      const descError = 'Description must be at least 30 characters long';
       errors.push(descError);
       fieldErrors.description = [descError];
     }
-    
+
     // Keywords validation (optional, but if provided, max 500 chars total)
     const keywordsText = stepData.keywords?.join(', ') || '';
     if (keywordsText.length > 500) {
       const keywordsError = 'Keywords must not exceed 500 characters total';
       errors.push(keywordsError);
       fieldErrors.keywords = [keywordsError];
+    }
+
+    // Image validation (at least one image required - matching create form)
+    if (!stepData.images || stepData.images.length === 0) {
+      // Only require image if there's no current image URL
+      if (!stepData.currentImageUrl) {
+        const imageError = 'At least one image is required';
+        errors.push(imageError);
+        fieldErrors.images = [imageError];
+      }
     }
     
     // Update validation state
@@ -1849,11 +2203,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         break;
 
       case 5:
-        if (!stepData.processingMethods || stepData.processingMethods.length === 0) {
-          const error = 'At least one processing method is required';
-          errors.push(error);
-          fieldErrors.processingMethods = [error];
-        }
+        // Processing methods are optional (matching create form)
         break;
 
       case 6:
@@ -1861,6 +2211,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           const error = 'Country is required';
           errors.push(error);
           fieldErrors.country = [error];
+        }
+        if (!stepData.location?.region) {
+          const error = 'Region is required';
+          errors.push(error);
+          fieldErrors.region = [error];
         }
         if (!stepData.location?.city) {
           const error = 'City is required';
@@ -1924,19 +2279,21 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       case 4:
         return !!(stepData.contaminationLevel);
       case 5:
-        return !!(stepData.processingMethods && stepData.processingMethods.length > 0);
+        // Processing methods are optional (matching create form)
+        return true;
       case 6:
-        return !!(stepData.location?.country && stepData.location?.city);
+        return !!(stepData.location?.country && stepData.location?.region && stepData.location?.city);
       case 7:
-        const hasValidAuctionDuration = stepData.auctionDuration && 
-          (stepData.auctionDuration !== 'custom' || 
+        const hasValidAuctionDuration = stepData.auctionDuration &&
+          (stepData.auctionDuration !== 'custom' ||
            (stepData.auctionDuration === 'custom' && stepData.customAuctionDuration && stepData.customAuctionDuration > 0));
         return !!(stepData.availableQuantity && stepData.availableQuantity > 0 && stepData.unit && stepData.startingPrice && stepData.startingPrice > 0 && hasValidAuctionDuration);
       case 8:
-        // Step 8 validation
+        // Step 8 validation (matching create form requirements)
         const titleValid = stepData.title && stepData.title.trim().length >= 10;
-        const descriptionValid = stepData.description && stepData.description.trim().length >= 50;
-        return !!(titleValid && descriptionValid);
+        const descriptionValid = stepData.description && stepData.description.trim().length >= 30;
+        const imageValid = (stepData.images && stepData.images.length > 0) || stepData.currentImageUrl;
+        return !!(titleValid && descriptionValid && imageValid);
       default:
         return true;
     }
@@ -1945,14 +2302,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl border border-gray-200 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Edit Auction</h2>
             <p className="text-sm text-gray-600">
-              {auction.name} - Step {activeStep} of {steps.length}
+              {auction.name} - Step {steps.findIndex(step => step.id === activeStep) + 1} of {steps.length}
             </p>
           </div>
           <button
@@ -2055,6 +2412,23 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                   </p>
                 </div>
 
+                {/* Validation Errors Summary for non-step-8 components */}
+                {showValidationErrors && validationErrors && Object.keys(validationErrors).length > 0 && activeStep !== 8 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start">
+                      <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-red-900 mb-2">Please fix the following validation errors:</h4>
+                        <ul className="text-sm text-red-800 space-y-1">
+                          {Object.entries(validationErrors).map(([field, errors]) => (
+                            <li key={field}>• <strong>{field.charAt(0).toUpperCase() + field.slice(1)}:</strong> {errors[0]}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {renderStepContent()}
               </div>
             </div>
@@ -2063,17 +2437,27 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
-                  disabled={activeStep === 1}
+                  onClick={() => {
+                    const currentIndex = steps.findIndex(step => step.id === activeStep);
+                    if (currentIndex > 0) {
+                      setActiveStep(steps[currentIndex - 1].id);
+                    }
+                  }}
+                  disabled={steps.findIndex(step => step.id === activeStep) === 0}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Previous</span>
                 </button>
-                
+
                 <button
-                  onClick={() => setActiveStep(Math.min(steps.length, activeStep + 1))}
-                  disabled={activeStep === steps.length}
+                  onClick={() => {
+                    const currentIndex = steps.findIndex(step => step.id === activeStep);
+                    if (currentIndex < steps.length - 1) {
+                      setActiveStep(steps[currentIndex + 1].id);
+                    }
+                  }}
+                  disabled={steps.findIndex(step => step.id === activeStep) === steps.length - 1}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <span>Next</span>

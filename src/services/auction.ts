@@ -180,6 +180,7 @@ export interface AuctionItem {
   status?: string;
   suspended_by_admin?: boolean;
   auction_status?: string;
+  allow_broker_bids?: boolean;
 }
 
 /**
@@ -196,11 +197,19 @@ export interface PaginatedAuctionResponse {
 }
 
 /**
- * Interface for pagination parameters
+ * Interface for pagination and filtering parameters
  */
 export interface PaginationParams {
   page?: number;
   page_size?: number;
+  exclude_brokers?: boolean;
+  only_brokers?: boolean;
+  category?: number;
+  subcategory?: number;
+  origin?: string;
+  contamination?: string;
+  country?: string;
+  city?: string;
 }
 
 /**
@@ -225,10 +234,18 @@ export interface PaginatedAuctionResult {
  */
 export async function getAuctions(params?: PaginationParams) {
   try {
-    // Build query string for pagination
+    // Build query string for pagination and filtering
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
+    if (params?.exclude_brokers) queryParams.set('exclude_brokers', 'true');
+    if (params?.only_brokers) queryParams.set('only_brokers', 'true');
+    if (params?.category) queryParams.set('category', params.category.toString());
+    if (params?.subcategory) queryParams.set('subcategory', params.subcategory.toString());
+    if (params?.origin) queryParams.set('origin', params.origin);
+    if (params?.contamination) queryParams.set('contamination', params.contamination);
+    if (params?.country) queryParams.set('country', params.country);
+    if (params?.city) queryParams.set('city', params.city);
     
     const endpoint = `/ads/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
@@ -477,6 +494,7 @@ export async function getAdDetails(adId: string | number) {
         total_starting_value: string;
         title: string | null;
         description: string | null;
+        allow_broker_bids: boolean;
         keywords: string | null;
         material_image: string | null;
         is_active: boolean;

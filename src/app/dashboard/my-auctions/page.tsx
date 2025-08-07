@@ -343,6 +343,7 @@ export default function MyAuctions() {
           onClose={() => setIsEditModalOpen(false)}
           onSubmit={handleEditAuction}
           auction={selectedAuction}
+          materialType={selectedAuction.category?.toLowerCase()}
         />
       )}
     </div>

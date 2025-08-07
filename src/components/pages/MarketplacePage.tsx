@@ -6,10 +6,11 @@ import { Loader2, AlertCircle } from 'lucide-react';
 // import { SlidersHorizontal } from '@/components/ui/Icons';
 import { CategoryFilter } from '@/components/marketplace/CategoryFilter';
 import { LocationFilter } from '@/components/marketplace/LocationFilter';
-import { TimeFilter } from '@/components/marketplace/TimeFilter';
-import { FormFilter } from '@/components/marketplace/FormFilter';
-import { QuantityFilter } from '@/components/marketplace/QuantityFilter';
-import { SortDropdown } from '@/components/marketplace/SortDropdown';
+
+import { BrokerFilter } from '@/components/marketplace/BrokerFilter';
+import { OriginFilter } from '@/components/marketplace/OriginFilter';
+import { ContaminationFilter } from '@/components/marketplace/ContaminationFilter';
+
 import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -182,14 +183,17 @@ const ProductCard = ({ item }: { item: any }) => {
 };
 
 const MarketplacePage = () => {
-  const [sortOption, setSortOption] = useState('Recently');
   const [selectedCategory, setSelectedCategory] = useState('All materials');
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
-  const [selectedForms, setSelectedForms] = useState<string[]>([]);
-  const [selectedDateFilter, setSelectedDateFilter] = useState('All time');
-  const [minQuantity, setMinQuantity] = useState(0);
-  const [maxQuantity, setMaxQuantity] = useState(10000);
-  
+  const [selectedBrokerFilter, setSelectedBrokerFilter] = useState('all');
+  const [selectedOrigin, setSelectedOrigin] = useState('');
+  const [selectedContamination, setSelectedContamination] = useState('');
+
+  // Filter state for API calls
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [subcategoryIds, setSubcategoryIds] = useState<number[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+
   // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -203,13 +207,24 @@ const MarketplacePage = () => {
     pageSize: 12
   });
 
-  // Helper function to toggle form selection
-  const toggleFormSelection = (form: string) => {
-    if (selectedForms.includes(form)) {
-      setSelectedForms(selectedForms.filter(f => f !== form));
-    } else {
-      setSelectedForms([...selectedForms, form]);
-    }
+
+
+  // Filter callback functions
+  const handleCategoryChange = (categoryId: number | null, subcategoryIds: number[]) => {
+    setCategoryId(categoryId);
+    setSubcategoryIds(subcategoryIds);
+  };
+
+  const handleLocationChange = (countries: string[]) => {
+    setSelectedCountries(countries);
+  };
+
+  const handleOriginChange = (origin: string | null) => {
+    setSelectedOrigin(origin || '');
+  };
+
+  const handleContaminationChange = (contamination: string | null) => {
+    setSelectedContamination(contamination || '');
   };
 
   // Calculate time left for an auction
@@ -234,7 +249,21 @@ const MarketplacePage = () => {
     setError(null);
 
     try {
-      const response = await getAuctions({ page, page_size: size });
+      const filterParams = {
+        exclude_brokers: selectedBrokerFilter === 'exclude_brokers',
+        only_brokers: selectedBrokerFilter === 'only_brokers',
+        category: categoryId || undefined,
+        subcategory: subcategoryIds.length === 1 ? subcategoryIds[0] : undefined,
+        origin: selectedOrigin || undefined,
+        contamination: selectedContamination || undefined,
+        country: selectedCountries.length > 0 ? selectedCountries[0] : undefined, // API supports single country
+      };
+
+      const response = await getAuctions({
+        page,
+        page_size: size,
+        ...filterParams
+      });
 
       if (response.error) {
         setError(response.error);
@@ -257,10 +286,11 @@ const MarketplacePage = () => {
     }
   };
 
-  // Initial fetch
+  // Initial fetch and refetch when filters change
   useEffect(() => {
     fetchAuctions(currentPage, pageSize);
-  }, [currentPage, pageSize]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, selectedBrokerFilter, categoryId, subcategoryIds, selectedOrigin, selectedContamination, selectedCountries]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -286,16 +316,9 @@ const MarketplacePage = () => {
     image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
   }));
 
-  // Filter auctions based on search term and category
-  const filteredAuctions = convertedAuctions.filter(auction => {
-    const matchesCategory = selectedCategory === 'All materials' ||
-      (auction.category && auction.category === selectedCategory);
-
-    const matchesLocation = selectedLocation === 'All Locations' ||
-      (auction.countryOfOrigin && auction.countryOfOrigin === selectedLocation);
-
-    return matchesCategory && matchesLocation;
-  });
+  // Since we're now using server-side filtering, we use the API results directly
+  // The server already filters based on category, location, origin, contamination, etc.
+  const filteredAuctions = convertedAuctions;
 
   return (
     <div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
@@ -309,12 +332,7 @@ const MarketplacePage = () => {
           </span>
         </div>
 
-        <div className="flex w-full sm:w-auto space-x-3">
-          {/* Sort Dropdown */}
-          <div className="relative w-full sm:w-auto">
-            <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
-          </div>
-        </div>
+
       </div>
 
       {/* Materials Filter Dropdown */}
@@ -323,28 +341,30 @@ const MarketplacePage = () => {
           <CategoryFilter
             selectedCategory={selectedCategory}
             setSelectedCategory={setSelectedCategory}
+            onCategoryChange={handleCategoryChange}
           />
 
           <LocationFilter
             selectedLocation={selectedLocation}
             setSelectedLocation={setSelectedLocation}
+            onLocationChange={handleLocationChange}
           />
 
-          <QuantityFilter
-            minQuantity={minQuantity}
-            maxQuantity={maxQuantity}
-            setMinQuantity={setMinQuantity}
-            setMaxQuantity={setMaxQuantity}
+          <OriginFilter
+            selectedOrigin={selectedOrigin}
+            setOrigin={setSelectedOrigin}
+            onOriginChange={handleOriginChange}
           />
 
-          <FormFilter
-            selectedForms={selectedForms}
-            toggleFormSelection={toggleFormSelection}
+          <ContaminationFilter
+            selectedContamination={selectedContamination}
+            setContamination={setSelectedContamination}
+            onContaminationChange={handleContaminationChange}
           />
 
-          <TimeFilter
-            selectedDateFilter={selectedDateFilter}
-            setSelectedDateFilter={setSelectedDateFilter}
+          <BrokerFilter
+            selectedBrokerFilter={selectedBrokerFilter}
+            setBrokerFilter={setSelectedBrokerFilter}
           />
         </div>
       </div>
@@ -389,8 +409,12 @@ const MarketplacePage = () => {
                   onClick={() => {
                     setSelectedCategory('All materials');
                     setSelectedLocation('All Locations');
-                    setSelectedForms([]);
-                    setSelectedDateFilter('All time');
+                    setSelectedBrokerFilter('all');
+                    setSelectedOrigin('');
+                    setSelectedContamination('');
+                    setCategoryId(null);
+                    setSubcategoryIds([]);
+                    setSelectedCountries([]);
                   }}
                   className="mt-2 text-[#FF8A00] hover:underline"
                 >

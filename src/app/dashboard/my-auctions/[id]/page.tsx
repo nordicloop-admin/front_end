@@ -895,13 +895,14 @@ export default function AuctionDetail() {
           onClose={() => setIsEditModalOpen(false)}
           onSubmit={handleEditAuction}
           auction={auction}
+          materialType={auction.category?.toLowerCase()}
         />
       )}
 
       {/* Clean Delete Confirmation Modal */}
       {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg max-w-md w-full p-6 border border-gray-200">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-200">
             <div className="text-center">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="w-6 h-6 text-red-600" />

@@ -80,6 +80,7 @@ export interface FormData {
     auctionDuration?: string;
     customEndDate?: string;
     customAuctionDuration?: number;
+    allowBrokerBids?: boolean;
   };
   
   // Image, Title & Description
@@ -129,7 +130,8 @@ const initialFormData: FormData = {
     priceType: 'auction',
     auctionDuration: '7',
     customEndDate: '',
-    customAuctionDuration: 0
+    customAuctionDuration: 0,
+    allowBrokerBids: true
   },
   images: [],
   title: '',
@@ -298,7 +300,8 @@ export function AlternativeAuctionForm() {
           starting_bid_price: Number(data.price.basePrice),
           currency: data.price.currency,
           auction_duration: auctionDurationValue,
-          reserve_price: data.price.reservePrice ? Number(data.price.reservePrice) : undefined
+          reserve_price: data.price.reservePrice ? Number(data.price.reservePrice) : undefined,
+          allow_broker_bids: data.price.allowBrokerBids ?? true
         };
         
         // Add custom auction duration if applicable

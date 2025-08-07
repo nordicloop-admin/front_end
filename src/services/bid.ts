@@ -52,6 +52,7 @@ export interface BidSearchParams extends BidPaginationParams {
  */
 export interface BidItem {
   id: number;
+  ad_id?: number; // Add ad_id field for matching with auctions
   bidder_name: string;
   ad_title: string;
   bid_price_per_unit: string;
@@ -413,6 +414,7 @@ export async function getUserBids(params?: BidPaginationParams) {
     // Map UserBidItem to BidItem format
     const mappedBids: BidItem[] = (response.data?.bids || []).map(bid => ({
       id: bid.id,
+      ad_id: bid.ad_id, // Include the ad_id field
       bidder_name: bid.bidder_name,
       ad_title: bid.ad_title,
       bid_price_per_unit: bid.bid_price_per_unit,
