@@ -10,6 +10,7 @@ import { getAuctionById, deleteAuction, getAdDetails, activateAd, deactivateAd }
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { getFullImageUrl } from '@/utils/imageUtils';
+import Modal from '@/components/ui/modal';
 
 // Mock data for auctions (not used but kept for reference)
 const _myAuctions = [
@@ -900,9 +901,12 @@ export default function AuctionDetail() {
       )}
 
       {/* Clean Delete Confirmation Modal */}
-      {isDeleteConfirmOpen && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 border border-gray-200">
+      <Modal
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => setIsDeleteConfirmOpen(false)}
+        maxWidth="md"
+        showCloseButton={false}
+      >
             <div className="text-center">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertCircle className="w-6 h-6 text-red-600" />
@@ -926,9 +930,7 @@ export default function AuctionDetail() {
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

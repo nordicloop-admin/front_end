@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
+import Modal from '@/components/ui/modal';
 
 interface PlaceBidModalProps {
   isOpen: boolean;
@@ -163,17 +164,12 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
   const maxVolume = extractVolumeValue(auction.volume);
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl border border-gray-200 max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-5 border-b border-gray-100">
-          <h2 className="text-lg font-medium">Place a Bid</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Place a Bid"
+      maxWidth="lg"
+    >
 
         <div className="p-5">
           <div className="mb-4">
@@ -404,7 +400,6 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

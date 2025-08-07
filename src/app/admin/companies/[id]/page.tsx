@@ -7,6 +7,7 @@ import { getAdminCompany, updateCompanyStatus, getCompanyStatistics, type AdminC
 import { createNotification, type CreateNotificationRequest } from '@/services/notifications';
 import { toast } from 'sonner';
 import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink, Bell, X } from 'lucide-react';
+import Modal from '@/components/ui/modal';
 
 export default function CompanyDetailPage() {
   const params = useParams();
@@ -641,20 +642,12 @@ export default function CompanyDetailPage() {
 
 
       {/* Notification Modal */}
-      {showNotificationModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md mx-4">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Send Notification</h3>
-              <button
-                onClick={() => setShowNotificationModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6">
+      <Modal
+        isOpen={showNotificationModal}
+        onClose={() => setShowNotificationModal(false)}
+        title="Send Notification"
+        maxWidth="md"
+      >
 
               <form onSubmit={handleSendNotification}>
                 <div className="space-y-4">
@@ -758,10 +751,7 @@ export default function CompanyDetailPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

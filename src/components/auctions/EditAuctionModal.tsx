@@ -11,6 +11,7 @@ import { getCategoryImage } from '@/utils/categoryImages';
 import { convertLabelToValue } from '@/utils/adValidation';
 import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
 import { toast } from 'sonner';
+import Modal from '@/components/ui/modal';
 
 // Import comprehensive data from the auction creation form
 const packagingOptions = [
@@ -2302,8 +2303,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl border border-gray-200 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="4xl"
+      showCloseButton={false}
+      className="overflow-hidden flex flex-col"
+    >
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <div>
@@ -2501,7 +2507,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
