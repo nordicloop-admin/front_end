@@ -6,50 +6,18 @@ import Link from 'next/link';
 import { Search, Filter, ChevronDown, ChevronUp, CreditCard, Clock, AlertCircle, RefreshCw, Settings, Users } from 'lucide-react';
 import CustomDropdown from '@/components/ui/CustomDropdown';
 import { getAdminSubscriptions, AdminSubscription } from '@/services/subscriptions';
+import { getPricingData, PricingData } from '@/services/pricing';
 import PricingManagement from '@/components/admin/PricingManagement';
 
-// Subscription plan details
-const subscriptionPlans = [
-  {
-    id: 'free',
-    name: 'Free Plan',
-    price: '0 SEK',
-    features: [
-      'Limited marketplace listings',
-      'Limited monthly auctions',
-      'Basic reporting',
-      'Participation in discussion forums',
-      '9% commission fee on trades'
-    ]
-  },
-  {
-    id: 'standard',
-    name: 'Standard Plan',
-    price: '599 SEK',
-    features: [
-      'Unlimited marketplace listings',
-      'Unlimited monthly auctions',
-      'Advanced reporting',
-      'Participation in discussion forums',
-      '7% commission fee on trades'
-    ]
-  },
-  {
-    id: 'premium',
-    name: 'Premium Plan',
-    price: '799 SEK',
-    features: [
-      'No commission fees on trades',
-      'Advanced sample request functionality',
-      'Access to contact information',
-      'Priority listing and access',
-      'Unlimited marketplace listings',
-      'Unlimited monthly auctions',
-      'Advanced reporting',
-      'Participation in discussion forums'
-    ]
+// Helper function to get plan display name
+const getPlanDisplayName = (planType: string): string => {
+  switch (planType) {
+    case 'free': return 'Free Plan';
+    case 'standard': return 'Standard Plan';
+    case 'premium': return 'Premium Plan';
+    default: return planType;
   }
-];
+};
 
 export default function SubscriptionsPage() {
   const router = useRouter();
@@ -60,6 +28,7 @@ export default function SubscriptionsPage() {
 
   // State management
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
+  const [pricingData, setPricingData] = useState<PricingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
@@ -145,6 +114,22 @@ export default function SubscriptionsPage() {
   useEffect(() => {
     updateURL(debouncedSearchTerm, selectedPlan, selectedStatus, currentPage);
   }, [debouncedSearchTerm, selectedPlan, selectedStatus, currentPage, updateURL]);
+
+  // Fetch pricing data
+  useEffect(() => {
+    const fetchPricingData = async () => {
+      try {
+        const response = await getPricingData();
+        if (response.data?.success) {
+          setPricingData(response.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch pricing data:', err);
+      }
+    };
+
+    fetchPricingData();
+  }, []);
 
   // Handle search input change
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,33 +336,53 @@ export default function SubscriptionsPage() {
         <>
           {/* Subscription Plans */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {subscriptionPlans.map((plan) => (
+        {!pricingData ? (
+          // Loading state for pricing plans
+          Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="bg-white p-4 rounded-md shadow-sm">
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                <div className="h-6 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          ))
+        ) : (
+          pricingData.pricing_plans.map((plan) => (
           <div key={plan.id} className="bg-white p-4 rounded-md shadow-sm">
             <div className="flex justify-between items-start mb-2">
               <h3 className="text-lg font-medium">{plan.name}</h3>
-              <span className="text-lg font-bold">{plan.price}</span>
+              <span className="text-lg font-bold">
+                {plan.price === 0 ? 'Free' : `${plan.price} ${plan.currency}`}
+              </span>
             </div>
             <div className="text-sm text-gray-500 mb-2">
               {plan.features.length} features
             </div>
             <button
               className="text-[#FF8A00] text-sm font-medium hover:text-[#e67e00] focus:outline-none"
-              onClick={() => togglePlanDetails(plan.id)}
+              onClick={() => togglePlanDetails(plan.plan_type)}
             >
-              {showPlanDetails === plan.id ? 'Hide details' : 'View details'}
+              {showPlanDetails === plan.plan_type ? 'Hide details' : 'View details'}
             </button>
-            {showPlanDetails === plan.id && (
+            {showPlanDetails === plan.plan_type && (
               <ul className="mt-2 space-y-1">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="text-sm text-gray-600 flex items-start">
-                    <span className="mr-2 text-[#FF8A00]">•</span>
-                    {feature}
+                {plan.features.map((feature) => (
+                  <li key={feature.id} className="text-sm text-gray-600 flex items-start">
+                    <span className={`mr-2 ${feature.is_highlighted ? 'text-[#FF8A00]' : 'text-green-500'}`}>
+                      {feature.is_included ? '•' : '○'}
+                    </span>
+                    <span className={feature.is_included ? '' : 'line-through text-gray-400'}>
+                      {feature.feature_text}
+                    </span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* Filters */}
@@ -401,9 +406,14 @@ export default function SubscriptionsPage() {
             <CustomDropdown
               options={[
                 { value: 'all', label: 'All Plans' },
-                { value: 'free', label: 'Free Plan' },
-                { value: 'standard', label: 'Standard Plan' },
-                { value: 'premium', label: 'Premium Plan' }
+                ...(pricingData?.pricing_plans.map(plan => ({
+                  value: plan.plan_type,
+                  label: plan.name
+                })) || [
+                  { value: 'free', label: 'Free Plan' },
+                  { value: 'standard', label: 'Standard Plan' },
+                  { value: 'premium', label: 'Premium Plan' }
+                ])
               ]}
               value={selectedPlan}
               onChange={(value) => handlePlanChange({ target: { value } } as any)}
@@ -498,8 +508,8 @@ export default function SubscriptionsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {subscription.plan === 'premium' ? 'Premium Plan' :
-                         subscription.plan === 'standard' ? 'Standard Plan' : 'Free Plan'}
+                        {pricingData?.pricing_plans.find(plan => plan.plan_type === subscription.plan)?.name ||
+                         getPlanDisplayName(subscription.plan)}
                       </div>
                       <div className="text-xs text-gray-500">
                         {subscription.autoRenew ? 'Auto-renews' : 'No auto-renewal'}
