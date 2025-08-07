@@ -18,6 +18,7 @@ import {
   createBaseFeature,
   updateBaseFeature,
   deleteBaseFeature,
+  updatePlanFeatures,
   PricingPlan,
   BaseFeature,
   PricingPageContent,
@@ -30,6 +31,15 @@ import {
 
 interface PricingManagementProps {
   className?: string;
+}
+
+interface PlanFeatureConfig {
+  baseFeatureId: number;
+  isIncluded: boolean;
+  featureValue: string;
+  customDescription?: string;
+  order: number;
+  isHighlighted: boolean;
 }
 
 const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' }) => {
@@ -46,6 +56,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
   const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
   const [editingFeature, setEditingFeature] = useState<BaseFeature | null>(null);
   const [editingContent, setEditingContent] = useState<PricingPageContent | null>(null);
+  const [configuringPlanFeatures, setConfiguringPlanFeatures] = useState<PricingPlan | null>(null);
 
   // Form states
   const [showCreatePlanForm, setShowCreatePlanForm] = useState(false);
@@ -201,12 +212,29 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
         toast.error('Failed to update content', { description: response.error });
         return;
       }
-      
+
       toast.success('Content updated successfully');
       setEditingContent(null);
       loadData();
     } catch (err) {
       toast.error('Failed to update content');
+    }
+  };
+
+  // Plan features management functions
+  const handleSavePlanFeatures = async (planId: number, features: PlanFeatureConfig[]) => {
+    try {
+      const response = await updatePlanFeatures(planId, features);
+      if (response.error) {
+        toast.error('Failed to update plan features', { description: response.error });
+        return;
+      }
+
+      toast.success('Plan features updated successfully');
+      setConfiguringPlanFeatures(null);
+      loadData();
+    } catch (err) {
+      toast.error('Failed to update plan features');
     }
   };
 
@@ -349,6 +377,13 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
                       </span>
                       <span className="text-gray-500">Order: {plan.order}</span>
                     </div>
+
+                    <button
+                      onClick={() => setConfiguringPlanFeatures(plan)}
+                      className="w-full mt-3 px-3 py-2 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors"
+                    >
+                      Configure Features
+                    </button>
                   </div>
                 </div>
               )) : (
@@ -378,6 +413,16 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
               <CreatePlanModal
                 onSave={handleCreatePlan}
                 onCancel={() => setShowCreatePlanForm(false)}
+              />
+            )}
+
+            {/* Configure Plan Features Modal */}
+            {configuringPlanFeatures && (
+              <ConfigurePlanFeaturesModal
+                plan={configuringPlanFeatures}
+                baseFeatures={baseFeatures}
+                onSave={handleSavePlanFeatures}
+                onCancel={() => setConfiguringPlanFeatures(null)}
               />
             )}
           </div>
@@ -1174,6 +1219,198 @@ const EditContentModal: React.FC<EditContentModalProps> = ({ content, onSave, on
             >
               Save Changes
             </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Configure Plan Features Modal Component
+interface ConfigurePlanFeaturesModalProps {
+  plan: PricingPlan;
+  baseFeatures: BaseFeature[];
+  onSave: (planId: number, features: PlanFeatureConfig[]) => void;
+  onCancel: () => void;
+}
+
+const ConfigurePlanFeaturesModal: React.FC<ConfigurePlanFeaturesModalProps> = ({
+  plan,
+  baseFeatures,
+  onSave,
+  onCancel
+}) => {
+  // Initialize feature configurations based on current plan features
+  const [featureConfigs, setFeatureConfigs] = useState<PlanFeatureConfig[]>(() => {
+    return baseFeatures.map((baseFeature) => {
+      // Find existing configuration for this feature in the plan
+      const existingFeature = plan.features.find(f => f.feature_name === baseFeature.name);
+
+      return {
+        baseFeatureId: baseFeature.id,
+        isIncluded: existingFeature ? existingFeature.is_included : false,
+        featureValue: existingFeature?.feature_value || '',
+        customDescription: '',
+        order: existingFeature?.order || baseFeature.order,
+        isHighlighted: existingFeature?.is_highlighted || false
+      };
+    });
+  });
+
+  const handleFeatureToggle = (baseFeatureId: number, isIncluded: boolean) => {
+    setFeatureConfigs(configs =>
+      configs.map(config =>
+        config.baseFeatureId === baseFeatureId
+          ? { ...config, isIncluded }
+          : config
+      )
+    );
+  };
+
+  const handleFeatureValueChange = (baseFeatureId: number, featureValue: string) => {
+    setFeatureConfigs(configs =>
+      configs.map(config =>
+        config.baseFeatureId === baseFeatureId
+          ? { ...config, featureValue }
+          : config
+      )
+    );
+  };
+
+  const handleHighlightToggle = (baseFeatureId: number, isHighlighted: boolean) => {
+    setFeatureConfigs(configs =>
+      configs.map(config =>
+        config.baseFeatureId === baseFeatureId
+          ? { ...config, isHighlighted }
+          : config
+      )
+    );
+  };
+
+  const handleOrderChange = (baseFeatureId: number, order: number) => {
+    setFeatureConfigs(configs =>
+      configs.map(config =>
+        config.baseFeatureId === baseFeatureId
+          ? { ...config, order }
+          : config
+      )
+    );
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(plan.id, featureConfigs);
+  };
+
+  const getFeaturePreview = (baseFeature: BaseFeature, config: PlanFeatureConfig) => {
+    if (!config.isIncluded) return null;
+
+    let description = baseFeature.base_description;
+    if (config.featureValue && description.includes('{value}')) {
+      description = description.replace('{value}', config.featureValue);
+    }
+    return description;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+        <h3 className="text-lg font-medium mb-4">Configure Features for {plan.name}</h3>
+
+        <form onSubmit={handleSubmit}>
+          <div className="space-y-4 mb-6">
+            {baseFeatures.map((baseFeature) => {
+              const config = featureConfigs.find(c => c.baseFeatureId === baseFeature.id);
+              if (!config) return null;
+
+              return (
+                <div key={baseFeature.id} className="border rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <div className="flex items-center mb-2">
+                        <input
+                          type="checkbox"
+                          checked={config.isIncluded}
+                          onChange={(e) => handleFeatureToggle(baseFeature.id, e.target.checked)}
+                          className="mr-3"
+                        />
+                        <h4 className="font-medium text-gray-900">{baseFeature.name}</h4>
+                        <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                          {baseFeature.category}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">{baseFeature.base_description}</p>
+                    </div>
+
+                    <div className="flex items-center space-x-2 ml-4">
+                      <label className="flex items-center text-sm">
+                        <input
+                          type="checkbox"
+                          checked={config.isHighlighted}
+                          onChange={(e) => handleHighlightToggle(baseFeature.id, e.target.checked)}
+                          disabled={!config.isIncluded}
+                          className="mr-1"
+                        />
+                        Highlight
+                      </label>
+                      <input
+                        type="number"
+                        value={config.order}
+                        onChange={(e) => handleOrderChange(baseFeature.id, parseInt(e.target.value))}
+                        disabled={!config.isIncluded}
+                        className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
+                        placeholder="Order"
+                      />
+                    </div>
+                  </div>
+
+                  {config.isIncluded && (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Feature Value {baseFeature.base_description.includes('{value}') && '(replaces {value})'}
+                        </label>
+                        <input
+                          type="text"
+                          value={config.featureValue}
+                          onChange={(e) => handleFeatureValueChange(baseFeature.id, e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+                          placeholder={baseFeature.base_description.includes('{value}') ? 'e.g., Limited, Unlimited, 9%' : 'Optional value'}
+                        />
+                      </div>
+
+                      <div className="bg-gray-50 rounded p-3">
+                        <h5 className="text-sm font-medium text-gray-700 mb-1">Preview:</h5>
+                        <p className={`text-sm ${config.isHighlighted ? 'font-medium text-gray-900' : 'text-gray-600'}`}>
+                          {getFeaturePreview(baseFeature, config)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-between items-center pt-4 border-t">
+            <div className="text-sm text-gray-600">
+              {featureConfigs.filter(c => c.isIncluded).length} features selected
+            </div>
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                onClick={onCancel}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00]"
+              >
+                Save Configuration
+              </button>
+            </div>
           </div>
         </form>
       </div>

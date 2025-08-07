@@ -258,3 +258,10 @@ export async function updatePricingPageContent(content: UpdatePricingPageContent
 export async function getAdminPricingPlans() {
   return apiGet<PricingPlan[]>('/pricing/admin/plans/', true);
 }
+
+/**
+ * Update plan features configuration
+ */
+export async function updatePlanFeatures(planId: number, features: any[]) {
+  return apiPost<{ success: boolean }>(`/pricing/plans/${planId}/configure-features/`, { features }, true);
+}
