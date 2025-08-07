@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { 
+import {
   Plus, Edit2, Trash2, DollarSign,
   Settings, List, Loader2, AlertCircle
 } from 'lucide-react';
+import Modal from '@/components/ui/modal';
 import {
   getPricingData,
   getPricingPlans,
@@ -640,10 +641,12 @@ const EditPlanModal: React.FC<EditPlanModalProps> = ({ plan, onSave, onCancel })
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-medium mb-4">Edit Pricing Plan</h3>
-
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title="Edit Pricing Plan"
+      maxWidth="md"
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
@@ -751,8 +754,7 @@ const EditPlanModal: React.FC<EditPlanModalProps> = ({ plan, onSave, onCancel })
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
@@ -779,10 +781,12 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ onSave, onCancel }) =
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-medium mb-4">Create New Pricing Plan</h3>
-
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title="Create New Pricing Plan"
+      maxWidth="md"
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
@@ -880,8 +884,7 @@ const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ onSave, onCancel }) =
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
@@ -913,10 +916,12 @@ const EditFeatureModal: React.FC<EditFeatureModalProps> = ({ feature, onSave, on
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-medium mb-4">Edit Base Feature</h3>
-
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title="Edit Base Feature"
+      maxWidth="md"
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Feature Name</label>
@@ -994,8 +999,7 @@ const EditFeatureModal: React.FC<EditFeatureModalProps> = ({ feature, onSave, on
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
@@ -1024,10 +1028,12 @@ const CreateFeatureModal: React.FC<CreateFeatureModalProps> = ({ onSave, onCance
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 className="text-lg font-medium mb-4">Create New Base Feature</h3>
-
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title="Create New Base Feature"
+      maxWidth="md"
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Feature Name</label>
@@ -1106,8 +1112,7 @@ const CreateFeatureModal: React.FC<CreateFeatureModalProps> = ({ onSave, onCance
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
@@ -1133,10 +1138,12 @@ const EditContentModal: React.FC<EditContentModalProps> = ({ content, onSave, on
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-lg">
-        <h3 className="text-lg font-medium mb-4">Edit Pricing Page Content</h3>
-
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title="Edit Pricing Page Content"
+      maxWidth="lg"
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Section Label</label>
@@ -1221,8 +1228,7 @@ const EditContentModal: React.FC<EditContentModalProps> = ({ content, onSave, on
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
@@ -1313,10 +1319,12 @@ const ConfigurePlanFeaturesModal: React.FC<ConfigurePlanFeaturesModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <h3 className="text-lg font-medium mb-4">Configure Features for {plan.name}</h3>
-
+    <Modal
+      isOpen={true}
+      onClose={onCancel}
+      title={`Configure Features for ${plan.name}`}
+      maxWidth="4xl"
+    >
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 mb-6">
             {baseFeatures.map((baseFeature) => {
@@ -1413,8 +1421,7 @@ const ConfigurePlanFeaturesModal: React.FC<ConfigurePlanFeaturesModalProps> = ({
             </div>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
