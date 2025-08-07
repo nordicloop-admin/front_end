@@ -6,13 +6,11 @@ import { Loader2, AlertCircle } from 'lucide-react';
 // import { SlidersHorizontal } from '@/components/ui/Icons';
 import { CategoryFilter } from '@/components/marketplace/CategoryFilter';
 import { LocationFilter } from '@/components/marketplace/LocationFilter';
-import { TimeFilter } from '@/components/marketplace/TimeFilter';
-import { FormFilter } from '@/components/marketplace/FormFilter';
-import { QuantityFilter } from '@/components/marketplace/QuantityFilter';
+
 import { BrokerFilter } from '@/components/marketplace/BrokerFilter';
 import { OriginFilter } from '@/components/marketplace/OriginFilter';
 import { ContaminationFilter } from '@/components/marketplace/ContaminationFilter';
-import { SortDropdown } from '@/components/marketplace/SortDropdown';
+
 import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
 import { getFullImageUrl } from '@/utils/imageUtils';
@@ -185,13 +183,8 @@ const ProductCard = ({ item }: { item: any }) => {
 };
 
 const MarketplacePage = () => {
-  const [sortOption, setSortOption] = useState('Recently');
   const [selectedCategory, setSelectedCategory] = useState('All materials');
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
-  const [selectedForms, setSelectedForms] = useState<string[]>([]);
-  const [selectedDateFilter, setSelectedDateFilter] = useState('All time');
-  const [minQuantity, setMinQuantity] = useState(0);
-  const [maxQuantity, setMaxQuantity] = useState(10000);
   const [selectedBrokerFilter, setSelectedBrokerFilter] = useState('all');
   const [selectedOrigin, setSelectedOrigin] = useState('');
   const [selectedContamination, setSelectedContamination] = useState('');
@@ -214,14 +207,7 @@ const MarketplacePage = () => {
     pageSize: 12
   });
 
-  // Helper function to toggle form selection
-  const toggleFormSelection = (form: string) => {
-    if (selectedForms.includes(form)) {
-      setSelectedForms(selectedForms.filter(f => f !== form));
-    } else {
-      setSelectedForms([...selectedForms, form]);
-    }
-  };
+
 
   // Filter callback functions
   const handleCategoryChange = (categoryId: number | null, subcategoryIds: number[]) => {
@@ -346,12 +332,7 @@ const MarketplacePage = () => {
           </span>
         </div>
 
-        <div className="flex w-full sm:w-auto space-x-3">
-          {/* Sort Dropdown */}
-          <div className="relative w-full sm:w-auto">
-            <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
-          </div>
-        </div>
+
       </div>
 
       {/* Materials Filter Dropdown */}
@@ -381,26 +362,9 @@ const MarketplacePage = () => {
             onContaminationChange={handleContaminationChange}
           />
 
-          <QuantityFilter
-            minQuantity={minQuantity}
-            maxQuantity={maxQuantity}
-            setMinQuantity={setMinQuantity}
-            setMaxQuantity={setMaxQuantity}
-          />
-
-          <FormFilter
-            selectedForms={selectedForms}
-            toggleFormSelection={toggleFormSelection}
-          />
-
           <BrokerFilter
             selectedBrokerFilter={selectedBrokerFilter}
             setBrokerFilter={setSelectedBrokerFilter}
-          />
-
-          <TimeFilter
-            selectedDateFilter={selectedDateFilter}
-            setSelectedDateFilter={setSelectedDateFilter}
           />
         </div>
       </div>
@@ -445,8 +409,6 @@ const MarketplacePage = () => {
                   onClick={() => {
                     setSelectedCategory('All materials');
                     setSelectedLocation('All Locations');
-                    setSelectedForms([]);
-                    setSelectedDateFilter('All time');
                     setSelectedBrokerFilter('all');
                     setSelectedOrigin('');
                     setSelectedContamination('');

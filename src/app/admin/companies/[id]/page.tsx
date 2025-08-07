@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getAdminCompany, updateCompanyStatus, getCompanyStatistics, type AdminCompany, type CompanyStatistics, type TransactionHistoryItem } from '@/services/company';
 import { createNotification, type CreateNotificationRequest } from '@/services/notifications';
+import { toast } from 'sonner';
 import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink, Bell, X } from 'lucide-react';
 
 export default function CompanyDetailPage() {
@@ -85,22 +86,29 @@ export default function CompanyDetailPage() {
 
     setSendingNotification(true);
     try {
-      // Get all users from this company
       const notificationData: CreateNotificationRequest = {
-        title: notificationForm.title,
+        title: `[Admin] ${notificationForm.title}`,
         message: notificationForm.message,
         type: notificationForm.type,
         priority: notificationForm.priority,
-        // We'll send to all users in the company by using the company filter
-        // This would need to be implemented in the backend to filter by company
+        metadata: {
+          company_id: company.id,
+          company_name: company.companyName,
+          admin_notification: true,
+          target_email: company.companyEmail
+        }
       };
 
       const response = await createNotification(notificationData);
 
       if (response.error) {
-        alert(`Failed to send notification: ${response.error}`);
+        toast.error('Failed to send notification', {
+          description: response.error,
+        });
       } else {
-        alert('Notification sent successfully');
+        toast.success('Notification sent successfully', {
+          description: `Notification sent to ${company.companyName}`,
+        });
         setNotificationForm({
           title: '',
           message: '',
@@ -109,8 +117,10 @@ export default function CompanyDetailPage() {
         });
         setShowNotificationModal(false);
       }
-    } catch (error) {
-      alert('Failed to send notification');
+    } catch (_err) {
+      toast.error('Failed to send notification', {
+        description: 'An unexpected error occurred',
+      });
     } finally {
       setSendingNotification(false);
     }

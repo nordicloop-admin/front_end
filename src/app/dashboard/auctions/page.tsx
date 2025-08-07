@@ -329,22 +329,7 @@ export default function Auctions() {
         ))}
       </div>
 
-      {/* Legend for Visual Markers */}
-      {!isLoading && !error && (userAuctions.length > 0 || userBids.length > 0) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-5">
-          <h3 className="text-sm font-medium text-blue-900 mb-2">Look for these banners:</h3>
-          <div className="flex flex-wrap gap-4 text-xs">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-emerald-500 rounded mr-2"></div>
-              <span className="text-blue-800">"Your Auction" = Auctions you created</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>
-              <span className="text-blue-800">"You Bidded" = Auctions you placed bids on</span>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Loading State */}
       {isLoading && (

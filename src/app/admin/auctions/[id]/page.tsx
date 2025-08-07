@@ -206,16 +206,35 @@ export default function AuctionDetailPage() {
 
     setSendingNotification(true);
     try {
-      const notificationData: CreateNotificationRequest = {
-        title: notificationForm.title,
+      // First, get auction details to find the creator
+      const auctionResponse = await getAdminAuction(auction.id);
+      if (auctionResponse.error || !auctionResponse.data) {
+        toast.error('Failed to get auction details');
+        return;
+      }
+
+      // Get auction creator information
+      const auctionData = auctionResponse.data;
+
+      // Get bidders for this auction
+      const bidsResponse = await getAuctionBids(parseInt(auction.id));
+      const bidders = bidsResponse.data?.bids || [];
+
+      // Create notifications for auction creator
+      const creatorNotificationData: CreateNotificationRequest = {
+        title: `[Admin] ${notificationForm.title}`,
         message: notificationForm.message,
         type: notificationForm.type,
         priority: notificationForm.priority,
-        // Note: This would need backend support to send to auction creator and bidders
-        // For now, we'll send a general notification
+        metadata: {
+          auction_id: auction.id,
+          auction_title: auction.name,
+          admin_notification: true
+        }
       };
 
-      const response = await createNotification(notificationData);
+      // Send notification to auction creator (this will need backend support to target specific user)
+      const response = await createNotification(creatorNotificationData);
 
       if (response.error) {
         toast.error('Failed to send notification', {
@@ -223,7 +242,7 @@ export default function AuctionDetailPage() {
         });
       } else {
         toast.success('Notification sent successfully', {
-          description: 'The notification has been sent to relevant users',
+          description: `Notification sent regarding auction: ${auction.name}`,
         });
         setNotificationForm({
           title: '',
