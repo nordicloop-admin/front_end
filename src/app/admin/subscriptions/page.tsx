@@ -3,9 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Search, Filter, ChevronDown, ChevronUp, CreditCard, Clock, AlertCircle, RefreshCw } from 'lucide-react';
+import { Search, Filter, ChevronDown, ChevronUp, CreditCard, Clock, AlertCircle, RefreshCw, Settings, Users } from 'lucide-react';
 import CustomDropdown from '@/components/ui/CustomDropdown';
 import { getAdminSubscriptions, AdminSubscription } from '@/services/subscriptions';
+import PricingManagement from '@/components/admin/PricingManagement';
 
 // Subscription plan details
 const subscriptionPlans = [
@@ -53,7 +54,10 @@ const subscriptionPlans = [
 export default function SubscriptionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'subscriptions' | 'pricing'>('subscriptions');
+
   // State management
   const [subscriptions, setSubscriptions] = useState<AdminSubscription[]>([]);
   const [loading, setLoading] = useState(true);
@@ -297,25 +301,56 @@ export default function SubscriptionsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <h1 className="text-xl font-medium">Subscription Management</h1>
+          <h1 className="text-xl font-medium">Subscription & Pricing Management</h1>
           {failedPaymentCount > 0 && (
             <span className="ml-3 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {failedPaymentCount}
             </span>
           )}
         </div>
+        {activeTab === 'subscriptions' && (
+          <button
+            onClick={fetchSubscriptions}
+            disabled={loading}
+            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex space-x-1 bg-gray-100 rounded-lg p-1 mb-6">
         <button
-          onClick={fetchSubscriptions}
-          disabled={loading}
-          className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent disabled:opacity-50"
+          onClick={() => setActiveTab('subscriptions')}
+          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'subscriptions'
+              ? 'bg-white text-[#FF8A00] shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
         >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Refresh
+          <Users size={16} className="mr-2" />
+          User Subscriptions
+        </button>
+        <button
+          onClick={() => setActiveTab('pricing')}
+          className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'pricing'
+              ? 'bg-white text-[#FF8A00] shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Settings size={16} className="mr-2" />
+          Pricing Management
         </button>
       </div>
 
-      {/* Subscription Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      {/* Tab Content */}
+      {activeTab === 'subscriptions' && (
+        <>
+          {/* Subscription Plans */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {subscriptionPlans.map((plan) => (
           <div key={plan.id} className="bg-white p-4 rounded-md shadow-sm">
             <div className="flex justify-between items-start mb-2">
@@ -570,6 +605,12 @@ export default function SubscriptionsPage() {
         {/* Pagination */}
         {renderPagination()}
       </div>
+        </>
+      )}
+
+      {activeTab === 'pricing' && (
+        <PricingManagement />
+      )}
     </div>
   );
 }
