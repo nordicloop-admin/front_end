@@ -67,7 +67,7 @@ export default function CompanyDetailPage() {
         }
       } catch (_err) {
         // Statistics are not critical, so we don't show error for this
-        console.error('Failed to load company statistics');
+        // Failed to load company statistics
       } finally {
         setStatsLoading(false);
       }

@@ -123,8 +123,8 @@ export default function SubscriptionsPage() {
         if (response.data?.success) {
           setPricingData(response.data.data);
         }
-      } catch (err) {
-        console.error('Failed to fetch pricing data:', err);
+      } catch (_err) {
+        // Failed to fetch pricing data
       }
     };
 

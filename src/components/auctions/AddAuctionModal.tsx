@@ -93,8 +93,8 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
           } else {
             setError('No categories available. Please try again later.');
           }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch categories');
+        } catch (_err) {
+          setError(_err instanceof Error ? _err.message : 'Failed to fetch categories');
         } finally {
           setIsLoading(false);
         }

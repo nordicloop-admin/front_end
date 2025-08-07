@@ -57,24 +57,24 @@ export function useGoogleMaps() {
 
     // Define the callback function
     window.initGoogleMapsAPI = () => {
-      console.log('Google Maps API loaded successfully');
+      // Google Maps API loaded successfully
       window.googleMapsLoading = false;
       setIsLoaded(true);
     };
 
     // Create and append the script
-    console.log('Creating Google Maps script...');
+    // Creating Google Maps script
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey}&libraries=places&callback=initGoogleMapsAPI`;
     script.async = true;
     script.defer = true;
-    script.onerror = (error) => {
-      console.error('Failed to load Google Maps API:', error);
+    script.onerror = (_error) => {
+      // Failed to load Google Maps API
       window.googleMapsLoading = false;
       setLoadError(new Error('Failed to load Google Maps API'));
     };
 
-    console.log('Appending Google Maps script to head...');
+    // Appending Google Maps script to head
     document.head.appendChild(script);
 
     // Cleanup function

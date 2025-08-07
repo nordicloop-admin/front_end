@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { 
-  Plus, Edit2, Trash2, Save, X, DollarSign, 
-  Settings, Tag, List, Loader2, AlertCircle 
+  Plus, Edit2, Trash2, DollarSign,
+  Settings, List, Loader2, AlertCircle
 } from 'lucide-react';
 import {
   getPricingData,
   getPricingPlans,
   getBaseFeatures,
-  getAdminPricingPlans,
+
   updatePricingPlan,
   createPricingPlan,
   deletePricingPlan,
@@ -89,16 +89,16 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
         throw new Error(contentResponse.error);
       }
 
-      // Handle paginated responses for both plans and features
-      const plansData = plansResponse.data?.results || plansResponse.data;
+      // Handle responses for both plans and features
+      const plansData = plansResponse.data;
       setPricingPlans(Array.isArray(plansData) ? plansData : []);
 
-      const featuresData = featuresResponse.data?.results || featuresResponse.data;
+      const featuresData = featuresResponse.data;
       setBaseFeatures(Array.isArray(featuresData) ? featuresData : []);
 
       setPageContent(contentResponse.data?.data?.page_content || null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load pricing data');
+    } catch (_err) {
+      setError(_err instanceof Error ? _err.message : 'Failed to load pricing data');
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +116,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
       toast.success('Plan created successfully');
       setShowCreatePlanForm(false);
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to create plan');
     }
   };
@@ -132,7 +132,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
       toast.success('Plan updated successfully');
       setEditingPlan(null);
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update plan');
     }
   };
@@ -149,7 +149,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
       
       toast.success('Plan deleted successfully');
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to delete plan');
     }
   };
@@ -166,7 +166,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
       toast.success('Feature created successfully');
       setShowCreateFeatureForm(false);
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to create feature');
     }
   };
@@ -182,7 +182,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
       toast.success('Feature updated successfully');
       setEditingFeature(null);
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update feature');
     }
   };
@@ -199,7 +199,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
       
       toast.success('Feature deleted successfully');
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to delete feature');
     }
   };
@@ -216,7 +216,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
       toast.success('Content updated successfully');
       setEditingContent(null);
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update content');
     }
   };
@@ -233,7 +233,7 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
       toast.success('Plan features updated successfully');
       setConfiguringPlanFeatures(null);
       loadData();
-    } catch (err) {
+    } catch (_err) {
       toast.error('Failed to update plan features');
     }
   };
@@ -356,9 +356,9 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
                   <div className="mb-4">
                     <div className="flex items-end mb-2">
                       <span className="text-2xl font-bold">
-                        {plan.price === '0.00' ? 'Free' : `${plan.price} ${plan.currency}`}
+                        {plan.price === 0 ? 'Free' : `${plan.price} ${plan.currency}`}
                       </span>
-                      {plan.price !== '0.00' && <span className="text-gray-500 ml-1">/ month</span>}
+                      {plan.price !== 0 && <span className="text-gray-500 ml-1">/ month</span>}
                     </div>
                     {plan.is_popular && (
                       <span className="inline-block bg-[#FF8A00] text-white text-xs px-2 py-1 rounded-full">

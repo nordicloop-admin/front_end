@@ -10,8 +10,24 @@ import Pagination from '@/components/ui/Pagination';
 import { getUser } from '@/services/auth';
 import { getUserBids, BidItem } from '@/services/bid';
 
+// Interface for auction display data
+interface AuctionDisplayData {
+  id: string;
+  name: string;
+  category: string;
+  basePrice: string;
+  highestBid: string | null;
+  timeLeft: string;
+  volume: string;
+  seller: string;
+  countryOfOrigin: string;
+  image: string;
+  isMyAuction?: boolean;
+  hasBid?: boolean;
+}
+
 // Mock data for marketplace auctions
-const marketplaceAuctions = [
+const marketplaceAuctions: AuctionDisplayData[] = [
   {
     id: '1',
     name: 'PPA Thermocomp UFW49RSC (Black)',
@@ -22,7 +38,9 @@ const marketplaceAuctions = [
     volume: '500 kg',
     seller: 'Eco Solutions AB',
     countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/plastics.jpg'
+    image: '/images/marketplace/categories/plastics.jpg',
+    isMyAuction: false,
+    hasBid: false
   },
   {
     id: '2',
@@ -34,7 +52,9 @@ const marketplaceAuctions = [
     volume: '750 kg',
     seller: 'Green Tech Norway',
     countryOfOrigin: 'Norway',
-    image: '/images/marketplace/categories/plastics-alt.jpg'
+    image: '/images/marketplace/categories/plastics-alt.jpg',
+    isMyAuction: false,
+    hasBid: false
   },
   {
     id: '3',
@@ -46,7 +66,9 @@ const marketplaceAuctions = [
     volume: '1200 kg',
     seller: 'Circular Materials Oy',
     countryOfOrigin: 'Finland',
-    image: '/images/marketplace/categories/metals.jpg'
+    image: '/images/marketplace/categories/metals.jpg',
+    isMyAuction: false,
+    hasBid: false
   },
   {
     id: '4',
@@ -58,7 +80,9 @@ const marketplaceAuctions = [
     volume: '850 kg',
     seller: 'Eco Solutions AB',
     countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/paper.jpg'
+    image: '/images/marketplace/categories/paper.jpg',
+    isMyAuction: false,
+    hasBid: false
   }
 ];
 
@@ -84,7 +108,7 @@ export default function Auctions() {
   const [userBids, setUserBids] = useState<BidItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [_currentUser, setCurrentUser] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [paginationData, setPaginationData] = useState({
@@ -122,7 +146,7 @@ export default function Auctions() {
         // Successfully fetched auctions
         const result = response.data as PaginatedAuctionResult;
         setApiAuctions(result.auctions || []);
-        console.log('All auctions loaded:', result.auctions?.length || 0, result.auctions);
+        // All auctions loaded
         setPaginationData({
           count: result.pagination.count,
           totalPages: result.pagination.total_pages,
@@ -139,17 +163,17 @@ export default function Auctions() {
       if (userResponse.data) {
         const userResult = userResponse.data as PaginatedAuctionResult;
         setUserAuctions(userResult.auctions || []);
-        console.log('User auctions loaded:', userResult.auctions?.length || 0, userResult.auctions);
+        // User auctions loaded
       } else {
-        console.log('No user auctions data:', userResponse.error);
+        // No user auctions data
       }
 
       // Set user bids
       if (bidsResponse.data) {
         setUserBids(bidsResponse.data.bids || []);
-        console.log('User bids loaded:', bidsResponse.data.bids?.length || 0, bidsResponse.data.bids);
+        // User bids loaded
       } else {
-        console.log('No user bids data:', bidsResponse.error);
+        // No user bids data
       }
     } catch (err) {
       // Handle unexpected errors
@@ -198,7 +222,7 @@ export default function Auctions() {
   };
 
   // Convert API auctions to the format expected by the UI
-  const convertedAuctions = (apiAuctions || []).map(auction => {
+  const convertedAuctions: AuctionDisplayData[] = (apiAuctions || []).map(auction => {
     // Check if this auction belongs to the current user
     // Make sure we're comparing the same data types
     const isMyAuction = userAuctions.some(userAuction =>
@@ -208,16 +232,16 @@ export default function Auctions() {
     // Check if user has bid on this auction
     // Make sure we're comparing the same data types for ad_id
     const userBid = userBids.find(bid =>
-      bid.ad_id === auction.id || bid.ad_id.toString() === auction.id.toString()
+      bid.ad_id === auction.id || (bid.ad_id && bid.ad_id.toString() === auction.id.toString())
     );
     const hasBid = !!userBid;
 
     // Debug logging (remove in production)
     if (isMyAuction) {
-      console.log('Found my auction:', auction.id, auction.title);
+      // Found my auction
     }
     if (hasBid) {
-      console.log('Found my bid on auction:', auction.id, auction.title, userBid);
+      // Found my bid on auction
     }
 
     return {

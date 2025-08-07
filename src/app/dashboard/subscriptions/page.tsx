@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Check, X, Calendar, ArrowRight, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { getUserSubscription, updateUserSubscription, createUserSubscription, UserSubscription } from '@/services/userSubscription';
 import { getUserProfile, UserProfile } from '@/services/userProfile';
-import { getPricingData, PricingData, PricingPlan } from '@/services/pricing';
+import { getPricingData, PricingData } from '@/services/pricing';
 
 // Helper function to get commission rate from plan type
 const getCommissionRate = (planType: string): string => {

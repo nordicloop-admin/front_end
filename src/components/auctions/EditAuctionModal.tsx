@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -438,7 +438,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   // Google Maps integration state
-  const [addressInput, setAddressInput] = useState('');
+  const [_addressInput, setAddressInput] = useState('');
   const [locationError, setLocationError] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const addressInputRef = useRef<HTMLInputElement>(null!);
@@ -502,7 +502,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             // Extract address components
             let city = '';
             let region = '';
-            let country = '';
+            const _country = '';
             let countryCode = '';
 
             place.address_components.forEach((component: any) => {
@@ -513,7 +513,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               } else if (types.includes('administrative_area_level_1')) {
                 region = component.long_name;
               } else if (types.includes('country')) {
-                country = component.long_name;
+                // country = component.long_name;
                 countryCode = component.short_name.toLowerCase();
               }
             });
@@ -530,10 +530,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             setLocationError('');
           }
         });
-      } catch (error) {
-        console.error('Failed to initialize Google Maps autocomplete:', error);
+      } catch (_error) {
+        // Failed to initialize Google Maps autocomplete
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, activeStep, isLoaded]);
 
   // Initialize form data from auction
@@ -632,9 +633,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         setSteps(expectedSteps);
       }
     }
-  }, [auction, categoriesLoaded]);
+  }, [auction, categoriesLoaded, steps]);
 
-  const handleStepDataChange = (updates: Partial<StepData>) => {
+  const handleStepDataChange = useCallback((updates: Partial<StepData>) => {
     setStepData(prev => ({ ...prev, ...updates }));
     setHasChanges(true);
 
@@ -671,7 +672,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         }
       }
     }
-  };
+  }, [activeStep, showValidationErrors, validationErrors]);
 
   // Handle image file upload
   const handleImageUpload = (files: FileList | null) => {

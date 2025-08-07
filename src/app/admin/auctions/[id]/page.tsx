@@ -214,11 +214,11 @@ export default function AuctionDetailPage() {
       }
 
       // Get auction creator information
-      const auctionData = auctionResponse.data;
+      const _auctionData = auctionResponse.data;
 
       // Get bidders for this auction
       const bidsResponse = await getAuctionBids(parseInt(auction.id));
-      const bidders = bidsResponse.data?.bids || [];
+      const _bidders = bidsResponse.data?.bids || [];
 
       // Create notifications for auction creator
       const creatorNotificationData: CreateNotificationRequest = {
