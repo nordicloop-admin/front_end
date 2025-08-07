@@ -363,6 +363,23 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
                 </div>
               )}
             </div>
+
+            {/* Edit Plan Modal */}
+            {editingPlan && (
+              <EditPlanModal
+                plan={editingPlan}
+                onSave={handleUpdatePlan}
+                onCancel={() => setEditingPlan(null)}
+              />
+            )}
+
+            {/* Create Plan Modal */}
+            {showCreatePlanForm && (
+              <CreatePlanModal
+                onSave={handleCreatePlan}
+                onCancel={() => setShowCreatePlanForm(false)}
+              />
+            )}
           </div>
         )}
 
@@ -460,6 +477,23 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
                 </tbody>
               </table>
             </div>
+
+            {/* Edit Feature Modal */}
+            {editingFeature && (
+              <EditFeatureModal
+                feature={editingFeature}
+                onSave={handleUpdateFeature}
+                onCancel={() => setEditingFeature(null)}
+              />
+            )}
+
+            {/* Create Feature Modal */}
+            {showCreateFeatureForm && (
+              <CreateFeatureModal
+                onSave={handleCreateFeature}
+                onCancel={() => setShowCreateFeatureForm(false)}
+              />
+            )}
           </div>
         )}
 
@@ -519,8 +553,629 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
                 </div>
               </div>
             )}
+
+            {/* Edit Content Modal */}
+            {editingContent && (
+              <EditContentModal
+                content={editingContent}
+                onSave={handleUpdateContent}
+                onCancel={() => setEditingContent(null)}
+              />
+            )}
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+// Modal Components
+interface EditPlanModalProps {
+  plan: PricingPlan;
+  onSave: (plan: UpdatePricingPlanRequest) => void;
+  onCancel: () => void;
+}
+
+const EditPlanModal: React.FC<EditPlanModalProps> = ({ plan, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    id: plan.id,
+    name: plan.name,
+    plan_type: plan.plan_type,
+    price: parseFloat(plan.price.toString()),
+    currency: plan.currency,
+    color: plan.color,
+    is_popular: plan.is_popular,
+    is_active: plan.is_active,
+    order: plan.order
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-medium mb-4">Edit Pricing Plan</h3>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
+            <select
+              value={formData.plan_type}
+              onChange={(e) => setFormData({ ...formData, plan_type: e.target.value as 'free' | 'standard' | 'premium' })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+            >
+              <option value="free">Free</option>
+              <option value="standard">Standard</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+            <input
+              type="text"
+              value={formData.currency}
+              onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+            <input
+              type="color"
+              value={formData.color}
+              onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
+            <input
+              type="number"
+              value={formData.order}
+              onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.is_popular}
+                onChange={(e) => setFormData({ ...formData, is_popular: e.target.checked })}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Popular Plan</span>
+            </label>
+
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Active</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00]"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+interface CreatePlanModalProps {
+  onSave: (plan: CreatePricingPlanRequest) => void;
+  onCancel: () => void;
+}
+
+const CreatePlanModal: React.FC<CreatePlanModalProps> = ({ onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    plan_type: 'free' as 'free' | 'standard' | 'premium',
+    price: 0,
+    currency: 'SEK',
+    color: '#008066',
+    is_popular: false,
+    is_active: true,
+    order: 1
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-medium mb-4">Create New Pricing Plan</h3>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Plan Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Plan Type</label>
+            <select
+              value={formData.plan_type}
+              onChange={(e) => setFormData({ ...formData, plan_type: e.target.value as 'free' | 'standard' | 'premium' })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+            >
+              <option value="free">Free</option>
+              <option value="standard">Standard</option>
+              <option value="premium">Premium</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+            <input
+              type="text"
+              value={formData.currency}
+              onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
+            <input
+              type="number"
+              value={formData.order}
+              onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div className="flex items-center space-x-4">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.is_popular}
+                onChange={(e) => setFormData({ ...formData, is_popular: e.target.checked })}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Popular Plan</span>
+            </label>
+
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Active</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00]"
+            >
+              Create Plan
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Feature Modal Components
+interface EditFeatureModalProps {
+  feature: BaseFeature;
+  onSave: (feature: UpdateBaseFeatureRequest) => void;
+  onCancel: () => void;
+}
+
+const EditFeatureModal: React.FC<EditFeatureModalProps> = ({ feature, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    id: feature.id,
+    name: feature.name,
+    category: feature.category,
+    base_description: feature.base_description,
+    is_active: feature.is_active,
+    order: feature.order
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  const categories = [
+    'marketplace', 'auctions', 'reporting', 'support',
+    'commission', 'verification', 'access', 'community'
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-medium mb-4">Edit Base Feature</h3>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Feature Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description Template</label>
+            <textarea
+              value={formData.base_description}
+              onChange={(e) => setFormData({ ...formData, base_description: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              rows={3}
+              placeholder="Use {value} for dynamic values"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Use {'{value}'} as placeholder for plan-specific values</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
+            <input
+              type="number"
+              value={formData.order}
+              onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Active</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00]"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+interface CreateFeatureModalProps {
+  onSave: (feature: CreateBaseFeatureRequest) => void;
+  onCancel: () => void;
+}
+
+const CreateFeatureModal: React.FC<CreateFeatureModalProps> = ({ onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'marketplace',
+    base_description: '',
+    is_active: true,
+    order: 1
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  const categories = [
+    'marketplace', 'auctions', 'reporting', 'support',
+    'commission', 'verification', 'access', 'community'
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <h3 className="text-lg font-medium mb-4">Create New Base Feature</h3>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Feature Name</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              placeholder="e.g., marketplace_listings"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description Template</label>
+            <textarea
+              value={formData.base_description}
+              onChange={(e) => setFormData({ ...formData, base_description: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              rows={3}
+              placeholder="e.g., {value} marketplace listings"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">Use {'{value}'} as placeholder for plan-specific values</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Order</label>
+            <input
+              type="number"
+              value={formData.order}
+              onChange={(e) => setFormData({ ...formData, order: parseInt(e.target.value) })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.is_active}
+                onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                className="mr-2"
+              />
+              <span className="text-sm text-gray-700">Active</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00]"
+            >
+              Create Feature
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Content Edit Modal Component
+interface EditContentModalProps {
+  content: PricingPageContent;
+  onSave: (content: UpdatePricingPageContentRequest) => void;
+  onCancel: () => void;
+}
+
+const EditContentModal: React.FC<EditContentModalProps> = ({ content, onSave, onCancel }) => {
+  const [formData, setFormData] = useState({
+    title: content.title,
+    subtitle: content.subtitle,
+    section_label: content.section_label,
+    cta_text: content.cta_text,
+    cta_url: content.cta_url
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-lg">
+        <h3 className="text-lg font-medium mb-4">Edit Pricing Page Content</h3>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Section Label</label>
+            <input
+              type="text"
+              value={formData.section_label}
+              onChange={(e) => setFormData({ ...formData, section_label: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input
+              type="text"
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subtitle</label>
+            <textarea
+              value={formData.subtitle}
+              onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              rows={3}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Call to Action Text</label>
+            <input
+              type="text"
+              value={formData.cta_text}
+              onChange={(e) => setFormData({ ...formData, cta_text: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Call to Action URL</label>
+            <input
+              type="text"
+              value={formData.cta_url}
+              onChange={(e) => setFormData({ ...formData, cta_url: e.target.value })}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF8A00]"
+              required
+            />
+          </div>
+
+          <div className="bg-gray-50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-900 mb-2">Preview</h4>
+            <div className="text-center">
+              <h3 className="text-[#FF8A00] font-medium mb-1 text-sm">{formData.section_label}</h3>
+              <h1 className="text-base font-bold mb-1">{formData.title}</h1>
+              <p className="text-gray-600 text-xs mb-2">{formData.subtitle}</p>
+              <button className="px-3 py-1 bg-[#FF8A00] text-white rounded text-xs">
+                {formData.cta_text}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00]"
+            >
+              Save Changes
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
