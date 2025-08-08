@@ -4,14 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   Plus, Edit2, Trash2, DollarSign,
-  Settings, List, Loader2, AlertCircle
+  Settings, List, Loader2, AlertCircle, RefreshCw
 } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import {
   getPricingData,
   getPricingPlans,
   getBaseFeatures,
-
+  getAdminPricingPlans,
   updatePricingPlan,
   createPricingPlan,
   deletePricingPlan,
@@ -44,6 +44,7 @@ interface PlanFeatureConfig {
 }
 
 const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' }) => {
+  console.log('PricingManagement component rendered');
   const [activeTab, setActiveTab] = useState<'plans' | 'features' | 'content'>('plans');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,39 +69,77 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
     loadData();
   }, []);
 
+  // Debug state changes
+  useEffect(() => {
+    console.log('pricingPlans state changed:', pricingPlans);
+  }, [pricingPlans]);
+
   const loadData = async () => {
+    console.log('loadData called');
     try {
       setIsLoading(true);
       setError(null);
 
-      // For now, use public endpoints since admin auth might not be set up
-      const [plansResponse, featuresResponse, contentResponse] = await Promise.all([
-        getPricingPlans(), // Use public endpoint for now
-        getBaseFeatures(),
-        getPricingData()
-      ]);
+      console.log('Fetching pricing plans...');
+      const plansResponse = await getPricingPlans();
+      console.log('Plans response:', plansResponse);
 
       if (plansResponse.error) {
         throw new Error(plansResponse.error);
       }
-      if (featuresResponse.error) {
-        throw new Error(featuresResponse.error);
-      }
-      if (contentResponse.error) {
-        throw new Error(contentResponse.error);
-      }
 
-      // Handle responses for both plans and features
+      // Handle paginated response structure
       const plansData = plansResponse.data;
-      setPricingPlans(Array.isArray(plansData) ? plansData : []);
+      console.log('Plans data:', plansData);
 
-      const featuresData = featuresResponse.data;
-      setBaseFeatures(Array.isArray(featuresData) ? featuresData : []);
+      let finalPlans = [];
+      if (plansData && typeof plansData === 'object' && 'results' in plansData) {
+        console.log('Using paginated results:', plansData.results);
+        finalPlans = Array.isArray(plansData.results) ? plansData.results : [];
+      } else {
+        console.log('Using direct array:', plansData);
+        finalPlans = Array.isArray(plansData) ? plansData : [];
+      }
 
-      setPageContent(contentResponse.data?.data?.page_content || null);
+      console.log('Setting pricing plans to:', finalPlans);
+      setPricingPlans(finalPlans);
+
+      // Load other data
+      const [featuresResponse, contentResponse] = await Promise.all([
+        getBaseFeatures(),
+        getPricingData()
+      ]);
+
+      if (featuresResponse.error) {
+        console.warn('Features error:', featuresResponse.error);
+      } else {
+        const featuresData = featuresResponse.data;
+        console.log('Features data:', featuresData);
+
+        // Handle paginated response structure for features
+        let finalFeatures = [];
+        if (featuresData && typeof featuresData === 'object' && 'results' in featuresData) {
+          console.log('Using paginated features results:', featuresData.results);
+          finalFeatures = Array.isArray(featuresData.results) ? featuresData.results : [];
+        } else {
+          console.log('Using direct features array:', featuresData);
+          finalFeatures = Array.isArray(featuresData) ? featuresData : [];
+        }
+
+        console.log('Setting base features to:', finalFeatures);
+        setBaseFeatures(finalFeatures);
+      }
+
+      if (contentResponse.error) {
+        console.warn('Content error:', contentResponse.error);
+      } else {
+        setPageContent(contentResponse.data?.data?.page_content || null);
+      }
     } catch (_err) {
+      console.error('Error loading pricing data:', _err);
       setError(_err instanceof Error ? _err.message : 'Failed to load pricing data');
     } finally {
+      console.log('Setting isLoading to false');
       setIsLoading(false);
     }
   };
@@ -319,19 +358,46 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
         {activeTab === 'plans' && (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-medium text-gray-900">Pricing Plans</h3>
-              <button
-                onClick={() => setShowCreatePlanForm(true)}
-                className="flex items-center px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
-              >
-                <Plus size={16} className="mr-2" />
-                Add Plan
-              </button>
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Pricing Plans</h3>
+                <p className="text-sm text-gray-500">
+                  Debug: {isLoading ? 'Loading...' : `Found ${pricingPlans.length} plans`}
+                </p>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={loadData}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
+                >
+                  <RefreshCw size={16} className="mr-2" />
+                  Reload Data
+                </button>
+                <button
+                  onClick={() => setShowCreatePlanForm(true)}
+                  className="flex items-center px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add Plan
+                </button>
+              </div>
             </div>
             
             {/* Plans Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.isArray(pricingPlans) && pricingPlans.length > 0 ? pricingPlans.map((plan) => (
+              {isLoading ? (
+                // Loading state
+                Array.from({ length: 3 }).map((_, index) => (
+                  <div key={index} className="bg-gray-50 rounded-lg p-6 border">
+                    <div className="animate-pulse">
+                      <div className="h-6 bg-gray-200 rounded mb-4"></div>
+                      <div className="h-8 bg-gray-200 rounded mb-4"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                      <div className="h-8 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                ))
+              ) : Array.isArray(pricingPlans) && pricingPlans.length > 0 ? pricingPlans.map((plan) => (
                 <div key={plan.id} className="bg-gray-50 rounded-lg p-6 border">
                   <div className="flex justify-between items-start mb-4">
                     <div>
