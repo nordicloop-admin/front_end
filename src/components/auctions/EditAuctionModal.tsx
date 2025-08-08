@@ -678,11 +678,12 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         packaging: completeAdData.packaging || '',
         materialFrequency: completeAdData.material_frequency || '',
 
-        // Step 2: Initialize specifications data
-        grade: grade || '',
-        color: color || '',
-        form: form || '',
-        additionalSpecs: additionalSpecs,
+        // Step 2: Initialize specifications data from complete ad data
+        grade: completeAdData.specification?.material_grade_display || grade || '',
+        color: completeAdData.specification?.color || color || '',
+        form: completeAdData.specification?.material_form_display || form || '',
+        additionalSpecs: completeAdData.specification?.additional_specifications ?
+          [completeAdData.specification.additional_specifications] : additionalSpecs,
 
         // Step 7
         availableQuantity: volumeValue,
@@ -1030,31 +1031,42 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         return step1Data;
         
       case 2:
-        // Specifications step - match creation form structure exactly
-        // Backend expects only: specification_id and additional_specifications
-        // Combine all step 2 form fields into additional_specifications
-        const specs: string[] = [];
-        
-        // Add grade, color, form if selected
-        if (stepData.grade) {
-          specs.push(`Grade: ${stepData.grade}`);
-        }
+        // Specifications step - match NEW backend API format
+        // Backend expects: specification_color, specification_material_grade, specification_material_form, specification_additional
+        console.log('Step 2: Building specification data');
+        console.log('Step 2 stepData:', { grade: stepData.grade, color: stepData.color, form: stepData.form, additionalSpecs: stepData.additionalSpecs });
+
+        const step2Data: any = {};
+
+        // Map frontend values to backend field names
         if (stepData.color) {
-          specs.push(`Color: ${stepData.color}`);
+          step2Data.specification_color = stepData.color;
         }
+
+        if (stepData.grade) {
+          // Convert display name to backend value (e.g., "Virgin Grade" -> "virgin_grade")
+          step2Data.specification_material_grade = convertLabelToValue('material_grade', stepData.grade);
+        }
+
         if (stepData.form) {
-          specs.push(`Form: ${stepData.form}`);
+          // Convert display name to backend value (e.g., "Pellets/Granules" -> "pellets_granules")
+          step2Data.specification_material_form = convertLabelToValue('material_form', stepData.form);
         }
-        
-        // Add any additional specs from the form
+
+        // Combine additional specs into a single string
         if (stepData.additionalSpecs && stepData.additionalSpecs.length > 0) {
-          specs.push(...stepData.additionalSpecs.filter(spec => spec.trim()));
+          step2Data.specification_additional = stepData.additionalSpecs.filter(spec => spec.trim()).join(', ');
         }
-        
-        return {
-          specification_id: null,
-          additional_specifications: specs.join(', ')
-        };
+
+        console.log('Step 2 data being sent:', step2Data);
+
+        // Ensure at least one field is provided (backend requirement)
+        if (Object.keys(step2Data).length === 0) {
+          console.log('Step 2: No specification data provided');
+          return null;
+        }
+
+        return step2Data;
         
       case 3:
         // Material Origin step - match creation form structure
@@ -2631,6 +2643,20 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           const error = 'Material frequency is required';
           errors.push(error);
           fieldErrors.materialFrequency = [error];
+        }
+        break;
+
+      case 2:
+        // Step 2: Specifications - At least one field must be provided (matching backend requirement)
+        const hasGrade = stepData.grade && stepData.grade.trim();
+        const hasColor = stepData.color && stepData.color.trim();
+        const hasForm = stepData.form && stepData.form.trim();
+        const hasAdditionalSpecs = stepData.additionalSpecs && stepData.additionalSpecs.length > 0 && stepData.additionalSpecs.some(spec => spec.trim());
+
+        if (!hasGrade && !hasColor && !hasForm && !hasAdditionalSpecs) {
+          const error = 'At least one specification field must be provided (grade, color, form, or additional specifications)';
+          errors.push(error);
+          fieldErrors.specifications = [error];
         }
         break;
 
