@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
 import { adUpdateService, adCreationService } from '@/services/ads';
 import { getFullImageUrl } from '@/utils/imageUtils';
-import { getCategoryImage } from '@/utils/categoryImages';
 import { convertLabelToValue } from '@/utils/adValidation';
 import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
 import { toast } from 'sonner';
@@ -456,6 +455,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [imageLoadError, setImageLoadError] = useState<boolean>(false);
   const [_error, setError] = useState<string | null>(null);
   const [completeAdData, setCompleteAdData] = useState<any>(null);
   const [adDataLoaded, setAdDataLoaded] = useState(false);
@@ -693,6 +693,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       console.log('Unit of measurement:', completeAdData.unit_of_measurement);
       console.log('Starting bid price:', completeAdData.starting_bid_price);
       console.log('Auction duration:', completeAdData.auction_duration);
+      console.log('Title:', completeAdData.title);
+      console.log('Description:', completeAdData.description);
+      console.log('Keywords:', completeAdData.keywords);
+      console.log('Material image:', completeAdData.material_image);
 
       // Debug specific field values
       console.log('=== FIELD VALUES DEBUG ===');
@@ -763,13 +767,17 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         reservePrice: completeAdData.reserve_price || 0,
         customAuctionDuration: completeAdData.custom_auction_duration || 0,
 
-        // Step 8
-        title: auction.name,
-        description: auction.description,
-        keywords: auction.keywords ? auction.keywords.split(',').map(k => k.trim()) : [],
-        currentImageUrl: auction.material_image || auction.image,
+        // Step 8: Title & Description - use complete ad data when available
+        title: completeAdData.title || auction.name,
+        description: completeAdData.description || auction.description || '',
+        keywords: completeAdData.keywords ? completeAdData.keywords.split(', ').map((k: string) => k.trim()) :
+                  (auction.keywords ? auction.keywords.split(',').map((k: string) => k.trim()) : []),
+        currentImageUrl: completeAdData.material_image || auction.material_image || auction.image,
         images: []
       });
+
+      // Reset image load error when new data is loaded
+      setImageLoadError(false);
 
       console.log('=== STEP DATA SET ===');
       console.log('Step data after initialization:', {
@@ -798,6 +806,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       setValidationErrors({});
       setShowValidationErrors(false);
       setUploadError(null);
+      setImageLoadError(false);
       setError(null);
       setCompleteAdData(null);
       setAdDataLoaded(false);
@@ -1432,8 +1441,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           }
           break;
         case 8:
-          // Step 8: Title & Description - check if title exists
-          if (completeAdData.title) {
+          // Step 8: Title & Description - check if ALL required fields exist (strict check)
+          const hasTitle = completeAdData.title && completeAdData.title.trim().length >= 10;
+          const hasDescription = completeAdData.description && completeAdData.description.trim().length >= 30;
+
+          if (hasTitle && hasDescription) {
             return 'completed';
           }
           break;
@@ -2770,8 +2782,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     New image: {stepData.images[0].name} - {(stepData.images[0].size / 1024 / 1024).toFixed(1)}MB
                   </p>
                 </div>
-              ) : stepData.currentImageUrl ? (
-                // Show current image from backend
+              ) : stepData.currentImageUrl && !imageLoadError ? (
+                // Show current image from backend (only if no load error)
                 <div className="relative">
                   <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                     <Image
@@ -2780,17 +2792,16 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       width={600}
                       height={400}
                       className="w-full h-full object-contain"
-                      onError={(e) => {
-                        // Fallback to category image on error
-                        const target = e.target as HTMLImageElement;
-                        target.src = getCategoryImage(auction.category);
+                      onError={() => {
+                        // Set error state to prevent infinite loop
+                        setImageLoadError(true);
                       }}
                     />
                   </div>
                   <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-md px-2 py-1">
                     <span className="text-xs text-gray-600">Current image</span>
                   </div>
-                  
+
                   {/* Upload new image button */}
                   <div className="absolute bottom-2 left-2">
                     <button
