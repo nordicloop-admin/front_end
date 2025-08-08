@@ -700,4 +700,20 @@ export async function closeAuction(adId: number) {
 // Legacy function for backwards compatibility
 export const getAuctionBids = getAdBids;
 
+/**
+ * Get detailed bid history for a specific auction with company information
+ */
+export const getAuctionBidHistory = async (auctionId: number): Promise<ApiResponse<any>> => {
+  try {
+    const response = await apiGet<any>(`/bids/ad/${auctionId}/history/`, true);
+    return response;
+  } catch (error) {
+    console.error('Error fetching auction bid history:', error);
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to fetch auction bid history'
+    };
+  }
+};
+
 

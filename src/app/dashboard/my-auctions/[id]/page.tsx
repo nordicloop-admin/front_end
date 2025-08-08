@@ -74,6 +74,34 @@ export default function AuctionDetail() {
     });
   };
 
+  // Calculate step completion based on material category
+  const calculateStepCompletion = (stepCompletionStatus: any, category: string) => {
+    if (!stepCompletionStatus) return { completed: 0, total: 0, percentage: 0 };
+
+    // Check if this is a plastic material
+    const isPlastic = category && category.toLowerCase().includes('plastic');
+
+    if (isPlastic) {
+      // Plastics use 8 steps (1-8)
+      const allSteps = [1, 2, 3, 4, 5, 6, 7, 8];
+      const completedSteps = allSteps.filter(step => stepCompletionStatus[step]).length;
+      return {
+        completed: completedSteps,
+        total: 8,
+        percentage: (completedSteps / 8) * 100
+      };
+    } else {
+      // Other materials use 4 steps (1, 6, 7, 8)
+      const relevantSteps = [1, 6, 7, 8];
+      const completedSteps = relevantSteps.filter(step => stepCompletionStatus[step]).length;
+      return {
+        completed: completedSteps,
+        total: 4,
+        percentage: (completedSteps / 4) * 100
+      };
+    }
+  };
+
   // Calculate time left for an auction
   const _calculateTimeLeft = (endDate: string, endTime: string) => {
     const now = new Date();
@@ -144,7 +172,7 @@ export default function AuctionDetail() {
                 { name: 'Pickup Available', value: adData.pickup_available ? 'Yes' : 'No' },
                 ...(adData.delivery_options_display.length > 0 ? [{ name: 'Delivery Options', value: adData.delivery_options_display.join(', ') }] : []),
                 { name: 'Status', value: adData.auction_status },
-                { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of 8` }
+                { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of ${calculateStepCompletion(adData.step_completion_status, adData.category_name).total}` }
               ]
             };
 
@@ -567,11 +595,14 @@ export default function AuctionDetail() {
                 </div>
 
                 {/* Setup Progress (for incomplete auctions) */}
-                {!auction.isComplete && auction.stepCompletionStatus && (
-                  <div className="text-xs text-gray-500">
-                    Progress: {Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8 steps completed
-                  </div>
-                )}
+                {!auction.isComplete && auction.stepCompletionStatus && (() => {
+                  const stepCompletion = calculateStepCompletion(auction.stepCompletionStatus, auction.category);
+                  return (
+                    <div className="text-xs text-gray-500">
+                      Progress: {stepCompletion.completed}/{stepCompletion.total} steps completed
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -665,29 +696,32 @@ export default function AuctionDetail() {
               </div>
 
               {/* Progress Status */}
-              {auction.stepCompletionStatus && (
-                <div className="border border-gray-200 rounded-md p-4 mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Completion Progress</span>
-                    <span className="text-sm text-gray-500">
-                      {Object.values(auction.stepCompletionStatus).filter(Boolean).length} of 8 steps
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                    <div 
-                      className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
-                      }}
-                    />
-                  </div>
+              {auction.stepCompletionStatus && (() => {
+                const stepCompletion = calculateStepCompletion(auction.stepCompletionStatus, auction.category);
+                return (
+                  <div className="border border-gray-200 rounded-md p-4 mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Completion Progress</span>
+                      <span className="text-sm text-gray-500">
+                        {stepCompletion.completed} of {stepCompletion.total} steps
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+                      <div
+                        className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${stepCompletion.percentage}%`
+                        }}
+                      />
+                    </div>
                   {!auction.isComplete && (
                     <div className="text-xs text-gray-500">
                       Next: Complete step {auction.currentStep}
                     </div>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {/* Keywords */}
               {auction.keywords && (
@@ -823,22 +857,25 @@ export default function AuctionDetail() {
                 </div>
 
                 {/* Progress for incomplete auctions */}
-                {!auction.isComplete && auction.stepCompletionStatus && (
-                  <div>
-                    <div className="flex justify-between text-xs text-gray-500 mb-2">
-                      <span>Progress</span>
-                      <span>{Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8</span>
+                {!auction.isComplete && auction.stepCompletionStatus && (() => {
+                  const stepCompletion = calculateStepCompletion(auction.stepCompletionStatus, auction.category);
+                  return (
+                    <div>
+                      <div className="flex justify-between text-xs text-gray-500 mb-2">
+                        <span>Progress</span>
+                        <span>{stepCompletion.completed}/{stepCompletion.total}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className="bg-amber-400 h-1.5 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${stepCompletion.percentage}%`
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        className="bg-amber-400 h-1.5 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
 
@@ -892,21 +929,24 @@ export default function AuctionDetail() {
                   <span className="text-gray-600">Created</span>
                   <span className="font-medium text-gray-900">{formatDate(auction.createdAt)}</span>
                 </div>
-                {auction.stepCompletionStatus && (
-                  <div>
-                    <div className="text-sm text-gray-600 mb-2">
-                      Completion: {Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8 steps
+                {auction.stepCompletionStatus && (() => {
+                  const stepCompletion = calculateStepCompletion(auction.stepCompletionStatus, auction.category);
+                  return (
+                    <div>
+                      <div className="text-sm text-gray-600 mb-2">
+                        Completion: {stepCompletion.completed}/{stepCompletion.total} steps
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className="bg-[#FF8A00] h-1.5 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${stepCompletion.percentage}%`
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-1.5">
-                      <div 
-                        className="bg-[#FF8A00] h-1.5 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
             </div>
 
