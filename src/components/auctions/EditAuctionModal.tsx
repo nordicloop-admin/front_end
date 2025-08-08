@@ -683,6 +683,17 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       console.log('Available auction fields:', Object.keys(auction));
       console.log('Categories loaded:', categoriesLoaded);
 
+      // Debug specific field values for form selection
+      console.log('=== FIELD VALUES DEBUG ===');
+      console.log('Origin (raw):', completeAdData.origin);
+      console.log('Contamination (raw):', completeAdData.contamination);
+      console.log('Additives (raw):', completeAdData.additives);
+      console.log('Delivery options (raw):', completeAdData.delivery_options);
+      console.log('Available quantity:', completeAdData.available_quantity);
+      console.log('Unit of measurement:', completeAdData.unit_of_measurement);
+      console.log('Starting bid price:', completeAdData.starting_bid_price);
+      console.log('Auction duration:', completeAdData.auction_duration);
+
       // Debug specific field values
       console.log('=== FIELD VALUES DEBUG ===');
       console.log('Origin (raw):', completeAdData.origin);
@@ -742,11 +753,15 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           deliveryOptions: []
         },
 
-        // Step 7
-        availableQuantity: volumeValue,
-        unit: volumeUnit,
-        startingPrice: basePriceValue,
-        currency: 'SEK',
+        // Step 7: Quantity & Price - use complete ad data when available
+        availableQuantity: completeAdData.available_quantity || volumeValue,
+        unit: completeAdData.unit_of_measurement || volumeUnit,
+        minimumOrder: completeAdData.minimum_order_quantity || 0,
+        startingPrice: completeAdData.starting_bid_price || basePriceValue,
+        currency: completeAdData.currency || 'SEK',
+        auctionDuration: completeAdData.auction_duration ? String(completeAdData.auction_duration) : '',
+        reservePrice: completeAdData.reserve_price || 0,
+        customAuctionDuration: completeAdData.custom_auction_duration || 0,
 
         // Step 8
         title: auction.name,
@@ -1087,7 +1102,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             minimumOrder: freshData.minimum_order_quantity || 0,
             startingPrice: freshData.starting_bid_price || 0,
             currency: freshData.currency || 'SEK',
-            auctionDuration: freshData.auction_duration || '',
+            auctionDuration: freshData.auction_duration ? String(freshData.auction_duration) : '',
             reservePrice: freshData.reserve_price || 0,
             customAuctionDuration: freshData.custom_auction_duration || 0,
 
@@ -1314,7 +1329,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         
         const step7Data: any = {
           available_quantity: Number(stepData.availableQuantity || 0),
-          unit_of_measurement: convertLabelToValue('unit_of_measurement', stepData.unit || ''),
+          unit_of_measurement: stepData.unit || '', // Already using correct unit values
           minimum_order_quantity: Number(stepData.minimumOrder || 0),
           starting_bid_price: Number(stepData.startingPrice || 0),
           currency: stepData.currency || 'SEK',
@@ -1804,13 +1819,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     key={level.id}
                     onClick={() => handleStepDataChange({ contaminationLevel: level.id })}
                     className={`
-                      w-full p-4 rounded-lg border-2 text-left transition-all
+                      w-full p-4 rounded-lg border text-left transition-all
                       ${stepData.contaminationLevel === level.id
-                        ? level.color === 'green'
-                          ? 'border-green-500 bg-green-50'
-                          : level.color === 'yellow'
-                          ? 'border-yellow-500 bg-yellow-50'
-                          : 'border-red-500 bg-red-50'
+                        ? 'border-[#FF8A00] bg-orange-50'
                         : 'border-gray-200 hover:border-gray-300'
                       }
                     `}
@@ -1819,11 +1830,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       <div className={`
                         p-2 rounded-md
                         ${stepData.contaminationLevel === level.id
-                          ? level.color === 'green'
-                            ? 'bg-green-500 text-white'
-                            : level.color === 'yellow'
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-red-500 text-white'
+                          ? 'bg-[#FF8A00] text-white'
                           : 'bg-gray-100 text-gray-600'
                         }
                       `}>
