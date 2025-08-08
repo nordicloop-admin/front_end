@@ -241,23 +241,48 @@ export async function createBid(bidData: BidCreateData) {
     if (response.error || (response.status && response.status >= 400)) {
       // Extract clean error message from API response
       let errorMessage = response.error || 'Failed to create bid';
-      
+
       // Handle specific error format: "Failed to place bid: ['You cannot bid on your own ad.']"
       if (typeof response.data === 'object' && response.data !== null) {
         if ('error' in response.data) {
           const apiError = response.data.error;
           if (typeof apiError === 'string') {
-            // Extract message from "Failed to place bid: ['Error message']" format
-            const match = apiError.match(/\['(.+?)'\]/);
-            if (match && match[1]) {
-              errorMessage = match[1];
+            // Handle Django ValidationError format: "Failed to place bid: {'field': ErrorDetail(string='message', code='...')}"
+            const validationErrorMatch = apiError.match(/ErrorDetail\(string='([^']+)'/);
+            if (validationErrorMatch && validationErrorMatch[1]) {
+              errorMessage = validationErrorMatch[1];
             } else {
-              errorMessage = apiError;
+              // Extract message from "Failed to place bid: ['Error message']" format
+              const listMatch = apiError.match(/\['(.+?)'\]/);
+              if (listMatch && listMatch[1]) {
+                errorMessage = listMatch[1];
+              } else {
+                // Handle simple field validation errors like "{'bid_price_per_unit': 'Error message'}"
+                const fieldErrorMatch = apiError.match(/'([^']+)'/g);
+                if (fieldErrorMatch && fieldErrorMatch.length >= 2) {
+                  // Take the second match which should be the error message
+                  errorMessage = fieldErrorMatch[1].replace(/'/g, '');
+                } else {
+                  errorMessage = apiError;
+                }
+              }
+            }
+          }
+        }
+
+        // Handle validation errors in 'details' field
+        if ('details' in response.data && typeof response.data.details === 'object') {
+          const details = response.data.details;
+          // Extract first error message from validation details
+          for (const field in details) {
+            if (Array.isArray(details[field]) && details[field].length > 0) {
+              errorMessage = details[field][0];
+              break;
             }
           }
         }
       }
-      
+
       return {
         data: null,
         error: errorMessage,
