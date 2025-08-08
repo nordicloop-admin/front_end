@@ -242,13 +242,29 @@ export default function AuctionDetail() {
             setAuction(formattedAuction);
 
             // Fetch bid history for this auction
-            if (adData.is_active && adData.is_complete) {
+            // Debug logging to understand the auction status
+            console.log('Auction status check:', {
+              is_active: adData.is_active,
+              is_complete: adData.is_complete,
+              status: adData.status,
+              completion_status: adData.completion_status
+            });
+
+            // Fetch bid history for active auctions (regardless of completion status)
+            if (adData.is_active) {
+              console.log('Fetching bid history for auction:', adData.id);
               getAuctionBidHistory(adData.id)
                 .then(bidHistoryResponse => {
+                  console.log('Bid history response:', bidHistoryResponse);
                   if (!bidHistoryResponse.error && bidHistoryResponse.data) {
                     const bidHistoryData = bidHistoryResponse.data.bid_history || [];
                     setBidHistory(bidHistoryData);
                     setTotalBids(bidHistoryResponse.data.total_bids || 0);
+
+                    console.log('Setting bid history:', {
+                      bidHistoryData,
+                      totalBids: bidHistoryResponse.data.total_bids || 0
+                    });
 
                     // Update auction with bid history for backward compatibility
                     const formattedBids = bidHistoryData.map((bid: any) => ({
@@ -262,12 +278,16 @@ export default function AuctionDetail() {
                       bidHistory: formattedBids,
                       highestBid: formattedBids.length > 0 ? formattedBids[0].amount : null
                     }));
+                  } else {
+                    console.error('Bid history fetch failed:', bidHistoryResponse.error);
                   }
                 })
-                .catch(_error => {
+                .catch(error => {
                   // Error handling for bid history fetch failures
-                  console.error('Failed to fetch bid history');
+                  console.error('Failed to fetch bid history:', error);
                 });
+            } else {
+              console.log('Auction is not active, skipping bid history fetch');
             }
           } else {
             // Fallback to old API if enhanced endpoint fails
@@ -623,6 +643,14 @@ export default function AuctionDetail() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Time Left</span>
                   <span className="font-medium text-[#FF8A00]">{auction.timeLeft}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Total Bids</span>
+                  <span className="font-medium text-gray-900">{totalBids}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Created</span>
+                  <span className="font-medium text-gray-900">{auction.createdAt ? formatDate(auction.createdAt) : 'N/A'}</span>
                 </div>
               </div>
             </div>

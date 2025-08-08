@@ -342,11 +342,11 @@ export async function getAdBids(adId: number, params?: BidPaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
-    
+
     const endpoint = `/bids/ad/${adId}/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
-    // Get bids requires authentication
-    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+
+    // Get bids does not require authentication (AllowAny permission)
+    const response = await apiGet<any>(endpoint, false);
 
     if (response.error) {
       return {
@@ -356,19 +356,24 @@ export async function getAdBids(adId: number, params?: BidPaginationParams) {
       };
     }
 
-    // Return bids with ad info and bid statistics
-    const result: PaginatedBidResult = {
-      bids: response.data?.results || [],
+    // The backend returns: { ad_id, ad_title, total_bids, bids }
+    // Transform to expected format for compatibility
+    const result = {
+      bids: response.data?.bids || [],
+      total_bids: response.data?.total_bids || 0,
+      ad_id: response.data?.ad_id,
+      ad_title: response.data?.ad_title,
+      // For backward compatibility with paginated format
+      results: response.data?.bids || [],
+      count: response.data?.total_bids || 0,
       pagination: {
-        count: response.data?.count || 0,
-        next: response.data?.next || null,
-        previous: response.data?.previous || null,
-        page_size: response.data?.page_size || 10,
-        total_pages: response.data?.total_pages || 1,
-        current_page: response.data?.current_page || 1
-      },
-      bidStatistics: response.data?.bid_statistics,
-      adInfo: response.data?.ad_info
+        count: response.data?.total_bids || 0,
+        next: null,
+        previous: null,
+        page_size: response.data?.bids?.length || 0,
+        total_pages: 1,
+        current_page: 1
+      }
     };
 
     return {
@@ -705,7 +710,7 @@ export const getAuctionBids = getAdBids;
  */
 export const getAuctionBidHistory = async (auctionId: number): Promise<ApiResponse<any>> => {
   try {
-    const response = await apiGet<any>(`/bids/ad/${auctionId}/history/`, true);
+    const response = await apiGet<any>(`/bids/ad/${auctionId}/history/`, false);
     return response;
   } catch (error) {
     console.error('Error fetching auction bid history:', error);

@@ -74,6 +74,45 @@ export default function AuctionDetail() {
     });
   };
 
+  // Function to fetch bids for an auction
+  const fetchBidsForAuction = (auctionId: number) => {
+    console.log('Fetching bids for auction:', auctionId);
+
+    getAuctionBids(auctionId)
+      .then(bidsResponse => {
+        console.log('Bids response:', bidsResponse);
+        if (!bidsResponse.error && bidsResponse.data) {
+          const bids = bidsResponse.data.bids || [];
+          const totalBids = bidsResponse.data.total_bids || bids.length;
+          console.log('Found bids:', bids.length, 'Total bids:', totalBids);
+
+          // Format bids for display
+          const formattedBids = bids.map((bid: any) => ({
+            bidder: bid.company_name || bid.bidder_name || 'Anonymous',
+            amount: `${bid.bid_price_per_unit} SEK`,
+            totalValue: `${bid.total_bid_value} SEK`,
+            volume: `${bid.volume_requested} kg`,
+            date: bid.created_at,
+            status: bid.status
+          }));
+
+          // Update auction state with bid data
+          setAuction((prevAuction: any) => ({
+            ...prevAuction,
+            bidHistory: formattedBids,
+            totalBids: totalBids,
+            currentBid: formattedBids.length > 0 ? formattedBids[0].amount : null,
+            highestBid: formattedBids.length > 0 ? formattedBids[0].amount : null
+          }));
+        } else {
+          console.log('No bids data or error:', bidsResponse.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching bids:', error);
+      });
+  };
+
   // Calculate step completion based on material category
   const calculateStepCompletion = (stepCompletionStatus: any, category: string) => {
     if (!stepCompletionStatus) return { completed: 0, total: 0, percentage: 0 };
@@ -178,28 +217,8 @@ export default function AuctionDetail() {
 
             setAuction(formattedAuction);
 
-            // Fetch bids for this auction if it's active and complete
-            if (adData.is_active && adData.is_complete) {
-              getAuctionBids(adData.id)
-                .then(bidsResponse => {
-                  if (!bidsResponse.error && bidsResponse.data && bidsResponse.data.bids.length > 0) {
-                    const formattedBids = bidsResponse.data.bids.map(bid => ({
-                      bidder: bid.bidder_name || 'Anonymous',
-                      amount: bid.bid_price_per_unit,
-                      date: bid.created_at
-                    }));
-
-                    setAuction((prevAuction: any) => ({
-                      ...prevAuction,
-                      bidHistory: formattedBids,
-                      currentBid: formattedBids[0].amount
-                    }));
-                  }
-                })
-                .catch(_error => {
-                  // Error handling for bids fetch failures
-                });
-            }
+            // Fetch bids for this auction - moved outside to ensure it's always called
+            fetchBidsForAuction(adData.id);
           } else {
             // Fallback to old API if enhanced endpoint fails
             return getAuctionById(params.id as string);
@@ -230,6 +249,9 @@ export default function AuctionDetail() {
               bidHistory: []
             };
             setAuction(formattedAuction);
+
+            // Also fetch bids for fallback path
+            fetchBidsForAuction(apiAuction.id);
           }
         })
         .catch(_error => {
@@ -686,7 +708,7 @@ export default function AuctionDetail() {
                     Total Bids
                   </div>
                   <div className="text-xl font-bold text-gray-900">
-                    {auction.bidHistory ? auction.bidHistory.length : 0}
+                    {auction.totalBids || (auction.bidHistory ? auction.bidHistory.length : 0)}
                   </div>
                 </div>
 
@@ -798,8 +820,10 @@ export default function AuctionDetail() {
                   <table className="min-w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Bidder</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Company</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Price per Unit</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Volume</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Value</th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
                       </tr>
                     </thead>
@@ -813,6 +837,8 @@ export default function AuctionDetail() {
                             {bid.bidder}
                           </td>
                           <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">{bid.amount}</td>
+                          <td className="px-4 py-3 text-sm text-gray-700">{bid.volume}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-green-600">{bid.totalValue}</td>
                           <td className="px-4 py-3 text-sm text-gray-500">{formatDate(bid.date)}</td>
                         </tr>
                       ))}
@@ -910,7 +936,7 @@ export default function AuctionDetail() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Total Bids</span>
                   <span className="font-medium text-gray-900">
-                    {auction.bidHistory ? auction.bidHistory.length : 0}
+                    {auction.totalBids || (auction.bidHistory ? auction.bidHistory.length : 0)}
                   </span>
                 </div>
               </div>
