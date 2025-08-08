@@ -213,10 +213,10 @@ export default function AuctionDetail() {
     }
   }, [params.id, router]);
 
-  // Handle edit auction - Frontend-only mode (no backend calls)
+  // Handle edit auction - Reload data after successful edit
   const handleEditAuction = async (updatedAuction: AuctionData) => {
     try {
-      // Update local state with the new data (frontend-only)
+      // Update local state with the new data
       setAuction({
         ...auction,
         ...updatedAuction
@@ -225,13 +225,63 @@ export default function AuctionDetail() {
       // Close the modal
       setIsEditModalOpen(false);
 
-      // Show success message (frontend-only simulation)
-      toast.success('Auction updated (frontend-only)', {
-        description: 'Changes are visible locally but not saved to backend.',
+      // Show success message
+      toast.success('Auction updated successfully!', {
+        description: 'Your changes have been saved.',
         duration: 3000,
       });
 
-      // Note: No backend API calls in frontend-only mode
+      // Reload the auction data from backend to get fresh data
+      console.log('Reloading auction data after edit...');
+      try {
+        const response = await fetch(`/api/ads/${params.id}/`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.data) {
+            // Convert backend data to AuctionData format
+            const backendData = result.data;
+            const refreshedAuction: AuctionData = {
+              id: backendData.id.toString(),
+              name: backendData.title || backendData.category_name || 'Untitled Auction',
+              category: backendData.category_name || '',
+              subcategory: backendData.subcategory_name || '',
+              description: backendData.description || '',
+              basePrice: backendData.starting_bid_price ?
+                `${backendData.starting_bid_price} ${backendData.currency || 'SEK'}` :
+                'Not set',
+              volume: backendData.available_quantity && backendData.unit_of_measurement ?
+                `${backendData.available_quantity} ${backendData.unit_of_measurement}` :
+                'Not set',
+              timeLeft: 'Active', // You might want to calculate this properly
+              image: backendData.material_image || '/images/placeholder-material.jpg',
+              keywords: backendData.keywords || '',
+              status: backendData.status || 'active',
+              auctionStatus: backendData.auction_status || 'Active',
+              specifications: [
+                { name: 'Material Type', value: backendData.category_name || 'Not specified' },
+                { name: 'Volume', value: backendData.available_quantity && backendData.unit_of_measurement ?
+                  `${backendData.available_quantity} ${backendData.unit_of_measurement}` : 'Not set' },
+                { name: 'Base Price', value: backendData.starting_bid_price ?
+                  `${backendData.starting_bid_price} ${backendData.currency || 'SEK'}` : 'Not set' }
+              ]
+            };
+
+            setAuction(refreshedAuction);
+            console.log('Auction data reloaded successfully');
+          }
+        } else {
+          console.warn('Failed to reload auction data:', response.status);
+        }
+      } catch (reloadError) {
+        console.warn('Failed to reload auction data after edit:', reloadError);
+        // Don't show error to user, edit was successful
+      }
+
     } catch (error) {
       // Show error toast
       toast.error('Failed to update auction', {

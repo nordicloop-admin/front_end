@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Filter, Search, Plus, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
+import { AuctionData } from '@/components/auctions/EditAuctionModal';
 import MyAuctionCard from '@/components/auctions/MyAuctionCard';
 import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
@@ -13,8 +13,7 @@ import Link from 'next/link';
 
 export default function MyAuctions() {
   const [auctions, setAuctions] = useState<AuctionData[]>([]);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedAuction, setSelectedAuction] = useState<AuctionData | null>(null);
+
 
   // State for API auctions and pagination
   const [isLoading, setIsLoading] = useState(true);
@@ -152,54 +151,10 @@ export default function MyAuctions() {
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  // Handle opening the edit modal - Frontend-only mode
-  const handleEditClick = async (auction: AuctionData) => {
-    try {
-      // Frontend-only mode: Use auction data as-is without backend calls
-      // Set default step completion status for frontend-only editing
-      const frontendAuction = {
-        ...auction,
-        stepCompletionStatus: {
-          1: true,  // Assume step 1 is complete
-          6: true,  // Assume step 6 is complete
-          7: true,  // Assume step 7 is complete
-          8: true   // Assume step 8 is complete
-        },
-        isComplete: true,
-        currentStep: 8,
-        specifications: auction.specifications || [
-          { name: 'Material Type', value: auction.category },
-          { name: 'Volume', value: auction.volume },
-          { name: 'Base Price', value: auction.basePrice }
-        ]
-      };
-
-      setSelectedAuction(frontendAuction);
-    } catch (_error) {
-      // Fallback to original auction data on error
-      setSelectedAuction(auction);
-    }
-
-    setIsEditModalOpen(true);
-  };
-
-  // Handle edit auction submission - Frontend-only mode
-  const handleEditAuction = async (updatedAuction: AuctionData) => {
-    // Frontend-only mode: Update local state without backend calls
-    const updatedAuctions = auctions.map(auction =>
-      auction.id === updatedAuction.id ? updatedAuction : auction
-    );
-
-    setAuctions(updatedAuctions);
-
-    // Close the modal
-    setIsEditModalOpen(false);
-
-    // Show success message (frontend-only simulation)
-    toast.success('Auction updated (frontend-only)', {
-      description: 'Changes are visible locally but not saved to backend.',
-      duration: 3000,
-    });
+  // Handle edit click - redirect to details page for editing
+  const handleEditClick = (auction: AuctionData) => {
+    // Redirect to the details page where the proper edit modal exists
+    window.location.href = `/dashboard/my-auctions/${auction.id}`;
   };
 
   // Filter auctions based on search term
@@ -323,16 +278,7 @@ export default function MyAuctions() {
         </div>
       )}
 
-      {/* Edit Auction Modal */}
-      {selectedAuction && (
-        <EditAuctionModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSubmit={handleEditAuction}
-          auction={selectedAuction}
-          materialType={selectedAuction.category?.toLowerCase()}
-        />
-      )}
+
     </div>
   );
 }

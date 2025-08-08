@@ -5,7 +5,7 @@ import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, R
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
-import { adUpdateService } from '@/services/ads';
+import { adUpdateService, adCreationService } from '@/services/ads';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { convertLabelToValue } from '@/utils/adValidation';
@@ -198,11 +198,26 @@ const contaminationLevels = [
 ];
 
 const additives = [
-  'UV Stabilizer',
-  'Antioxidant',
-  'Flame retardants',
-  'Chlorides',
-  'No additives'
+  {
+    id: 'uv_stabilizer',
+    name: 'UV Stabilizer'
+  },
+  {
+    id: 'antioxidant',
+    name: 'Antioxidant'
+  },
+  {
+    id: 'flame_retardants',
+    name: 'Flame retardants'
+  },
+  {
+    id: 'chlorides',
+    name: 'Chlorides'
+  },
+  {
+    id: 'no_additives',
+    name: 'No additives'
+  }
 ];
 
 const storageConditions = [
@@ -266,31 +281,31 @@ const processingMethods = [
 
 const deliveryOptions = [
   {
-    id: 'pickup-only',
+    id: 'pickup_only',
     name: 'Pickup Only',
     description: 'Buyer arranges pickup from your location',
     icon: Package
   },
   {
-    id: 'local-delivery',
+    id: 'local_delivery',
     name: 'Local Delivery',
     description: 'You can deliver within local area',
     icon: Truck
   },
   {
-    id: 'national-shipping',
+    id: 'national_shipping',
     name: 'National Shipping',
     description: 'You can arrange national shipping',
     icon: Truck
   },
   {
-    id: 'international-shipping',
+    id: 'international_shipping',
     name: 'International Shipping',
     description: 'You can arrange international shipping',
     icon: Truck
   },
   {
-    id: 'freight-forwarding',
+    id: 'freight_forwarding',
     name: 'Freight Forwarding',
     description: 'Professional freight services available',
     icon: Truck
@@ -383,6 +398,7 @@ interface StepData {
     pickupAvailable?: boolean;
     deliveryOptions?: string[];
     fullAddress?: string;
+    postalCode?: string;
   };
   
   // Step 7: Quantity & Price
@@ -666,6 +682,17 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       console.log('Complete ad data:', completeAdData);
       console.log('Available auction fields:', Object.keys(auction));
       console.log('Categories loaded:', categoriesLoaded);
+
+      // Debug specific field values
+      console.log('=== FIELD VALUES DEBUG ===');
+      console.log('Origin (raw):', completeAdData.origin);
+      console.log('Origin (display):', completeAdData.origin_display);
+      console.log('Contamination (raw):', completeAdData.contamination);
+      console.log('Contamination (display):', completeAdData.contamination_display);
+      console.log('Additives (raw):', completeAdData.additives);
+      console.log('Additives (display):', completeAdData.additives_display);
+      console.log('Delivery options (raw):', completeAdData.delivery_options);
+      console.log('Delivery options (display):', completeAdData.delivery_options_display);
       console.log('Categories count:', categories.length);
       console.log('=== END AUCTION INITIALIZATION DEBUG ===');
 
@@ -684,6 +711,36 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         form: completeAdData.specification?.material_form_display || form || '',
         additionalSpecs: completeAdData.specification?.additional_specifications ?
           [completeAdData.specification.additional_specifications] : additionalSpecs,
+
+        // Step 3: Material Origin - use ID value for form selection
+        origin: completeAdData.origin || '',
+
+        // Step 4: Contamination - use ID values for form selection
+        contaminationLevel: completeAdData.contamination || '',
+        additives: completeAdData.additives ? [completeAdData.additives] : [],
+        storageConditions: completeAdData.storage_conditions || '',
+
+        // Step 5: Processing Methods
+        processingMethods: completeAdData.processing_methods || [],
+
+        // Step 6: Location & Logistics
+        location: completeAdData.location ? {
+          country: completeAdData.location.country || '',
+          region: completeAdData.location.state_province || '',
+          city: completeAdData.location.city || '',
+          fullAddress: completeAdData.location.address_line || '',
+          postalCode: completeAdData.location.postal_code || '',
+          pickupAvailable: completeAdData.pickup_available || false,
+          deliveryOptions: completeAdData.delivery_options || []
+        } : {
+          country: '',
+          region: '',
+          city: '',
+          fullAddress: '',
+          postalCode: '',
+          pickupAvailable: false,
+          deliveryOptions: []
+        },
 
         // Step 7
         availableQuantity: volumeValue,
@@ -970,6 +1027,85 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         description: `Step ${activeStep} has been updated.`
       });
 
+      // Reload complete ad data to refresh step completion status
+      console.log('Reloading ad data after successful save...');
+      try {
+        const refreshedData = await adCreationService.getAdDetails(parseInt(auction.id));
+        if (refreshedData.success && refreshedData.data) {
+          setCompleteAdData(refreshedData.data);
+
+          // Re-initialize step data with fresh backend data
+          const freshData = refreshedData.data;
+          setStepData({
+            // Step 1: Material Type
+            materialType: freshData.category_name || '',
+            category: freshData.category_name || '',
+            subcategory: freshData.subcategory_name || '',
+            specificMaterial: freshData.specific_material || '',
+            packaging: freshData.packaging || '',
+            materialFrequency: freshData.material_frequency || '',
+
+            // Step 2: Specifications
+            grade: freshData.specification?.material_grade_display || '',
+            color: freshData.specification?.color || '',
+            form: freshData.specification?.material_form_display || '',
+            additionalSpecs: freshData.additional_specifications ? [freshData.additional_specifications] : [],
+
+            // Step 3: Origin
+            origin: freshData.origin_display || '',
+
+            // Step 4: Contamination
+            contaminationLevel: freshData.contamination_display || '',
+            additives: freshData.additives_display ? [freshData.additives_display] : [],
+            storageConditions: freshData.storage_conditions_display || '',
+
+            // Step 5: Processing Methods
+            processingMethods: freshData.processing_methods || [],
+
+            // Step 6: Location & Logistics
+            location: freshData.location ? {
+              country: freshData.location.country || '',
+              region: freshData.location.state_province || '',
+              city: freshData.location.city || '',
+              fullAddress: freshData.location.address_line || '',
+              postalCode: freshData.location.postal_code || '',
+              pickupAvailable: freshData.pickup_available || false,
+              deliveryOptions: freshData.delivery_options || []
+            } : {
+              country: '',
+              region: '',
+              city: '',
+              fullAddress: '',
+              postalCode: '',
+              pickupAvailable: false,
+              deliveryOptions: []
+            },
+
+            // Step 7: Quantity & Price
+            availableQuantity: freshData.available_quantity || 0,
+            unit: freshData.unit_of_measurement || '',
+            minimumOrder: freshData.minimum_order_quantity || 0,
+            startingPrice: freshData.starting_bid_price || 0,
+            currency: freshData.currency || 'SEK',
+            auctionDuration: freshData.auction_duration || '',
+            reservePrice: freshData.reserve_price || 0,
+            customAuctionDuration: freshData.custom_auction_duration || 0,
+
+            // Step 8: Details with image handling
+            title: freshData.title || '',
+            description: freshData.description || '',
+            keywords: freshData.keywords ? freshData.keywords.split(', ') : [],
+            images: [],
+            currentImageUrl: freshData.material_image || ''
+          });
+
+          console.log('Ad data and step data reloaded successfully');
+        }
+      } catch (reloadError) {
+        console.warn('Failed to reload ad data after save:', reloadError);
+        // Don't throw error here, save was successful
+      }
+
       // Close modal if requested
       if (shouldCloseAfterSave) {
         onClose();
@@ -1070,41 +1206,105 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         
       case 3:
         // Material Origin step - match creation form structure
-        return {
-          origin: convertLabelToValue('origin', stepData.origin || '')
+        if (!stepData.origin) {
+          console.log('Step 3: No origin selected');
+          return null;
+        }
+
+        const step3Data = {
+          origin: stepData.origin // Already using correct ID
         };
+
+        console.log('Step 3 data being sent:', step3Data);
+        return step3Data;
         
       case 4:
         // Contamination step - match creation form structure
-        return {
-          contamination: convertLabelToValue('contamination', stepData.contaminationLevel || ''),
-          additives: stepData.additives?.[0] ? convertLabelToValue('additives', stepData.additives[0]) : 'no_additives',
-          storage_conditions: stepData.storageConditions ? convertLabelToValue('storage_conditions', stepData.storageConditions) : 'climate_controlled'
+        console.log('Step 4: Building contamination data');
+        console.log('Step 4 stepData:', {
+          contaminationLevel: stepData.contaminationLevel,
+          additives: stepData.additives,
+          storageConditions: stepData.storageConditions
+        });
+
+        if (!stepData.contaminationLevel) {
+          console.log('Step 4: No contamination level selected');
+          return null;
+        }
+
+        if (!stepData.additives || stepData.additives.length === 0) {
+          console.log('Step 4: No additives selected');
+          return null;
+        }
+
+        if (!stepData.storageConditions) {
+          console.log('Step 4: No storage conditions selected');
+          return null;
+        }
+
+        const step4Data = {
+          contamination: stepData.contaminationLevel, // Already using correct ID
+          additives: stepData.additives[0], // Already using correct ID
+          storage_conditions: stepData.storageConditions // Already using correct ID
         };
+
+        console.log('Step 4 data being sent:', step4Data);
+        return step4Data;
         
       case 5:
         // Processing Methods step - use method IDs directly
-        return {
-          processing_methods: Array.isArray(stepData.processingMethods)
-            ? stepData.processingMethods
-            : (stepData.processingMethods ? [stepData.processingMethods] : [])
+        console.log('Step 5: Building processing methods data');
+        console.log('Step 5 stepData:', { processingMethods: stepData.processingMethods });
+
+        const methods = Array.isArray(stepData.processingMethods)
+          ? stepData.processingMethods
+          : (stepData.processingMethods ? [stepData.processingMethods] : []);
+
+        if (!methods || methods.length === 0) {
+          console.log('Step 5: No processing methods selected');
+          return null;
+        }
+
+        const step5Data = {
+          processing_methods: methods
         };
+
+        console.log('Step 5 data being sent:', step5Data);
+        return step5Data;
         
       case 6:
         // Location & Logistics step - match creation form structure
-        return {
+        console.log('Step 6: Building location and logistics data');
+        console.log('Step 6 stepData:', { location: stepData.location });
+
+        if (!stepData.location?.country || !stepData.location?.city) {
+          console.log('Step 6: Missing required location fields (country or city)');
+          return null;
+        }
+
+        const deliveryOptions = Array.isArray(stepData.location?.deliveryOptions)
+          ? stepData.location.deliveryOptions // Already using correct IDs
+          : (stepData.location?.deliveryOptions ? [stepData.location.deliveryOptions] : []);
+
+        if (!deliveryOptions || deliveryOptions.length === 0) {
+          console.log('Step 6: No delivery options selected');
+          return null;
+        }
+
+        const step6Data = {
           location_data: {
-            country: stepData.location?.country || '',
-            state_province: stepData.location?.region || undefined,
-            city: stepData.location?.city || '',
-            address_line: stepData.location?.fullAddress || undefined,
-            postal_code: ''
+            country: stepData.location.country,
+            state_province: stepData.location.region || undefined,
+            city: stepData.location.city,
+            address_line: stepData.location.fullAddress || undefined,
+            postal_code: stepData.location.postalCode || undefined
           },
-          pickup_available: Boolean(stepData.location?.pickupAvailable),
-          delivery_options: Array.isArray(stepData.location?.deliveryOptions) 
-            ? stepData.location.deliveryOptions.map(option => convertLabelToValue('delivery_options', option))
-            : (stepData.location?.deliveryOptions ? [convertLabelToValue('delivery_options', stepData.location.deliveryOptions)] : [])
+          pickup_available: Boolean(stepData.location.pickupAvailable),
+          delivery_options: deliveryOptions
         };
+
+        console.log('Step 6 data being sent:', step6Data);
+        return step6Data;
         
       case 7:
         // Quantity & Price step - match creation form structure exactly
@@ -1139,9 +1339,93 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   };
 
   const getStepStatus = (stepNumber: number): 'completed' | 'current' | 'pending' => {
-    if (auction.stepCompletionStatus) {
-      return auction.stepCompletionStatus[stepNumber.toString()] ? 'completed' : 'pending';
+    // First check backend step completion status
+    if (auction.stepCompletionStatus && auction.stepCompletionStatus[stepNumber.toString()]) {
+      return 'completed';
     }
+
+    // If backend status is not available or incomplete, check data presence
+    if (completeAdData) {
+      switch (stepNumber) {
+        case 1:
+          // Step 1: Material Type - check basic fields
+          if (completeAdData.category_name && completeAdData.subcategory_name &&
+              completeAdData.packaging && completeAdData.material_frequency) {
+            return 'completed';
+          }
+          break;
+        case 2:
+          // Step 2: Specifications - check if specification OR additional_specifications exist
+          const hasSpecification = completeAdData.specification && (
+            completeAdData.specification.material_grade ||
+            completeAdData.specification.color ||
+            completeAdData.specification.material_form
+          );
+          const hasAdditionalSpecs = completeAdData.additional_specifications &&
+            completeAdData.additional_specifications.trim().length > 0;
+
+          // Only mark as completed if there's actual specification data
+          if (hasSpecification || hasAdditionalSpecs) {
+            return 'completed';
+          }
+          break;
+        case 3:
+          // Step 3: Material Origin - check if origin exists
+          if (completeAdData.origin) {
+            return 'completed';
+          }
+          break;
+        case 4:
+          // Step 4: Contamination - check if ALL contamination fields exist (strict check)
+          const hasContamination = completeAdData.contamination && completeAdData.contamination.trim() !== '';
+          const hasAdditives = completeAdData.additives && completeAdData.additives.trim() !== '';
+          const hasStorage = completeAdData.storage_conditions && completeAdData.storage_conditions.trim() !== '';
+
+          if (hasContamination && hasAdditives && hasStorage) {
+            return 'completed';
+          }
+          break;
+        case 5:
+          // Step 5: Processing Methods - check if processing_methods exist
+          if (completeAdData.processing_methods && completeAdData.processing_methods.length > 0) {
+            return 'completed';
+          }
+          break;
+        case 6:
+          // Step 6: Location & Logistics - check if ALL required fields exist (strict check)
+          const hasLocation = completeAdData.location &&
+            completeAdData.location.country &&
+            completeAdData.location.city;
+          const hasDeliveryOptions = completeAdData.delivery_options &&
+            Array.isArray(completeAdData.delivery_options) &&
+            completeAdData.delivery_options.length > 0;
+
+          if (hasLocation && hasDeliveryOptions) {
+            return 'completed';
+          }
+          break;
+        case 7:
+          // Step 7: Quantity & Pricing - check if ALL required fields exist (strict check)
+          const hasQuantity = completeAdData.available_quantity && completeAdData.available_quantity > 0;
+          const hasUnit = completeAdData.unit_of_measurement && completeAdData.unit_of_measurement.trim() !== '';
+          const hasStartingPrice = completeAdData.starting_bid_price && completeAdData.starting_bid_price > 0;
+          const hasCurrency = completeAdData.currency && completeAdData.currency.trim() !== '';
+          const hasAuctionDuration = completeAdData.auction_duration && completeAdData.auction_duration.trim() !== '';
+
+          if (hasQuantity && hasUnit && hasStartingPrice && hasCurrency && hasAuctionDuration) {
+            return 'completed';
+          }
+          break;
+        case 8:
+          // Step 8: Title & Description - check if title exists
+          if (completeAdData.title) {
+            return 'completed';
+          }
+          break;
+      }
+    }
+
+    // Fallback to current step logic
     return stepNumber <= (auction.currentStep || 1) ? 'completed' : 'pending';
   };
 
@@ -1566,30 +1850,30 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {additives.map((additive) => (
                   <button
-                    key={additive}
+                    key={additive.id}
                     onClick={() => {
                       const currentAdditives = stepData.additives || [];
-                      const isSelected = currentAdditives.includes(additive);
-                      
+                      const isSelected = currentAdditives.includes(additive.id);
+
                       if (isSelected) {
-                        handleStepDataChange({ 
-                          additives: currentAdditives.filter(a => a !== additive) 
+                        handleStepDataChange({
+                          additives: currentAdditives.filter(a => a !== additive.id)
                         });
                       } else {
-                        handleStepDataChange({ 
-                          additives: [...currentAdditives, additive] 
+                        handleStepDataChange({
+                          additives: [...currentAdditives, additive.id]
                         });
                       }
                     }}
                     className={`
                       p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                      ${stepData.additives?.includes(additive)
+                      ${stepData.additives?.includes(additive.id)
                         ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                         : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }
                     `}
                   >
-                    {additive}
+                    {additive.name}
                   </button>
                 ))}
               </div>
@@ -2816,7 +3100,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       isActive
                         ? 'bg-[#FF8A00] text-white border-[#FF8A00]'
                         : status === 'completed'
-                        ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                        ? 'bg-white text-gray-700 border-emerald-300 hover:bg-gray-50'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                     }`}
                   >
@@ -2825,7 +3109,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         isActive
                           ? 'bg-white text-[#FF8A00]'
                           : status === 'completed'
-                          ? 'bg-green-500 text-white'
+                          ? 'bg-emerald-400 text-white'
                           : 'bg-gray-200 text-gray-600'
                       }`}>
                         {status === 'completed' ? (
@@ -2836,7 +3120,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       </div>
                       <div className="flex-1">
                         <div className={`text-sm font-medium ${
-                          isActive ? 'text-white' : status === 'completed' ? 'text-green-700' : 'text-gray-900'
+                          isActive ? 'text-white' : status === 'completed' ? 'text-gray-900' : 'text-gray-900'
                         }`}>
                           {step.title}
                         </div>
