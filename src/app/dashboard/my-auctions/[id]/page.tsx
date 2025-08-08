@@ -378,8 +378,11 @@ export default function AuctionDetail() {
     const loadingToast = toast.loading('Publishing auction...');
 
     try {
+      console.log('Activating auction with ID:', params.id);
+
       // Send activate request to API
       const response = await activateAd(params.id as string);
+      console.log('Activate response:', response);
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);
@@ -435,8 +438,10 @@ export default function AuctionDetail() {
     const loadingToast = toast.loading('Unpublishing auction...');
 
     try {
+      console.log('Deactivating auction with ID:', params.id);
       // Send deactivate request to API
       const response = await deactivateAd(params.id as string);
+      console.log('Deactivate response:', response);
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);
@@ -564,6 +569,7 @@ export default function AuctionDetail() {
                   <div className="flex items-center ml-6">
                     {auction.isComplete && (
                       <>
+
                         {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
                           <button
                             onClick={handleActivateAuction}
