@@ -213,10 +213,10 @@ export default function AuctionDetail() {
     }
   }, [params.id, router]);
 
-  // Handle edit auction - Updated to only handle local state since EditAuctionModal handles API calls
+  // Handle edit auction - Frontend-only mode (no backend calls)
   const handleEditAuction = async (updatedAuction: AuctionData) => {
     try {
-      // Update local state with the new data
+      // Update local state with the new data (frontend-only)
       setAuction({
         ...auction,
         ...updatedAuction
@@ -225,15 +225,13 @@ export default function AuctionDetail() {
       // Close the modal
       setIsEditModalOpen(false);
 
-      // Show success message
-      toast.success('Auction updated successfully', {
-        description: 'Your changes have been saved.',
+      // Show success message (frontend-only simulation)
+      toast.success('Auction updated (frontend-only)', {
+        description: 'Changes are visible locally but not saved to backend.',
         duration: 3000,
       });
 
-      // Optionally refresh the auction data from backend to ensure consistency
-      // You can uncomment this if you want to fetch fresh data after edit
-      // await loadAuctionData();
+      // Note: No backend API calls in frontend-only mode
     } catch (error) {
       // Show error toast
       toast.error('Failed to update auction', {

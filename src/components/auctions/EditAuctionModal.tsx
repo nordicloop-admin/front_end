@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info } from 'lucide-react';
+import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
-import { adUpdateService } from '@/services/ads';
+// Removed adUpdateService import - frontend-only edit mode
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { convertLabelToValue } from '@/utils/adValidation';
@@ -227,18 +227,41 @@ const storageConditions = [
 ];
 
 const processingMethods = [
-  'Blow moulding',
-  'Injection moulding',
-  'Extrusion',
-  'Calendering',
-  'Rotational moulding',
-  'Sintering',
-  'Thermoforming',
-  'Sorting',
-  'Cleaning',
-  'Shredding',
-  'Melting',
-  'Granulation'
+  {
+    id: 'blow_moulding',
+    name: 'Blow moulding',
+    description: 'Process for creating hollow plastic parts'
+  },
+  {
+    id: 'injection_moulding',
+    name: 'Injection moulding',
+    description: 'Molten plastic injected into molds'
+  },
+  {
+    id: 'extrusion',
+    name: 'Extrusion',
+    description: 'Continuous process creating uniform cross-sections'
+  },
+  {
+    id: 'calendering',
+    name: 'Calendering',
+    description: 'Process for creating films and sheets'
+  },
+  {
+    id: 'rotational_moulding',
+    name: 'Rotational moulding',
+    description: 'Hollow parts formed by rotation during heating'
+  },
+  {
+    id: 'sintering',
+    name: 'Sintering',
+    description: 'Powder compaction and heating process'
+  },
+  {
+    id: 'thermoforming',
+    name: 'Thermoforming',
+    description: 'Heating and shaping thermoplastic sheets'
+  }
 ];
 
 const deliveryOptions = [
@@ -503,7 +526,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             // Extract address components
             let city = '';
             let region = '';
-            const _country = '';
             let countryCode = '';
 
             place.address_components.forEach((component: any) => {
@@ -514,7 +536,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               } else if (types.includes('administrative_area_level_1')) {
                 region = component.long_name;
               } else if (types.includes('country')) {
-                // country = component.long_name;
                 countryCode = component.short_name.toLowerCase();
               }
             });
@@ -634,7 +655,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         setSteps(expectedSteps);
       }
     }
-  }, [auction, categoriesLoaded, steps]);
+  }, [auction, categoriesLoaded]);
 
   const handleStepDataChange = useCallback((updates: Partial<StepData>) => {
     setStepData(prev => ({ ...prev, ...updates }));
@@ -674,6 +695,35 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       }
     }
   }, [activeStep, showValidationErrors, validationErrors]);
+
+  // Keywords handling functions (matching creation form)
+  const getKeywordsTextLength = () => {
+    return (stepData.keywords || []).join(', ').length;
+  };
+
+  const areKeywordsValid = () => {
+    return getKeywordsTextLength() <= 500;
+  };
+
+  const handleKeywordAdd = (keyword: string) => {
+    if (keyword.trim() && !(stepData.keywords || []).includes(keyword.trim())) {
+      const currentKeywordsText = (stepData.keywords || []).join(', ');
+      const newKeywordsText = currentKeywordsText ? `${currentKeywordsText}, ${keyword.trim()}` : keyword.trim();
+
+      // Check if adding this keyword would exceed 500 characters
+      if (newKeywordsText.length <= 500) {
+        handleStepDataChange({
+          keywords: [...(stepData.keywords || []), keyword.trim()]
+        });
+      }
+    }
+  };
+
+  const handleKeywordRemove = (index: number) => {
+    handleStepDataChange({
+      keywords: (stepData.keywords || []).filter((_, i) => i !== index)
+    });
+  };
 
   // Handle image file upload
   const handleImageUpload = (files: FileList | null) => {
@@ -761,31 +811,19 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       // Determine which step we're updating based on the current active step
       const currentStepData = getCurrentStepData();
       
-      if (activeStep === 8) {
-        // Step 8: Handle title, description, keywords, and image using the update service for single image
-        const response = await adUpdateService.updateAdStep8WithImage(
-          parseInt(auction.id),
-          stepData.title || auction.name,
-          stepData.description || auction.description || '',
-          stepData.keywords?.join(', ') || '',
-          stepData.images && stepData.images.length > 0 ? stepData.images[0] : undefined
-        );
-        
-        if (!response.success) {
-          throw new Error(response.error);
-        }
-      } else if (currentStepData) {
-        // Steps 1-7: Use step-specific update endpoint
-        const response = await adUpdateService.updateAdStep(
-          parseInt(auction.id),
-          activeStep,
-          currentStepData
-        );
-        
-        if (!response.success) {
-          throw new Error(response.error || `Failed to update step ${activeStep}`);
-        }
-      } else {
+      // Frontend-only edit functionality - no backend calls
+      // Just simulate success for now since we're removing backend connectivity
+      console.log('Frontend-only edit mode: Step data would be:', {
+        step: activeStep,
+        data: activeStep === 8 ? {
+          title: stepData.title || auction.name,
+          description: stepData.description || auction.description || '',
+          keywords: stepData.keywords?.join(', ') || '',
+          hasImage: stepData.images && stepData.images.length > 0
+        } : currentStepData
+      });
+
+      if (!currentStepData && activeStep !== 8) {
         throw new Error(`No data to update for step ${activeStep}`);
       }
 
@@ -875,11 +913,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         };
         
       case 5:
-        // Processing Methods step - match creation form structure
+        // Processing Methods step - use method IDs directly
         return {
-          processing_methods: Array.isArray(stepData.processingMethods) 
-            ? stepData.processingMethods.map(method => convertLabelToValue('processing_methods', method))
-            : (stepData.processingMethods ? [convertLabelToValue('processing_methods', stepData.processingMethods)] : [])
+          processing_methods: Array.isArray(stepData.processingMethods)
+            ? stepData.processingMethods
+            : (stepData.processingMethods ? [stepData.processingMethods] : [])
         };
         
       case 6:
@@ -963,46 +1001,50 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
             ) : (
               <>
+                {/* Category Selection - Based on MaterialTypeStep */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Category *
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                    Main Category *
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {categories.filter(cat => cat.name !== 'All materials').map((category) => (
                       <button
                         key={category.id}
-                        onClick={() => handleStepDataChange({ 
+                        onClick={() => handleStepDataChange({
                           category: category.name,
-                          materialType: category.name.toLowerCase(),
+                          materialType: category.name,
                           subcategory: '', // Reset subcategory when category changes
                           specificMaterial: ''
                         })}
                         className={`
-                          p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
+                          p-4 rounded-lg border-2 text-left transition-all hover:scale-105
                           ${stepData.category === category.name
-                            ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            ? 'border-[#FF8A00] bg-orange-50'
+                            : 'border-gray-200 hover:border-gray-300'
                           }
                         `}
                       >
-                        {category.name}
+                        <div className="flex items-center justify-center">
+                          <h4 className="text-gray-900 text-center">{category.name}</h4>
+                        </div>
                       </button>
                     ))}
                   </div>
                 </div>
                 
+                {/* Subcategory Selection */}
                 {selectedCategory && selectedCategory.subcategories.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-4">
                       Subcategory *
                     </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {availableSubcategories.map((subcategory) => (
                         <button
                           key={subcategory.id}
                           onClick={() => handleStepDataChange({ subcategory: subcategory.name })}
                           className={`
-                            p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
+                            p-3 rounded-lg border-2 text-sm text-left transition-all hover:scale-105
                             ${stepData.subcategory === subcategory.name
                               ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                               : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -1016,6 +1058,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   </div>
                 )}
 
+                {/* Specific Material Input */}
                 {stepData.subcategory && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1023,16 +1066,20 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     </label>
                     <input
                       type="text"
+                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
                       value={stepData.specificMaterial || ''}
                       onChange={(e) => handleStepDataChange({ specificMaterial: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc."
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Add specific details about the material if applicable
+                    </p>
                   </div>
                 )}
 
+                {/* Packaging Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
                     How is the material packaged? *
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1071,8 +1118,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   </div>
                 </div>
 
+                {/* Sell Frequency Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
                     How often do you have this material? *
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -1081,7 +1129,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         key={frequency.id}
                         onClick={() => handleStepDataChange({ materialFrequency: frequency.id })}
                         className={`
-                          p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                          p-3 rounded-lg border-2 text-sm text-center transition-all hover:scale-105
                           ${stepData.materialFrequency === frequency.id
                             ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                             : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -1100,12 +1148,22 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
       case 2:
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Material Specifications
+              </h3>
+              <p className="text-gray-600">
+                Provide detailed specifications for your {stepData.materialType || 'material'}
+              </p>
+            </div>
+
+            {/* Grade Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Material Grade
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {availableGrades.map((grade) => (
                   <button
                     key={grade}
@@ -1123,12 +1181,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 ))}
               </div>
             </div>
-            
+
+            {/* Color Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Color
               </label>
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {materialColors.map((color) => (
                   <button
                     key={color}
@@ -1146,12 +1205,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 ))}
               </div>
             </div>
-            
+
+            {/* Material Form Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Material Form
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {availableForms.map((form) => (
                   <button
                     key={form}
@@ -1170,45 +1230,67 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
             </div>
 
+            {/* Additional Specifications */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Additional Specifications
               </label>
-              <div className="space-y-2">
-                {stepData.additionalSpecs?.map((spec, _index) => (
-                  <div key={_index} className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={spec}
-                      onChange={(e) => {
-                        const newSpecs = [...(stepData.additionalSpecs || [])];
-                        newSpecs[_index] = e.target.value;
+
+              {/* Custom specification input */}
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  placeholder="e.g., Melt Flow Index: 2.5, Density: 0.95 g/cm³"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const input = e.currentTarget;
+                      if (input.value.trim()) {
+                        const newSpecs = [...(stepData.additionalSpecs || []), input.value.trim()];
                         handleStepDataChange({ additionalSpecs: newSpecs });
-                      }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                      placeholder="Enter specification"
-                    />
-                    <button
-                      onClick={() => {
-                        const newSpecs = stepData.additionalSpecs?.filter((_, i) => i !== _index) || [];
-                        handleStepDataChange({ additionalSpecs: newSpecs });
-                      }}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-md"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => {
-                    const newSpecs = [...(stepData.additionalSpecs || []), ''];
-                    handleStepDataChange({ additionalSpecs: newSpecs });
+                        input.value = '';
+                      }
+                    }
                   }}
-                  className="w-full p-2 border-2 border-dashed border-gray-300 rounded-md text-gray-500 hover:border-gray-400 hover:text-gray-700"
+                />
+                <button
+                  onClick={(e) => {
+                    const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
+                    if (input && input.value.trim()) {
+                      const newSpecs = [...(stepData.additionalSpecs || []), input.value.trim()];
+                      handleStepDataChange({ additionalSpecs: newSpecs });
+                      input.value = '';
+                    }
+                  }}
+                  className="px-4 py-2 bg-[#FF8A00] text-white rounded-lg hover:bg-[#e67700] transition-colors flex items-center gap-2"
                 >
-                  + Add Specification
+                  <Plus className="w-4 h-4" />
+                  Add
                 </button>
               </div>
+
+              {/* Display added specifications */}
+              {stepData.additionalSpecs && stepData.additionalSpecs.length > 0 && (
+                <div className="space-y-2">
+                  {stepData.additionalSpecs.map((spec, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg p-3"
+                    >
+                      <span className="text-sm text-gray-700">{spec}</span>
+                      <button
+                        onClick={() => {
+                          const newSpecs = stepData.additionalSpecs?.filter((_, i) => i !== index) || [];
+                          handleStepDataChange({ additionalSpecs: newSpecs });
+                        }}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -1387,43 +1469,98 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
       case 5:
         return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Processing Methods *
-              </label>
-              <p className="text-sm text-gray-600 mb-4">
-                Select the processing methods suitable for this material.
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Processing methods
+              </h3>
+              <p className="text-gray-600">
+                Select the applicable processing methods.
               </p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            </div>
+
+            {/* Processing Methods Selection */}
+            <div>
+              <div className="space-y-3">
                 {processingMethods.map((method) => (
                   <button
-                    key={method}
+                    key={method.id}
                     onClick={() => {
                       const currentMethods = stepData.processingMethods || [];
-                      const isSelected = currentMethods.includes(method);
-                      
+                      const isSelected = currentMethods.includes(method.id);
+
                       if (isSelected) {
-                        handleStepDataChange({ 
-                          processingMethods: currentMethods.filter(m => m !== method) 
+                        handleStepDataChange({
+                          processingMethods: currentMethods.filter(m => m !== method.id)
                         });
                       } else {
-                        handleStepDataChange({ 
-                          processingMethods: [...currentMethods, method] 
+                        handleStepDataChange({
+                          processingMethods: [...currentMethods, method.id]
                         });
                       }
                     }}
                     className={`
-                      p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                      ${stepData.processingMethods?.includes(method)
-                        ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      w-full p-4 rounded-lg border text-left transition-all
+                      ${stepData.processingMethods?.includes(method.id)
+                        ? 'border-[#FF8A00] bg-orange-50'
+                        : 'border-gray-200 hover:border-gray-300'
                       }
                     `}
                   >
-                    {method}
+                    <div className="flex items-start space-x-3">
+                      <div className={`
+                        p-2 rounded-md
+                        ${stepData.processingMethods?.includes(method.id)
+                          ? 'bg-[#FF8A00] text-white'
+                          : 'bg-gray-100 text-gray-600'
+                        }
+                      `}>
+                        <Settings className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="font-medium text-gray-900">{method.name}</h4>
+                          {stepData.processingMethods?.includes(method.id) && (
+                            <CheckCircle className="w-4 h-4 text-[#FF8A00]" />
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">{method.description}</p>
+                      </div>
+                    </div>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Processing Summary */}
+            {stepData.processingMethods && stepData.processingMethods.length > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">Selected Processing Methods</h4>
+                <div className="space-y-1 text-sm text-gray-600">
+                  {stepData.processingMethods.map(methodId => {
+                    const method = processingMethods.find(m => m.id === methodId);
+                    return (
+                      <div key={methodId}>
+                        <span className="font-medium text-gray-700">•</span> {method?.name}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Information Note */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="flex items-start space-x-3">
+                <Settings className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900">Processing Guidelines</h4>
+                  <div className="text-sm text-blue-700 mt-1 space-y-1">
+                    <p>• Select all applicable processing methods for your material</p>
+                    <p>• Multiple methods can be selected if applicable</p>
+                    <p>• This helps buyers understand material compatibility</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1692,42 +1829,63 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
       case 7:
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Available Quantity *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={stepData.availableQuantity || ''}
-                  onChange={(e) => handleStepDataChange({ availableQuantity: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="0"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Unit *
-                </label>
-                <select
-                  value={stepData.unit || ''}
-                  onChange={(e) => handleStepDataChange({ unit: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                >
-                  <option value="">Select unit</option>
-                  {units.map(unit => (
-                    <option key={unit} value={unit}>{unit}</option>
-                  ))}
-                </select>
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Quantity & Pricing
+              </h3>
+              <p className="text-gray-600">
+                Specify the quantity available and set your auction pricing
+              </p>
+            </div>
+
+            {/* Quantity Section */}
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">Quantity Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Available Quantity */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <Package className="inline w-4 h-4 mr-2" />
+                    Available Quantity *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    placeholder="e.g., 1000"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                    value={stepData.availableQuantity || ''}
+                    onChange={(e) => handleStepDataChange({ availableQuantity: parseFloat(e.target.value) })}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Total quantity available for auction
+                  </p>
+                </div>
+
+                {/* Unit */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Unit of Measurement *
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                    value={stepData.unit || ''}
+                    onChange={(e) => handleStepDataChange({ unit: e.target.value })}
+                  >
+                    <option value="">Select unit...</option>
+                    {units.map(unit => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-            
+
+            {/* Minimum Order Quantity */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Box className="inline w-4 h-4 mr-2" />
                 Minimum Order Quantity
               </label>
               <div className="flex items-center space-x-4">
@@ -1735,74 +1893,101 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   type="number"
                   min="0"
                   step="0.1"
+                  placeholder="e.g., 100"
+                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
                   value={stepData.minimumOrder || ''}
                   onChange={(e) => handleStepDataChange({ minimumOrder: parseFloat(e.target.value) })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="0"
                 />
                 <span className="text-gray-500">{stepData.unit || 'units'}</span>
               </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Minimum quantity buyers must purchase (leave 0 for no minimum)
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Starting Price *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={stepData.startingPrice || ''}
-                  onChange={(e) => handleStepDataChange({ startingPrice: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Currency
-                </label>
-                <select
-                  value={stepData.currency || 'SEK'}
-                  onChange={(e) => handleStepDataChange({ currency: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                >
-                  {currencies.map(currency => (
-                    <option key={currency} value={currency}>{currency}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Auction Duration
-              </label>
-              <select
-                value={stepData.auctionDuration || '7'}
-                onChange={(e) => {
-                  const duration = e.target.value;
-                  handleStepDataChange({ auctionDuration: duration });
-                  // Clear custom duration fields if switching away from custom
-                  if (duration !== 'custom') {
-                    handleStepDataChange({ customAuctionDuration: 0 });
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              >
-                {bidDurationOptions.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              
-              {/* Custom Duration Date Picker */}
-              {stepData.auctionDuration === 'custom' && (
-                <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select End Date
+            {/* Price Section */}
+            <div className="pt-4 border-t border-gray-200">
+              <h4 className="text-lg font-medium text-gray-900 mb-4">Auction Pricing</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Starting Bid Price */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Starting Bid Price *
                   </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                      value={stepData.startingPrice || ''}
+                      onChange={(e) => handleStepDataChange({ startingPrice: parseFloat(e.target.value) })}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Initial bid price per {stepData.unit || 'unit'}
+                  </p>
+                </div>
+
+                {/* Currency */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Currency *
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                    value={stepData.currency || 'SEK'}
+                    onChange={(e) => handleStepDataChange({ currency: e.target.value })}
+                  >
+                    {currencies.map(currency => (
+                      <option key={currency} value={currency}>{currency}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Auction Duration */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Thermometer className="inline w-4 h-4 mr-2" />
+                Auction Duration *
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {bidDurationOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      const duration = option.value;
+                      handleStepDataChange({ auctionDuration: duration });
+                      // Clear custom duration fields if switching away from custom
+                      if (duration !== 'custom') {
+                        handleStepDataChange({ customAuctionDuration: 0 });
+                      }
+                    }}
+                    className={`
+                      p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                      ${stepData.auctionDuration === option.value
+                        ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }
+                    `}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Duration Calendar */}
+              {stepData.auctionDuration === 'custom' && (
+                <div className="mt-4 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center mb-3">
+                    <Thermometer className="w-4 h-4 mr-2 text-[#FF8A00]" />
+                    <label className="text-sm font-medium text-gray-700">
+                      Select End Date
+                    </label>
+                  </div>
                   <input
                     type="date"
                     min={new Date().toISOString().split('T')[0]}
@@ -1815,14 +2000,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         const endDate = new Date(selectedDate);
                         const diffTime = endDate.getTime() - today.getTime();
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        handleStepDataChange({ 
-                          customAuctionDuration: diffDays > 0 ? diffDays : 1 
+                        handleStepDataChange({
+                          customAuctionDuration: diffDays > 0 ? diffDays : 1
                         });
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-2">
                     Select a date up to 90 days from today when the auction should end.
                   </p>
                   {stepData.customAuctionDuration && stepData.customAuctionDuration > 0 && (
@@ -1833,24 +2018,100 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 </div>
               )}
             </div>
-            
+
+            {/* Reserve Price */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Reserve Price (Optional)
               </label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
+                placeholder="Minimum acceptable price"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
                 value={stepData.reservePrice || ''}
                 onChange={(e) => handleStepDataChange({ reservePrice: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                placeholder="0.00"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Minimum price you&apos;re willing to accept
+                If no bids reach this price, the auction will not complete
               </p>
             </div>
+
+            {/* Price Summary */}
+            {stepData.startingPrice && stepData.startingPrice > 0 && stepData.availableQuantity && stepData.availableQuantity > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Auction Summary</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">
+                      Starting Price:
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {stepData.startingPrice.toLocaleString('sv-SE', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                      })} {stepData.currency || 'SEK'} per {stepData.unit || 'unit'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Total Quantity:</span>
+                    <span className="text-lg font-semibold text-gray-700">
+                      {stepData.availableQuantity.toLocaleString('sv-SE', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                      })} {stepData.unit || 'units'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Total Starting Value:</span>
+                    <span className="text-lg font-semibold text-[#FF8A00]">
+                      {(stepData.startingPrice * stepData.availableQuantity).toLocaleString('sv-SE', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                      })} {stepData.currency || 'SEK'}
+                    </span>
+                  </div>
+
+                  {stepData.auctionDuration && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Auction Duration:</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {stepData.auctionDuration === 'custom'
+                          ? (stepData.customAuctionDuration
+                              ? `${stepData.customAuctionDuration} days`
+                              : 'Custom duration')
+                          : bidDurationOptions.find(o => o.value === stepData.auctionDuration)?.label ||
+                            `${stepData.auctionDuration} days`}
+                      </span>
+                    </div>
+                  )}
+
+                  {stepData.reservePrice && stepData.reservePrice > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Reserve Price:</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {stepData.reservePrice.toLocaleString('sv-SE', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2
+                        })} {stepData.currency || 'SEK'} per {stepData.unit || 'unit'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Validation Message */}
+            {(!stepData.startingPrice || !stepData.availableQuantity || !stepData.unit || !stepData.auctionDuration) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <p className="text-sm text-yellow-600">
+                  Please set a starting price, available quantity, unit of measurement, and auction duration to continue.
+                </p>
+              </div>
+            )}
           </div>
         );
 
@@ -1874,20 +2135,23 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
             )}
 
+            {/* Title - Matching creation form */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title *
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Type className="inline w-4 h-4 mr-2" />
+                Listing Title *
+                <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 10 characters)</span>
               </label>
               <input
                 type="text"
-                value={stepData.title || ''}
-                onChange={(e) => handleStepDataChange({ title: e.target.value })}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent ${
+                placeholder="e.g., High-Quality HDPE Post-Industrial Pellets - Food Grade"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
                   (stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 10) || (showValidationErrors && validationErrors?.title)
-                    ? 'border-red-300 bg-red-50' 
+                    ? 'border-red-300 bg-red-50'
                     : 'border-gray-300'
                 }`}
-                placeholder="Enter auction title"
+                value={stepData.title || ''}
+                onChange={(e) => handleStepDataChange({ title: e.target.value })}
                 maxLength={255}
               />
               {/* Validation Error Message */}
@@ -1914,20 +2178,22 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
             </div>
             
+            {/* Description - Matching creation form */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Description *
+                <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 30 characters)</span>
               </label>
               <textarea
+                placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 30 characters)"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] resize-vertical min-h-[120px] ${
+                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30) || (showValidationErrors && validationErrors?.description)
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-gray-300'
+                }`}
                 value={stepData.description || ''}
                 onChange={(e) => handleStepDataChange({ description: e.target.value })}
                 rows={4}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent resize-vertical min-h-[120px] ${
-                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50) || (showValidationErrors && validationErrors?.description)
-                    ? 'border-red-300 bg-red-50' 
-                    : 'border-gray-300'
-                }`}
-                placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 50 characters)"
               />
               {/* Validation Error Message */}
               {showValidationErrors && validationErrors?.description && (
@@ -1938,35 +2204,58 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               )}
               <div className="flex justify-between items-center mt-1">
                 <p className={`text-xs ${
-                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50) || (showValidationErrors && validationErrors?.description)
-                    ? 'text-red-600 font-medium' 
+                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30) || (showValidationErrors && validationErrors?.description)
+                    ? 'text-red-600 font-medium'
                     : 'text-gray-500'
                 }`}>
                   {(stepData.description || '').trim().length} characters
-                  {stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50 && 
-                    ` - Need at least ${50 - stepData.description.trim().length} more characters`
+                  {stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30 &&
+                    ` - Need at least ${30 - stepData.description.trim().length} more characters`
                   }
                 </p>
-                {stepData.description && stepData.description.trim().length >= 50 && !validationErrors?.description && (
+                {stepData.description && stepData.description.trim().length >= 30 && !validationErrors?.description && (
                   <span className="text-xs text-green-600">✓ Valid length</span>
                 )}
               </div>
             </div>
             
+            {/* Keywords - Matching creation form */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Keywords (comma-separated, optional)
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Tag className="inline w-4 h-4 mr-2" />
+                Keywords (Optional)
+                <span className="text-xs text-gray-500 font-normal ml-2">(Maximum 500 characters total)</span>
               </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {(stepData.keywords || []).map((keyword, index) => (
+                  <span key={index} className="inline-flex items-center px-3 py-1 bg-[#FF8A00] text-white text-sm rounded-full">
+                    {keyword}
+                    <button
+                      onClick={() => handleKeywordRemove(index)}
+                      className="ml-2 text-white hover:text-gray-200"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
               <input
                 type="text"
-                value={stepData.keywords?.join(', ') || ''}
-                onChange={(e) => handleStepDataChange({ 
-                  keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k.length > 0)
-                })}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent ${
-                  showValidationErrors && validationErrors?.keywords ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                placeholder="Add keywords separated by commas (e.g., HDPE, recycling, food grade)"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm ${
+                  !areKeywordsValid() || (showValidationErrors && validationErrors?.keywords) ? 'border-red-300 bg-red-50' : 'border-gray-300'
                 }`}
-                placeholder="plastic, recycled, high quality"
+                disabled={!areKeywordsValid()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const input = e.currentTarget;
+                    if (input.value.trim()) {
+                      handleKeywordAdd(input.value.trim());
+                      input.value = '';
+                    }
+                  }
+                }}
               />
               {/* Validation Error Message */}
               {showValidationErrors && validationErrors?.keywords && (
@@ -1977,14 +2266,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               )}
               <div className="flex justify-between items-center mt-1">
                 <p className={`text-xs ${
-                  showValidationErrors && validationErrors?.keywords ? 'text-red-600 font-medium' : 'text-gray-500'
+                  !areKeywordsValid() || (showValidationErrors && validationErrors?.keywords) ? 'text-red-600 font-medium' : 'text-gray-500'
                 }`}>
-                  {(stepData.keywords?.join(', ') || '').length}/500 characters total
-                  {(stepData.keywords?.join(', ') || '').length > 500 && 
-                    ` - Exceeded by ${(stepData.keywords?.join(', ') || '').length - 500} characters`
+                  {getKeywordsTextLength()}/500 characters total
+                  {!areKeywordsValid() &&
+                    ` - Exceeded by ${getKeywordsTextLength() - 500} characters`
                   }
                 </p>
-                {(stepData.keywords?.join(', ') || '').length <= 500 && (stepData.keywords?.join(', ') || '').length > 0 && !validationErrors?.keywords && (
+                {areKeywordsValid() && getKeywordsTextLength() > 0 && !validationErrors?.keywords && (
                   <span className="text-xs text-green-600">✓ Valid length</span>
                 )}
               </div>
