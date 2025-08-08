@@ -7,7 +7,7 @@ import { ArrowLeft, Clock, Building, MapPin, Package, ArrowUpRight, AlertCircle 
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 import useBidding from '@/hooks/useBidding';
 import { getAuctionById, getAdDetails } from '@/services/auction';
-import { getAuctionBids } from '@/services/bid';
+import { getAuctionBidHistory } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { getFullImageUrl } from '@/utils/imageUtils';
 
@@ -120,6 +120,8 @@ export default function AuctionDetail() {
   const { selectedAuction, isModalOpen, openBidModal, closeBidModal, submitBid } = useBidding();
   const [auction, setAuction] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [bidHistory, setBidHistory] = useState<any[]>([]);
+  const [totalBids, setTotalBids] = useState(0);
 
   // Format date to readable string
   const formatDate = (dateString: string) => {
@@ -131,6 +133,34 @@ export default function AuctionDetail() {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // Calculate step completion based on material category
+  const calculateStepCompletion = (stepCompletionStatus: any, category: string) => {
+    if (!stepCompletionStatus) return { completed: 0, total: 0, percentage: 0 };
+
+    // Check if this is a plastic material
+    const isPlastic = category && category.toLowerCase().includes('plastic');
+
+    if (isPlastic) {
+      // Plastics use 8 steps (1-8)
+      const allSteps = [1, 2, 3, 4, 5, 6, 7, 8];
+      const completedSteps = allSteps.filter(step => stepCompletionStatus[step]).length;
+      return {
+        completed: completedSteps,
+        total: 8,
+        percentage: (completedSteps / 8) * 100
+      };
+    } else {
+      // Other materials use 4 steps (1, 6, 7, 8)
+      const relevantSteps = [1, 6, 7, 8];
+      const completedSteps = relevantSteps.filter(step => stepCompletionStatus[step]).length;
+      return {
+        completed: completedSteps,
+        total: 4,
+        percentage: (completedSteps / 4) * 100
+      };
+    }
   };
 
   // Calculate time left for an auction
@@ -211,26 +241,32 @@ export default function AuctionDetail() {
 
             setAuction(formattedAuction);
 
-            // Fetch bids for this auction
-            if (adData.is_active && adData.is_complete) {
-              getAuctionBids(adData.id)
-                .then(bidsResponse => {
-                  if (!bidsResponse.error && bidsResponse.data && bidsResponse.data.bids.length > 0) {
-                    const formattedBids = bidsResponse.data.bids.map(bid => ({
-                      bidder: bid.bidder_name || 'Anonymous',
-                      amount: bid.bid_price_per_unit,
+            // Fetch bid history for this auction
+            // Fetch bid history for active auctions (regardless of completion status)
+            if (adData.is_active) {
+              getAuctionBidHistory(adData.id)
+                .then(bidHistoryResponse => {
+                  if (!bidHistoryResponse.error && bidHistoryResponse.data) {
+                    const bidHistoryData = bidHistoryResponse.data.bid_history || [];
+                    setBidHistory(bidHistoryData);
+                    setTotalBids(bidHistoryResponse.data.total_bids || 0);
+
+                    // Update auction with bid history for backward compatibility
+                    const formattedBids = bidHistoryData.map((bid: any) => ({
+                      bidder: bid.company_name,
+                      amount: bid.bid_amount,
                       date: bid.created_at
                     }));
 
                     setAuction((prevAuction: any) => ({
                       ...prevAuction,
                       bidHistory: formattedBids,
-                      highestBid: formattedBids[0].amount
+                      highestBid: formattedBids.length > 0 ? formattedBids[0].amount : null
                     }));
                   }
                 })
                 .catch(_error => {
-                  // Error handling for bids fetch failures
+                  // Error handling for bid history fetch failures
                 });
             }
           } else {
@@ -431,24 +467,27 @@ export default function AuctionDetail() {
               </div>
 
               {/* Progress Bar */}
-              {auction.stepCompletionStatus && (
-                <div className="border border-gray-200 rounded-md p-4 mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Completion Progress</span>
-                    <span className="text-sm text-gray-500">
-                      {Object.values(auction.stepCompletionStatus).filter(Boolean).length} of 8 steps
-                    </span>
+              {auction.stepCompletionStatus && (() => {
+                const stepCompletion = calculateStepCompletion(auction.stepCompletionStatus, auction.category);
+                return (
+                  <div className="border border-gray-200 rounded-md p-4 mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">Completion Progress</span>
+                      <span className="text-sm text-gray-500">
+                        {stepCompletion.completed} of {stepCompletion.total} steps
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${stepCompletion.percentage}%`
+                        }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Keywords */}
               {auction.keywords && (
@@ -512,23 +551,40 @@ export default function AuctionDetail() {
 
             {/* Bid History */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Bid History</h2>
-              {auction.bidHistory.length > 0 ? (
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Bid History</h2>
+                {totalBids > 0 && (
+                  <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
+                    {totalBids} bid{totalBids !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </div>
+              {bidHistory.length > 0 ? (
                 <div className="overflow-hidden border border-gray-200 rounded-md">
                   <table className="min-w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Bidder</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Company</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Bid Amount</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Volume</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Value</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date & Time</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {auction.bidHistory.map((bid: any, index: number) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-900">{bid.bidder}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">{bid.amount}</td>
-                          <td className="px-4 py-3 text-sm text-gray-500">{formatDate(bid.date)}</td>
+                      {bidHistory.map((bid: any) => (
+                        <tr key={bid.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm text-gray-900 font-medium">{bid.company_name}</td>
+                          <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">
+                            {bid.bid_amount} {bid.currency}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600">
+                            {bid.volume_requested} {auction.unitOfMeasurement || 'units'}
+                          </td>
+                          <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                            {bid.total_value} {bid.currency}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">{formatDate(bid.created_at)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -567,6 +623,14 @@ export default function AuctionDetail() {
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Time Left</span>
                   <span className="font-medium text-[#FF8A00]">{auction.timeLeft}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Total Bids</span>
+                  <span className="font-medium text-gray-900">{totalBids}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Created</span>
+                  <span className="font-medium text-gray-900">{auction.createdAt ? formatDate(auction.createdAt) : 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -608,21 +672,24 @@ export default function AuctionDetail() {
                       {auction.auctionStatus}
                     </span>
                   </div>
-                  {auction.stepCompletionStatus && (
-                    <div>
-                      <div className="text-sm text-gray-600 mb-2">
-                        Completion: {Object.values(auction.stepCompletionStatus).filter(Boolean).length}/8 steps
+                  {auction.stepCompletionStatus && (() => {
+                    const stepCompletion = calculateStepCompletion(auction.stepCompletionStatus, auction.category);
+                    return (
+                      <div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          Completion: {stepCompletion.completed}/{stepCompletion.total} steps
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div
+                            className="bg-[#FF8A00] h-1.5 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${stepCompletion.percentage}%`
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5">
-                        <div 
-                          className="bg-[#FF8A00] h-1.5 rounded-full transition-all duration-300"
-                          style={{ 
-                            width: `${(Object.values(auction.stepCompletionStatus).filter(Boolean).length / 8) * 100}%` 
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </div>
             )}

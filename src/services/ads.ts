@@ -694,6 +694,7 @@ export class AdUpdateService {
         data: response.data as AdCreationResponse
       };
     } catch (error) {
+
       return {
         success: false,
         error: error instanceof Error ? error.message : `Failed to update step ${step}`,

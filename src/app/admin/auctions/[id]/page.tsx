@@ -4,13 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown, Bell, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown, Bell } from 'lucide-react';
 import { getAdminAuction, AdminAuction, updateAuctionStatus } from '@/services/auctions';
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { toast } from 'sonner';
 import { adminAdsService } from '@/services/adminAds';
 import { createNotification, type CreateNotificationRequest } from '@/services/notifications';
+import Modal from '@/components/ui/modal';
 
 export default function AuctionDetailPage() {
   const _router = useRouter();
@@ -21,6 +22,7 @@ export default function AuctionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bids, setBids] = useState<any[]>([]);
+  const [bidHistory, setBidHistory] = useState<any[]>([]);
   const [bidLoading, setBidLoading] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
@@ -33,6 +35,85 @@ export default function AuctionDetailPage() {
     type: 'auction',
     priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent'
   });
+
+  // Function to fetch complete bid history for an auction (including historical changes)
+  const fetchCompleteBidHistory = async (auctionId: number) => {
+    try {
+      // First, get all current bids for the auction
+      const bidsResponse = await getAuctionBids(auctionId);
+
+      if (bidsResponse.error || !bidsResponse.data) {
+        return;
+      }
+
+      const currentBids = bidsResponse.data.bids || [];
+
+      // Set current bids for the existing table
+      setBids(currentBids);
+
+      // Collect all historical entries
+      const allHistoryEntries: any[] = [];
+
+      // For each current bid, fetch its complete history
+      for (const bid of currentBids) {
+        try {
+          // Import auth service
+          const { getAccessToken } = await import('@/services/auth');
+          const token = getAccessToken();
+
+          const historyResponse = await fetch(`http://localhost:8000/api/bids/${bid.id}/history/`, {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+          });
+
+          if (historyResponse.ok) {
+            const historyData = await historyResponse.json();
+            const bidHistoryData = historyData.history || [];
+
+
+
+            // Format each history entry as a separate row
+            bidHistoryData.forEach((entry: any, index: number) => {
+              const formattedEntry = {
+                bidder: bid.company_name || bid.bidder_name || 'Anonymous',
+                bidderEmail: bid.bidder_email || 'No email',
+                amount: `${entry.new_price} SEK`,
+                totalValue: `${parseFloat(entry.new_price) * parseFloat(entry.new_volume)} SEK`,
+                volume: `${entry.new_volume} kg`,
+                date: entry.timestamp,
+                status: 'active',
+                changeReason: entry.change_reason,
+                previousAmount: entry.previous_price ? `${entry.previous_price} SEK` : null,
+                bidId: bid.id,
+                historyIndex: index,
+                isLatest: index === 0 // First entry is the latest
+              };
+
+
+              allHistoryEntries.push(formattedEntry);
+            });
+          } else {
+
+          }
+        } catch (_error) {
+
+        }
+      }
+
+      // Sort all entries by date (newest first)
+      allHistoryEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+
+
+      // Set the complete bid history
+      setBidHistory(allHistoryEntries);
+
+    } catch (_error) {
+
+    }
+  };
 
   // Fetch auction details
   const fetchAuctionDetails = useCallback(async () => {
@@ -47,13 +128,10 @@ export default function AuctionDetailPage() {
       if (response.data) {
         setAuction(response.data);
         
-        // Fetch bids for this auction
+        // Fetch complete bid history for this auction
         setBidLoading(true);
         try {
-          const bidsResponse = await getAuctionBids(parseInt(id as string));
-          if (!bidsResponse.error && bidsResponse.data) {
-            setBids(bidsResponse.data.bids || []);
-          }
+          await fetchCompleteBidHistory(parseInt(id as string));
         } catch (_err) {
           // Failed to fetch bids - silently handle this error
         } finally {
@@ -524,9 +602,9 @@ export default function AuctionDetailPage() {
               </div>
             </div>
 
-            {/* Bid History */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-sm font-medium text-gray-900 mb-4">Bid History</h2>
+            {/* Current Bids Summary */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Current Bids Summary</h2>
               {bidLoading ? (
                 <div className="flex items-center justify-center p-6">
                   <RefreshCw className="h-5 w-5 animate-spin text-gray-400 mr-2" />
@@ -543,8 +621,9 @@ export default function AuctionDetailPage() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Bidder</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Current Amount</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Volume</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Value</th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                         <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Actions</th>
                       </tr>
@@ -567,7 +646,12 @@ export default function AuctionDetailPage() {
                             <div className="text-sm font-medium text-[#FF8A00]">{formatPrice(bid.bid_price_per_unit)}</div>
                             {index === 0 && <div className="text-xs text-green-500">Highest bid</div>}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{formatDate(bid.created_at)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                            {bid.volume_requested} kg
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600">
+                            {formatPrice(bid.total_bid_value)}
+                          </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               index === 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -585,6 +669,80 @@ export default function AuctionDetailPage() {
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Complete Bid History */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Complete Bid History</h2>
+              <p className="text-xs text-gray-500 mb-4">Shows all bid changes including updates and modifications</p>
+              {bidLoading ? (
+                <div className="flex items-center justify-center p-6">
+                  <RefreshCw className="h-5 w-5 animate-spin text-gray-400 mr-2" />
+                  <span className="text-gray-500">Loading bid history...</span>
+                </div>
+              ) : bidHistory.length === 0 ? (
+                <div className="text-center py-8 border border-gray-200 rounded-md bg-gray-50">
+                  <Package size={40} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-500 text-sm">No bid history available</p>
+                </div>
+              ) : (
+                <div className="overflow-hidden border border-gray-200 rounded-md">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Bidder</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Price per Unit</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Volume</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Value</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {bidHistory.map((historyEntry: any, index: number) => {
+                        const isUpdate = historyEntry.changeReason === 'bid_updated';
+                        const isInitial = historyEntry.changeReason === 'bid_placed';
+
+                        return (
+                          <tr key={`${historyEntry.bidId}-${historyEntry.historyIndex}-${index}`} className={`hover:bg-gray-50 ${
+                            historyEntry.isLatest ? 'bg-green-50' : ''
+                          }`}>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-6 w-6 bg-gray-100 rounded-full flex items-center justify-center mr-2">
+                                  <User size={12} className="text-gray-600" />
+                                </div>
+                                <div>
+                                  <div className="font-medium">{historyEntry.bidder}</div>
+                                  <div className="text-xs text-gray-500">{historyEntry.bidderEmail}</div>
+                                  {historyEntry.isLatest && (
+                                    <div className="text-xs text-green-600 font-medium">Current Bid</div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                isInitial
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : isUpdate
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {isInitial ? 'Initial Bid' : isUpdate ? 'Updated Bid' : 'Bid'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">{historyEntry.amount}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{historyEntry.volume}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-green-600">{historyEntry.totalValue}</td>
+                            <td className="px-4 py-3 text-sm text-gray-500">{formatDate(historyEntry.date)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -681,20 +839,12 @@ export default function AuctionDetailPage() {
     </div>
 
     {/* Notification Modal */}
-    {showNotificationModal && (
-      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl border border-gray-200 w-full max-w-md mx-4">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Send Notification</h3>
-            <button
-              onClick={() => setShowNotificationModal(false)}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          <div className="p-6">
+    <Modal
+      isOpen={showNotificationModal}
+      onClose={() => setShowNotificationModal(false)}
+      title="Send Notification"
+      maxWidth="md"
+    >
             <form onSubmit={handleSendNotification}>
               <div className="space-y-4">
                 <div>
@@ -798,10 +948,7 @@ export default function AuctionDetailPage() {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
-      </div>
-    )}
+    </Modal>
     </>
   );
 }

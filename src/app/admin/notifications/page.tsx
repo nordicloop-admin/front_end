@@ -24,6 +24,7 @@ import {
   CreateNotificationRequest
 } from '@/services/notifications';
 import { searchUsers } from '@/services/users';
+import Modal from '@/components/ui/modal';
 import {
   getNotificationIconComponent,
   getNotificationTypeConfig,
@@ -580,22 +581,12 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Create Notification Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-gray-200 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-medium text-gray-900">Create New Notification</h2>
-                <button
-                  onClick={() => setShowCreateForm(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
+      <Modal
+        isOpen={showCreateForm}
+        onClose={() => setShowCreateForm(false)}
+        title="Create New Notification"
+        maxWidth="2xl"
+      >
               {submitSuccess && (
                 <div className="bg-green-50 text-green-700 p-3 rounded-md mb-4 flex items-center">
                   <Check size={16} className="mr-2" />
@@ -863,10 +854,7 @@ export default function AdminNotificationsPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

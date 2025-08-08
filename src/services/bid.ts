@@ -2,7 +2,7 @@
  * Bid service for handling bid creation and management
  * Based on Nordic Loop Bidding System API
  */
-import { apiPost, apiGet, apiPut, apiDelete } from './api';
+import { apiPost, apiGet, apiPut, apiDelete, ApiResponse } from './api';
 
 /**
  * Interface for bid creation data
@@ -241,23 +241,48 @@ export async function createBid(bidData: BidCreateData) {
     if (response.error || (response.status && response.status >= 400)) {
       // Extract clean error message from API response
       let errorMessage = response.error || 'Failed to create bid';
-      
+
       // Handle specific error format: "Failed to place bid: ['You cannot bid on your own ad.']"
       if (typeof response.data === 'object' && response.data !== null) {
         if ('error' in response.data) {
           const apiError = response.data.error;
           if (typeof apiError === 'string') {
-            // Extract message from "Failed to place bid: ['Error message']" format
-            const match = apiError.match(/\['(.+?)'\]/);
-            if (match && match[1]) {
-              errorMessage = match[1];
+            // Handle Django ValidationError format: "Failed to place bid: {'field': ErrorDetail(string='message', code='...')}"
+            const validationErrorMatch = apiError.match(/ErrorDetail\(string='([^']+)'/);
+            if (validationErrorMatch && validationErrorMatch[1]) {
+              errorMessage = validationErrorMatch[1];
             } else {
-              errorMessage = apiError;
+              // Extract message from "Failed to place bid: ['Error message']" format
+              const listMatch = apiError.match(/\['(.+?)'\]/);
+              if (listMatch && listMatch[1]) {
+                errorMessage = listMatch[1];
+              } else {
+                // Handle simple field validation errors like "{'bid_price_per_unit': 'Error message'}"
+                const fieldErrorMatch = apiError.match(/'([^']+)'/g);
+                if (fieldErrorMatch && fieldErrorMatch.length >= 2) {
+                  // Take the second match which should be the error message
+                  errorMessage = fieldErrorMatch[1].replace(/'/g, '');
+                } else {
+                  errorMessage = apiError;
+                }
+              }
+            }
+          }
+        }
+
+        // Handle validation errors in 'details' field
+        if ('details' in response.data && typeof response.data.details === 'object') {
+          const details = response.data.details;
+          // Extract first error message from validation details
+          for (const field in details) {
+            if (Array.isArray(details[field]) && details[field].length > 0) {
+              errorMessage = details[field][0];
+              break;
             }
           }
         }
       }
-      
+
       return {
         data: null,
         error: errorMessage,
@@ -342,11 +367,11 @@ export async function getAdBids(adId: number, params?: BidPaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
-    
+
     const endpoint = `/bids/ad/${adId}/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
-    // Get bids requires authentication
-    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+
+    // Get bids does not require authentication (AllowAny permission)
+    const response = await apiGet<any>(endpoint, false);
 
     if (response.error) {
       return {
@@ -356,19 +381,24 @@ export async function getAdBids(adId: number, params?: BidPaginationParams) {
       };
     }
 
-    // Return bids with ad info and bid statistics
-    const result: PaginatedBidResult = {
-      bids: response.data?.results || [],
+    // The backend returns: { ad_id, ad_title, total_bids, bids }
+    // Transform to expected format for compatibility
+    const result = {
+      bids: response.data?.bids || [],
+      total_bids: response.data?.total_bids || 0,
+      ad_id: response.data?.ad_id,
+      ad_title: response.data?.ad_title,
+      // For backward compatibility with paginated format
+      results: response.data?.bids || [],
+      count: response.data?.total_bids || 0,
       pagination: {
-        count: response.data?.count || 0,
-        next: response.data?.next || null,
-        previous: response.data?.previous || null,
-        page_size: response.data?.page_size || 10,
-        total_pages: response.data?.total_pages || 1,
-        current_page: response.data?.current_page || 1
-      },
-      bidStatistics: response.data?.bid_statistics,
-      adInfo: response.data?.ad_info
+        count: response.data?.total_bids || 0,
+        next: null,
+        previous: null,
+        page_size: response.data?.bids?.length || 0,
+        total_pages: 1,
+        current_page: 1
+      }
     };
 
     return {
@@ -699,5 +729,22 @@ export async function closeAuction(adId: number) {
 
 // Legacy function for backwards compatibility
 export const getAuctionBids = getAdBids;
+
+/**
+ * Get detailed bid history for a specific auction with company information
+ */
+export const getAuctionBidHistory = async (auctionId: number): Promise<ApiResponse<any>> => {
+  try {
+    const response = await apiGet<any>(`/bids/ad/${auctionId}/history/`, false);
+    return response;
+  } catch (error) {
+
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to fetch auction bid history',
+      status: 500
+    };
+  }
+};
 
 
