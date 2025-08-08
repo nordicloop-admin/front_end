@@ -93,20 +93,13 @@ export default function AuctionDetail() {
       // For each current bid, fetch its complete history
       for (const bid of currentBids) {
         try {
-          // Import auth service at the top of the function
-          const { getAccessToken } = await import('@/services/auth');
-          const token = getAccessToken();
+          // Import API service to use dynamic URL
+          const { apiGet } = await import('@/services/api');
 
-          const historyResponse = await fetch(`http://localhost:8000/api/bids/${bid.id}/history/`, {
-            headers: {
-              'Content-Type': 'application/json',
-              ...(token && { 'Authorization': `Bearer ${token}` })
-            }
-          });
+          const historyResponse = await apiGet(`/bids/${bid.id}/history/`, true);
 
-          if (historyResponse.ok) {
-            const historyData = await historyResponse.json();
-            const bidHistory = historyData.history || [];
+          if (!historyResponse.error && historyResponse.data) {
+            const bidHistory = (historyResponse.data as any).history || [];
 
 
 
