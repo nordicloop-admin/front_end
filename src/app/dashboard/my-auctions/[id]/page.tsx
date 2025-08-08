@@ -74,43 +74,90 @@ export default function AuctionDetail() {
     });
   };
 
-  // Function to fetch bids for an auction
-  const fetchBidsForAuction = (auctionId: number) => {
-    console.log('Fetching bids for auction:', auctionId);
+  // Function to fetch complete bid history for an auction (including historical changes)
+  const fetchCompleteBidHistory = async (auctionId: number) => {
+    console.log('Fetching complete bid history for auction:', auctionId);
 
-    getAuctionBids(auctionId)
-      .then(bidsResponse => {
-        console.log('Bids response:', bidsResponse);
-        if (!bidsResponse.error && bidsResponse.data) {
-          const bids = bidsResponse.data.bids || [];
-          const totalBids = bidsResponse.data.total_bids || bids.length;
-          console.log('Found bids:', bids.length, 'Total bids:', totalBids);
+    try {
+      // First, get all current bids for the auction
+      const bidsResponse = await getAuctionBids(auctionId);
 
-          // Format bids for display
-          const formattedBids = bids.map((bid: any) => ({
-            bidder: bid.company_name || bid.bidder_name || 'Anonymous',
-            amount: `${bid.bid_price_per_unit} SEK`,
-            totalValue: `${bid.total_bid_value} SEK`,
-            volume: `${bid.volume_requested} kg`,
-            date: bid.created_at,
-            status: bid.status
-          }));
+      if (bidsResponse.error || !bidsResponse.data) {
+        console.log('No bids data or error:', bidsResponse.error);
+        return;
+      }
 
-          // Update auction state with bid data
-          setAuction((prevAuction: any) => ({
-            ...prevAuction,
-            bidHistory: formattedBids,
-            totalBids: totalBids,
-            currentBid: formattedBids.length > 0 ? formattedBids[0].amount : null,
-            highestBid: formattedBids.length > 0 ? formattedBids[0].amount : null
-          }));
-        } else {
-          console.log('No bids data or error:', bidsResponse.error);
+      const currentBids = bidsResponse.data.bids || [];
+      const totalBids = bidsResponse.data.total_bids || currentBids.length;
+      console.log('Found current bids:', currentBids.length, 'Total bids:', totalBids);
+
+      // Collect all historical entries
+      const allHistoryEntries: any[] = [];
+
+      // For each current bid, fetch its complete history
+      for (const bid of currentBids) {
+        try {
+          // Import auth service at the top of the function
+          const { getAccessToken } = await import('@/services/auth');
+          const token = getAccessToken();
+
+          const historyResponse = await fetch(`http://localhost:8000/api/bids/${bid.id}/history/`, {
+            headers: {
+              'Content-Type': 'application/json',
+              ...(token && { 'Authorization': `Bearer ${token}` })
+            }
+          });
+
+          if (historyResponse.ok) {
+            const historyData = await historyResponse.json();
+            const bidHistory = historyData.history || [];
+
+            console.log(`Bid ${bid.id} history:`, bidHistory);
+
+            // Format each history entry as a separate row
+            bidHistory.forEach((entry: any, index: number) => {
+              const formattedEntry = {
+                bidder: bid.company_name || bid.bidder_name || 'Anonymous',
+                amount: `${entry.new_price} SEK`,
+                totalValue: `${parseFloat(entry.new_price) * parseFloat(entry.new_volume)} SEK`,
+                volume: `${entry.new_volume} kg`,
+                date: entry.timestamp,
+                status: 'active',
+                changeReason: entry.change_reason,
+                previousAmount: entry.previous_price ? `${entry.previous_price} SEK` : null,
+                bidId: bid.id,
+                historyIndex: index,
+                isLatest: index === 0 // First entry is the latest
+              };
+
+              console.log(`Adding history entry:`, formattedEntry);
+              allHistoryEntries.push(formattedEntry);
+            });
+          } else {
+            console.error(`Failed to fetch history for bid ${bid.id}:`, historyResponse.status, historyResponse.statusText);
+          }
+        } catch (error) {
+          console.error(`Error fetching history for bid ${bid.id}:`, error);
         }
-      })
-      .catch(error => {
-        console.error('Error fetching bids:', error);
-      });
+      }
+
+      // Sort all entries by date (newest first)
+      allHistoryEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+      console.log('Complete bid history entries:', allHistoryEntries.length);
+
+      // Update auction state with complete bid history
+      setAuction((prevAuction: any) => ({
+        ...prevAuction,
+        bidHistory: allHistoryEntries,
+        totalBids: totalBids,
+        currentBid: allHistoryEntries.length > 0 ? allHistoryEntries[0].amount : null,
+        highestBid: allHistoryEntries.length > 0 ? allHistoryEntries[0].amount : null
+      }));
+
+    } catch (error) {
+      console.error('Error fetching complete bid history:', error);
+    }
   };
 
   // Calculate step completion based on material category
@@ -217,8 +264,8 @@ export default function AuctionDetail() {
 
             setAuction(formattedAuction);
 
-            // Fetch bids for this auction - moved outside to ensure it's always called
-            fetchBidsForAuction(adData.id);
+            // Fetch complete bid history for this auction
+            fetchCompleteBidHistory(adData.id);
           } else {
             // Fallback to old API if enhanced endpoint fails
             return getAuctionById(params.id as string);
@@ -250,8 +297,8 @@ export default function AuctionDetail() {
             };
             setAuction(formattedAuction);
 
-            // Also fetch bids for fallback path
-            fetchBidsForAuction(apiAuction.id);
+            // Also fetch complete bid history for fallback path
+            fetchCompleteBidHistory(apiAuction.id);
           }
         })
         .catch(_error => {
@@ -821,6 +868,7 @@ export default function AuctionDetail() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Company</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Price per Unit</th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Volume</th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Value</th>
@@ -828,20 +876,43 @@ export default function AuctionDetail() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {auction.bidHistory.map((bid: any, index: number) => (
-                        <tr key={index} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm text-gray-900 flex items-center">
-                            <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mr-2">
-                              <User className="w-3 h-3 text-gray-600" />
-                            </div>
-                            {bid.bidder}
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">{bid.amount}</td>
-                          <td className="px-4 py-3 text-sm text-gray-700">{bid.volume}</td>
-                          <td className="px-4 py-3 text-sm font-medium text-green-600">{bid.totalValue}</td>
-                          <td className="px-4 py-3 text-sm text-gray-500">{formatDate(bid.date)}</td>
-                        </tr>
-                      ))}
+                      {auction.bidHistory.map((bid: any, index: number) => {
+                        const isUpdate = bid.changeReason === 'bid_updated';
+                        const isInitial = bid.changeReason === 'bid_placed';
+
+                        return (
+                          <tr key={`${bid.bidId}-${bid.historyIndex}-${index}`} className={`hover:bg-gray-50 ${
+                            bid.isLatest ? 'bg-green-50' : ''
+                          }`}>
+                            <td className="px-4 py-3 text-sm text-gray-900 flex items-center">
+                              <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mr-2">
+                                <User className="w-3 h-3 text-gray-600" />
+                              </div>
+                              <div>
+                                <div className="font-medium">{bid.bidder}</div>
+                                {bid.isLatest && (
+                                  <div className="text-xs text-green-600 font-medium">Current Bid</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                isInitial
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : isUpdate
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {isInitial ? 'Initial Bid' : isUpdate ? 'Updated Bid' : 'Bid'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">{bid.amount}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{bid.volume}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-green-600">{bid.totalValue}</td>
+                            <td className="px-4 py-3 text-sm text-gray-500">{formatDate(bid.date)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
