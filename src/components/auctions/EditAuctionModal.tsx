@@ -2308,10 +2308,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       onClose={onClose}
       maxWidth="4xl"
       showCloseButton={false}
-      className="overflow-hidden flex flex-col"
+      className="h-[90vh] max-h-[90vh] flex flex-col p-0"
     >
+      <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Edit Auction</h2>
             <p className="text-sm text-gray-600">
@@ -2326,9 +2327,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           </button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 min-h-0">
           {/* Steps Sidebar */}
-          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
+          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto flex-shrink-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="space-y-3">
               {steps.map((step, _index) => {
                 const status = getStepStatus(step.id);
@@ -2405,9 +2406,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0">
             {/* Step Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               <div className="max-w-2xl">
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -2440,7 +2441,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
               <div className="flex space-x-3">
                 <button
                   onClick={() => {
@@ -2507,6 +2508,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             </div>
           </div>
         </div>
+      </div>
     </Modal>
   );
 }
