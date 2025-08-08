@@ -68,7 +68,6 @@ export async function apiGet<T>(
       data = await response.json();
     } else {
       const text = await response.text();
-      // Non-JSON response handling (removed console.log for production)
 
       try {
         // Try to parse it anyway in case the content-type header is wrong
@@ -102,7 +101,6 @@ export async function apiGet<T>(
       status: response.status,
     };
   } catch (error) {
-    // Error handling (removed console.error for production)
     return {
       data: null,
       error: error instanceof Error ? error.message : 'An error occurred',
@@ -130,7 +128,6 @@ export async function apiPost<T>(
     const url = `${API_BASE_URL}${endpoint}`;
 
     // Log the request for debugging (remove in production)
-    // console.log(`API POST Request to ${url}:`, { headers, body });
 
     const response = await fetch(url, {
       method: 'POST',
@@ -139,7 +136,6 @@ export async function apiPost<T>(
     });
 
     // Log the raw response for debugging (remove in production)
-    // console.log(`API Response from ${url}:`, { status: response.status, statusText: response.statusText });
 
     let data;
     const contentType = response.headers.get('content-type');
@@ -149,7 +145,6 @@ export async function apiPost<T>(
     } else {
       const text = await response.text();
       // Log non-JSON response for debugging (remove in production)
-      // console.log(`Non-JSON response from ${url}:`, text);
 
       try {
         // Try to parse it anyway in case the content-type header is wrong
@@ -165,7 +160,6 @@ export async function apiPost<T>(
     }
 
     // Log the parsed data for debugging (remove in production)
-    // console.log(`Parsed data from ${url}:`, data);
 
     if (!response.ok) {
       // For error responses, preserve the full error structure
@@ -187,7 +181,6 @@ export async function apiPost<T>(
     };
   } catch (error) {
     // Log the error for debugging (remove in production)
-    // console.error('API error:', error);
 
     return {
       data: null,
@@ -215,11 +208,7 @@ export async function apiPut<T>(
     const headers = getHeaders(requiresAuth, token);
     const url = `${API_BASE_URL}${endpoint}`;
 
-    console.log(`=== API PUT DEBUG ===`);
-    console.log(`URL: ${url}`);
-    console.log(`Headers:`, headers);
-    console.log(`Body:`, body);
-    console.log(`=== END API PUT DEBUG ===`);
+
 
     const response = await fetch(url, {
       method: 'PUT',
@@ -367,14 +356,7 @@ export async function apiPutFormData<T>(
     const url = `${API_BASE_URL}${endpoint}`;
 
     // Debug: Log FormData contents properly (FormData can't be JSON.stringified)
-    // eslint-disable-next-line no-console
-    console.log('apiPutFormData - Endpoint:', endpoint);
-    // eslint-disable-next-line no-console
-    console.log('apiPutFormData - FormData contents:');
-    for (const [key, value] of formData.entries()) {
-      // eslint-disable-next-line no-console
-      console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size}b)` : value);
-    }
+
 
     const response = await fetch(url, {
       method: 'PUT',

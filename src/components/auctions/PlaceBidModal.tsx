@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
+import { ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 
 interface PlaceBidModalProps {

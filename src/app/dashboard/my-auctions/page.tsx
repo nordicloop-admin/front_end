@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Package, Filter, Search, Plus, Loader2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+
 import { AuctionData } from '@/components/auctions/EditAuctionModal';
 import MyAuctionCard from '@/components/auctions/MyAuctionCard';
 import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';

@@ -76,20 +76,16 @@ export default function AuctionDetail() {
 
   // Function to fetch complete bid history for an auction (including historical changes)
   const fetchCompleteBidHistory = async (auctionId: number) => {
-    console.log('Fetching complete bid history for auction:', auctionId);
-
     try {
       // First, get all current bids for the auction
       const bidsResponse = await getAuctionBids(auctionId);
 
       if (bidsResponse.error || !bidsResponse.data) {
-        console.log('No bids data or error:', bidsResponse.error);
         return;
       }
 
       const currentBids = bidsResponse.data.bids || [];
       const totalBids = bidsResponse.data.total_bids || currentBids.length;
-      console.log('Found current bids:', currentBids.length, 'Total bids:', totalBids);
 
       // Collect all historical entries
       const allHistoryEntries: any[] = [];
@@ -112,7 +108,7 @@ export default function AuctionDetail() {
             const historyData = await historyResponse.json();
             const bidHistory = historyData.history || [];
 
-            console.log(`Bid ${bid.id} history:`, bidHistory);
+
 
             // Format each history entry as a separate row
             bidHistory.forEach((entry: any, index: number) => {
@@ -130,21 +126,21 @@ export default function AuctionDetail() {
                 isLatest: index === 0 // First entry is the latest
               };
 
-              console.log(`Adding history entry:`, formattedEntry);
+
               allHistoryEntries.push(formattedEntry);
             });
           } else {
-            console.error(`Failed to fetch history for bid ${bid.id}:`, historyResponse.status, historyResponse.statusText);
+
           }
-        } catch (error) {
-          console.error(`Error fetching history for bid ${bid.id}:`, error);
+        } catch (_error) {
+
         }
       }
 
       // Sort all entries by date (newest first)
       allHistoryEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      console.log('Complete bid history entries:', allHistoryEntries.length);
+
 
       // Update auction state with complete bid history
       setAuction((prevAuction: any) => ({
@@ -155,8 +151,8 @@ export default function AuctionDetail() {
         highestBid: allHistoryEntries.length > 0 ? allHistoryEntries[0].amount : null
       }));
 
-    } catch (error) {
-      console.error('Error fetching complete bid history:', error);
+    } catch (_error) {
+
     }
   };
 
@@ -329,7 +325,6 @@ export default function AuctionDetail() {
       });
 
       // Reload the auction data from backend to get fresh data
-      console.log('Reloading auction data after edit...');
       try {
         const response = await fetch(`/api/ads/${params.id}/`, {
           headers: {
@@ -369,13 +364,13 @@ export default function AuctionDetail() {
             };
 
             setAuction(refreshedAuction);
-            console.log('Auction data reloaded successfully');
+
           }
         } else {
-          console.warn('Failed to reload auction data:', response.status);
+
         }
-      } catch (reloadError) {
-        console.warn('Failed to reload auction data after edit:', reloadError);
+      } catch (_reloadError) {
+
         // Don't show error to user, edit was successful
       }
 
@@ -447,11 +442,11 @@ export default function AuctionDetail() {
     const loadingToast = toast.loading('Publishing auction...');
 
     try {
-      console.log('Activating auction with ID:', params.id);
+
 
       // Send activate request to API
       const response = await activateAd(params.id as string);
-      console.log('Activate response:', response);
+
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);
@@ -507,10 +502,10 @@ export default function AuctionDetail() {
     const loadingToast = toast.loading('Unpublishing auction...');
 
     try {
-      console.log('Deactivating auction with ID:', params.id);
+
       // Send deactivate request to API
       const response = await deactivateAd(params.id as string);
-      console.log('Deactivate response:', response);
+
 
       // Dismiss loading toast
       toast.dismiss(loadingToast);

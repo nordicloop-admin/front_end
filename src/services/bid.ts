@@ -2,7 +2,7 @@
  * Bid service for handling bid creation and management
  * Based on Nordic Loop Bidding System API
  */
-import { apiPost, apiGet, apiPut, apiDelete } from './api';
+import { apiPost, apiGet, apiPut, apiDelete, ApiResponse } from './api';
 
 /**
  * Interface for bid creation data
@@ -738,10 +738,11 @@ export const getAuctionBidHistory = async (auctionId: number): Promise<ApiRespon
     const response = await apiGet<any>(`/bids/ad/${auctionId}/history/`, false);
     return response;
   } catch (error) {
-    console.error('Error fetching auction bid history:', error);
+
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'Failed to fetch auction bid history'
+      error: error instanceof Error ? error.message : 'Failed to fetch auction bid history',
+      status: 500
     };
   }
 };

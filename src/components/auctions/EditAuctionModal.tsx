@@ -515,8 +515,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     if (isOpen && auction.id && !adDataLoaded) {
       const fetchCompleteAdData = async () => {
         try {
-          console.log('=== FETCHING COMPLETE AD DATA ===');
-          console.log('Ad ID:', auction.id);
+
 
           // Use the existing API to get complete ad details
           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ads/${auction.id}/`, {
@@ -529,14 +528,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
           if (response.ok) {
             const result = await response.json();
-            console.log('Complete ad data:', result);
+
             setCompleteAdData(result.data);
             setAdDataLoaded(true);
           } else {
-            console.error('Failed to fetch complete ad data:', response.status, response.statusText);
+
           }
-        } catch (error) {
-          console.error('Error fetching complete ad data:', error);
+        } catch (_error) {
+
         }
       };
 
@@ -676,40 +675,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       
       const materialType = auction.category.toLowerCase();
 
-      // Log auction data to understand what fields are available
-      console.log('=== AUCTION INITIALIZATION DEBUG ===');
-      console.log('Auction data for initialization:', auction);
-      console.log('Complete ad data:', completeAdData);
-      console.log('Available auction fields:', Object.keys(auction));
-      console.log('Categories loaded:', categoriesLoaded);
 
-      // Debug specific field values for form selection
-      console.log('=== FIELD VALUES DEBUG ===');
-      console.log('Origin (raw):', completeAdData.origin);
-      console.log('Contamination (raw):', completeAdData.contamination);
-      console.log('Additives (raw):', completeAdData.additives);
-      console.log('Delivery options (raw):', completeAdData.delivery_options);
-      console.log('Available quantity:', completeAdData.available_quantity);
-      console.log('Unit of measurement:', completeAdData.unit_of_measurement);
-      console.log('Starting bid price:', completeAdData.starting_bid_price);
-      console.log('Auction duration:', completeAdData.auction_duration);
-      console.log('Title:', completeAdData.title);
-      console.log('Description:', completeAdData.description);
-      console.log('Keywords:', completeAdData.keywords);
-      console.log('Material image:', completeAdData.material_image);
-
-      // Debug specific field values
-      console.log('=== FIELD VALUES DEBUG ===');
-      console.log('Origin (raw):', completeAdData.origin);
-      console.log('Origin (display):', completeAdData.origin_display);
-      console.log('Contamination (raw):', completeAdData.contamination);
-      console.log('Contamination (display):', completeAdData.contamination_display);
-      console.log('Additives (raw):', completeAdData.additives);
-      console.log('Additives (display):', completeAdData.additives_display);
-      console.log('Delivery options (raw):', completeAdData.delivery_options);
-      console.log('Delivery options (display):', completeAdData.delivery_options_display);
-      console.log('Categories count:', categories.length);
-      console.log('=== END AUCTION INITIALIZATION DEBUG ===');
 
       setStepData({
         // Step 1 - Use complete ad data
@@ -779,15 +745,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       // Reset image load error when new data is loaded
       setImageLoadError(false);
 
-      console.log('=== STEP DATA SET ===');
-      console.log('Step data after initialization:', {
-        category: auction.category,
-        subcategory: auction.subcategory,
-        specificMaterial: (auction as any).specific_material || '',
-        packaging: (auction as any).packaging || '',
-        materialFrequency: (auction as any).material_frequency || ''
-      });
-      console.log('=== END STEP DATA SET ===');
+
 
       // Set steps based on material type (only if not already set correctly)
       const expectedSteps = getStepsByMaterialType(materialType);
@@ -795,7 +753,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         setSteps(expectedSteps);
       }
     }
-  }, [auction, categoriesLoaded, adDataLoaded, completeAdData]);
+  }, [auction, categoriesLoaded, adDataLoaded, completeAdData, categories.length, steps]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -968,12 +926,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       const currentStepData = getCurrentStepData();
 
       if (!currentStepData && activeStep !== 8) {
-        console.error(`=== NO STEP DATA ERROR ===`);
-        console.error(`Active step: ${activeStep}`);
-        console.error(`Step data:`, stepData);
-        console.error(`Categories loaded:`, categoriesLoaded);
-        console.error(`Categories:`, categories);
-        console.error(`=== END NO STEP DATA ERROR ===`);
         throw new Error(`No data to update for step ${activeStep}`);
       }
 
@@ -1007,21 +959,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         }
       } else {
         // Use step-by-step update for other steps
-        console.log(`=== FRONTEND DEBUG ===`);
-        console.log(`Updating step ${activeStep} with data:`, currentStepData);
-        console.log(`Ad ID: ${auction.id} (parsed: ${parseInt(auction.id)})`);
-        console.log(`API endpoint will be: /api/ads/${parseInt(auction.id)}/step/${activeStep}/`);
 
         updateResult = await adUpdateService.updateAdStep(parseInt(auction.id), activeStep, currentStepData);
-        console.log(`Step ${activeStep} update result:`, updateResult);
-        console.log(`=== END FRONTEND DEBUG ===`);
       }
 
       if (!updateResult.success) {
-        console.error(`Step ${activeStep} update failed:`, updateResult);
         // Handle validation errors from backend
         if (updateResult.details) {
-          console.error('Validation errors:', updateResult.details);
           setValidationErrors(updateResult.details);
           setShowValidationErrors(true);
           throw new Error('Please fix the validation errors and try again');
@@ -1052,7 +996,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       });
 
       // Reload complete ad data to refresh step completion status
-      console.log('Reloading ad data after successful save...');
       try {
         const refreshedData = await adCreationService.getAdDetails(parseInt(auction.id));
         if (refreshedData.success && refreshedData.data) {
@@ -1123,10 +1066,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             currentImageUrl: freshData.material_image || ''
           });
 
-          console.log('Ad data and step data reloaded successfully');
         }
-      } catch (reloadError) {
-        console.warn('Failed to reload ad data after save:', reloadError);
+      } catch (_reloadError) {
         // Don't throw error here, save was successful
       }
 
@@ -1153,29 +1094,24 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       case 1:
         // Material Type step - match creation form structure exactly
         if (!stepData.category) {
-          console.log('Step 1: No category selected');
           return null;
         }
 
         const selectedCategory = categories.find(cat => cat.name === stepData.category);
         if (!selectedCategory) {
-          console.log('Step 1: Category not found:', stepData.category);
           return null;
         }
 
         const selectedSubcategory = selectedCategory.subcategories.find(sub => sub.name === stepData.subcategory);
         if (!selectedSubcategory) {
-          console.log('Step 1: Subcategory not found:', stepData.subcategory);
           return null;
         }
 
         if (!stepData.packaging) {
-          console.log('Step 1: No packaging selected');
           return null;
         }
 
         if (!stepData.materialFrequency) {
-          console.log('Step 1: No material frequency selected');
           return null;
         }
 
@@ -1187,14 +1123,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency)
         };
 
-        console.log('Step 1 data being sent:', step1Data);
         return step1Data;
         
       case 2:
         // Specifications step - match NEW backend API format
         // Backend expects: specification_color, specification_material_grade, specification_material_form, specification_additional
-        console.log('Step 2: Building specification data');
-        console.log('Step 2 stepData:', { grade: stepData.grade, color: stepData.color, form: stepData.form, additionalSpecs: stepData.additionalSpecs });
 
         const step2Data: any = {};
 
@@ -1218,11 +1151,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           step2Data.specification_additional = stepData.additionalSpecs.filter(spec => spec.trim()).join(', ');
         }
 
-        console.log('Step 2 data being sent:', step2Data);
 
         // Ensure at least one field is provided (backend requirement)
         if (Object.keys(step2Data).length === 0) {
-          console.log('Step 2: No specification data provided');
           return null;
         }
 
@@ -1231,7 +1162,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       case 3:
         // Material Origin step - match creation form structure
         if (!stepData.origin) {
-          console.log('Step 3: No origin selected');
           return null;
         }
 
@@ -1239,30 +1169,19 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           origin: stepData.origin // Already using correct ID
         };
 
-        console.log('Step 3 data being sent:', step3Data);
         return step3Data;
         
       case 4:
         // Contamination step - match creation form structure
-        console.log('Step 4: Building contamination data');
-        console.log('Step 4 stepData:', {
-          contaminationLevel: stepData.contaminationLevel,
-          additives: stepData.additives,
-          storageConditions: stepData.storageConditions
-        });
-
         if (!stepData.contaminationLevel) {
-          console.log('Step 4: No contamination level selected');
           return null;
         }
 
         if (!stepData.additives || stepData.additives.length === 0) {
-          console.log('Step 4: No additives selected');
           return null;
         }
 
         if (!stepData.storageConditions) {
-          console.log('Step 4: No storage conditions selected');
           return null;
         }
 
@@ -1272,20 +1191,16 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           storage_conditions: stepData.storageConditions // Already using correct ID
         };
 
-        console.log('Step 4 data being sent:', step4Data);
         return step4Data;
         
       case 5:
         // Processing Methods step - use method IDs directly
-        console.log('Step 5: Building processing methods data');
-        console.log('Step 5 stepData:', { processingMethods: stepData.processingMethods });
 
         const methods = Array.isArray(stepData.processingMethods)
           ? stepData.processingMethods
           : (stepData.processingMethods ? [stepData.processingMethods] : []);
 
         if (!methods || methods.length === 0) {
-          console.log('Step 5: No processing methods selected');
           return null;
         }
 
@@ -1293,16 +1208,12 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           processing_methods: methods
         };
 
-        console.log('Step 5 data being sent:', step5Data);
         return step5Data;
         
       case 6:
         // Location & Logistics step - match creation form structure
-        console.log('Step 6: Building location and logistics data');
-        console.log('Step 6 stepData:', { location: stepData.location });
 
         if (!stepData.location?.country || !stepData.location?.city) {
-          console.log('Step 6: Missing required location fields (country or city)');
           return null;
         }
 
@@ -1311,7 +1222,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           : (stepData.location?.deliveryOptions ? [stepData.location.deliveryOptions] : []);
 
         if (!deliveryOptions || deliveryOptions.length === 0) {
-          console.log('Step 6: No delivery options selected');
           return null;
         }
 
@@ -1327,7 +1237,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           delivery_options: deliveryOptions
         };
 
-        console.log('Step 6 data being sent:', step6Data);
         return step6Data;
         
       case 7:

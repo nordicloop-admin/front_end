@@ -11,7 +11,6 @@ import {
   getPricingData,
   getPricingPlans,
   getBaseFeatures,
-  getAdminPricingPlans,
   updatePricingPlan,
   createPricingPlan,
   deletePricingPlan,
@@ -44,7 +43,7 @@ interface PlanFeatureConfig {
 }
 
 const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' }) => {
-  console.log('PricingManagement component rendered');
+
   const [activeTab, setActiveTab] = useState<'plans' | 'features' | 'content'>('plans');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,18 +70,14 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
 
   // Debug state changes
   useEffect(() => {
-    console.log('pricingPlans state changed:', pricingPlans);
   }, [pricingPlans]);
 
   const loadData = async () => {
-    console.log('loadData called');
     try {
       setIsLoading(true);
       setError(null);
 
-      console.log('Fetching pricing plans...');
       const plansResponse = await getPricingPlans();
-      console.log('Plans response:', plansResponse);
 
       if (plansResponse.error) {
         throw new Error(plansResponse.error);
@@ -90,18 +85,13 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
 
       // Handle paginated response structure
       const plansData = plansResponse.data;
-      console.log('Plans data:', plansData);
 
       let finalPlans = [];
       if (plansData && typeof plansData === 'object' && 'results' in plansData) {
-        console.log('Using paginated results:', plansData.results);
         finalPlans = Array.isArray(plansData.results) ? plansData.results : [];
       } else {
-        console.log('Using direct array:', plansData);
         finalPlans = Array.isArray(plansData) ? plansData : [];
       }
-
-      console.log('Setting pricing plans to:', finalPlans);
       setPricingPlans(finalPlans);
 
       // Load other data
@@ -110,36 +100,26 @@ const PricingManagement: React.FC<PricingManagementProps> = ({ className = '' })
         getPricingData()
       ]);
 
-      if (featuresResponse.error) {
-        console.warn('Features error:', featuresResponse.error);
-      } else {
+      if (!featuresResponse.error) {
         const featuresData = featuresResponse.data;
-        console.log('Features data:', featuresData);
 
         // Handle paginated response structure for features
         let finalFeatures = [];
         if (featuresData && typeof featuresData === 'object' && 'results' in featuresData) {
-          console.log('Using paginated features results:', featuresData.results);
           finalFeatures = Array.isArray(featuresData.results) ? featuresData.results : [];
         } else {
-          console.log('Using direct features array:', featuresData);
           finalFeatures = Array.isArray(featuresData) ? featuresData : [];
         }
 
-        console.log('Setting base features to:', finalFeatures);
         setBaseFeatures(finalFeatures);
       }
 
-      if (contentResponse.error) {
-        console.warn('Content error:', contentResponse.error);
-      } else {
+      if (!contentResponse.error) {
         setPageContent(contentResponse.data?.data?.page_content || null);
       }
     } catch (_err) {
-      console.error('Error loading pricing data:', _err);
       setError(_err instanceof Error ? _err.message : 'Failed to load pricing data');
     } finally {
-      console.log('Setting isLoading to false');
       setIsLoading(false);
     }
   };

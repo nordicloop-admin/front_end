@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown, Bell, X } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown, Bell } from 'lucide-react';
 import { getAdminAuction, AdminAuction, updateAuctionStatus } from '@/services/auctions';
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
@@ -38,19 +38,15 @@ export default function AuctionDetailPage() {
 
   // Function to fetch complete bid history for an auction (including historical changes)
   const fetchCompleteBidHistory = async (auctionId: number) => {
-    console.log('Fetching complete bid history for auction:', auctionId);
-
     try {
       // First, get all current bids for the auction
       const bidsResponse = await getAuctionBids(auctionId);
 
       if (bidsResponse.error || !bidsResponse.data) {
-        console.log('No bids data or error:', bidsResponse.error);
         return;
       }
 
       const currentBids = bidsResponse.data.bids || [];
-      console.log('Found current bids:', currentBids.length);
 
       // Set current bids for the existing table
       setBids(currentBids);
@@ -76,7 +72,7 @@ export default function AuctionDetailPage() {
             const historyData = await historyResponse.json();
             const bidHistoryData = historyData.history || [];
 
-            console.log(`Bid ${bid.id} history:`, bidHistoryData);
+
 
             // Format each history entry as a separate row
             bidHistoryData.forEach((entry: any, index: number) => {
@@ -95,27 +91,27 @@ export default function AuctionDetailPage() {
                 isLatest: index === 0 // First entry is the latest
               };
 
-              console.log(`Adding history entry:`, formattedEntry);
+
               allHistoryEntries.push(formattedEntry);
             });
           } else {
-            console.error(`Failed to fetch history for bid ${bid.id}:`, historyResponse.status, historyResponse.statusText);
+
           }
-        } catch (error) {
-          console.error(`Error fetching history for bid ${bid.id}:`, error);
+        } catch (_error) {
+
         }
       }
 
       // Sort all entries by date (newest first)
       allHistoryEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-      console.log('Complete bid history entries:', allHistoryEntries.length);
+
 
       // Set the complete bid history
       setBidHistory(allHistoryEntries);
 
-    } catch (error) {
-      console.error('Error fetching complete bid history:', error);
+    } catch (_error) {
+
     }
   };
 

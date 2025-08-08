@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { getAdminCompany, updateCompanyStatus, getCompanyStatistics, type AdminCompany, type CompanyStatistics, type TransactionHistoryItem } from '@/services/company';
 import { createNotification, type CreateNotificationRequest } from '@/services/notifications';
 import { toast } from 'sonner';
-import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink, Bell, X } from 'lucide-react';
+import { ArrowLeft, Building, Mail, Phone, MapPin, Calendar, User, Plus, Edit, Trash2, BarChart3, ExternalLink, Bell } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 
 export default function CompanyDetailPage() {

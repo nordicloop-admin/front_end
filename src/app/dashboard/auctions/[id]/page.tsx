@@ -7,7 +7,7 @@ import { ArrowLeft, Clock, Building, MapPin, Package, ArrowUpRight, AlertCircle 
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 import useBidding from '@/hooks/useBidding';
 import { getAuctionById, getAdDetails } from '@/services/auction';
-import { getAuctionBids, getAuctionBidHistory } from '@/services/bid';
+import { getAuctionBidHistory } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { getFullImageUrl } from '@/utils/imageUtils';
 
@@ -242,29 +242,14 @@ export default function AuctionDetail() {
             setAuction(formattedAuction);
 
             // Fetch bid history for this auction
-            // Debug logging to understand the auction status
-            console.log('Auction status check:', {
-              is_active: adData.is_active,
-              is_complete: adData.is_complete,
-              status: adData.status,
-              completion_status: adData.completion_status
-            });
-
             // Fetch bid history for active auctions (regardless of completion status)
             if (adData.is_active) {
-              console.log('Fetching bid history for auction:', adData.id);
               getAuctionBidHistory(adData.id)
                 .then(bidHistoryResponse => {
-                  console.log('Bid history response:', bidHistoryResponse);
                   if (!bidHistoryResponse.error && bidHistoryResponse.data) {
                     const bidHistoryData = bidHistoryResponse.data.bid_history || [];
                     setBidHistory(bidHistoryData);
                     setTotalBids(bidHistoryResponse.data.total_bids || 0);
-
-                    console.log('Setting bid history:', {
-                      bidHistoryData,
-                      totalBids: bidHistoryResponse.data.total_bids || 0
-                    });
 
                     // Update auction with bid history for backward compatibility
                     const formattedBids = bidHistoryData.map((bid: any) => ({
@@ -278,16 +263,11 @@ export default function AuctionDetail() {
                       bidHistory: formattedBids,
                       highestBid: formattedBids.length > 0 ? formattedBids[0].amount : null
                     }));
-                  } else {
-                    console.error('Bid history fetch failed:', bidHistoryResponse.error);
                   }
                 })
-                .catch(error => {
+                .catch(_error => {
                   // Error handling for bid history fetch failures
-                  console.error('Failed to fetch bid history:', error);
                 });
-            } else {
-              console.log('Auction is not active, skipping bid history fetch');
             }
           } else {
             // Fallback to old API if enhanced endpoint fails
@@ -592,7 +572,7 @@ export default function AuctionDetail() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {bidHistory.map((bid: any, index: number) => (
+                      {bidHistory.map((bid: any) => (
                         <tr key={bid.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 text-sm text-gray-900 font-medium">{bid.company_name}</td>
                           <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">
