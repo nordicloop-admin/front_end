@@ -679,7 +679,17 @@ export class AdUpdateService {
    */
   async updateAdStep(adId: number, step: number, data: any) {
     try {
+      console.log(`=== AD UPDATE SERVICE DEBUG ===`);
+      console.log(`updateAdStep called with:`);
+      console.log(`  adId: ${adId}`);
+      console.log(`  step: ${step}`);
+      console.log(`  data:`, data);
+      console.log(`  endpoint: /ads/${adId}/step/${step}/`);
+
       const response = await apiPut<AdCreationResponse | AdErrorResponse>(`/ads/${adId}/step/${step}/`, data, true);
+
+      console.log(`API response:`, response);
+      console.log(`=== END AD UPDATE SERVICE DEBUG ===`);
       
       if (response.error) {
         return {
@@ -694,6 +704,13 @@ export class AdUpdateService {
         data: response.data as AdCreationResponse
       };
     } catch (error) {
+      console.error(`=== CATCH BLOCK ERROR ===`);
+      console.error(`Error in updateAdStep:`, error);
+      console.error(`Error type:`, typeof error);
+      console.error(`Error message:`, error instanceof Error ? error.message : 'Unknown error');
+      console.error(`Error stack:`, error instanceof Error ? error.stack : 'No stack');
+      console.error(`=== END CATCH BLOCK ERROR ===`);
+
       return {
         success: false,
         error: error instanceof Error ? error.message : `Failed to update step ${step}`,

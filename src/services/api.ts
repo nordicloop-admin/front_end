@@ -215,6 +215,12 @@ export async function apiPut<T>(
     const headers = getHeaders(requiresAuth, token);
     const url = `${API_BASE_URL}${endpoint}`;
 
+    console.log(`=== API PUT DEBUG ===`);
+    console.log(`URL: ${url}`);
+    console.log(`Headers:`, headers);
+    console.log(`Body:`, body);
+    console.log(`=== END API PUT DEBUG ===`);
+
     const response = await fetch(url, {
       method: 'PUT',
       headers,

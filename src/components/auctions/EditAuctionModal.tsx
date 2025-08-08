@@ -5,7 +5,7 @@ import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, R
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
-// Removed adUpdateService import - frontend-only edit mode
+import { adUpdateService } from '@/services/ads';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { convertLabelToValue } from '@/utils/adValidation';
@@ -436,10 +436,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepData, setStepData] = useState<StepData>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [_error, setError] = useState<string | null>(null);
+  const [completeAdData, setCompleteAdData] = useState<any>(null);
+  const [adDataLoaded, setAdDataLoaded] = useState(false);
   // Initialize steps based on provided materialType or auction category
   // Default to non-plastic steps (4 steps) if no material type is available yet
   const initialMaterialType = materialType || auction?.category?.toLowerCase() || '';
@@ -490,6 +493,40 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
     loadCategories();
   }, []);
+
+  // Fetch complete ad data when modal opens
+  useEffect(() => {
+    if (isOpen && auction.id && !adDataLoaded) {
+      const fetchCompleteAdData = async () => {
+        try {
+          console.log('=== FETCHING COMPLETE AD DATA ===');
+          console.log('Ad ID:', auction.id);
+
+          // Use the existing API to get complete ad details
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ads/${auction.id}/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('nordic_loop_access_token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            console.log('Complete ad data:', result);
+            setCompleteAdData(result.data);
+            setAdDataLoaded(true);
+          } else {
+            console.error('Failed to fetch complete ad data:', response.status, response.statusText);
+          }
+        } catch (error) {
+          console.error('Error fetching complete ad data:', error);
+        }
+      };
+
+      fetchCompleteAdData();
+    }
+  }, [isOpen, auction.id, adDataLoaded]);
 
   // Handle Google Maps place selection
   useEffect(() => {
@@ -561,7 +598,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
   // Initialize form data from auction
   useEffect(() => {
-    if (auction && categoriesLoaded) {
+    if (auction && categoriesLoaded && adDataLoaded && completeAdData) {
       const volumeParts = auction.volume.split(' ');
       const volumeValue = parseFloat(volumeParts[0]) || 0;
       const volumeUnit = volumeParts[1] || '';
@@ -623,11 +660,23 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       
       const materialType = auction.category.toLowerCase();
 
+      // Log auction data to understand what fields are available
+      console.log('=== AUCTION INITIALIZATION DEBUG ===');
+      console.log('Auction data for initialization:', auction);
+      console.log('Complete ad data:', completeAdData);
+      console.log('Available auction fields:', Object.keys(auction));
+      console.log('Categories loaded:', categoriesLoaded);
+      console.log('Categories count:', categories.length);
+      console.log('=== END AUCTION INITIALIZATION DEBUG ===');
+
       setStepData({
-        // Step 1
-        category: auction.category,
-        subcategory: auction.subcategory,
+        // Step 1 - Use complete ad data
+        category: completeAdData.category_name || auction.category,
+        subcategory: completeAdData.subcategory_name || auction.subcategory,
         materialType: materialType,
+        specificMaterial: completeAdData.specific_material || '',
+        packaging: completeAdData.packaging || '',
+        materialFrequency: completeAdData.material_frequency || '',
 
         // Step 2: Initialize specifications data
         grade: grade || '',
@@ -649,13 +698,38 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         images: []
       });
 
+      console.log('=== STEP DATA SET ===');
+      console.log('Step data after initialization:', {
+        category: auction.category,
+        subcategory: auction.subcategory,
+        specificMaterial: (auction as any).specific_material || '',
+        packaging: (auction as any).packaging || '',
+        materialFrequency: (auction as any).material_frequency || ''
+      });
+      console.log('=== END STEP DATA SET ===');
+
       // Set steps based on material type (only if not already set correctly)
       const expectedSteps = getStepsByMaterialType(materialType);
       if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
         setSteps(expectedSteps);
       }
     }
-  }, [auction, categoriesLoaded]);
+  }, [auction, categoriesLoaded, adDataLoaded, completeAdData]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setActiveStep(1);
+      setStepData({});
+      setHasChanges(false);
+      setValidationErrors({});
+      setShowValidationErrors(false);
+      setUploadError(null);
+      setError(null);
+      setCompleteAdData(null);
+      setAdDataLoaded(false);
+    }
+  }, [isOpen]);
 
   const handleStepDataChange = useCallback((updates: Partial<StepData>) => {
     setStepData(prev => ({ ...prev, ...updates }));
@@ -810,38 +884,97 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     try {
       // Determine which step we're updating based on the current active step
       const currentStepData = getCurrentStepData();
-      
-      // Frontend-only edit functionality - no backend calls
-      // Just simulate success for now since we're removing backend connectivity
-      console.log('Frontend-only edit mode: Step data would be:', {
-        step: activeStep,
-        data: activeStep === 8 ? {
-          title: stepData.title || auction.name,
-          description: stepData.description || auction.description || '',
-          keywords: stepData.keywords?.join(', ') || '',
-          hasImage: stepData.images && stepData.images.length > 0
-        } : currentStepData
-      });
 
       if (!currentStepData && activeStep !== 8) {
+        console.error(`=== NO STEP DATA ERROR ===`);
+        console.error(`Active step: ${activeStep}`);
+        console.error(`Step data:`, stepData);
+        console.error(`Categories loaded:`, categoriesLoaded);
+        console.error(`Categories:`, categories);
+        console.error(`=== END NO STEP DATA ERROR ===`);
         throw new Error(`No data to update for step ${activeStep}`);
       }
 
-      // Convert step data back to auction format for the parent component
-      const updatedAuction: AuctionData = {
-        ...auction,
-        name: stepData.title || auction.name,
-        category: stepData.category || auction.category,
-        subcategory: stepData.subcategory || auction.subcategory,
-        description: stepData.description || auction.description,
-        basePrice: stepData.startingPrice ? `${stepData.startingPrice} ${stepData.currency || 'SEK'}` : auction.basePrice,
-        volume: stepData.availableQuantity && stepData.unit ? `${stepData.availableQuantity} ${stepData.unit}` : auction.volume,
-        keywords: stepData.keywords ? stepData.keywords.join(', ') : auction.keywords
-      };
+      // Use backend API to update the ad
+      let updateResult;
 
-      await onSubmit(updatedAuction);
+      if (activeStep === 8) {
+        // For step 8, handle title, description, keywords, and image
+        const title = stepData.title || auction.name;
+        const description = stepData.description || auction.description || '';
+        const keywords = stepData.keywords?.join(', ') || '';
+
+        // Check if there's a new image to upload
+        if (stepData.images && stepData.images.length > 0 && stepData.images[0] instanceof File) {
+          // Use step 8 specific method with image upload
+          updateResult = await adUpdateService.updateAdStep8WithImage(
+            parseInt(auction.id),
+            title,
+            description,
+            keywords,
+            stepData.images[0]
+          );
+        } else {
+          // Use step 8 specific method without image
+          updateResult = await adUpdateService.updateAdStep8WithImage(
+            parseInt(auction.id),
+            title,
+            description,
+            keywords
+          );
+        }
+      } else {
+        // Use step-by-step update for other steps
+        console.log(`=== FRONTEND DEBUG ===`);
+        console.log(`Updating step ${activeStep} with data:`, currentStepData);
+        console.log(`Ad ID: ${auction.id} (parsed: ${parseInt(auction.id)})`);
+        console.log(`API endpoint will be: /api/ads/${parseInt(auction.id)}/step/${activeStep}/`);
+
+        updateResult = await adUpdateService.updateAdStep(parseInt(auction.id), activeStep, currentStepData);
+        console.log(`Step ${activeStep} update result:`, updateResult);
+        console.log(`=== END FRONTEND DEBUG ===`);
+      }
+
+      if (!updateResult.success) {
+        console.error(`Step ${activeStep} update failed:`, updateResult);
+        // Handle validation errors from backend
+        if (updateResult.details) {
+          console.error('Validation errors:', updateResult.details);
+          setValidationErrors(updateResult.details);
+          setShowValidationErrors(true);
+          throw new Error('Please fix the validation errors and try again');
+        }
+        throw new Error(updateResult.error || 'Failed to update ad');
+      }
+
+      // Convert updated backend data back to auction format for the parent component
+      const backendData = updateResult.data?.data;
+      if (backendData) {
+        const updatedAuction: AuctionData = {
+          ...auction,
+          name: backendData.title || auction.name,
+          category: backendData.category || auction.category,
+          subcategory: backendData.subcategory || auction.subcategory,
+          description: backendData.description || auction.description,
+          basePrice: backendData.starting_bid_price ? `${backendData.starting_bid_price} ${backendData.currency || 'SEK'}` : auction.basePrice,
+          volume: backendData.available_quantity && backendData.unit_of_measurement ? `${backendData.available_quantity} ${backendData.unit_of_measurement}` : auction.volume,
+          keywords: backendData.keywords || auction.keywords
+        };
+
+        await onSubmit(updatedAuction);
+      }
+
       setHasChanges(false);
-      
+      toast.success('Changes saved successfully!', {
+        description: `Step ${activeStep} has been updated.`
+      });
+
+      // Close modal if requested
+      if (shouldCloseAfterSave) {
+        onClose();
+        setShouldCloseAfterSave(false);
+      }
+
       // Reset loading state on success
       setIsSubmitting(false);
     } catch (error) {
@@ -858,18 +991,43 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     switch (activeStep) {
       case 1:
         // Material Type step - match creation form structure exactly
-        if (!stepData.category) return null;
-        
+        if (!stepData.category) {
+          console.log('Step 1: No category selected');
+          return null;
+        }
+
         const selectedCategory = categories.find(cat => cat.name === stepData.category);
-        const selectedSubcategory = selectedCategory?.subcategories.find(sub => sub.name === stepData.subcategory);
-        
-        return {
-          category_id: selectedCategory?.id,
-          subcategory_id: selectedSubcategory?.id,
+        if (!selectedCategory) {
+          console.log('Step 1: Category not found:', stepData.category);
+          return null;
+        }
+
+        const selectedSubcategory = selectedCategory.subcategories.find(sub => sub.name === stepData.subcategory);
+        if (!selectedSubcategory) {
+          console.log('Step 1: Subcategory not found:', stepData.subcategory);
+          return null;
+        }
+
+        if (!stepData.packaging) {
+          console.log('Step 1: No packaging selected');
+          return null;
+        }
+
+        if (!stepData.materialFrequency) {
+          console.log('Step 1: No material frequency selected');
+          return null;
+        }
+
+        const step1Data = {
+          category_id: selectedCategory.id,
+          subcategory_id: selectedSubcategory.id,
           specific_material: stepData.specificMaterial || '',
-          packaging: convertLabelToValue('packaging', stepData.packaging || ''),
-          material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency || '')
+          packaging: convertLabelToValue('packaging', stepData.packaging),
+          material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency)
         };
+
+        console.log('Step 1 data being sent:', step1Data);
+        return step1Data;
         
       case 2:
         // Specifications step - match creation form structure exactly
@@ -2790,6 +2948,27 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     <>
                       <Save className="w-4 h-4" />
                       <span>Save Changes</span>
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    setShouldCloseAfterSave(true);
+                    handleSubmit();
+                  }}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Save & Close</span>
                     </>
                   )}
                 </Button>
