@@ -29,11 +29,22 @@ export interface AuctionFormData {
 }
 
 // Unit choices from backend
+// Use all units supported by backend - matching Ad.UNIT_CHOICES
 const units = [
   { value: 'kg', label: 'Kilogram' },
-  { value: 'g', label: 'Gram' },
-  { value: 'lb', label: 'Pound' },
-  { value: 'ton', label: 'Ton' }
+  { value: 'tons', label: 'Tons' },
+  { value: 'tonnes', label: 'Tonnes' },
+  { value: 'lbs', label: 'Pounds' },
+  { value: 'pounds', label: 'Pounds' },
+  { value: 'pieces', label: 'Pieces' },
+  { value: 'units', label: 'Units' },
+  { value: 'bales', label: 'Bales' },
+  { value: 'containers', label: 'Containers' },
+  { value: 'm³', label: 'Cubic Meters' },
+  { value: 'cubic_meters', label: 'Cubic Meters' },
+  { value: 'liters', label: 'Liters' },
+  { value: 'gallons', label: 'Gallons' },
+  { value: 'meters', label: 'Meters' }
 ];
 
 // Selling type choices from backend

@@ -226,14 +226,37 @@ export const convertLabelToValue = (field: string, label: string): string => {
       'Gram': 'g',
       'Pound': 'lb',
       'Tons': 'tons',
-      // Add variations
+      'Tonnes': 'tonnes',
+      'Pounds': 'lbs',
+      'Pieces': 'pieces',
+      'Units': 'units',
+      'Bales': 'bales',
+      'Containers': 'containers',
+      'Cubic Meters': 'm³',
+      'Liters': 'liters',
+      'Gallons': 'gallons',
+      'Meters': 'meters',
+      // Add variations and direct mappings
       'kg': 'kg',
       'g': 'g',
       'lb': 'lb',
       'tons': 'tons',
+      'tonnes': 'tonnes',
+      'lbs': 'lbs',
+      'pounds': 'pounds',
+      'pieces': 'pieces',
+      'units': 'units',
+      'bales': 'bales',
+      'containers': 'containers',
+      'm³': 'm³',
+      'cubic_meters': 'cubic_meters',
+      'liters': 'liters',
+      'gallons': 'gallons',
+      'meters': 'meters',
       'kilogram': 'kg',
       'gram': 'g',
-      'pound': 'lb'
+      'pound': 'lb',
+      'cubic meters': 'cubic_meters'
     }
   };
 
