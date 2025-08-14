@@ -155,13 +155,20 @@ export default function AuctionsPage() {
     return sortConfig.direction === 'ascending' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
-  // Format price
-  const formatPrice = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
+  // Format price with currency
+  const formatPrice = (amount: number, currency?: string) => {
+    const formattedAmount = new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 3,
       maximumFractionDigits: 3
     }).format(amount);
+
+    // Add currency if available
+    if (currency) {
+      return `${formattedAmount} ${currency}`;
+    }
+
+    return formattedAmount;
   };
 
   // Format date
@@ -398,16 +405,16 @@ export default function AuctionsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
-                        {formatPrice(auction.basePrice)}
+                        {formatPrice(auction.basePrice, auction.currency)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-green-600">
-                        {formatPrice(auction.highestBid)}
+                        {formatPrice(auction.highestBid, auction.currency)}
                       </div>
                       {auction.highestBid > auction.basePrice && (
                         <div className="text-xs text-green-500">
-                          +{formatPrice(auction.highestBid - auction.basePrice)}
+                          +{formatPrice(auction.highestBid - auction.basePrice, auction.currency)}
                         </div>
                       )}
                     </td>
