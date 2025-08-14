@@ -30,30 +30,59 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Function to check authentication status
   const checkAuthStatus = useCallback(() => {
-    const currentAuthStatus = isAuthenticated();
-    const currentUser = getUser();
-    
-    // If authentication status changed, update state
-    if (currentAuthStatus !== authStatus) {
-      setAuthStatus(currentAuthStatus);
+    try {
+      const currentAuthStatus = isAuthenticated();
+      const currentUser = getUser();
+
+      // If authentication status changed, update state
+      if (currentAuthStatus !== authStatus) {
+        setAuthStatus(currentAuthStatus);
+      }
+
+      // If user data changed, update state
+      if (JSON.stringify(currentUser) !== JSON.stringify(user)) {
+        setUser(currentUser);
+      }
+
+      return currentAuthStatus;
+    } catch (error) {
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Error checking auth status:', error);
+      }
+      // Reset to safe defaults on error
+      setAuthStatus(false);
+      setUser(null);
+      return false;
     }
-    
-    // If user data changed, update state
-    if (JSON.stringify(currentUser) !== JSON.stringify(user)) {
-      setUser(currentUser);
-    }
-    
-    return currentAuthStatus;
   }, [authStatus, user]);
 
   useEffect(() => {
     // Initial authentication check
-    checkAuthStatus();
-    setIsLoading(false);
+    try {
+      checkAuthStatus();
+    } catch (error) {
+      // Only log in development
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Error initializing auth:', error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
 
     // Set up periodic token validation (every 30 seconds)
     const tokenCheckInterval = setInterval(() => {
-      checkAuthStatus();
+      try {
+        checkAuthStatus();
+      } catch (error) {
+        // Only log in development
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('Error in periodic auth check:', error);
+        }
+      }
     }, 30000);
 
     // Also check when the page becomes visible (user returns to tab)

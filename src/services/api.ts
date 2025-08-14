@@ -6,6 +6,12 @@ import { getAccessToken } from '@/services/auth';
 // Base URL for the API
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
 
+// Validate API URL on client side
+if (typeof window !== 'undefined' && !API_BASE_URL && process.env.NODE_ENV === 'development') {
+  // eslint-disable-next-line no-console
+  console.error('NEXT_PUBLIC_API_URL environment variable is not set');
+}
+
 /**
  * Interface for API response
  */
@@ -58,6 +64,8 @@ export async function apiGet<T>(
     const response = await fetch(url, {
       method: 'GET',
       headers,
+      // Add timeout and error handling
+      signal: AbortSignal.timeout(30000), // 30 second timeout
     });
 
     // Handle different content types
@@ -101,10 +109,26 @@ export async function apiGet<T>(
       status: response.status,
     };
   } catch (error) {
+    // Handle different types of errors
+    let errorMessage = 'An error occurred';
+    let status = 500;
+
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        errorMessage = 'Request timeout - please try again';
+        status = 408;
+      } else if (error.message.includes('fetch')) {
+        errorMessage = 'Network error - please check your connection';
+        status = 0;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'An error occurred',
-      status: 500,
+      error: errorMessage,
+      status,
     };
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Header from "./Header";
 import Footer from "./Footer";
 
@@ -9,7 +10,23 @@ export default function RootLayoutClient({
 }: {
   children: React.ReactNode;
 }) {
+  const [isClient, setIsClient] = useState(false);
   const pathname = usePathname();
+
+  // Ensure we're on the client side to prevent hydration mismatches
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Don't render until we're on the client side
+  if (!isClient) {
+    return (
+      <main className="flex-1 w-full">
+        {children}
+      </main>
+    );
+  }
+
   const isAuthPage = pathname === '/login' ||
                     pathname === '/register' ||
                     pathname === '/register/success' ||

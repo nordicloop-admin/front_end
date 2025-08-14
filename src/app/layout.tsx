@@ -5,6 +5,7 @@ import "./globals.css";
 import RootLayoutClient from "../components/layout/RootLayoutClient";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from 'sonner';
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -93,8 +94,8 @@ export default function RootLayout({
         <Script id="emailjs-init" strategy="afterInteractive">
           {`
             (function() {
-              if (window.emailjs) {
-                window.emailjs.init('${process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY}');
+              if (window.emailjs && '${process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ''}') {
+                window.emailjs.init('${process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || ''}');
               }
             })();
           `}
@@ -103,12 +104,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <RootLayoutClient>
-            <Toaster position="top-right" richColors />
-            {children}
-          </RootLayoutClient>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <RootLayoutClient>
+              <Toaster position="top-right" richColors />
+              {children}
+            </RootLayoutClient>
+          </AuthProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );
