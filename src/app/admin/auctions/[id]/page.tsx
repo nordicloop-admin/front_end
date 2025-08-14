@@ -120,7 +120,7 @@ export default function AuctionDetailPage() {
 
       if (response.data) {
         setAuction(response.data);
-        
+
         // Fetch complete bid history for this auction
         setBidLoading(true);
         try {
@@ -144,17 +144,89 @@ export default function AuctionDetailPage() {
     fetchAuctionDetails();
   }, [fetchAuctionDetails]);
 
-  // Format price
-  const formatPrice = (amount: number | string) => {
+  // Format price with currency
+  const formatPrice = (amount: number | string, currency?: string) => {
     if (typeof amount === 'string') {
+      // If it's already a string, check if it already contains currency
+      if (amount.includes('USD') || amount.includes('SEK') || amount.includes('EUR')) {
+        return amount;
+      }
+      // If it's a string number, parse it and format with currency
+      const numAmount = parseFloat(amount);
+      if (!isNaN(numAmount)) {
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+          style: 'decimal',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(numAmount);
+
+        if (currency) {
+          return `${formattedAmount} ${currency}`;
+        }
+        return formattedAmount;
+      }
       return amount;
     }
-    
-    return new Intl.NumberFormat('en-US', {
+
+    const formattedAmount = new Intl.NumberFormat('en-US', {
       style: 'decimal',
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
+
+    // Add currency if available
+    if (currency) {
+      return `${formattedAmount} ${currency}`;
+    }
+
+    return formattedAmount;
+  };
+
+  // Format unit display name
+  const formatUnit = (unit: string) => {
+    // Convert backend unit values to proper display names
+    const unitDisplayMap: Record<string, string> = {
+      'kg': 'Kilogram',
+      'tons': 'Tons',
+      'tonnes': 'Tonnes',
+      'lbs': 'Pounds',
+      'pounds': 'Pounds',
+      'pieces': 'Pieces',
+      'units': 'Units',
+      'bales': 'Bales',
+      'containers': 'Containers',
+      'm³': 'Cubic Meters',
+      'cubic_meters': 'Cubic Meters',
+      'liters': 'Liters',
+      'gallons': 'Gallons',
+      'meters': 'Meters'
+    };
+
+    return unitDisplayMap[unit] || unit;
+  };
+
+  // Format volume string to ensure proper unit display
+  const formatVolume = (volume: string, unit_display?: string) => {
+    if (!volume) return 'N/A';
+
+    // If volume already contains a formatted unit, return as is
+    if (volume.includes(' ')) {
+      const parts = volume.split(' ');
+      if (parts.length >= 2) {
+        const quantity = parts[0];
+        const unit = parts.slice(1).join(' ');
+        // Check if unit needs formatting
+        const formattedUnit = formatUnit(unit);
+        return `${quantity} ${formattedUnit}`;
+      }
+    }
+
+    // If we have a separate unit_display, use it
+    if (unit_display) {
+      return `${volume} ${unit_display}`;
+    }
+
+    return volume;
   };
 
   // Format date
@@ -483,7 +555,7 @@ export default function AuctionDetailPage() {
                     {auction.highestBid > auction.basePrice ? 'Current Highest Bid' : 'Starting Price'}
                   </div>
                   <div className="text-lg font-semibold text-[#FF8A00]">
-                    {formatPrice(auction.highestBid > auction.basePrice ? auction.highestBid : auction.basePrice)}
+                    {formatPrice(auction.highestBid > auction.basePrice ? auction.highestBid : auction.basePrice, auction.currency)}
                   </div>
                 </div>
 
@@ -493,7 +565,7 @@ export default function AuctionDetailPage() {
                     Volume
                   </div>
                   <div className="text-lg font-semibold text-gray-900">
-                    {auction.volume}
+                    {formatVolume(auction.volume, auction.unit_of_measurement_display)}
                   </div>
                 </div>
 
@@ -562,34 +634,163 @@ export default function AuctionDetailPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-sm font-medium text-gray-900 mb-4">Specifications</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
+                {/* Basic Information */}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Category</div>
                   <div className="text-gray-900 font-medium text-sm text-right">{auction.category}</div>
                 </div>
+                {auction.subcategory && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Subcategory</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.subcategory}</div>
+                  </div>
+                )}
+                {auction.specificMaterial && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Specific Material</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.specificMaterial}</div>
+                  </div>
+                )}
+
+                {/* Quantity and Pricing */}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <div className="text-gray-600 text-sm">Volume</div>
-                  <div className="text-gray-900 font-medium text-sm text-right">{auction.volume}</div>
+                  <div className="text-gray-600 text-sm">Available Quantity</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{formatVolume(auction.volume, auction.unit_of_measurement_display)}</div>
                 </div>
+                {auction.minimumOrderQuantity && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Minimum Order</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.minimumOrderQuantity} {formatUnit(auction.unit_of_measurement_display || auction.unit_of_measurement || '')}</div>
+                  </div>
+                )}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <div className="text-gray-600 text-sm">Base Price</div>
-                  <div className="text-gray-900 font-medium text-sm text-right">{formatPrice(auction.basePrice)}</div>
+                  <div className="text-gray-600 text-sm">Starting Price</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{formatPrice(auction.basePrice, auction.currency)}</div>
                 </div>
+                {auction.reservePrice && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Reserve Price</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{formatPrice(auction.reservePrice, auction.currency)}</div>
+                  </div>
+                )}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Currency</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{auction.currency_display || auction.currency}</div>
+                </div>
+
+                {/* Material Properties */}
+                {auction.packaging && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Packaging</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.packaging}</div>
+                  </div>
+                )}
+                {auction.materialFrequency && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Material Frequency</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.materialFrequency}</div>
+                  </div>
+                )}
+                {auction.origin && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Origin</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.origin}</div>
+                  </div>
+                )}
+                {auction.contamination && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Contamination</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.contamination}</div>
+                  </div>
+                )}
+                {auction.additives && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Additives</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.additives}</div>
+                  </div>
+                )}
+                {auction.storageConditions && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Storage Conditions</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.storageConditions}</div>
+                  </div>
+                )}
+                {auction.processingMethods && auction.processingMethods.length > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Processing Methods</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.processingMethods.join(', ')}</div>
+                  </div>
+                )}
+
+                {/* Location and Delivery */}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Location</div>
                   <div className="text-gray-900 font-medium text-sm text-right">{auction.location || auction.countryOfOrigin}</div>
                 </div>
+                {auction.pickupAvailable !== undefined && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Pickup Available</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.pickupAvailable ? 'Yes' : 'No'}</div>
+                  </div>
+                )}
+                {auction.deliveryOptions && auction.deliveryOptions.length > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Delivery Options</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.deliveryOptions.join(', ')}</div>
+                  </div>
+                )}
+
+                {/* Auction Information */}
+                {auction.auctionDuration && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Auction Duration</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.auctionDuration}</div>
+                  </div>
+                )}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Status</div>
                   <div className="text-gray-900 font-medium text-sm text-right">{auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}</div>
                 </div>
+                {auction.auctionStatus && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Auction Status</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.auctionStatus}</div>
+                  </div>
+                )}
+
+                {/* System Information */}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Created Date</div>
                   <div className="text-gray-900 font-medium text-sm text-right">{formatDate(auction.createdAt)}</div>
                 </div>
+                {auction.auctionEndDate && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Auction End Date</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{formatDate(auction.auctionEndDate)}</div>
+                  </div>
+                )}
                 {auction.endDate && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <div className="text-gray-600 text-sm">End Date</div>
                     <div className="text-gray-900 font-medium text-sm text-right">{formatDate(auction.endDate)}</div>
+                  </div>
+                )}
+
+                {/* Completion Status */}
+                {auction.isComplete !== undefined && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Completion Status</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">
+                      {auction.isComplete ? 'Complete' : `Step ${auction.currentStep || 'Unknown'} of 8`}
+                    </div>
+                  </div>
+                )}
+
+                {/* Keywords */}
+                {auction.keywords && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Keywords</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.keywords}</div>
                   </div>
                 )}
               </div>
