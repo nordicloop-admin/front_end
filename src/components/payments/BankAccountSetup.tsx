@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Check, AlertCircle, CreditCard, Building } from 'lucide-react';
+import { Check, AlertCircle, CreditCard, Building, Edit2, X } from 'lucide-react';
 import { setupBankAccount, getUserStripeAccount, StripeAccount, BankAccountSetup } from '@/services/payments';
 
 interface BankAccountSetupProps {
@@ -22,6 +22,7 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
   const [isLoading, setIsLoading] = useState(false);
   const [existingAccount, setExistingAccount] = useState<StripeAccount | null>(null);
   const [isCheckingAccount, setIsCheckingAccount] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     checkExistingAccount();
@@ -47,6 +48,34 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
     }));
   };
 
+  const handleEdit = () => {
+    if (existingAccount) {
+      // Pre-populate form with existing data
+      setFormData({
+        account_holder_name: '',
+        account_number: '',
+        routing_number: '',
+        bank_name: existingAccount.bank_name || '',
+        bank_country: existingAccount.bank_country || 'SE',
+        currency: 'SEK'
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    // Reset form data
+    setFormData({
+      account_holder_name: '',
+      account_number: '',
+      routing_number: '',
+      bank_name: '',
+      bank_country: 'SE',
+      currency: 'SEK'
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -55,10 +84,11 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
       const result = await setupBankAccount(formData);
       
       if (result.success && result.stripe_account) {
-        toast.success('Bank account setup successful!', {
-          description: 'Your payment account has been created and is being verified.'
+        toast.success(isEditing ? 'Bank account updated successfully!' : 'Bank account setup successful!', {
+          description: isEditing ? 'Your payment account has been updated.' : 'Your payment account has been created and is being verified.'
         });
         setExistingAccount(result.stripe_account);
+        setIsEditing(false);
         onSetupComplete?.(result.stripe_account);
       } else {
         toast.error('Setup failed', {
@@ -117,14 +147,23 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
     );
   }
 
-  if (existingAccount) {
+  if (existingAccount && !isEditing) {
     const statusInfo = getAccountStatusInfo(existingAccount.account_status);
-    
+
     return (
       <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
-        <div className="flex items-center mb-4">
-          <CreditCard className="w-6 h-6 text-[#FF8A00] mr-3" />
-          <h2 className="text-xl font-semibold">Payment Account</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <CreditCard className="w-6 h-6 text-[#FF8A00] mr-3" />
+            <h2 className="text-xl font-semibold">Payment Account</h2>
+          </div>
+          <button
+            onClick={handleEdit}
+            className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            <Edit2 size={16} className="mr-2" />
+            Edit Account
+          </button>
         </div>
 
         <div className={`p-4 rounded-lg ${statusInfo.bgColor} mb-4`}>
@@ -173,13 +212,29 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
 
   return (
     <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
-      <div className="flex items-center mb-6">
-        <Building className="w-6 h-6 text-[#FF8A00] mr-3" />
-        <h2 className="text-xl font-semibold">Set Up Payment Account</h2>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Building className="w-6 h-6 text-[#FF8A00] mr-3" />
+          <h2 className="text-xl font-semibold">
+            {isEditing ? 'Edit Payment Account' : 'Set Up Payment Account'}
+          </h2>
+        </div>
+        {isEditing && (
+          <button
+            onClick={handleCancelEdit}
+            className="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            <X size={16} className="mr-2" />
+            Cancel
+          </button>
+        )}
       </div>
 
       <p className="text-gray-600 mb-6">
-        Set up your bank account to receive payments from sales. This information is securely processed by Stripe.
+        {isEditing
+          ? 'Update your bank account information. This will replace your current payment account.'
+          : 'Set up your bank account to receive payments from sales. This information is securely processed by Stripe.'
+        }
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -302,10 +357,10 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
           {isLoading ? (
             <div className="flex items-center justify-center">
               <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-              Setting up account...
+              {isEditing ? 'Updating account...' : 'Setting up account...'}
             </div>
           ) : (
-            'Set Up Payment Account'
+            isEditing ? 'Update Payment Account' : 'Set Up Payment Account'
           )}
         </button>
       </form>

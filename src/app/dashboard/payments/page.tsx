@@ -9,12 +9,12 @@ import PayoutSchedule from '@/components/payments/PayoutSchedule';
 type TabType = 'account' | 'transactions' | 'payouts';
 
 export default function PaymentsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('account');
+  const [activeTab, setActiveTab] = useState<TabType>('transactions');
 
   const tabs = [
-    { key: 'account' as TabType, label: 'Payment Account', icon: CreditCard },
     { key: 'transactions' as TabType, label: 'Transaction History', icon: History },
     { key: 'payouts' as TabType, label: 'Payout Schedule', icon: Calendar },
+    { key: 'account' as TabType, label: 'Payment Account', icon: CreditCard },
   ];
 
   return (
