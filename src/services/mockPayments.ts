@@ -66,10 +66,16 @@ export const mockPaymentIntents: PaymentIntent[] = [
     currency: "SEK",
     created_at: "2024-01-10T10:00:00Z",
     updated_at: "2024-01-10T10:30:00Z",
-    confirmed_at: "2024-01-10T10:30:00Z"
+    confirmed_at: "2024-01-10T10:30:00Z",
+    auction_title: "High-Grade Steel Scrap",
+    auction_id: 1,
+    buyer_company_name: "Nordic Steel AB",
+    seller_company_name: "Recycling Solutions Ltd",
+    buyer_email: "buyer@nordicsteel.se",
+    seller_email: "karera@gmail.com"
   },
   {
-    id: "pi-2", 
+    id: "pi-2",
     stripe_payment_intent_id: "pi_test_aluminum_789012",
     bid_id: 2,
     buyer_id: 3,
@@ -82,11 +88,17 @@ export const mockPaymentIntents: PaymentIntent[] = [
     currency: "SEK",
     created_at: "2024-01-12T14:00:00Z",
     updated_at: "2024-01-12T14:30:00Z",
-    confirmed_at: "2024-01-12T14:30:00Z"
+    confirmed_at: "2024-01-12T14:30:00Z",
+    auction_title: "Premium Aluminum Scrap",
+    auction_id: 2,
+    buyer_company_name: "Aluminum Works AB",
+    seller_company_name: "Recycling Solutions Ltd",
+    buyer_email: "procurement@aluminumworks.se",
+    seller_email: "karera@gmail.com"
   },
   {
     id: "pi-3",
-    stripe_payment_intent_id: "pi_test_copper_345678", 
+    stripe_payment_intent_id: "pi_test_copper_345678",
     bid_id: 3,
     buyer_id: 4,
     seller_id: 1,
@@ -98,12 +110,18 @@ export const mockPaymentIntents: PaymentIntent[] = [
     currency: "SEK",
     created_at: "2024-01-14T16:00:00Z",
     updated_at: "2024-01-14T16:30:00Z",
-    confirmed_at: "2024-01-14T16:30:00Z"
+    confirmed_at: "2024-01-14T16:30:00Z",
+    auction_title: "Pure Copper Wire Scrap",
+    auction_id: 3,
+    buyer_company_name: "Copper Industries AB",
+    seller_company_name: "Recycling Solutions Ltd",
+    buyer_email: "orders@copperindustries.se",
+    seller_email: "karera@gmail.com"
   },
   {
     id: "pi-4",
     stripe_payment_intent_id: "pi_test_mixed_901234",
-    bid_id: 4, 
+    bid_id: 4,
     buyer_id: 2,
     seller_id: 1,
     total_amount: "750.00",
@@ -114,7 +132,13 @@ export const mockPaymentIntents: PaymentIntent[] = [
     currency: "SEK",
     created_at: "2024-01-13T12:00:00Z",
     updated_at: "2024-01-13T12:30:00Z",
-    confirmed_at: "2024-01-13T12:30:00Z"
+    confirmed_at: "2024-01-13T12:30:00Z",
+    auction_title: "Mixed Metal Scrap Lot",
+    auction_id: 4,
+    buyer_company_name: "Nordic Steel AB",
+    seller_company_name: "Recycling Solutions Ltd",
+    buyer_email: "buyer@nordicsteel.se",
+    seller_email: "karera@gmail.com"
   }
 ];
 
@@ -132,11 +156,15 @@ export const mockTransactions: Transaction[] = [
     description: "Commission from payment pi_test_steel_123456",
     created_at: "2024-01-10T10:30:00Z",
     updated_at: "2024-01-10T10:30:00Z",
-    processed_at: "2024-01-10T10:30:00Z"
+    processed_at: "2024-01-10T10:30:00Z",
+    auction_title: "High-Grade Steel Scrap",
+    auction_id: 1,
+    buyer_company_name: "Nordic Steel AB",
+    seller_company_name: "Recycling Solutions Ltd"
   },
   {
     id: "tx-2",
-    payment_intent_id: "pi-2", 
+    payment_intent_id: "pi-2",
     transaction_type: "commission",
     amount: "196.00",
     currency: "SEK",
@@ -146,12 +174,16 @@ export const mockTransactions: Transaction[] = [
     description: "Commission from payment pi_test_aluminum_789012",
     created_at: "2024-01-12T14:30:00Z",
     updated_at: "2024-01-12T14:30:00Z",
-    processed_at: "2024-01-12T14:30:00Z"
+    processed_at: "2024-01-12T14:30:00Z",
+    auction_title: "Premium Aluminum Scrap",
+    auction_id: 2,
+    buyer_company_name: "Aluminum Works AB",
+    seller_company_name: "Recycling Solutions Ltd"
   },
   {
     id: "tx-3",
     payment_intent_id: "pi-4",
-    transaction_type: "commission", 
+    transaction_type: "commission",
     amount: "67.50",
     currency: "SEK",
     status: "completed",
@@ -160,14 +192,18 @@ export const mockTransactions: Transaction[] = [
     description: "Commission from payment pi_test_mixed_901234",
     created_at: "2024-01-13T12:30:00Z",
     updated_at: "2024-01-13T12:30:00Z",
-    processed_at: "2024-01-13T12:30:00Z"
+    processed_at: "2024-01-13T12:30:00Z",
+    auction_title: "Mixed Metal Scrap Lot",
+    auction_id: 4,
+    buyer_company_name: "Nordic Steel AB",
+    seller_company_name: "Recycling Solutions Ltd"
   },
   // Seller payout transactions
   {
     id: "tx-4",
     payment_intent_id: "pi-1",
     transaction_type: "payout",
-    amount: "1365.00", 
+    amount: "1365.00",
     currency: "SEK",
     status: "pending",
     from_user_id: null,
@@ -175,21 +211,29 @@ export const mockTransactions: Transaction[] = [
     description: "Seller payout from payment pi_test_steel_123456",
     created_at: "2024-01-10T10:30:00Z",
     updated_at: "2024-01-10T10:30:00Z",
-    processed_at: null
+    processed_at: null,
+    auction_title: "High-Grade Steel Scrap",
+    auction_id: 1,
+    buyer_company_name: "Nordic Steel AB",
+    seller_company_name: "Recycling Solutions Ltd"
   },
   {
     id: "tx-5",
     payment_intent_id: "pi-2",
     transaction_type: "payout",
     amount: "2604.00",
-    currency: "SEK", 
+    currency: "SEK",
     status: "pending",
     from_user_id: null,
     to_user_id: 1,
     description: "Seller payout from payment pi_test_aluminum_789012",
     created_at: "2024-01-12T14:30:00Z",
     updated_at: "2024-01-12T14:30:00Z",
-    processed_at: null
+    processed_at: null,
+    auction_title: "Premium Aluminum Scrap",
+    auction_id: 2,
+    buyer_company_name: "Aluminum Works AB",
+    seller_company_name: "Recycling Solutions Ltd"
   },
   {
     id: "tx-6",
@@ -200,10 +244,14 @@ export const mockTransactions: Transaction[] = [
     status: "pending",
     from_user_id: null,
     to_user_id: 1,
-    description: "Seller payout from payment pi_test_copper_345678", 
+    description: "Seller payout from payment pi_test_copper_345678",
     created_at: "2024-01-14T16:30:00Z",
     updated_at: "2024-01-14T16:30:00Z",
-    processed_at: null
+    processed_at: null,
+    auction_title: "Pure Copper Wire Scrap",
+    auction_id: 3,
+    buyer_company_name: "Copper Industries AB",
+    seller_company_name: "Recycling Solutions Ltd"
   },
   {
     id: "tx-7",
@@ -216,8 +264,12 @@ export const mockTransactions: Transaction[] = [
     to_user_id: 1,
     description: "Seller payout from payment pi_test_mixed_901234",
     created_at: "2024-01-13T12:30:00Z",
-    updated_at: "2024-01-13T12:30:00Z", 
-    processed_at: null
+    updated_at: "2024-01-13T12:30:00Z",
+    processed_at: null,
+    auction_title: "Mixed Metal Scrap Lot",
+    auction_id: 4,
+    buyer_company_name: "Nordic Steel AB",
+    seller_company_name: "Recycling Solutions Ltd"
   }
 ];
 

@@ -311,7 +311,7 @@ const deliveryOptions = [
   }
 ];
 
-const currencies = ['SEK', 'EUR', 'USD', 'NOK', 'DKK'];
+const currencies = ['SEK', 'EUR'];
 
 // Use all units supported by backend - matching Ad.UNIT_CHOICES
 const units = [

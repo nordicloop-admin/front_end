@@ -51,6 +51,13 @@ export interface PaymentIntent {
   created_at: string;
   updated_at: string;
   confirmed_at?: string;
+  // Additional auction and company information
+  auction_title?: string;
+  auction_id?: number;
+  buyer_company_name?: string;
+  seller_company_name?: string;
+  buyer_email?: string;
+  seller_email?: string;
 }
 
 export interface Transaction {
@@ -66,6 +73,11 @@ export interface Transaction {
   created_at: string;
   updated_at: string;
   processed_at?: string;
+  // Additional auction and company information
+  auction_title?: string;
+  auction_id?: number;
+  buyer_company_name?: string;
+  seller_company_name?: string;
 }
 
 export interface PayoutSchedule {

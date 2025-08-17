@@ -279,8 +279,6 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
             >
               <option value="SEK">SEK</option>
-              <option value="NOK">NOK</option>
-              <option value="DKK">DKK</option>
               <option value="EUR">EUR</option>
             </select>
           </div>

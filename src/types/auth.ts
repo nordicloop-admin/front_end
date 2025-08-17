@@ -90,13 +90,4 @@ export const SECTOR_CHOICES = [
 
 export const COUNTRY_CHOICES = [
   { value: 'Sweden', label: 'Sweden' },
-  { value: 'Norway', label: 'Norway' },
-  { value: 'Denmark', label: 'Denmark' },
-  { value: 'Finland', label: 'Finland' },
-  { value: 'Iceland', label: 'Iceland' },
-  { value: 'Rwanda', label: 'Rwanda' },
-  { value: 'Kenya', label: 'Kenya' },
-  { value: 'Uganda', label: 'Uganda' },
-  { value: 'Tanzania', label: 'Tanzania' },
-  // Add more countries as needed
 ];
