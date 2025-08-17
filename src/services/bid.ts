@@ -187,9 +187,22 @@ export interface BidErrorResponse {
  * Interface for user bids response
  */
 export interface UserBidsResponse {
-  user_id: number;
-  total_bids: number;
+  user_id?: number;
+  total_bids?: number;
   bids: UserBidItem[];
+  pagination?: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    page_size: number;
+    total_pages: number;
+    current_page: number;
+  };
+  statistics?: {
+    total_bids: number;
+    active_bids: number;
+    total_bidders: number;
+  };
 }
 
 /**
@@ -427,9 +440,9 @@ export async function getUserBids(params?: BidPaginationParams) {
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
     if (params?.status) queryParams.set('status', params.status);
-    
-    const endpoint = `/bids/my/`;
-    
+
+    const endpoint = `/bids/my/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
     // Get user bids requires authentication
     const response = await apiGet<UserBidsResponse>(endpoint, true);
 
@@ -463,13 +476,18 @@ export async function getUserBids(params?: BidPaginationParams) {
     // Transform response to match expected format with pagination
     const result: PaginatedBidResult = {
       bids: mappedBids,
-      pagination: {
-        count: response.data?.total_bids || 0,
+      pagination: response.data?.pagination || {
+        count: mappedBids.length,
         next: null,
         previous: null,
         page_size: params?.page_size || 10,
-        total_pages: Math.ceil((response.data?.total_bids || 0) / (params?.page_size || 10)),
+        total_pages: Math.ceil(mappedBids.length / (params?.page_size || 10)),
         current_page: params?.page || 1
+      },
+      statistics: response.data?.statistics || {
+        total_bids: mappedBids.length,
+        active_bids: mappedBids.filter(bid => bid.status === 'active').length,
+        total_bidders: 1
       }
     };
 
@@ -499,7 +517,7 @@ export async function getUserWinningBids(params?: BidPaginationParams) {
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
     
-    const endpoint = `/bids/user/winning/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const endpoint = `/bids/winning/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
     // Get user winning bids requires authentication
     const response = await apiGet<PaginatedBidResponse>(endpoint, true);

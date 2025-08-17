@@ -8,7 +8,7 @@ import { getUserProfile, UserProfile } from '@/services/userProfile';
 import { getPricingData, PricingData } from '@/services/pricing';
 
 // Helper function to get commission rate from plan type
-const getCommissionRate = (planType: string): string => {
+const _getCommissionRate = (planType: string): string => {
   switch (planType) {
     case 'free': return '9%';
     case 'standard': return '7%';
@@ -214,8 +214,8 @@ export default function Subscriptions() {
                 <h2 className="text-sm font-medium text-gray-700">Current Plan</h2>
                 <div className="text-base font-medium mt-1">{subscription.plan_display}</div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {subscription.plan === 'premium' ? 'No commission fees on trades' :
-                   `Commission rate: ${getCommissionRate(subscription.plan)} on all trades`}
+                  {/* {subscription.plan === 'premium' ? 'No commission fees on trades' :
+                   `Commission rate: ${getCommissionRate(subscription.plan)} on all trades`} */}
                 </div>
               </div>
 
@@ -301,7 +301,7 @@ export default function Subscriptions() {
             </div>
 
             <div className="text-xs text-gray-500 mb-4">
-              Commission rate: {getCommissionRate(plan.plan_type)} on all trades
+              {/* Commission rate: {getCommissionRate(plan.plan_type)} on all trades */}
             </div>
 
             <div className="space-y-2 mb-4">
