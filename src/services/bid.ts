@@ -517,7 +517,7 @@ export async function getUserWinningBids(params?: BidPaginationParams) {
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
     
-    const endpoint = `/bids/user/winning/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const endpoint = `/bids/winning/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
     // Get user winning bids requires authentication
     const response = await apiGet<PaginatedBidResponse>(endpoint, true);
