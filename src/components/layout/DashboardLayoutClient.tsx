@@ -191,6 +191,39 @@ export default function DashboardLayoutClient({
           </Link>
 
           <Link
+            href="/dashboard/winning-bids"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/winning-bids' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <svg
+              className="h-[18px] w-[18px] mr-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M12 6L13.09 8.26L16 9L13.09 9.74L12 12L10.91 9.74L8 9L10.91 8.26L12 6Z"
+                stroke={pathname === '/dashboard/winning-bids' ? "#FF8A00" : "currentColor"}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M19 12L19.68 13.36L21 14L19.68 14.64L19 16L18.32 14.64L17 14L18.32 13.36L19 12Z"
+                stroke={pathname === '/dashboard/winning-bids' ? "#FF8A00" : "currentColor"}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M5 12L5.68 13.36L7 14L5.68 14.64L5 16L4.32 14.64L3 14L4.32 13.36L5 12Z"
+                stroke={pathname === '/dashboard/winning-bids' ? "#FF8A00" : "currentColor"}
+                strokeWidth="1.5"
+                strokeLinejoin="round"
+              />
+            </svg>
+            <span>Winning Bids</span>
+          </Link>
+
+          <Link
             href="/dashboard/notifications"
             className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/notifications' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
@@ -206,6 +239,19 @@ export default function DashboardLayoutClient({
           >
             <Bell size={18} className="mr-3" />
             <span>Subscriptions</span>
+          </Link>
+
+          <Link
+            href="/dashboard/payments"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/payments' || pathname.startsWith('/dashboard/payments') ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <svg className="h-[18px] w-[18px] mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="4" width="20" height="16" rx="2" stroke={pathname === '/dashboard/payments' || pathname.startsWith('/dashboard/payments') ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
+              <path d="M2 8H22" stroke={pathname === '/dashboard/payments' || pathname.startsWith('/dashboard/payments') ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
+              <circle cx="7" cy="14" r="1" fill={pathname === '/dashboard/payments' || pathname.startsWith('/dashboard/payments') ? "#FF8A00" : "currentColor"} />
+            </svg>
+            <span>Payments</span>
           </Link>
 
           <Link
