@@ -678,26 +678,27 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
 
 
-      setStepData({
-        // Step 1 - Use complete ad data
-        category: completeAdData.category_name || auction.category,
-        subcategory: completeAdData.subcategory_name || auction.subcategory,
-        materialType: materialType,
-        specificMaterial: completeAdData.specific_material || '',
-        packaging: completeAdData.packaging || '',
-        materialFrequency: completeAdData.material_frequency || '',
+      try {
+        setStepData({
+          // Step 1 - Use complete ad data with safe property access
+          category: completeAdData?.category_name || auction?.category || '',
+          subcategory: completeAdData?.subcategory_name || auction?.subcategory || '',
+          materialType: materialType || '',
+          specificMaterial: completeAdData?.specific_material || '',
+          packaging: completeAdData?.packaging || '',
+          materialFrequency: completeAdData?.material_frequency || '',
 
-        // Step 2: Initialize specifications data from complete ad data
-        grade: completeAdData.specification?.material_grade_display || grade || '',
-        color: completeAdData.specification?.color || color || '',
-        form: completeAdData.specification?.material_form_display || form || '',
-        additionalSpecs: completeAdData.specification?.additional_specifications ?
-          [completeAdData.specification.additional_specifications] : additionalSpecs,
+          // Step 2: Initialize specifications data from complete ad data with null checks
+          grade: completeAdData?.specification?.material_grade_display || grade || '',
+          color: completeAdData?.specification?.color || color || '',
+          form: completeAdData?.specification?.material_form_display || form || '',
+          additionalSpecs: completeAdData?.specification?.additional_specifications ?
+            [completeAdData.specification.additional_specifications] : (Array.isArray(additionalSpecs) ? additionalSpecs : []),
 
-        // Step 3: Material Origin - use ID value for form selection
-        origin: completeAdData.origin || '',
+          // Step 3: Material Origin - use ID value for form selection
+          origin: completeAdData?.origin || '',
 
-        // Step 4: Contamination - use ID values for form selection
+          // Step 4: Contamination - use ID values for form selection
         contaminationLevel: completeAdData.contamination || '',
         additives: completeAdData.additives ? [completeAdData.additives] : [],
         storageConditions: completeAdData.storage_conditions || '',
@@ -734,24 +735,72 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         reservePrice: completeAdData.reserve_price || 0,
         customAuctionDuration: completeAdData.custom_auction_duration || 0,
 
-        // Step 8: Title & Description - use complete ad data when available
-        title: completeAdData.title || auction.name,
-        description: completeAdData.description || auction.description || '',
-        keywords: completeAdData.keywords ? completeAdData.keywords.split(', ').map((k: string) => k.trim()) :
-                  (auction.keywords ? auction.keywords.split(',').map((k: string) => k.trim()) : []),
-        currentImageUrl: completeAdData.material_image || auction.material_image || auction.image,
+        // Step 8: Title & Description - use complete ad data when available with safe property access
+        title: completeAdData?.title || auction?.name || '',
+        description: completeAdData?.description || auction?.description || '',
+        keywords: completeAdData?.keywords ?
+          (typeof completeAdData.keywords === 'string' ? completeAdData.keywords.split(', ').map((k: string) => k.trim()) : []) :
+          (auction?.keywords ?
+            (typeof auction.keywords === 'string' ? auction.keywords.split(',').map((k: string) => k.trim()) :
+             Array.isArray(auction.keywords) ? auction.keywords : []) : []),
+        currentImageUrl: completeAdData?.material_image || auction?.material_image || auction?.image || '',
         images: []
-      });
+        });
 
-      // Reset image load error when new data is loaded
-      setImageLoadError(false);
+        // Reset image load error when new data is loaded
+        setImageLoadError(false);
 
+        // Set steps based on material type (only if not already set correctly)
+        const expectedSteps = getStepsByMaterialType(materialType);
+        if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
+          setSteps(expectedSteps);
+        }
+      } catch (error) {
+        // Handle any errors during data initialization
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('Error initializing auction edit data:', error);
+        }
+        setError('Failed to load auction data. Some fields may not display correctly.');
 
-
-      // Set steps based on material type (only if not already set correctly)
-      const expectedSteps = getStepsByMaterialType(materialType);
-      if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
-        setSteps(expectedSteps);
+        // Set minimal default data to prevent crashes
+        setStepData({
+          category: auction?.category || '',
+          subcategory: auction?.subcategory || '',
+          materialType: auction?.category?.toLowerCase() || '',
+          specificMaterial: '',
+          packaging: '',
+          materialFrequency: '',
+          grade: '',
+          color: '',
+          form: '',
+          additionalSpecs: [],
+          origin: '',
+          contaminationLevel: '',
+          processingMethods: [],
+          location: {
+            country: '',
+            region: '',
+            city: '',
+            fullAddress: '',
+            postalCode: '',
+            pickupAvailable: false,
+            deliveryOptions: []
+          },
+          availableQuantity: 0,
+          unit: '',
+          minimumOrder: 0,
+          startingPrice: 0,
+          currency: 'SEK',
+          auctionDuration: '',
+          reservePrice: 0,
+          customAuctionDuration: 0,
+          title: auction?.name || '',
+          description: auction?.description || '',
+          keywords: [],
+          currentImageUrl: auction?.image || '',
+          images: []
+        });
       }
     }
   }, [auction, categoriesLoaded, adDataLoaded, completeAdData, categories.length, steps]);
@@ -1296,7 +1345,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             completeAdData.specification.material_form
           );
           const hasAdditionalSpecs = completeAdData.additional_specifications &&
-            completeAdData.additional_specifications.trim().length > 0;
+            (typeof completeAdData.additional_specifications === 'string' ?
+             completeAdData.additional_specifications.trim().length > 0 : false);
 
           // Only mark as completed if there's actual specification data
           if (hasSpecification || hasAdditionalSpecs) {
@@ -1311,9 +1361,12 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           break;
         case 4:
           // Step 4: Contamination - check if ALL contamination fields exist (strict check)
-          const hasContamination = completeAdData.contamination && completeAdData.contamination.trim() !== '';
-          const hasAdditives = completeAdData.additives && completeAdData.additives.trim() !== '';
-          const hasStorage = completeAdData.storage_conditions && completeAdData.storage_conditions.trim() !== '';
+          const hasContamination = completeAdData.contamination &&
+            (typeof completeAdData.contamination === 'string' ? completeAdData.contamination.trim() !== '' : false);
+          const hasAdditives = completeAdData.additives &&
+            (typeof completeAdData.additives === 'string' ? completeAdData.additives.trim() !== '' : false);
+          const hasStorage = completeAdData.storage_conditions &&
+            (typeof completeAdData.storage_conditions === 'string' ? completeAdData.storage_conditions.trim() !== '' : false);
 
           if (hasContamination && hasAdditives && hasStorage) {
             return 'completed';
@@ -1341,10 +1394,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         case 7:
           // Step 7: Quantity & Pricing - check if ALL required fields exist (strict check)
           const hasQuantity = completeAdData.available_quantity && completeAdData.available_quantity > 0;
-          const hasUnit = completeAdData.unit_of_measurement && completeAdData.unit_of_measurement.trim() !== '';
+          const hasUnit = completeAdData.unit_of_measurement &&
+            (typeof completeAdData.unit_of_measurement === 'string' ? completeAdData.unit_of_measurement.trim() !== '' : false);
           const hasStartingPrice = completeAdData.starting_bid_price && completeAdData.starting_bid_price > 0;
-          const hasCurrency = completeAdData.currency && completeAdData.currency.trim() !== '';
-          const hasAuctionDuration = completeAdData.auction_duration && completeAdData.auction_duration.trim() !== '';
+          const hasCurrency = completeAdData.currency &&
+            (typeof completeAdData.currency === 'string' ? completeAdData.currency.trim() !== '' : false);
+          const hasAuctionDuration = completeAdData.auction_duration &&
+            (typeof completeAdData.auction_duration === 'string' ? completeAdData.auction_duration.trim() !== '' :
+             typeof completeAdData.auction_duration === 'number' ? completeAdData.auction_duration > 0 : false);
 
           if (hasQuantity && hasUnit && hasStartingPrice && hasCurrency && hasAuctionDuration) {
             return 'completed';
@@ -1352,8 +1409,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           break;
         case 8:
           // Step 8: Title & Description - check if ALL required fields exist (strict check)
-          const hasTitle = completeAdData.title && completeAdData.title.trim().length >= 10;
-          const hasDescription = completeAdData.description && completeAdData.description.trim().length >= 30;
+          const hasTitle = completeAdData.title &&
+            (typeof completeAdData.title === 'string' ? completeAdData.title.trim().length >= 10 : false);
+          const hasDescription = completeAdData.description &&
+            (typeof completeAdData.description === 'string' ? completeAdData.description.trim().length >= 30 : false);
 
           if (hasTitle && hasDescription) {
             return 'completed';
@@ -2987,6 +3046,43 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
   if (!isOpen) return null;
 
+  // Add error boundary for the entire modal
+  if (_error) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        maxWidth="md"
+        showCloseButton={true}
+        className="p-6"
+      >
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Auction</h3>
+          <p className="text-sm text-gray-600 mb-4">{_error}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                setError(null);
+                // Close and reopen the modal to trigger data reload
+                onClose();
+              }}
+              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <Modal
       isOpen={isOpen}
@@ -3001,7 +3097,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Edit Auction</h2>
             <p className="text-sm text-gray-600">
-              {auction.name} - Step {steps.findIndex(step => step.id === activeStep) + 1} of {steps.length}
+              {auction?.name || 'Auction'} - Step {steps.findIndex(step => step.id === activeStep) + 1} of {steps.length}
             </p>
           </div>
           <button

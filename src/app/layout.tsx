@@ -23,11 +23,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.png' },
+      { url: '/favicon.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon.png', type: 'image/png', sizes: '16x16' },
     ],
     apple: [
-      { url: '/favicon.png' },
+      { url: '/favicon.png', sizes: '180x180', type: 'image/png' },
     ],
+    shortcut: '/favicon.ico',
   },
   manifest: '/site.webmanifest',
   appleWebApp: {
@@ -78,6 +80,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Favicon links for better compatibility */}
+        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+        <link rel="manifest" href="/site.webmanifest" />
+        <meta name="theme-color" content="#1E2A36" />
+
         {/* Google Analytics */}
         {/* <Script src="https://www.googletagmanager.com/gtag/js?id=G-MMV2RE5J6S" strategy="afterInteractive" />
         <Script id="google-analytics" strategy="afterInteractive">
