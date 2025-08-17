@@ -261,7 +261,7 @@ export default function AuctionDetail() {
                     setAuction((prevAuction: any) => ({
                       ...prevAuction,
                       bidHistory: formattedBids,
-                      highestBid: formattedBids.length > 0 ? formattedBids[0].amount : null
+                      highestBid: formattedBids.length > 0 ? `${formattedBids[0].amount} ${adData.currency}` : null
                     }));
                   }
                 })
