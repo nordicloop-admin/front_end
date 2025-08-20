@@ -115,8 +115,8 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
         color: 'text-blue-600',
         bgColor: 'bg-blue-50',
         icon: <Clock className="w-5 h-5" />,
-        message: 'Account setup in progress. Verification may take 1-2 business days.',
-        displayStatus: 'Setting Up'
+        message: 'Your bank account information has been submitted and is being verified by our payment processor. This process is required by financial regulations and typically takes 1-2 business days.',
+        displayStatus: 'Verification in Progress'
       };
     }
 
@@ -126,15 +126,15 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
           color: 'text-green-600',
           bgColor: 'bg-green-50',
           icon: <Check className="w-5 h-5" />,
-          message: 'Your account is active and ready to receive payments',
-          displayStatus: 'Active'
+          message: 'Your payment account has been verified and is active. You can now receive payments from winning bids.',
+          displayStatus: 'Active & Verified'
         };
       case 'pending':
         return {
           color: 'text-yellow-600',
           bgColor: 'bg-yellow-50',
           icon: <Clock className="w-5 h-5" />,
-          message: 'Your account is being verified. This may take 1-2 business days',
+          message: 'Your account verification is in progress. Stripe is reviewing your information to comply with financial regulations. This typically takes 1-2 business days.',
           displayStatus: 'Pending Verification'
         };
       case 'restricted':
@@ -142,15 +142,15 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
           color: 'text-red-600',
           bgColor: 'bg-red-50',
           icon: <AlertCircle className="w-5 h-5" />,
-          message: 'Your account needs additional information. Please contact support',
-          displayStatus: 'Restricted'
+          message: 'Additional information is required to complete your account verification. Please check your email for instructions or contact support.',
+          displayStatus: 'Additional Info Required'
         };
       case 'inactive':
         return {
           color: 'text-gray-600',
           bgColor: 'bg-gray-50',
           icon: <AlertCircle className="w-5 h-5" />,
-          message: 'Your account is inactive. Please contact support',
+          message: 'Your account is currently inactive. Please contact support for assistance with reactivation.',
           displayStatus: 'Inactive'
         };
       default:
@@ -158,8 +158,8 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
           color: 'text-blue-600',
           bgColor: 'bg-blue-50',
           icon: <Clock className="w-5 h-5" />,
-          message: 'Account setup in progress. Verification may take 1-2 business days.',
-          displayStatus: 'Setting Up'
+          message: 'Your bank account information has been submitted and is being verified by our payment processor. This process is required by financial regulations and typically takes 1-2 business days.',
+          displayStatus: 'Verification in Progress'
         };
     }
   };
@@ -264,7 +264,7 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
         {/* Setup Progress - Show when account is not active */}
         {!isAccountActive && (
           <div className="bg-blue-50 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-blue-900 mb-3">Setup Progress</h3>
+            <h3 className="text-sm font-medium text-blue-900 mb-3">Verification Process</h3>
             <div className="space-y-3">
               <div className="flex items-center">
                 <Check className="w-4 h-4 text-green-600 mr-3" />
@@ -272,12 +272,31 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
               </div>
               <div className="flex items-center">
                 <Clock className="w-4 h-4 text-blue-600 mr-3" />
-                <span className="text-sm text-gray-700">Account verification in progress</span>
+                <span className="text-sm text-gray-700">Identity verification in progress (1-2 business days)</span>
               </div>
               <div className="flex items-center">
                 <div className="w-4 h-4 border-2 border-gray-300 rounded-full mr-3"></div>
                 <span className="text-sm text-gray-500">Payment capabilities will be enabled</span>
               </div>
+            </div>
+
+            {/* Why verification is required */}
+            <div className="mt-4 p-3 bg-blue-100 rounded-md">
+              <h4 className="text-xs font-medium text-blue-900 mb-2">Why is verification required?</h4>
+              <ul className="text-xs text-blue-800 space-y-1">
+                <li>• <strong>Legal Compliance:</strong> Required by Swedish and EU financial regulations</li>
+                <li>• <strong>Security:</strong> Protects both buyers and sellers from fraud</li>
+                <li>• <strong>Trust:</strong> Ensures all marketplace participants are verified</li>
+              </ul>
+            </div>
+
+            {/* What happens next */}
+            <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
+              <h4 className="text-xs font-medium text-green-900 mb-2">What happens next?</h4>
+              <p className="text-xs text-green-800">
+                Stripe will verify your information automatically. You'll receive an email notification
+                when your account is approved and ready to receive payments.
+              </p>
             </div>
           </div>
         )}
