@@ -63,7 +63,7 @@ export default function WinningBidsPage() {
     return (
       <div className="p-6">
         <div className="bg-white border border-gray-100 rounded-md p-8 flex justify-center items-center">
-          <Loader2 size={24} className="animate-spin text-[#FF8A00] mr-2" />
+          <Loader2 size={24} className="animate-spin text-blue-600 mr-2" />
           <p className="text-gray-700">Loading your winning bids...</p>
         </div>
       </div>
@@ -81,7 +81,7 @@ export default function WinningBidsPage() {
           <p className="text-red-700 mb-4">{error}</p>
           <button
             onClick={loadWinningBids}
-            className="px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700 transition-colors"
           >
             Try Again
           </button>
@@ -95,7 +95,7 @@ export default function WinningBidsPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
-          <Trophy className="w-6 h-6 text-[#FF8A00] mr-3" />
+          <Trophy className="w-6 h-6 text-gray-600 mr-3" />
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Winning Bids</h1>
             <p className="text-gray-600">Complete payments for your winning auction bids</p>
@@ -112,26 +112,25 @@ export default function WinningBidsPage() {
 
       {/* Payment Reminder Banner */}
       {winningBids.length > 0 && winningBids.some(bid => bid.status === 'won') && (
-        <div className="bg-gradient-to-r from-[#FF8A00] to-[#FF9500] rounded-lg p-6 mb-6 text-white shadow-lg">
+        <div className="rounded-lg p-4 mb-6">
           <div className="flex items-center">
-            <div className="bg-white/20 rounded-full p-2 mr-4">
-              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <div className="bg-gray-600 rounded-full p-2 mr-3">
+              <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
               </svg>
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold mb-1">⏰ Payment Required</h3>
-              <p className="text-white/90">
-                You have {winningBids.filter(bid => bid.status === 'won').length} winning bid{winningBids.filter(bid => bid.status === 'won').length !== 1 ? 's' : ''} awaiting payment.
-                Complete your payments within 48 hours to secure your materials.
+              <h3 className="font-semibold text-gray-900">Payment Required</h3>
+              <p className="text-sm text-gray-600">
+                {winningBids.filter(bid => bid.status === 'won').length} auction{winningBids.filter(bid => bid.status === 'won').length !== 1 ? 's' : ''} awaiting payment. Complete within 48 hours.
               </p>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold">
+              <div className="text-lg font-bold text-gray-900">
                 {winningBids.filter(bid => bid.status === 'won').length}
               </div>
-              <div className="text-white/80 text-sm">
-                Pending Payment{winningBids.filter(bid => bid.status === 'won').length !== 1 ? 's' : ''}
+              <div className="text-xs text-gray-500">
+                Pending
               </div>
             </div>
           </div>
@@ -143,9 +142,9 @@ export default function WinningBidsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center">
-              <Trophy className="w-5 h-5 text-yellow-600 mr-2" />
+              <Trophy className="w-5 h-5 text-gray-600 mr-2" />
               <div>
-                <p className="text-sm text-gray-600">Total Winning Bids</p>
+                <p className="text-sm text-gray-600">Total Auctions</p>
                 <p className="text-lg font-bold text-gray-900">{winningBids.length}</p>
               </div>
             </div>
@@ -194,13 +193,13 @@ export default function WinningBidsPage() {
         <div className="bg-white border border-gray-100 rounded-md p-8 text-center">
           <div className="flex flex-col items-center">
             <Trophy size={48} className="text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Winning Bids Yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Auctions Won Yet</h3>
             <p className="text-gray-500 mb-6">
               You haven't won any auctions yet. Keep bidding to win great deals on materials!
             </p>
             <a
               href="/dashboard/auctions"
-              className="px-6 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67c00] transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
             >
               Browse Auctions
             </a>
@@ -213,7 +212,7 @@ export default function WinningBidsPage() {
               key={bid.id}
               winningBid={bid}
               onPaymentComplete={handlePaymentComplete}
-              className={`w-full ${highlightedBidId === bid.id ? 'ring-4 ring-[#FF8A00] ring-opacity-75 shadow-xl' : ''}`}
+              className={`w-full ${highlightedBidId === bid.id ? 'ring-4 ring-blue-500 ring-opacity-75 shadow-xl' : ''}`}
               autoExpand={highlightedBidId === bid.id}
             />
           ))}
