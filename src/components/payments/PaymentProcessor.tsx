@@ -3,10 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { CreditCard, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { createPaymentIntent, PaymentIntent, formatCurrency, getCommissionRate } from '@/services/payments';
 import { getUserSubscription } from '@/services/userSubscription';
 import PaymentSuccess from './PaymentSuccess';
+import StripePaymentForm from './StripePaymentForm';
 import { BidItem } from '@/services/bid';
+
+// Initialize Stripe promise
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 interface PaymentProcessorProps {
   bidId: number;
@@ -34,7 +40,6 @@ export default function PaymentProcessor({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [userSubscription, setUserSubscription] = useState<any>(null);
   const [stripe, setStripe] = useState<any>(null);
-  const [elements, setElements] = useState<any>(null);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   useEffect(() => {
@@ -52,9 +57,22 @@ export default function PaymentProcessor({
   };
 
   const loadStripe = async () => {
-    // In a real implementation, you would load Stripe.js here
-    // For now, we'll simulate the Stripe loading
-    console.log('Loading Stripe...');
+    try {
+      console.log('Loading Stripe...');
+      const stripeInstance = await stripePromise;
+
+      if (stripeInstance) {
+        setStripe(stripeInstance);
+        console.log('Stripe loaded successfully');
+      } else {
+        throw new Error('Failed to load Stripe');
+      }
+    } catch (error) {
+      console.error('Error loading Stripe:', error);
+      toast.error('Failed to load payment system', {
+        description: 'Please refresh the page and try again'
+      });
+    }
   };
 
   const calculatePaymentBreakdown = () => {
@@ -103,37 +121,14 @@ export default function PaymentProcessor({
     }
   };
 
-  const handlePaymentSubmit = async () => {
-    if (!stripe || !elements || !clientSecret) {
-      toast.error('Payment not ready', {
-        description: 'Please wait for payment to initialize'
-      });
-      return;
-    }
+  const handlePaymentSuccess = (updatedPaymentIntent: PaymentIntent) => {
+    setPaymentIntent(updatedPaymentIntent);
+    setPaymentCompleted(true);
+    onPaymentSuccess?.(updatedPaymentIntent);
+  };
 
-    setIsLoading(true);
-
-    try {
-      // In a real implementation, you would use Stripe Elements here
-      // For now, we'll simulate a successful payment
-      setTimeout(() => {
-        if (paymentIntent) {
-          setPaymentCompleted(true);
-          toast.success('Payment successful!', {
-            description: 'Your payment has been processed successfully'
-          });
-          onPaymentSuccess?.(paymentIntent);
-        }
-        setIsLoading(false);
-      }, 2000);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Payment failed';
-      toast.error('Payment failed', {
-        description: errorMessage
-      });
-      onPaymentError?.(errorMessage);
-      setIsLoading(false);
-    }
+  const handlePaymentError = (error: string) => {
+    onPaymentError?.(error);
   };
 
   const breakdown = calculatePaymentBreakdown();
@@ -203,33 +198,22 @@ export default function PaymentProcessor({
                 <span className="font-medium">Payment Completed</span>
               </div>
             ) : (
-              <div className="text-center">
-                <p className="text-gray-600 mb-4">Payment ready to process</p>
-                
-                {/* Simulated Stripe Elements would go here */}
-                <div className="border border-gray-300 rounded-md p-4 mb-4 bg-gray-50">
-                  <p className="text-sm text-gray-500 text-center">
-                    [Stripe Payment Elements would appear here]
-                  </p>
-                  <p className="text-xs text-gray-400 text-center mt-2">
-                    Card number, expiry, CVC fields
-                  </p>
-                </div>
-
-                <button
-                  onClick={handlePaymentSubmit}
-                  disabled={isLoading}
-                  className="w-full bg-[#FF8A00] text-white py-3 px-4 rounded-md hover:bg-[#e67c00] focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
-                      Processing Payment...
-                    </div>
-                  ) : (
-                    `Pay ${formatCurrency(breakdown.totalAmount)}`
-                  )}
-                </button>
+              <div>
+                {stripe && clientSecret && paymentIntent ? (
+                  <Elements stripe={stripe}>
+                    <StripePaymentForm
+                      clientSecret={clientSecret}
+                      paymentIntent={paymentIntent}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentError={handlePaymentError}
+                    />
+                  </Elements>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#FF8A00] mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading payment form...</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

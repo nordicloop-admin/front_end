@@ -10,7 +10,7 @@ import {
 } from './mockPayments';
 
 // Flag to enable/disable mock data (set to true when backend is unavailable)
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 // Types for payment-related data
 export interface StripeAccount {
@@ -125,7 +125,7 @@ export const setupBankAccount = async (bankAccountData: BankAccountSetup): Promi
   return response.data || { success: false, message: response.error || 'Failed to setup bank account' };
 };
 
-export const getUserStripeAccount = async (): Promise<StripeAccount> => {
+export const getUserStripeAccount = async (): Promise<StripeAccount | null> => {
   if (USE_MOCK_DATA) {
     return mockUserStripeAccount;
   }
@@ -134,6 +134,12 @@ export const getUserStripeAccount = async (): Promise<StripeAccount> => {
   if (response.data) {
     return response.data;
   }
+
+  // If it's a 404 (no account found), return null instead of throwing
+  if (response.status === 404) {
+    return null;
+  }
+
   throw new Error(response.error || 'Failed to get stripe account');
 };
 

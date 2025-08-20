@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { Check, AlertCircle, CreditCard, Building, Edit2, X } from 'lucide-react';
+import { Check, AlertCircle, CreditCard, Building, Edit2, X, Clock } from 'lucide-react';
 import { setupBankAccount, getUserStripeAccount, StripeAccount, BankAccountSetup } from '@/services/payments';
 
 interface BankAccountSetupProps {
@@ -33,8 +33,12 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
       const account = await getUserStripeAccount();
       setExistingAccount(account);
     } catch (error) {
-      // No existing account found, which is fine
+      // Error occurred while checking account (not just "no account found")
+      console.error('Error checking existing account:', error);
       setExistingAccount(null);
+      toast.error('Failed to check existing account', {
+        description: 'Please refresh the page and try again'
+      });
     } finally {
       setIsCheckingAccount(false);
     }
@@ -104,35 +108,58 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
     }
   };
 
-  const getAccountStatusInfo = (status: string) => {
-    switch (status) {
+  const getAccountStatusInfo = (status: string | null | undefined) => {
+    // Handle null/undefined status
+    if (!status) {
+      return {
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-50',
+        icon: <Clock className="w-5 h-5" />,
+        message: 'Account setup in progress. Verification may take 1-2 business days.',
+        displayStatus: 'Setting Up'
+      };
+    }
+
+    switch (status.toLowerCase()) {
       case 'active':
         return {
           color: 'text-green-600',
           bgColor: 'bg-green-50',
           icon: <Check className="w-5 h-5" />,
-          message: 'Your account is active and ready to receive payments'
+          message: 'Your account is active and ready to receive payments',
+          displayStatus: 'Active'
         };
       case 'pending':
         return {
           color: 'text-yellow-600',
           bgColor: 'bg-yellow-50',
-          icon: <AlertCircle className="w-5 h-5" />,
-          message: 'Your account is being verified. This may take 1-2 business days'
+          icon: <Clock className="w-5 h-5" />,
+          message: 'Your account is being verified. This may take 1-2 business days',
+          displayStatus: 'Pending Verification'
         };
       case 'restricted':
         return {
           color: 'text-red-600',
           bgColor: 'bg-red-50',
           icon: <AlertCircle className="w-5 h-5" />,
-          message: 'Your account needs additional information. Please contact support'
+          message: 'Your account needs additional information. Please contact support',
+          displayStatus: 'Restricted'
         };
-      default:
+      case 'inactive':
         return {
           color: 'text-gray-600',
           bgColor: 'bg-gray-50',
           icon: <AlertCircle className="w-5 h-5" />,
-          message: 'Account status unknown'
+          message: 'Your account is inactive. Please contact support',
+          displayStatus: 'Inactive'
+        };
+      default:
+        return {
+          color: 'text-blue-600',
+          bgColor: 'bg-blue-50',
+          icon: <Clock className="w-5 h-5" />,
+          message: 'Account setup in progress. Verification may take 1-2 business days.',
+          displayStatus: 'Setting Up'
         };
     }
   };
@@ -149,6 +176,8 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
 
   if (existingAccount && !isEditing) {
     const statusInfo = getAccountStatusInfo(existingAccount.account_status);
+    const isAccountActive = existingAccount.account_status === 'active';
+    const hasAccountDetails = existingAccount.bank_name || existingAccount.bank_account_last4;
 
     return (
       <div className={`bg-white rounded-lg border border-gray-200 p-6 ${className}`}>
@@ -166,46 +195,92 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
           </button>
         </div>
 
-        <div className={`p-4 rounded-lg ${statusInfo.bgColor} mb-4`}>
+        {/* Status Display */}
+        <div className={`p-4 rounded-lg ${statusInfo.bgColor} mb-6`}>
           <div className={`flex items-center ${statusInfo.color}`}>
             {statusInfo.icon}
             <span className="ml-2 font-medium">
-              {existingAccount.account_status.charAt(0).toUpperCase() + existingAccount.account_status.slice(1)}
+              {statusInfo.displayStatus}
             </span>
           </div>
           <p className="mt-2 text-sm text-gray-600">{statusInfo.message}</p>
         </div>
 
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Account ID:</span>
-            <span className="font-mono text-sm">{existingAccount.stripe_account_id.slice(-12)}</span>
-          </div>
-          {existingAccount.bank_name && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Bank:</span>
-              <span>{existingAccount.bank_name}</span>
+        {/* Account Details - Only show when account is active or has meaningful data */}
+        {(isAccountActive || hasAccountDetails) && (
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <h3 className="text-sm font-medium text-gray-900 mb-3">Account Details</h3>
+            <div className="space-y-2">
+              {existingAccount.bank_name && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Bank:</span>
+                  <span className="text-sm font-medium">{existingAccount.bank_name}</span>
+                </div>
+              )}
+              {existingAccount.bank_account_last4 && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Account ending in:</span>
+                  <span className="text-sm font-mono">****{existingAccount.bank_account_last4}</span>
+                </div>
+              )}
+              {existingAccount.stripe_account_id && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Account ID:</span>
+                  <span className="text-xs font-mono text-gray-500">
+                    {existingAccount.stripe_account_id.length >= 12
+                      ? existingAccount.stripe_account_id.slice(-12)
+                      : existingAccount.stripe_account_id
+                    }
+                  </span>
+                </div>
+              )}
             </div>
-          )}
-          {existingAccount.bank_account_last4 && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Account ending in:</span>
-              <span>****{existingAccount.bank_account_last4}</span>
+          </div>
+        )}
+
+        {/* Account Capabilities - Only show when account is active */}
+        {isAccountActive && (
+          <div className="bg-green-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-green-900 mb-3">Account Capabilities</h3>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-green-700">Accept Payments:</span>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-green-600 mr-1" />
+                  <span className="text-sm font-medium text-green-600">Enabled</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-green-700">Receive Payouts:</span>
+                <div className="flex items-center">
+                  <Check className="w-4 h-4 text-green-600 mr-1" />
+                  <span className="text-sm font-medium text-green-600">Enabled</span>
+                </div>
+              </div>
             </div>
-          )}
-          <div className="flex justify-between">
-            <span className="text-gray-600">Payments enabled:</span>
-            <span className={existingAccount.charges_enabled ? 'text-green-600' : 'text-red-600'}>
-              {existingAccount.charges_enabled ? 'Yes' : 'No'}
-            </span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Payouts enabled:</span>
-            <span className={existingAccount.payouts_enabled ? 'text-green-600' : 'text-red-600'}>
-              {existingAccount.payouts_enabled ? 'Yes' : 'No'}
-            </span>
+        )}
+
+        {/* Setup Progress - Show when account is not active */}
+        {!isAccountActive && (
+          <div className="bg-blue-50 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-blue-900 mb-3">Setup Progress</h3>
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <Check className="w-4 h-4 text-green-600 mr-3" />
+                <span className="text-sm text-gray-700">Bank account information submitted</span>
+              </div>
+              <div className="flex items-center">
+                <Clock className="w-4 h-4 text-blue-600 mr-3" />
+                <span className="text-sm text-gray-700">Account verification in progress</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 border-2 border-gray-300 rounded-full mr-3"></div>
+                <span className="text-sm text-gray-500">Payment capabilities will be enabled</span>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -230,10 +305,32 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
         )}
       </div>
 
+      {/* Welcome message for new users */}
+      {!isEditing && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-start">
+            <CreditCard className="w-5 h-5 text-blue-600 mt-0.5 mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-blue-900 mb-1">Start Receiving Payments</h3>
+              <p className="text-sm text-blue-800 mb-3">
+                Set up your bank account to receive payments from buyers when you sell materials.
+                This is required to participate as a seller in the marketplace.
+              </p>
+              <ul className="text-xs text-blue-700 space-y-1">
+                <li>• Secure processing through Stripe Connect</li>
+                <li>• Automatic payouts to your bank account</li>
+                <li>• Commission rates based on your subscription plan</li>
+                <li>• Full transaction history and reporting</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
       <p className="text-gray-600 mb-6">
         {isEditing
           ? 'Update your bank account information. This will replace your current payment account.'
-          : 'Set up your bank account to receive payments from sales. This information is securely processed by Stripe.'
+          : 'Complete the form below to connect your bank account. All information is encrypted and securely stored.'
         }
       </p>
 
