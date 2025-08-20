@@ -11,9 +11,20 @@ export default function WinningBidsPage() {
   const [winningBids, setWinningBids] = useState<BidItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [highlightedBidId, setHighlightedBidId] = useState<number | null>(null);
 
   useEffect(() => {
     loadWinningBids();
+
+    // Check for bid_id in URL params to highlight specific bid
+    const urlParams = new URLSearchParams(window.location.search);
+    const bidId = urlParams.get('bid_id');
+    if (bidId) {
+      setHighlightedBidId(parseInt(bidId));
+      // Remove the parameter from URL after processing
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    }
   }, []);
 
   const loadWinningBids = async () => {
@@ -174,7 +185,8 @@ export default function WinningBidsPage() {
               key={bid.id}
               winningBid={bid}
               onPaymentComplete={handlePaymentComplete}
-              className="w-full"
+              className={`w-full ${highlightedBidId === bid.id ? 'ring-2 ring-[#FF8A00] ring-opacity-50' : ''}`}
+              autoExpand={highlightedBidId === bid.id}
             />
           ))}
         </div>

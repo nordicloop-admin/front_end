@@ -39,11 +39,71 @@ export async function getUserNotifications() {
 }
 
 /**
+ * Get paginated notifications for the current user
+ * @param params - Query parameters for pagination and filtering
+ * @returns Promise with paginated notifications data
+ */
+export async function getUserNotificationsPaginated(params?: {
+  page?: number;
+  page_size?: number;
+  type?: string;
+  priority?: string;
+  search?: string;
+  is_read?: boolean;
+}) {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+  if (params?.type) queryParams.append('type', params.type);
+  if (params?.priority) queryParams.append('priority', params.priority);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.is_read !== undefined) queryParams.append('is_read', params.is_read.toString());
+
+  const url = `/notifications${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return apiGet<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Notification[];
+  }>(url, true);
+}
+
+/**
  * Get all unread notifications for the current user
  * @returns Promise with unread notifications data
  */
 export async function getUnreadNotifications() {
   return apiGet<Notification[]>('/notifications/unread', true);
+}
+
+/**
+ * Get paginated unread notifications for the current user
+ * @param params - Query parameters for pagination and filtering
+ * @returns Promise with paginated unread notifications data
+ */
+export async function getUnreadNotificationsPaginated(params?: {
+  page?: number;
+  page_size?: number;
+  type?: string;
+  priority?: string;
+  search?: string;
+}) {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+  if (params?.type) queryParams.append('type', params.type);
+  if (params?.priority) queryParams.append('priority', params.priority);
+  if (params?.search) queryParams.append('search', params.search);
+
+  const url = `/notifications/unread${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return apiGet<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Notification[];
+  }>(url, true);
 }
 
 /**
@@ -60,7 +120,7 @@ export async function markNotificationAsRead(notificationId: number) {
  * @returns Promise with success status
  */
 export async function markAllNotificationsAsRead() {
-  return apiPut<{ success: boolean }>('/notifications/read-all', {}, true);
+  return apiPut<{ success: boolean }>('/notifications/read-all/', {}, true);
 }
 
 /**

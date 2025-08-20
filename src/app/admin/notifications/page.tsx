@@ -25,6 +25,7 @@ import {
 } from '@/services/notifications';
 import { searchUsers } from '@/services/users';
 import Modal from '@/components/ui/modal';
+import Pagination from '@/components/ui/Pagination';
 import {
   getNotificationIconComponent,
   getNotificationTypeConfig,
@@ -62,8 +63,8 @@ export default function AdminNotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
-  const [hasPrevious, setHasPrevious] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -103,13 +104,24 @@ export default function AdminNotificationsPage() {
   // Get notification categories
   const notificationCategories = getNotificationCategories();
 
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    fetchNotifications(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
+
   // Fetch notifications with pagination and filters
   const fetchNotifications = useCallback(async (page = 1) => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getAllNotifications({
         page,
-        page_size: 20,
+        page_size: pageSize,
         type: selectedTypeFilter || undefined,
         priority: selectedPriorityFilter || undefined,
         search: searchQuery || undefined,
@@ -120,8 +132,7 @@ export default function AdminNotificationsPage() {
       } else if (response.data) {
         setNotifications(response.data.results);
         setTotalCount(response.data.count);
-        setHasNext(!!response.data.next);
-        setHasPrevious(!!response.data.previous);
+        setTotalPages(Math.ceil(response.data.count / pageSize));
         setCurrentPage(page);
       }
     } catch (_err) {
@@ -129,7 +140,7 @@ export default function AdminNotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedTypeFilter, selectedPriorityFilter, searchQuery]);
+  }, [selectedTypeFilter, selectedPriorityFilter, searchQuery, pageSize]);
 
   // Initial fetch
   useEffect(() => {
@@ -514,49 +525,17 @@ export default function AdminNotificationsPage() {
             </div>
 
             {/* Pagination */}
-            {(hasNext || hasPrevious) && (
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <button
-                    onClick={() => fetchNotifications(currentPage - 1)}
-                    disabled={!hasPrevious || loading}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => fetchNotifications(currentPage + 1)}
-                    disabled={!hasNext || loading}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Page <span className="font-medium">{currentPage}</span> of notifications
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                      <button
-                        onClick={() => fetchNotifications(currentPage - 1)}
-                        disabled={!hasPrevious || loading}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => fetchNotifications(currentPage + 1)}
-                        disabled={!hasNext || loading}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </nav>
-                  </div>
-                </div>
+            {totalPages > 1 && (
+              <div className="px-4 py-4 border-t border-gray-200">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalCount={totalCount}
+                  pageSize={pageSize}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                  showPageSizeSelector={true}
+                />
               </div>
             )}
           </>

@@ -5,12 +5,15 @@ import { toast } from 'sonner';
 import { CreditCard, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { createPaymentIntent, PaymentIntent, formatCurrency, getCommissionRate } from '@/services/payments';
 import { getUserSubscription } from '@/services/userSubscription';
+import PaymentSuccess from './PaymentSuccess';
+import { BidItem } from '@/services/bid';
 
 interface PaymentProcessorProps {
   bidId: number;
   bidAmount: string;
   bidVolume: string;
   sellerEmail: string;
+  winningBid?: BidItem;
   onPaymentSuccess?: (paymentIntent: PaymentIntent) => void;
   onPaymentError?: (error: string) => void;
   className?: string;
@@ -21,6 +24,7 @@ export default function PaymentProcessor({
   bidAmount,
   bidVolume,
   sellerEmail,
+  winningBid,
   onPaymentSuccess,
   onPaymentError,
   className = ''
@@ -31,6 +35,7 @@ export default function PaymentProcessor({
   const [userSubscription, setUserSubscription] = useState<any>(null);
   const [stripe, setStripe] = useState<any>(null);
   const [elements, setElements] = useState<any>(null);
+  const [paymentCompleted, setPaymentCompleted] = useState(false);
 
   useEffect(() => {
     loadUserSubscription();
@@ -113,6 +118,7 @@ export default function PaymentProcessor({
       // For now, we'll simulate a successful payment
       setTimeout(() => {
         if (paymentIntent) {
+          setPaymentCompleted(true);
           toast.success('Payment successful!', {
             description: 'Your payment has been processed successfully'
           });
@@ -264,6 +270,15 @@ export default function PaymentProcessor({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Payment Success */}
+      {paymentCompleted && paymentIntent && winningBid && (
+        <PaymentSuccess
+          paymentIntent={paymentIntent}
+          winningBid={winningBid}
+          className="mt-6"
+        />
       )}
     </div>
   );

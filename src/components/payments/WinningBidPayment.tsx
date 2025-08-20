@@ -11,20 +11,29 @@ interface WinningBidPaymentProps {
   winningBid: BidItem;
   onPaymentComplete?: (paymentIntent: PaymentIntent) => void;
   className?: string;
+  autoExpand?: boolean;
 }
 
-export default function WinningBidPayment({ 
-  winningBid, 
-  onPaymentComplete, 
-  className = '' 
+export default function WinningBidPayment({
+  winningBid,
+  onPaymentComplete,
+  className = '',
+  autoExpand = false
 }: WinningBidPaymentProps) {
-  const [showPaymentProcessor, setShowPaymentProcessor] = useState(false);
+  const [showPaymentProcessor, setShowPaymentProcessor] = useState(autoExpand);
   const [paymentStatus, setPaymentStatus] = useState<'pending' | 'processing' | 'completed' | 'failed'>('pending');
 
   const handleStartPayment = () => {
     setShowPaymentProcessor(true);
     setPaymentStatus('processing');
   };
+
+  // Auto-expand payment processor if autoExpand is true
+  useEffect(() => {
+    if (autoExpand && paymentStatus === 'pending') {
+      setPaymentStatus('processing');
+    }
+  }, [autoExpand, paymentStatus]);
 
   const handlePaymentSuccess = (paymentIntent: PaymentIntent) => {
     setPaymentStatus('completed');
@@ -174,6 +183,7 @@ export default function WinningBidPayment({
             bidAmount={winningBid.bid_price_per_unit}
             bidVolume={winningBid.volume_requested}
             sellerEmail={winningBid.ad_user_email}
+            winningBid={winningBid}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentError={handlePaymentError}
             className="mt-6"

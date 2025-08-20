@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Bell, CheckCircle } from 'lucide-react';
-import { getUserNotifications, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
+import { getUserNotificationsPaginated, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
 import NotificationCard from '@/components/notifications/NotificationCard';
 import NotificationFilters from '@/components/notifications/NotificationFilters';
-import { filterNotifications, sortNotificationsByPriority } from '@/utils/notificationUtils';
+import Pagination from '@/components/ui/Pagination';
+import { sortNotificationsByPriority } from '@/utils/notificationUtils';
 
 // Fallback mock data in case API fails
 const mockNotifications = [
@@ -30,101 +31,113 @@ export default function NotificationsPage() {
   const [selectedPriority, setSelectedPriority] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   
-  // Fetch notifications from API
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setLoading(true);
-        const response = await getUserNotifications();
-        
-        if (response.error) {
-          setError(response.error);
-          // Fallback to mock data if API fails
-          setNotifications(mockNotifications);
-        } else if (response.data) {
-          setNotifications(response.data);
-        }
-      } catch (_err) {
-        setError('Failed to load notifications');
+  // Fetch notifications from API with pagination
+  const fetchNotifications = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const params = {
+        page,
+        page_size: pageSize,
+        type: selectedType,
+        priority: selectedPriority,
+        search: searchQuery || undefined,
+        is_read: activeTab === 'all' ? undefined : activeTab === 'read'
+      };
+
+      const response = await getUserNotificationsPaginated(params);
+
+      if (response.error) {
+        setError(response.error);
         // Fallback to mock data if API fails
         setNotifications(mockNotifications);
-      } finally {
-        setLoading(false);
+        setTotalCount(mockNotifications.length);
+        setTotalPages(1);
+      } else if (response.data) {
+        setNotifications(response.data.results);
+        setTotalCount(response.data.count);
+        setTotalPages(Math.ceil(response.data.count / pageSize));
+        setCurrentPage(page);
       }
-    };
-    
-    fetchNotifications();
-  }, []);
-  
-  // Filter and sort notifications
-  const getFilteredNotifications = () => {
-    let filtered = notifications;
-
-    // Filter by tab
-    if (activeTab === 'unread') {
-      filtered = filtered.filter(notification => !notification.is_read);
-    } else if (activeTab === 'read') {
-      filtered = filtered.filter(notification => notification.is_read);
+    } catch (_err) {
+      setError('Failed to load notifications');
+      // Fallback to mock data if API fails
+      setNotifications(mockNotifications);
+      setTotalCount(mockNotifications.length);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
     }
-
-    // Apply additional filters
-    filtered = filterNotifications(filtered, {
-      type: selectedType,
-      priority: selectedPriority,
-      search: searchQuery
-    });
-
-    // Sort by priority and date
-    return sortNotificationsByPriority(filtered);
   };
 
-  const filteredNotifications = getFilteredNotifications();
+  // Initial fetch and refetch when filters change
+  useEffect(() => {
+    fetchNotifications(1);
+  }, [activeTab, selectedType, selectedPriority, searchQuery, pageSize]);
+  
+  // Sort notifications by priority (server already orders by date)
+  const sortedNotifications = sortNotificationsByPriority(notifications);
+
+  // Pagination handlers
+  const handlePageChange = (page: number) => {
+    fetchNotifications(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
   
   // Mark notification as read
   const markAsRead = async (id: number) => {
     try {
       const response = await markNotificationAsRead(id);
-      
+
       if (response.error) {
         setError(response.error);
       } else {
-        // Update local state
-        setNotifications(notifications.map(notification =>
-          notification.id === id ? { ...notification, is_read: true } : notification
-        ));
+        // Refresh current page to reflect changes
+        fetchNotifications(currentPage);
       }
     } catch (_err) {
       setError('Failed to mark notification as read');
     }
   };
-  
+
   // Delete notification
   const handleDeleteNotification = async (id: number) => {
     try {
       const response = await deleteNotification(id);
-      
+
       if (response.error) {
         setError(response.error);
       } else {
-        // Update local state
-        setNotifications(notifications.filter(notification => notification.id !== id));
+        // Refresh current page to reflect changes
+        fetchNotifications(currentPage);
       }
     } catch (_err) {
       setError('Failed to delete notification');
     }
   };
-  
+
   // Mark all as read
   const handleMarkAllAsRead = async () => {
     try {
       const response = await markAllNotificationsAsRead();
-      
+
       if (response.error) {
         setError(response.error);
       } else {
-        // Update local state
-        setNotifications(notifications.map(notification => ({ ...notification, is_read: true })));
+        // Refresh current page to reflect changes
+        fetchNotifications(currentPage);
       }
     } catch (_err) {
       setError('Failed to mark all notifications as read');
@@ -159,15 +172,20 @@ export default function NotificationsPage() {
         <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {filteredNotifications.length} notification{filteredNotifications.length !== 1 ? 's' : ''}
+              {totalCount} notification{totalCount !== 1 ? 's' : ''} total
               {activeTab !== 'all' && ` (${activeTab})`}
+              {totalCount > 0 && (
+                <span className="ml-2">
+                  • Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalCount)} of {totalCount}
+                </span>
+              )}
             </div>
 
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-sm text-gray-600 hover:text-[#FF8A00] flex items-center transition-colors"
-                disabled={loading || notifications.filter(n => !n.is_read).length === 0}
+                disabled={loading || sortedNotifications.filter(n => !n.is_read).length === 0}
               >
                 <CheckCircle size={14} className="mr-1" />
                 Mark all as read
@@ -192,19 +210,36 @@ export default function NotificationsPage() {
         
         {/* Notifications List */}
         <div className="divide-y divide-gray-100">
-          {!loading && filteredNotifications.length > 0 ? (
-            <div className="space-y-0">
-              {filteredNotifications.map((notification) => (
-                <div key={notification.id} className="px-5">
-                  <NotificationCard
-                    notification={notification}
-                    onMarkAsRead={markAsRead}
-                    onDelete={handleDeleteNotification}
-                    className="border-0 rounded-none"
+          {!loading && sortedNotifications.length > 0 ? (
+            <>
+              <div className="space-y-0">
+                {sortedNotifications.map((notification) => (
+                  <div key={notification.id} className="px-5">
+                    <NotificationCard
+                      notification={notification}
+                      onMarkAsRead={markAsRead}
+                      onDelete={handleDeleteNotification}
+                      className="border-0 rounded-none"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-5 py-4 border-t border-gray-200">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    showPageSizeSelector={true}
                   />
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center text-center py-12 px-5">
               <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mb-4">
