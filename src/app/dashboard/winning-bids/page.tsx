@@ -31,14 +31,14 @@ export default function WinningBidsPage() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await getUserWinningBids();
       if (response.error) {
         setError(response.error);
       } else {
-        // Filter for only 'won' status bids
-        const wonBids = response.data?.filter(bid => bid.status === 'won') || [];
-        setWinningBids(wonBids);
+        // The service returns bids in response.data.bids (from paginated response)
+        const allBids = response.data?.bids || [];
+        setWinningBids(allBids);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load winning bids';
@@ -109,6 +109,34 @@ export default function WinningBidsPage() {
           Refresh
         </button>
       </div>
+
+      {/* Payment Reminder Banner */}
+      {winningBids.length > 0 && winningBids.some(bid => bid.status === 'won') && (
+        <div className="bg-gradient-to-r from-[#FF8A00] to-[#FF9500] rounded-lg p-6 mb-6 text-white shadow-lg">
+          <div className="flex items-center">
+            <div className="bg-white/20 rounded-full p-2 mr-4">
+              <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-1">⏰ Payment Required</h3>
+              <p className="text-white/90">
+                You have {winningBids.filter(bid => bid.status === 'won').length} winning bid{winningBids.filter(bid => bid.status === 'won').length !== 1 ? 's' : ''} awaiting payment.
+                Complete your payments within 48 hours to secure your materials.
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold">
+                {winningBids.filter(bid => bid.status === 'won').length}
+              </div>
+              <div className="text-white/80 text-sm">
+                Pending Payment{winningBids.filter(bid => bid.status === 'won').length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Summary Stats */}
       {winningBids.length > 0 && (
@@ -185,7 +213,7 @@ export default function WinningBidsPage() {
               key={bid.id}
               winningBid={bid}
               onPaymentComplete={handlePaymentComplete}
-              className={`w-full ${highlightedBidId === bid.id ? 'ring-2 ring-[#FF8A00] ring-opacity-50' : ''}`}
+              className={`w-full ${highlightedBidId === bid.id ? 'ring-4 ring-[#FF8A00] ring-opacity-75 shadow-xl' : ''}`}
               autoExpand={highlightedBidId === bid.id}
             />
           ))}

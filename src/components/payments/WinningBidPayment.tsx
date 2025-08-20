@@ -28,12 +28,19 @@ export default function WinningBidPayment({
     setPaymentStatus('processing');
   };
 
-  // Auto-expand payment processor if autoExpand is true
+  // Auto-expand payment processor if autoExpand is true and payment is needed
   useEffect(() => {
-    if (autoExpand && paymentStatus === 'pending') {
+    if (autoExpand && paymentStatus === 'pending' && winningBid.status !== 'paid') {
       setPaymentStatus('processing');
     }
-  }, [autoExpand, paymentStatus]);
+  }, [autoExpand, paymentStatus, winningBid.status]);
+
+  // Set initial payment status based on bid status
+  useEffect(() => {
+    if (winningBid.status === 'paid') {
+      setPaymentStatus('completed');
+    }
+  }, [winningBid.status]);
 
   const handlePaymentSuccess = (paymentIntent: PaymentIntent) => {
     setPaymentStatus('completed');
@@ -59,7 +66,7 @@ export default function WinningBidPayment({
       case 'failed':
         return <AlertCircle className="w-6 h-6 text-red-600" />;
       default:
-        return <Trophy className="w-6 h-6 text-yellow-600" />;
+        return <Trophy className="w-6 h-6 text-[#FF8A00]" />;
     }
   };
 
@@ -72,7 +79,9 @@ export default function WinningBidPayment({
       case 'failed':
         return 'Payment failed. Please try again or contact support.';
       default:
-        return 'Congratulations! You won this auction. Complete your payment to finalize the purchase.';
+        return winningBid.status === 'paid'
+          ? 'Payment completed! The seller has been notified and will coordinate delivery.'
+          : 'Congratulations! You won this auction. Complete your payment to finalize the purchase.';
     }
   };
 
@@ -85,7 +94,7 @@ export default function WinningBidPayment({
       case 'failed':
         return 'text-red-800 bg-red-50 border-red-200';
       default:
-        return 'text-yellow-800 bg-yellow-50 border-yellow-200';
+        return 'text-[#FF8A00] bg-orange-50 border-orange-200';
     }
   };
 
@@ -97,7 +106,9 @@ export default function WinningBidPayment({
           {getStatusIcon()}
           <div className="ml-3">
             <h3 className="font-semibold">
-              {paymentStatus === 'completed' ? 'Payment Completed' : 'Winning Bid - Payment Required'}
+              {paymentStatus === 'completed' || winningBid.status === 'paid'
+                ? '✅ Payment Completed'
+                : '🏆 Winning Bid - Payment Required'}
             </h3>
             <p className="text-sm mt-1">{getStatusMessage()}</p>
           </div>
@@ -117,11 +128,11 @@ export default function WinningBidPayment({
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Category:</span>
-                <span>{winningBid.ad_category}</span>
+                <span>{winningBid.ad_category || 'Not specified'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Seller:</span>
-                <span>{winningBid.ad_user_email}</span>
+                <span>{winningBid.ad_user_email || 'Not specified'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Location:</span>
@@ -136,16 +147,18 @@ export default function WinningBidPayment({
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Bid Amount:</span>
-                <span className="font-medium">{winningBid.bid_price_per_unit} SEK/unit</span>
+                <span className="font-medium">
+                  {winningBid.bid_price_per_unit} {winningBid.currency || 'SEK'}/{winningBid.unit || 'unit'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Volume:</span>
-                <span>{winningBid.volume_requested} units</span>
+                <span>{winningBid.volume_requested} {winningBid.unit || 'units'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Total Value:</span>
                 <span className="font-bold text-lg">
-                  {(parseFloat(winningBid.bid_price_per_unit) * parseFloat(winningBid.volume_requested)).toFixed(2)} SEK
+                  {winningBid.total_bid_value} {winningBid.currency || 'SEK'}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -156,33 +169,69 @@ export default function WinningBidPayment({
           </div>
         </div>
 
-        {/* Payment Section */}
-        {paymentStatus === 'pending' && !showPaymentProcessor && (
-          <div className="text-center">
-            <div className="bg-gray-50 rounded-lg p-6 mb-6">
-              <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Complete Payment</h3>
-              <p className="text-gray-600 mb-4">
-                Click below to proceed with secure payment processing. Your payment will be held securely 
-                until the transaction is complete.
+        {/* Payment Section - Enhanced for Better Visibility */}
+        {paymentStatus === 'pending' && !showPaymentProcessor && winningBid.status !== 'paid' && (
+          <div className="border-t border-gray-200 pt-6">
+            {/* Prominent Payment Call-to-Action */}
+            <div className="bg-gradient-to-r from-[#FF8A00] to-[#FF9500] rounded-xl p-8 text-center text-white mb-6 shadow-lg">
+              <div className="flex items-center justify-center mb-4">
+                <div className="bg-white/20 rounded-full p-3">
+                  <CreditCard className="w-8 h-8 text-white" />
+                </div>
+              </div>
+              <h3 className="text-2xl font-bold mb-2">🎉 Congratulations! You Won!</h3>
+              <p className="text-white/90 mb-6 text-lg">
+                Complete your payment now to secure this winning bid
               </p>
+              <div className="bg-white/10 rounded-lg p-4 mb-6">
+                <div className="text-3xl font-bold mb-1">
+                  {winningBid.total_bid_value} {winningBid.currency || 'SEK'}
+                </div>
+                <div className="text-white/80 text-sm">
+                  Total Amount Due
+                </div>
+              </div>
               <button
                 onClick={handleStartPayment}
-                className="inline-flex items-center px-6 py-3 bg-[#FF8A00] text-white font-medium rounded-md hover:bg-[#e67c00] focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:ring-offset-2 transition-colors"
+                className="inline-flex items-center px-8 py-4 bg-white text-[#FF8A00] font-bold text-lg rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-4 focus:ring-white/30 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
-                Proceed to Payment
-                <ArrowRight className="w-4 h-4 ml-2" />
+                <CreditCard className="w-6 h-6 mr-3" />
+                Pay Now - Secure Payment
+                <ArrowRight className="w-6 h-6 ml-3" />
               </button>
+              <p className="text-white/70 text-sm mt-4">
+                🔒 Secure payment powered by Stripe • Money-back guarantee
+              </p>
+            </div>
+
+            {/* Payment Details */}
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+              <div className="flex items-start">
+                <div className="bg-blue-100 rounded-full p-2 mr-3 mt-1">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">Payment Information</p>
+                  <ul className="space-y-1 text-blue-700">
+                    <li>• Payment is processed securely through Stripe</li>
+                    <li>• Funds are held until delivery is confirmed</li>
+                    <li>• You have 48 hours to complete payment</li>
+                    <li>• The seller will be notified once payment is received</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {showPaymentProcessor && paymentStatus !== 'completed' && (
+        {showPaymentProcessor && paymentStatus !== 'completed' && winningBid.status !== 'paid' && (
           <PaymentProcessor
             bidId={winningBid.id}
             bidAmount={winningBid.bid_price_per_unit}
             bidVolume={winningBid.volume_requested}
-            sellerEmail={winningBid.ad_user_email}
+            sellerEmail={winningBid.ad_user_email || ''}
             winningBid={winningBid}
             onPaymentSuccess={handlePaymentSuccess}
             onPaymentError={handlePaymentError}
@@ -190,7 +239,7 @@ export default function WinningBidPayment({
           />
         )}
 
-        {paymentStatus === 'completed' && (
+        {(paymentStatus === 'completed' || winningBid.status === 'paid') && (
           <div className="bg-green-50 rounded-lg p-6 text-center">
             <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-green-900 mb-2">Payment Successful!</h3>
