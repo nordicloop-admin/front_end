@@ -212,7 +212,7 @@ export default function WinningBidsPage() {
               key={bid.id}
               winningBid={bid}
               onPaymentComplete={handlePaymentComplete}
-              className={`w-full ${highlightedBidId === bid.id ? 'ring-4 ring-blue-500 ring-opacity-75 shadow-xl' : ''}`}
+              className="w-full"
               autoExpand={highlightedBidId === bid.id}
             />
           ))}

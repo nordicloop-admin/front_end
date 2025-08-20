@@ -157,39 +157,14 @@ export default function PaymentProcessor({
             <span className="text-gray-600">Volume:</span>
             <span>{bidVolume} units</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Subtotal:</span>
-            <span>{formatCurrency(breakdown.totalAmount)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">
-              Commission ({breakdown.commissionRate} - {breakdown.planType} plan):
-            </span>
-            <span>{formatCurrency(breakdown.commissionAmount)}</span>
-          </div>
           <div className="border-t pt-2 flex justify-between font-medium">
             <span>Total to Pay:</span>
             <span>{formatCurrency(breakdown.totalAmount)}</span>
           </div>
-          <div className="flex justify-between text-sm text-gray-600">
-            <span>Seller receives:</span>
-            <span>{formatCurrency(breakdown.sellerAmount)}</span>
-          </div>
         </div>
       </div>
 
-      {/* Seller Information */}
-      <div className="bg-blue-50 rounded-lg p-4 mb-6">
-        <div className="flex items-start">
-          <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
-          <div className="text-sm">
-            <p className="font-medium text-blue-900 mb-1">Payment to: {sellerEmail}</p>
-            <p className="text-blue-800">
-              Your payment will be processed securely. The seller will receive their portion after our commission is deducted.
-            </p>
-          </div>
-        </div>
-      </div>
+
 
       {/* Payment Status */}
       {!paymentIntent && (
