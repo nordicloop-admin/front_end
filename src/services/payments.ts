@@ -156,6 +156,16 @@ export const createPaymentIntent = async (bidId: number, returnUrl?: string): Pr
   return response.data || { success: false, message: response.error || 'Failed to create payment intent' };
 };
 
+export const confirmPaymentCompletion = async (paymentIntentId: string): Promise<{
+  success: boolean;
+  message: string;
+  already_processed?: boolean;
+  completion_result?: any;
+}> => {
+  const response = await apiPost(`/payments/payment-intent/${paymentIntentId}/confirm/`, {}, true);
+  return response.data || { success: false, message: response.error || 'Failed to confirm payment completion' };
+};
+
 export const getUserPaymentIntents = async (): Promise<PaymentIntent[]> => {
   if (USE_MOCK_DATA) {
     return mockPaymentIntents;

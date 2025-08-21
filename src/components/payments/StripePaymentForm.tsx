@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { toast } from 'sonner';
 import { CreditCard, Loader2 } from 'lucide-react';
-import { PaymentIntent } from '@/services/payments';
+import { PaymentIntent, confirmPaymentCompletion } from '@/services/payments';
 
 interface StripePaymentFormProps {
   clientSecret: string;
@@ -83,13 +83,30 @@ export default function StripePaymentForm({
         });
       } else if (confirmedPaymentIntent && confirmedPaymentIntent.status === 'succeeded') {
         console.log('Payment succeeded:', confirmedPaymentIntent);
-        
+
         // Update the payment intent with the confirmed status
         const updatedPaymentIntent = {
           ...paymentIntent,
           status: 'succeeded' as const,
           stripe_payment_intent_id: confirmedPaymentIntent.id
         };
+
+        // Call backend to confirm payment completion (fallback for webhook)
+        try {
+          const confirmationResult = await confirmPaymentCompletion(paymentIntent.id);
+          if (confirmationResult.success) {
+            console.log('Payment completion confirmed with backend');
+            if (confirmationResult.already_processed) {
+              console.log('Payment was already processed by webhook');
+            }
+          } else {
+            console.warn('Backend confirmation failed:', confirmationResult.message);
+            // Still proceed with frontend success - webhook might handle it
+          }
+        } catch (error) {
+          console.warn('Error confirming payment with backend:', error);
+          // Still proceed with frontend success - webhook might handle it
+        }
 
         onPaymentSuccess(updatedPaymentIntent);
         toast.success('Payment successful!', {
