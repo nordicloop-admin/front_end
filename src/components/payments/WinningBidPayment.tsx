@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { Trophy, CreditCard, AlertCircle, CheckCircle, Clock, ArrowRight } from 'lucide-react';
 import { BidItem } from '@/services/bid';
