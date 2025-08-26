@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Building, Shield, Save, X, RefreshCw, AlertCircle, CheckCircle, MapPin, Plus, Trash2, Edit, Check } from 'lucide-react';
+import { Building, Shield, Save, X, RefreshCw, AlertCircle, CheckCircle, MapPin, Plus, Trash2, Edit, Check, Calendar, ArrowRight, Bell } from 'lucide-react';
 import { getUserProfile, updateUserProfile, changePassword, UserProfile, ProfileUpdateRequest, PasswordChangeRequest } from '@/services/userProfile';
 import { getUserAddresses, createUserAddress, updateUserAddress, deleteUserAddress, setPrimaryAddress, Address, AddressCreateRequest } from '@/services/userAddresses';
+import { getUserSubscription, updateUserSubscription, createUserSubscription, UserSubscription } from '@/services/userSubscription';
+import { getPricingData, PricingData } from '@/services/pricing';
+import Link from 'next/link';
 
 export default function Profile() {
   const [activeTab, setActiveTab] = useState('personal');
@@ -13,6 +16,13 @@ export default function Profile() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  
+  // Subscription-related state
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
+  const [pricingData, setPricingData] = useState<PricingData | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   
   // Address-related state
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -46,27 +56,57 @@ export default function Profile() {
     contact_phone: ''
   });
   
-  // Fetch user profile
+  // Fetch user profile and subscription data
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        const response = await getUserProfile();
+        // Fetch all data in parallel
+        const [profileResponse, subscriptionResponse, pricingResponse] = await Promise.all([
+          getUserProfile(),
+          getUserSubscription(),
+          getPricingData()
+        ]);
         
-        if (response.error) {
-          setError(response.error);
-        } else if (response.data) {
-          setProfile(response.data);
+        // Handle user profile
+        if (profileResponse.error) {
+          setError(profileResponse.error);
+        } else if (profileResponse.data) {
+          setProfile(profileResponse.data);
           setFormData({
-            firstName: response.data.first_name,
-            lastName: response.data.last_name,
-            email: response.data.email,
+            firstName: profileResponse.data.first_name,
+            lastName: profileResponse.data.last_name,
+            email: profileResponse.data.email,
             currentPassword: '',
             newPassword: '',
             confirmPassword: ''
           });
+        }
+
+        // Handle subscription
+        if (subscriptionResponse.error) {
+          // Check if the error is due to no subscription found
+          if (subscriptionResponse.status === 404 ||
+              subscriptionResponse.error.includes('not found') ||
+              subscriptionResponse.error.includes('No subscription')) {
+            setHasSubscription(false);
+          } else {
+            // Don't set error for subscription issues, just note no subscription
+            setHasSubscription(false);
+          }
+        } else if (subscriptionResponse.data) {
+          setSubscription(subscriptionResponse.data);
+          setHasSubscription(true);
+        }
+
+        // Handle pricing data
+        if (pricingResponse.error) {
+          // Don't fail the whole page if pricing data fails
+          console.warn('Failed to load pricing data:', pricingResponse.error);
+        } else if (pricingResponse.data?.success) {
+          setPricingData(pricingResponse.data.data);
         }
       } catch (_err) {
         setError('Failed to load profile data');
@@ -75,7 +115,7 @@ export default function Profile() {
       }
     };
     
-    fetchProfile();
+    fetchData();
   }, []);
   
   // Fetch user addresses
@@ -267,6 +307,94 @@ export default function Profile() {
     }
   };
   
+  // Handle subscription plan change (upgrade or create new)
+  const handlePlanChange = async (planId: string) => {
+    // If updating or trying to select the current plan, do nothing
+    if (isUpdating || (subscription && subscription.plan === planId)) return;
+    
+    try {
+      setIsUpdating(true);
+      setError(null);
+      setUpdateSuccess(false);
+      
+      let response;
+      
+      // If user has no subscription, create a new one
+      if (!hasSubscription) {
+        // Get current date and one year from now
+        const today = new Date();
+        const nextYear = new Date(today);
+        nextYear.setFullYear(today.getFullYear() + 1);
+        
+        // Format dates as YYYY-MM-DD
+        const formatDate = (date: Date) => {
+          return date.toISOString().split('T')[0];
+        };
+        
+        const startDate = formatDate(today);
+        const endDate = formatDate(nextYear);
+        
+        // Create subscription with required format
+        const createData = {
+          plan: planId,
+          status: 'active',
+          start_date: startDate,
+          end_date: endDate,
+          auto_renew: true,
+          last_payment: startDate,
+          amount: planId === 'free' ? '0' : planId === 'standard' ? '599' : '799',
+          // Use user profile information for contact details if available
+          contact_name: profile ? `${profile.first_name} ${profile.last_name}`.trim() : '',
+          contact_email: profile ? profile.email : ''
+        };
+        
+        response = await createUserSubscription(createData);
+      } else if (subscription) {
+        // Otherwise update the existing subscription
+        const updateData = {
+          plan: planId,
+          auto_renew: subscription.auto_renew,
+          payment_method: subscription.payment_method,
+          contact_name: subscription.contact_name,
+          contact_email: subscription.contact_email
+        };
+        
+        response = await updateUserSubscription(updateData);
+      }
+      
+      if (response?.error) {
+        setError(response.error);
+      } else if (response?.data) {
+        setSubscription(response.data.subscription);
+        setHasSubscription(true);
+        setUpdateSuccess(true);
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => {
+          setUpdateSuccess(false);
+        }, 3000);
+      }
+    } catch (_error) {
+      setError('Failed to update subscription');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Format date string
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch (_e) {
+      return dateString;
+    }
+  };
+  
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -401,6 +529,12 @@ export default function Profile() {
                 onClick={() => setActiveTab('security')}
               >
                 Security
+              </button>
+              <button
+                className={`px-5 py-3 text-sm font-medium ${activeTab === 'subscriptions' ? 'text-[#FF8A00] border-b-2 border-[#FF8A00]' : 'text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('subscriptions')}
+              >
+                Subscriptions
               </button>
             </div>
           </div>
@@ -873,7 +1007,183 @@ export default function Profile() {
                 </div>
               )}
 
-              {/* Form Actions */}
+              {/* Subscriptions Tab */}
+              {activeTab === 'subscriptions' && (
+                <div className="space-y-6">
+                  {/* Current Subscription */}
+                  <div className="bg-white border border-gray-100 rounded-md p-4 mb-6">
+                    {subscription ? (
+                      <>
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h2 className="text-sm font-medium text-gray-700">Current Plan</h2>
+                            <div className="text-base font-medium mt-1">{subscription.plan_display}</div>
+                          </div>
+
+                          <div className={`text-xs px-2 py-1 rounded-full ${
+                            subscription.status === 'active' ? 'bg-green-100 text-green-800' : 
+                            subscription.status === 'expired' ? 'bg-red-100 text-red-800' : 
+                            'bg-yellow-100 text-yellow-800'
+                          }`}>
+                            {subscription.status_display}
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                          <div className="text-xs text-gray-500 flex items-center">
+                            <Calendar size={14} className="mr-1" />
+                            Next billing date: {subscription.end_date ? formatDate(subscription.end_date) : 'N/A'}
+                          </div>
+
+                          <div className="flex items-center space-x-4">
+                            <div className="text-xs text-gray-500">
+                              Auto-renew: {subscription.auto_renew ? (
+                                <span className="text-green-600 font-medium">Enabled</span>
+                              ) : (
+                                <span className="text-red-600 font-medium">Disabled</span>
+                              )}
+                            </div>
+                            <Link href="/dashboard/subscriptions/payment" className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium">
+                              Manage Payment Methods
+                            </Link>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">
+                        {hasSubscription === false ? 'No subscription found. Please select a plan below.' : 'Loading subscription information...'}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Subscription Plans */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {!pricingData ? (
+                      // Loading state for pricing plans
+                      Array.from({ length: 3 }).map((_, index) => (
+                        <div key={index} className="bg-white border border-gray-100 rounded-md p-4">
+                          <div className="animate-pulse">
+                            <div className="h-4 bg-gray-200 rounded mb-3"></div>
+                            <div className="h-6 bg-gray-200 rounded mb-3"></div>
+                            <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                            <div className="space-y-2 mb-4">
+                              {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="h-3 bg-gray-200 rounded"></div>
+                              ))}
+                            </div>
+                            <div className="h-8 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      pricingData.pricing_plans.map((plan) => (
+                      <div
+                        key={plan.id}
+                        className={`bg-white border rounded-md p-4 ${
+                          subscription && subscription.plan === plan.plan_type
+                            ? 'border-[#FF8A00] ring-1 ring-[#FF8A00]'
+                            : 'border-gray-100'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-3">
+                          <h3 className="text-base font-medium">{plan.name}</h3>
+                          {subscription && subscription.plan === plan.plan_type && (
+                            <span className="bg-[#FF8A00] text-white text-xs px-2 py-0.5 rounded-full">
+                              Current
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex items-baseline mb-3">
+                          <span className="text-xl font-bold">
+                            {plan.price === 0 ? 'Free' : `${plan.price} ${plan.currency}`}
+                          </span>
+                          <span className="text-xs text-gray-500 ml-1">/month</span>
+                        </div>
+
+                        <div className="space-y-2 mb-4">
+                          {plan.features.map((feature) => (
+                            <div key={feature.id} className="flex items-start">
+                              {feature.is_included ? (
+                                <Check size={14} className={`mr-2 mt-0.5 flex-shrink-0 ${
+                                  feature.is_highlighted ? 'text-[#FF8A00]' : 'text-green-500'
+                                }`} />
+                              ) : (
+                                <X size={14} className="text-gray-300 mr-2 mt-0.5 flex-shrink-0" />
+                              )}
+                              <span className={`text-xs ${
+                                feature.is_included
+                                  ? feature.is_highlighted
+                                    ? 'text-gray-900 font-medium'
+                                    : 'text-gray-700'
+                                  : 'text-gray-400 line-through'
+                              }`}>
+                                {feature.feature_text}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          className={`w-full py-2 rounded-md text-sm ${
+                            (subscription && subscription.plan === plan.plan_type) || isUpdating
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-[#FF8A00] text-white hover:bg-[#e67e00] transition-colors'
+                          }`}
+                          disabled={(subscription && subscription.plan === plan.plan_type) || isUpdating}
+                          onClick={() => handlePlanChange(plan.plan_type)}
+                        >
+                          {isUpdating ? (
+                            <span className="flex items-center justify-center">
+                              <RefreshCw size={14} className="animate-spin mr-2" />
+                              {hasSubscription ? 'Updating...' : 'Creating...'}
+                            </span>
+                          ) : subscription && subscription.plan === plan.plan_type ? (
+                            'Current Plan'
+                          ) : hasSubscription ? (
+                            'Upgrade'
+                          ) : (
+                            'Select Plan'
+                          )}
+                        </button>
+                      </div>
+                    ))
+                    )}
+                  </div>
+
+                  {/* Billing History - Only show if user has a subscription */}
+                  {hasSubscription && (
+                    <div className="bg-white border border-gray-100 rounded-md p-4">
+                      <h2 className="text-sm font-medium text-gray-700 mb-3">Billing History</h2>
+
+                      <div className="border-t border-gray-100 py-4 text-center">
+                        {subscription ? (
+                          <>
+                            <p className="text-sm text-gray-500">
+                              {subscription.last_payment ? (
+                                <>Last payment: {formatDate(subscription.last_payment)} - {subscription.amount}</>
+                              ) : (
+                                <>No billing history available for {subscription.plan_display}.</>
+                              )}
+                            </p>
+                            <Link
+                              href="/dashboard/subscriptions/billing"
+                              className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium flex items-center justify-center mt-2"
+                            >
+                              View all transactions <ArrowRight size={12} className="ml-1" />
+                            </Link>
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-500">No billing history available.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Form Actions - Don't show for subscriptions tab */}
+              {activeTab !== 'subscriptions' && (
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   type="button"
@@ -916,6 +1226,7 @@ export default function Profile() {
                   )}
                 </button>
               </div>
+              )}
             </form>
           </div>
         </div>

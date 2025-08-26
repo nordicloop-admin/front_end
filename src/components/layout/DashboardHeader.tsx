@@ -108,8 +108,8 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
 
       {/* Right Side Actions */}
       <div className="flex items-center space-x-3 md:space-x-4 ml-auto">
-        {/* Add Auctions Button - Show text only on larger screens */}
-        {showAddAuctionsButton && (
+        {/* Add Auctions Button - Hidden as requested */}
+        {showAddAuctionsButton && false && (
           <Link
             href="/dashboard/auctions/create-alternative"
             className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded-md flex items-center text-sm hover:bg-[#e67e00] transition-colors shadow-sm"
@@ -219,17 +219,6 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
                   >
                     <User size={16} className="mr-3" />
                     Profile Settings
-                  </Link>
-                  
-
-                  
-                  <Link
-                    href="/dashboard/subscriptions"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <Bell size={16} className="mr-3" />
-                    Subscriptions
                   </Link>
                 </div>
                 
