@@ -97,11 +97,51 @@ export async function getUserNotifications(params?: {
 }
 
 /**
+ * Get paginated notifications for the current user
+ * @param params - Query parameters for pagination and filtering
+ * @returns Promise with paginated notifications data
+ */
+export async function getUserNotificationsPaginated(params?: {
+  page?: number;
+  page_size?: number;
+  type?: string;
+  priority?: string;
+  search?: string;
+  is_read?: boolean;
+}) {
+  const queryParams = new URLSearchParams();
+
+  if (params?.page) queryParams.append('page', params.page.toString());
+  if (params?.page_size) queryParams.append('page_size', params.page_size.toString());
+  if (params?.type) queryParams.append('type', params.type);
+  if (params?.priority) queryParams.append('priority', params.priority);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.is_read !== undefined) queryParams.append('is_read', params.is_read.toString());
+
+  const url = `/notifications${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return apiGet<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Notification[];
+  }>(url, true);
+}
+
+/**
  * Get all unread notifications for the current user with pagination
  * @param params - Query parameters for pagination and filtering
  * @returns Promise with paginated unread notifications data
  */
-export async function getUnreadNotifications(params?: {
+export async function getUnreadNotifications() {
+  return apiGet<Notification[]>('/notifications/unread', true);
+}
+
+/**
+ * Get paginated unread notifications for the current user
+ * @param params - Query parameters for pagination and filtering
+ * @returns Promise with paginated unread notifications data
+ */
+export async function getUnreadNotificationsPaginated(params?: {
   page?: number;
   page_size?: number;
   type?: string;
@@ -117,47 +157,12 @@ export async function getUnreadNotifications(params?: {
   if (params?.search) queryParams.append('search', params.search);
 
   const url = `/notifications/unread${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-  
-  try {
-    const response = await apiGet<{
-      count: number;
-      next: string | null;
-      previous: string | null;
-      results: Notification[];
-    }>(url, true);
-
-    // If we get a timeout or network error, return a graceful fallback
-    if (response.error && (
-      response.error.includes('timeout') || 
-      response.error.includes('network') ||
-      response.error.includes('signal')
-    )) {
-      return {
-        data: {
-          count: 0,
-          next: null,
-          previous: null,
-          results: []
-        },
-        error: 'Connection issue - please refresh to reload notifications',
-        status: response.status
-      };
-    }
-
-    return response;
-  } catch (_error) {
-    // Fallback for any unexpected errors
-    return {
-      data: {
-        count: 0,
-        next: null,
-        previous: null,
-        results: []
-      },
-      error: 'Failed to load notifications - please try again',
-      status: 500
-    };
-  }
+  return apiGet<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Notification[];
+  }>(url, true);
 }
 
 /**
@@ -174,7 +179,7 @@ export async function markNotificationAsRead(notificationId: number) {
  * @returns Promise with success status
  */
 export async function markAllNotificationsAsRead() {
-  return apiPut<{ success: boolean }>('/notifications/read-all', {}, true);
+  return apiPut<{ success: boolean }>('/notifications/read-all/', {}, true);
 }
 
 /**
@@ -234,10 +239,10 @@ export async function getUnreadNotificationCount() {
   try {
     const response = await apiGet<{ count: number }>('/notifications/unread-count/', true);
     return response;
-  } catch (error) {
+  } catch (_error) {
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'An error occurred while fetching unread notification count',
+      error: _error instanceof Error ? _error.message : 'An error occurred while fetching unread notification count',
       status: 500
     };
   }
@@ -257,10 +262,10 @@ export async function getNotificationStats() {
       priority_counts: Record<string, number>;
     }>('/notifications/stats/', true);
     return response;
-  } catch (error) {
+  } catch (_error) {
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'An error occurred while fetching notification stats',
+      error: _error instanceof Error ? _error.message : 'An error occurred while fetching notification stats',
       status: 500
     };
   }
@@ -279,10 +284,10 @@ export async function markNotificationTypeAsRead(type: string) {
       type: string;
     }>('/notifications/mark-type-as-read/', { type }, true);
     return response;
-  } catch (error) {
+  } catch (_error) {
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'An error occurred while marking notifications as read',
+      error: _error instanceof Error ? _error.message : 'An error occurred while marking notifications as read',
       status: 500
     };
   }

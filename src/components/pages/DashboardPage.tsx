@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Package, ArrowRight, Check, AlertCircle, Clock, Award, Bookmark, Box, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { getUserDashboardStatistics, UserDashboardStatistics } from '@/services/statistics';
+import NotificationWidget from '@/components/notifications/NotificationWidget';
 
 const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -216,7 +217,7 @@ const DashboardPage = () => {
       )}
 
       {/* Recent Activity Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
         {/* Recent Bids */}
         <div className="bg-white border border-gray-100 rounded-md p-5">
           <h2 className="text-base font-medium text-gray-800 mb-4">Recent Bids</h2>
@@ -312,6 +313,14 @@ const DashboardPage = () => {
             </Link>
           </div>
         </div>
+
+        {/* Recent Notifications */}
+        <NotificationWidget
+          className="lg:col-span-1"
+          maxItems={5}
+          showViewAllLink={true}
+          isAdmin={false}
+        />
       </div>
     </div>
   );

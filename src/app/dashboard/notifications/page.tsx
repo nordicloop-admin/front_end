@@ -2,10 +2,22 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCircle } from 'lucide-react';
-import { getUserNotifications, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
+import { getUserNotificationsPaginated, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
 import NotificationCard from '@/components/notifications/NotificationCard';
 import NotificationFilters from '@/components/notifications/NotificationFilters';
 import Pagination, { PaginationInfo } from '@/components/shared/Pagination';
+
+// Fallback mock data in case API fails
+const _mockNotifications = [
+  {
+    id: 1,
+    title: "Welcome to Nordic Loop",
+    message: "Thank you for joining our community! Explore our marketplace and start creating your first auction.",
+    date: "2025-07-01T10:00:00",
+    is_read: true,
+    type: "welcome"
+  }
+];
 
 
 
@@ -47,7 +59,7 @@ export default function NotificationsPage() {
       if (selectedPriority) params.priority = selectedPriority;
       if (searchQuery.trim()) params.search = searchQuery.trim();
       
-      const response = await getUserNotifications(params);
+      const response = await getUserNotificationsPaginated(params);
       
       if (response.error) {
         // Check if it's a timeout error and we haven't retried yet
@@ -92,7 +104,7 @@ export default function NotificationsPage() {
       setLoading(false);
     }
   }, [activeTab, selectedType, selectedPriority, searchQuery]);
-  
+
   // Fetch notifications when page or filters change
   useEffect(() => {
     fetchNotifications(currentPage);
@@ -106,7 +118,7 @@ export default function NotificationsPage() {
       fetchNotifications(1);
     }
   }, [activeTab, selectedType, selectedPriority, searchQuery, currentPage, fetchNotifications]);
-  
+
   // Handle page changes
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -129,7 +141,7 @@ export default function NotificationsPage() {
       setError('Failed to mark notification as read');
     }
   };
-  
+
   // Delete notification
   const handleDeleteNotification = async (id: number) => {
     try {
@@ -145,7 +157,7 @@ export default function NotificationsPage() {
       setError('Failed to delete notification');
     }
   };
-  
+
   // Mark all as read
   const handleMarkAllAsRead = async () => {
     try {

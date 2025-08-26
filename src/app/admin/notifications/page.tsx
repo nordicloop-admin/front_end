@@ -25,7 +25,8 @@ import {
 } from '@/services/notifications';
 import { searchUsers } from '@/services/users';
 import Modal from '@/components/ui/modal';
-import Pagination, { PaginationInfo } from '@/components/shared/Pagination';
+import Pagination from '@/components/ui/Pagination';
+import { PaginationInfo } from '@/components/shared/Pagination';
 import {
   getNotificationIconComponent,
   getNotificationTypeConfig,
@@ -67,6 +68,9 @@ export default function AdminNotificationsPage() {
     previous: null,
   });
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -106,6 +110,12 @@ export default function AdminNotificationsPage() {
   // Get notification categories
   const notificationCategories = getNotificationCategories();
 
+  // Pagination handlers
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
+
   // Fetch notifications with pagination and filters
   const fetchNotifications = useCallback(async (page = 1) => {
     try {
@@ -113,7 +123,7 @@ export default function AdminNotificationsPage() {
       setError(null);
       const response = await getAllNotifications({
         page,
-        page_size: 20,
+        page_size: pageSize,
         type: selectedTypeFilter || undefined,
         priority: selectedPriorityFilter || undefined,
         search: searchQuery || undefined,
@@ -125,14 +135,8 @@ export default function AdminNotificationsPage() {
         setPaginationInfo({ count: 0, next: null, previous: null });
       } else if (response.data) {
         setNotifications(response.data.results);
-        setPaginationInfo({
-          count: response.data.count,
-          next: response.data.next,
-          previous: response.data.previous,
-          current_page: page,
-          page_size: 20,
-          total_pages: Math.ceil(response.data.count / 20)
-        });
+        setTotalCount(response.data.count);
+        setTotalPages(Math.ceil(response.data.count / pageSize));
         setCurrentPage(page);
       }
     } catch (_err) {
@@ -142,7 +146,7 @@ export default function AdminNotificationsPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedTypeFilter, selectedPriorityFilter, searchQuery]);
+  }, [selectedTypeFilter, selectedPriorityFilter, searchQuery, pageSize]);
 
   // Initial fetch
   useEffect(() => {
@@ -533,12 +537,16 @@ export default function AdminNotificationsPage() {
             </div>
 
             {/* Pagination */}
-            {!loading && notifications.length > 0 && (
-              <div className="bg-white px-4 py-3 border-t border-gray-200">
+            {totalPages > 1 && (
+              <div className="px-4 py-4 border-t border-gray-200">
                 <Pagination
-                  paginationInfo={paginationInfo}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalCount={totalCount}
+                  pageSize={pageSize}
                   onPageChange={handlePageChange}
-                  className=""
+                  onPageSizeChange={handlePageSizeChange}
+                  showPageSizeSelector={true}
                 />
               </div>
             )}

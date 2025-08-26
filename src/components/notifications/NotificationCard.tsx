@@ -134,8 +134,8 @@ export default function NotificationCard({
             {/* Actions */}
             {showActions && (
               <div className="flex items-center space-x-2 ml-4">
-                {/* Only show action URL link if the whole card is NOT wrapped in a link */}
-                {notification.action_url && !isWrappedInLink && (
+                {/* Only show action URL link if the whole card is NOT wrapped in a link AND not compact */}
+                {notification.action_url && !compact && !isWrappedInLink && (
                   <Link
                     href={notification.action_url}
                     className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
@@ -144,7 +144,7 @@ export default function NotificationCard({
                     <ExternalLink className="w-4 h-4" />
                   </Link>
                 )}
-                
+
                 {!notification.is_read && onMarkAsRead && (
                   <button
                     onClick={handleMarkAsRead}
@@ -154,7 +154,7 @@ export default function NotificationCard({
                     <Check className="w-4 h-4" />
                   </button>
                 )}
-                
+
                 {onDelete && (
                   <button
                     onClick={handleDelete}
@@ -172,17 +172,46 @@ export default function NotificationCard({
     </div>
   );
   
-  // If there's an action URL and it's not compact, make the whole card clickable
-  if (notification.action_url && !compact) {
+  // For compact mode (used in dropdowns), don't make the whole card clickable to avoid nested links
+  if (compact) {
     return (
-      <Link href={notification.action_url} className="block">
-        <div className="border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-          <CardContent isWrappedInLink={true} />
-        </div>
-      </Link>
+      <div className="border border-gray-200 rounded-lg">
+        <CardContent isWrappedInLink={false} />
+      </div>
     );
   }
-  
+
+  // For full cards, make the whole card clickable if there's an action URL
+  if (notification.action_url) {
+    const handleCardClick = (e: React.MouseEvent) => {
+      // Don't navigate if clicking on action buttons
+      const target = e.target as HTMLElement;
+      if (target.closest('button')) {
+        return;
+      }
+      // Use router or window.location for navigation to avoid nested links
+      if (typeof window !== 'undefined') {
+        window.location.href = notification.action_url!;
+      }
+    };
+
+    return (
+      <div 
+        className="border border-gray-200 rounded-lg hover:border-gray-300 transition-colors cursor-pointer"
+        onClick={handleCardClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleCardClick(e as any);
+          }
+        }}
+      >
+        <CardContent isWrappedInLink={true} />
+      </div>
+    );
+  }
+
   return (
     <div className="border border-gray-200 rounded-lg">
       <CardContent isWrappedInLink={false} />
