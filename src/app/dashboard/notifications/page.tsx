@@ -1,28 +1,22 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCircle } from 'lucide-react';
 import { getUserNotifications, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
 import NotificationCard from '@/components/notifications/NotificationCard';
 import NotificationFilters from '@/components/notifications/NotificationFilters';
-import { filterNotifications, sortNotificationsByPriority } from '@/utils/notificationUtils';
-
-// Fallback mock data in case API fails
-const mockNotifications = [
-  {
-    id: 1,
-    title: "Welcome to Nordic Loop",
-    message: "Thank you for joining our community! Explore our marketplace and start creating your first auction.",
-    date: "2025-07-01T10:00:00",
-    is_read: true,
-    type: "welcome"
-  }
-];
+import Pagination, { PaginationInfo } from '@/components/shared/Pagination';
 
 
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo>({
+    count: 0,
+    next: null,
+    previous: null,
+  });
+  const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,54 +26,91 @@ export default function NotificationsPage() {
   const [showFilters, setShowFilters] = useState(false);
   
   // Fetch notifications from API
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        setLoading(true);
-        const response = await getUserNotifications();
-        
-        if (response.error) {
-          setError(response.error);
-          // Fallback to mock data if API fails
-          setNotifications(mockNotifications);
-        } else if (response.data) {
-          setNotifications(response.data);
-        }
-      } catch (_err) {
-        setError('Failed to load notifications');
-        // Fallback to mock data if API fails
-        setNotifications(mockNotifications);
-      } finally {
-        setLoading(false);
+  const fetchNotifications = useCallback(async (page: number = 1, retryCount: number = 0) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build filter parameters
+      const params: any = {
+        page,
+        page_size: 20,
+      };
+      
+      if (activeTab === 'unread') {
+        params.is_read = false;
+      } else if (activeTab === 'read') {
+        params.is_read = true;
       }
-    };
-    
-    fetchNotifications();
-  }, []);
-  
-  // Filter and sort notifications
-  const getFilteredNotifications = () => {
-    let filtered = notifications;
-
-    // Filter by tab
-    if (activeTab === 'unread') {
-      filtered = filtered.filter(notification => !notification.is_read);
-    } else if (activeTab === 'read') {
-      filtered = filtered.filter(notification => notification.is_read);
+      
+      if (selectedType) params.type = selectedType;
+      if (selectedPriority) params.priority = selectedPriority;
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      
+      const response = await getUserNotifications(params);
+      
+      if (response.error) {
+        // Check if it's a timeout error and we haven't retried yet
+        if (response.error.includes('Connection issue') && retryCount < 2) {
+          // Wait a bit and retry
+          setTimeout(() => {
+            fetchNotifications(page, retryCount + 1);
+          }, 2000);
+          return;
+        }
+        
+        setError(response.error);
+        // Only clear notifications if it's not a timeout error (preserve existing data)
+        if (!response.error.includes('Connection issue')) {
+          setNotifications([]);
+          setPaginationInfo({ count: 0, next: null, previous: null });
+        }
+      } else if (response.data) {
+        setNotifications(response.data.results);
+        setPaginationInfo({
+          count: response.data.count,
+          next: response.data.next,
+          previous: response.data.previous,
+          current_page: page,
+          page_size: 20,
+          total_pages: Math.ceil(response.data.count / 20)
+        });
+      }
+    } catch (_err) {
+      // For unexpected errors, try once more if we haven't retried
+      if (retryCount < 1) {
+        setTimeout(() => {
+          fetchNotifications(page, retryCount + 1);
+        }, 2000);
+        return;
+      }
+      
+      setError('Failed to load notifications - please refresh the page');
+      setNotifications([]);
+      setPaginationInfo({ count: 0, next: null, previous: null });
+    } finally {
+      setLoading(false);
     }
-
-    // Apply additional filters
-    filtered = filterNotifications(filtered, {
-      type: selectedType,
-      priority: selectedPriority,
-      search: searchQuery
-    });
-
-    // Sort by priority and date
-    return sortNotificationsByPriority(filtered);
+  }, [activeTab, selectedType, selectedPriority, searchQuery]);
+  
+  // Fetch notifications when page or filters change
+  useEffect(() => {
+    fetchNotifications(currentPage);
+  }, [fetchNotifications, currentPage]);
+  
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    } else {
+      fetchNotifications(1);
+    }
+  }, [activeTab, selectedType, selectedPriority, searchQuery, currentPage, fetchNotifications]);
+  
+  // Handle page changes
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
-
-  const filteredNotifications = getFilteredNotifications();
   
   // Mark notification as read
   const markAsRead = async (id: number) => {
@@ -89,7 +120,7 @@ export default function NotificationsPage() {
       if (response.error) {
         setError(response.error);
       } else {
-        // Update local state
+        // Update local state immediately for better UX
         setNotifications(notifications.map(notification =>
           notification.id === id ? { ...notification, is_read: true } : notification
         ));
@@ -107,8 +138,8 @@ export default function NotificationsPage() {
       if (response.error) {
         setError(response.error);
       } else {
-        // Update local state
-        setNotifications(notifications.filter(notification => notification.id !== id));
+        // Refresh the current page to get updated data and pagination
+        await fetchNotifications(currentPage);
       }
     } catch (_err) {
       setError('Failed to delete notification');
@@ -123,8 +154,8 @@ export default function NotificationsPage() {
       if (response.error) {
         setError(response.error);
       } else {
-        // Update local state
-        setNotifications(notifications.map(notification => ({ ...notification, is_read: true })));
+        // Refresh notifications to get updated data
+        await fetchNotifications(currentPage);
       }
     } catch (_err) {
       setError('Failed to mark all notifications as read');
@@ -159,7 +190,7 @@ export default function NotificationsPage() {
         <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {filteredNotifications.length} notification{filteredNotifications.length !== 1 ? 's' : ''}
+              {paginationInfo.count} notification{paginationInfo.count !== 1 ? 's' : ''}
               {activeTab !== 'all' && ` (${activeTab})`}
             </div>
 
@@ -167,7 +198,7 @@ export default function NotificationsPage() {
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-sm text-gray-600 hover:text-[#FF8A00] flex items-center transition-colors"
-                disabled={loading || notifications.filter(n => !n.is_read).length === 0}
+                disabled={loading || paginationInfo.count === 0}
               >
                 <CheckCircle size={14} className="mr-1" />
                 Mark all as read
@@ -178,8 +209,19 @@ export default function NotificationsPage() {
         
         {/* Error message */}
         {error && (
-          <div className="p-4 text-red-600 text-sm">
-            {error}
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg mx-5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="text-red-600 text-sm">{error}</div>
+              </div>
+              <button
+                onClick={() => fetchNotifications(currentPage)}
+                className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition-colors"
+                disabled={loading}
+              >
+                {loading ? 'Retrying...' : 'Retry'}
+              </button>
+            </div>
           </div>
         )}
         
@@ -192,9 +234,9 @@ export default function NotificationsPage() {
         
         {/* Notifications List */}
         <div className="divide-y divide-gray-100">
-          {!loading && filteredNotifications.length > 0 ? (
+          {!loading && notifications.length > 0 ? (
             <div className="space-y-0">
-              {filteredNotifications.map((notification) => (
+              {notifications.map((notification) => (
                 <div key={notification.id} className="px-5">
                   <NotificationCard
                     notification={notification}
@@ -236,6 +278,17 @@ export default function NotificationsPage() {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {!loading && notifications.length > 0 && (
+          <div className="px-5 py-4 border-t border-gray-200">
+            <Pagination
+              paginationInfo={paginationInfo}
+              onPageChange={handlePageChange}
+              className=""
+            />
+          </div>
+        )}
       </div>
     </div>
   );
