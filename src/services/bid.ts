@@ -52,23 +52,29 @@ export interface BidSearchParams extends BidPaginationParams {
  */
 export interface BidItem {
   id: number;
-  ad_id?: number; // Add ad_id field for matching with auctions
-  bidder_name: string;
+  ad_id: number;
   ad_title: string;
+  bidder_name: string;
+  company_name?: string;
   bid_price_per_unit: string;
   volume_requested: string;
-  total_bid_value: string | null;
-  currency: string;
-  unit: string;
+  total_bid_value: string;
   status: string;
-  is_winning: boolean;
-  rank: number;
+  created_at: string;
+  updated_at: string;
+  // Optional fields that may be present in some responses
+  currency?: string;
+  unit?: string;
+  is_winning?: boolean;
+  rank?: number;
   volume_type?: string;
   is_auto_bid?: boolean;
   max_auto_bid_price?: string | null;
   notes?: string | null;
-  created_at: string;
-  updated_at: string;
+  // Additional fields for winning bids
+  ad_user_email?: string;
+  ad_category?: string;
+  ad_location?: string;
 }
 
 /**

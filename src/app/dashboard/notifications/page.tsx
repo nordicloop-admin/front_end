@@ -2,10 +2,23 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCircle } from 'lucide-react';
-import { getUserNotifications, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
+import { getUserNotificationsPaginated, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
 import NotificationCard from '@/components/notifications/NotificationCard';
 import NotificationFilters from '@/components/notifications/NotificationFilters';
-import Pagination, { PaginationInfo } from '@/components/shared/Pagination';
+import Pagination from '@/components/ui/Pagination';
+import { sortNotificationsByPriority } from '@/utils/notificationUtils';
+
+// Fallback mock data in case API fails
+const mockNotifications = [
+  {
+    id: 1,
+    title: "Welcome to Nordic Loop",
+    message: "Thank you for joining our community! Explore our marketplace and start creating your first auction.",
+    date: "2025-07-01T10:00:00",
+    is_read: true,
+    type: "welcome"
+  }
+];
 
 
 
@@ -24,138 +37,112 @@ export default function NotificationsPage() {
   const [selectedPriority, setSelectedPriority] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   
-  // Fetch notifications from API
-  const fetchNotifications = useCallback(async (page: number = 1, retryCount: number = 0) => {
+  const fetchNotifications = useCallback(async (page = 1) => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Build filter parameters
-      const params: any = {
+
+      const params = {
         page,
-        page_size: 20,
+        page_size: pageSize,
+        type: selectedType,
+        priority: selectedPriority,
+        search: searchQuery || undefined,
+        is_read: activeTab === 'all' ? undefined : activeTab === 'read'
       };
-      
-      if (activeTab === 'unread') {
-        params.is_read = false;
-      } else if (activeTab === 'read') {
-        params.is_read = true;
-      }
-      
-      if (selectedType) params.type = selectedType;
-      if (selectedPriority) params.priority = selectedPriority;
-      if (searchQuery.trim()) params.search = searchQuery.trim();
-      
-      const response = await getUserNotifications(params);
-      
+
+      const response = await getUserNotificationsPaginated(params);
+
       if (response.error) {
-        // Check if it's a timeout error and we haven't retried yet
-        if (response.error.includes('Connection issue') && retryCount < 2) {
-          // Wait a bit and retry
-          setTimeout(() => {
-            fetchNotifications(page, retryCount + 1);
-          }, 2000);
-          return;
-        }
-        
         setError(response.error);
-        // Only clear notifications if it's not a timeout error (preserve existing data)
-        if (!response.error.includes('Connection issue')) {
-          setNotifications([]);
-          setPaginationInfo({ count: 0, next: null, previous: null });
-        }
+        // Fallback to mock data if API fails
+        setNotifications(mockNotifications);
+        setTotalCount(mockNotifications.length);
+        setTotalPages(1);
       } else if (response.data) {
         setNotifications(response.data.results);
-        setPaginationInfo({
-          count: response.data.count,
-          next: response.data.next,
-          previous: response.data.previous,
-          current_page: page,
-          page_size: 20,
-          total_pages: Math.ceil(response.data.count / 20)
-        });
+        setTotalCount(response.data.count);
+        setTotalPages(Math.ceil(response.data.count / pageSize));
+        setCurrentPage(page);
       }
     } catch (_err) {
-      // For unexpected errors, try once more if we haven't retried
-      if (retryCount < 1) {
-        setTimeout(() => {
-          fetchNotifications(page, retryCount + 1);
-        }, 2000);
-        return;
-      }
-      
-      setError('Failed to load notifications - please refresh the page');
-      setNotifications([]);
-      setPaginationInfo({ count: 0, next: null, previous: null });
+      setError('Failed to load notifications');
+      // Fallback to mock data if API fails
+      setNotifications(mockNotifications);
+      setTotalCount(mockNotifications.length);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
-  }, [activeTab, selectedType, selectedPriority, searchQuery]);
-  
-  // Fetch notifications when page or filters change
+  }, [activeTab, selectedType, selectedPriority, searchQuery, pageSize]);
+
+  // Initial fetch and refetch when filters change
   useEffect(() => {
-    fetchNotifications(currentPage);
-  }, [fetchNotifications, currentPage]);
+    fetchNotifications(1);
+  }, [fetchNotifications]);
   
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    } else {
-      fetchNotifications(1);
-    }
-  }, [activeTab, selectedType, selectedPriority, searchQuery, currentPage, fetchNotifications]);
-  
-  // Handle page changes
+  // Sort notifications by priority (server already orders by date)
+  const sortedNotifications = sortNotificationsByPriority(notifications);
+
+  // Pagination handlers
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
+    fetchNotifications(page);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
   };
   
   // Mark notification as read
   const markAsRead = async (id: number) => {
     try {
       const response = await markNotificationAsRead(id);
-      
+
       if (response.error) {
         setError(response.error);
       } else {
-        // Update local state immediately for better UX
-        setNotifications(notifications.map(notification =>
-          notification.id === id ? { ...notification, is_read: true } : notification
-        ));
+        // Refresh current page to reflect changes
+        fetchNotifications(currentPage);
       }
     } catch (_err) {
       setError('Failed to mark notification as read');
     }
   };
-  
+
   // Delete notification
   const handleDeleteNotification = async (id: number) => {
     try {
       const response = await deleteNotification(id);
-      
+
       if (response.error) {
         setError(response.error);
       } else {
-        // Refresh the current page to get updated data and pagination
-        await fetchNotifications(currentPage);
+        // Refresh current page to reflect changes
+        fetchNotifications(currentPage);
       }
     } catch (_err) {
       setError('Failed to delete notification');
     }
   };
-  
+
   // Mark all as read
   const handleMarkAllAsRead = async () => {
     try {
       const response = await markAllNotificationsAsRead();
-      
+
       if (response.error) {
         setError(response.error);
       } else {
-        // Refresh notifications to get updated data
-        await fetchNotifications(currentPage);
+        // Refresh current page to reflect changes
+        fetchNotifications(currentPage);
       }
     } catch (_err) {
       setError('Failed to mark all notifications as read');
@@ -190,15 +177,20 @@ export default function NotificationsPage() {
         <div className="px-5 py-3 border-t border-gray-200 bg-gray-50">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-600">
-              {paginationInfo.count} notification{paginationInfo.count !== 1 ? 's' : ''}
+              {totalCount} notification{totalCount !== 1 ? 's' : ''} total
               {activeTab !== 'all' && ` (${activeTab})`}
+              {totalCount > 0 && (
+                <span className="ml-2">
+                  • Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalCount)} of {totalCount}
+                </span>
+              )}
             </div>
 
             <div className="flex items-center space-x-3">
               <button
                 onClick={handleMarkAllAsRead}
                 className="text-sm text-gray-600 hover:text-[#FF8A00] flex items-center transition-colors"
-                disabled={loading || paginationInfo.count === 0}
+                disabled={loading || sortedNotifications.filter(n => !n.is_read).length === 0}
               >
                 <CheckCircle size={14} className="mr-1" />
                 Mark all as read
@@ -234,19 +226,36 @@ export default function NotificationsPage() {
         
         {/* Notifications List */}
         <div className="divide-y divide-gray-100">
-          {!loading && notifications.length > 0 ? (
-            <div className="space-y-0">
-              {notifications.map((notification) => (
-                <div key={notification.id} className="px-5">
-                  <NotificationCard
-                    notification={notification}
-                    onMarkAsRead={markAsRead}
-                    onDelete={handleDeleteNotification}
-                    className="border-0 rounded-none"
+          {!loading && sortedNotifications.length > 0 ? (
+            <>
+              <div className="space-y-0">
+                {sortedNotifications.map((notification) => (
+                  <div key={notification.id} className="px-5">
+                    <NotificationCard
+                      notification={notification}
+                      onMarkAsRead={markAsRead}
+                      onDelete={handleDeleteNotification}
+                      className="border-0 rounded-none"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="px-5 py-4 border-t border-gray-200">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalCount={totalCount}
+                    pageSize={pageSize}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    showPageSizeSelector={true}
                   />
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           ) : (
             <div className="flex flex-col items-center justify-center text-center py-12 px-5">
               <div className="bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mb-4">

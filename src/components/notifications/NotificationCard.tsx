@@ -134,8 +134,7 @@ export default function NotificationCard({
             {/* Actions */}
             {showActions && (
               <div className="flex items-center space-x-2 ml-4">
-                {/* Only show action URL link if the whole card is NOT wrapped in a link */}
-                {notification.action_url && !isWrappedInLink && (
+                {notification.action_url && !compact && (
                   <Link
                     href={notification.action_url}
                     className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
@@ -144,7 +143,7 @@ export default function NotificationCard({
                     <ExternalLink className="w-4 h-4" />
                   </Link>
                 )}
-                
+
                 {!notification.is_read && onMarkAsRead && (
                   <button
                     onClick={handleMarkAsRead}
@@ -154,7 +153,7 @@ export default function NotificationCard({
                     <Check className="w-4 h-4" />
                   </button>
                 )}
-                
+
                 {onDelete && (
                   <button
                     onClick={handleDelete}
@@ -172,8 +171,17 @@ export default function NotificationCard({
     </div>
   );
   
-  // If there's an action URL and it's not compact, make the whole card clickable
-  if (notification.action_url && !compact) {
+  // For compact mode (used in dropdowns), don't make the whole card clickable to avoid nested links
+  if (compact) {
+    return (
+      <div className="border border-gray-200 rounded-lg">
+        <CardContent />
+      </div>
+    );
+  }
+
+  // For full cards, make the whole card clickable if there's an action URL
+  if (notification.action_url) {
     return (
       <Link href={notification.action_url} className="block">
         <div className="border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
@@ -182,7 +190,7 @@ export default function NotificationCard({
       </Link>
     );
   }
-  
+
   return (
     <div className="border border-gray-200 rounded-lg">
       <CardContent isWrappedInLink={false} />

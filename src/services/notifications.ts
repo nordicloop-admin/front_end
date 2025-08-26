@@ -35,7 +35,16 @@ export interface CreateNotificationRequest {
  * @param params - Query parameters for pagination and filtering
  * @returns Promise with paginated notifications data
  */
-export async function getUserNotifications(params?: {
+export async function getUserNotifications() {
+  return apiGet<Notification[]>('/notifications', true);
+}
+
+/**
+ * Get paginated notifications for the current user
+ * @param params - Query parameters for pagination and filtering
+ * @returns Promise with paginated notifications data
+ */
+export async function getUserNotificationsPaginated(params?: {
   page?: number;
   page_size?: number;
   type?: string;
@@ -53,47 +62,12 @@ export async function getUserNotifications(params?: {
   if (params?.is_read !== undefined) queryParams.append('is_read', params.is_read.toString());
 
   const url = `/notifications${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-  
-  try {
-    const response = await apiGet<{
-      count: number;
-      next: string | null;
-      previous: string | null;
-      results: Notification[];
-    }>(url, true);
-
-    // If we get a timeout or network error, return a graceful fallback
-    if (response.error && (
-      response.error.includes('timeout') || 
-      response.error.includes('network') ||
-      response.error.includes('signal')
-    )) {
-      return {
-        data: {
-          count: 0,
-          next: null,
-          previous: null,
-          results: []
-        },
-        error: 'Connection issue - please refresh to reload notifications',
-        status: response.status
-      };
-    }
-
-    return response;
-  } catch (_error) {
-    // Fallback for any unexpected errors
-    return {
-      data: {
-        count: 0,
-        next: null,
-        previous: null,
-        results: []
-      },
-      error: 'Failed to load notifications - please try again',
-      status: 500
-    };
-  }
+  return apiGet<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Notification[];
+  }>(url, true);
 }
 
 /**
@@ -101,7 +75,16 @@ export async function getUserNotifications(params?: {
  * @param params - Query parameters for pagination and filtering
  * @returns Promise with paginated unread notifications data
  */
-export async function getUnreadNotifications(params?: {
+export async function getUnreadNotifications() {
+  return apiGet<Notification[]>('/notifications/unread', true);
+}
+
+/**
+ * Get paginated unread notifications for the current user
+ * @param params - Query parameters for pagination and filtering
+ * @returns Promise with paginated unread notifications data
+ */
+export async function getUnreadNotificationsPaginated(params?: {
   page?: number;
   page_size?: number;
   type?: string;
@@ -117,47 +100,12 @@ export async function getUnreadNotifications(params?: {
   if (params?.search) queryParams.append('search', params.search);
 
   const url = `/notifications/unread${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-  
-  try {
-    const response = await apiGet<{
-      count: number;
-      next: string | null;
-      previous: string | null;
-      results: Notification[];
-    }>(url, true);
-
-    // If we get a timeout or network error, return a graceful fallback
-    if (response.error && (
-      response.error.includes('timeout') || 
-      response.error.includes('network') ||
-      response.error.includes('signal')
-    )) {
-      return {
-        data: {
-          count: 0,
-          next: null,
-          previous: null,
-          results: []
-        },
-        error: 'Connection issue - please refresh to reload notifications',
-        status: response.status
-      };
-    }
-
-    return response;
-  } catch (_error) {
-    // Fallback for any unexpected errors
-    return {
-      data: {
-        count: 0,
-        next: null,
-        previous: null,
-        results: []
-      },
-      error: 'Failed to load notifications - please try again',
-      status: 500
-    };
-  }
+  return apiGet<{
+    count: number;
+    next: string | null;
+    previous: string | null;
+    results: Notification[];
+  }>(url, true);
 }
 
 /**
@@ -174,7 +122,7 @@ export async function markNotificationAsRead(notificationId: number) {
  * @returns Promise with success status
  */
 export async function markAllNotificationsAsRead() {
-  return apiPut<{ success: boolean }>('/notifications/read-all', {}, true);
+  return apiPut<{ success: boolean }>('/notifications/read-all/', {}, true);
 }
 
 /**
