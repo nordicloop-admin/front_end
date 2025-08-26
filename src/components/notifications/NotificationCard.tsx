@@ -134,7 +134,8 @@ export default function NotificationCard({
             {/* Actions */}
             {showActions && (
               <div className="flex items-center space-x-2 ml-4">
-                {notification.action_url && !compact && (
+                {/* Only show action URL link if the whole card is NOT wrapped in a link AND not compact */}
+                {notification.action_url && !compact && !isWrappedInLink && (
                   <Link
                     href={notification.action_url}
                     className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
@@ -175,19 +176,39 @@ export default function NotificationCard({
   if (compact) {
     return (
       <div className="border border-gray-200 rounded-lg">
-        <CardContent />
+        <CardContent isWrappedInLink={false} />
       </div>
     );
   }
 
   // For full cards, make the whole card clickable if there's an action URL
   if (notification.action_url) {
+    const handleCardClick = (e: React.MouseEvent) => {
+      // Don't navigate if clicking on action buttons
+      const target = e.target as HTMLElement;
+      if (target.closest('button')) {
+        return;
+      }
+      // Use router or window.location for navigation to avoid nested links
+      if (typeof window !== 'undefined') {
+        window.location.href = notification.action_url!;
+      }
+    };
+
     return (
-      <Link href={notification.action_url} className="block">
-        <div className="border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-          <CardContent isWrappedInLink={true} />
-        </div>
-      </Link>
+      <div 
+        className="border border-gray-200 rounded-lg hover:border-gray-300 transition-colors cursor-pointer"
+        onClick={handleCardClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            handleCardClick(e as any);
+          }
+        }}
+      >
+        <CardContent isWrappedInLink={true} />
+      </div>
     );
   }
 
