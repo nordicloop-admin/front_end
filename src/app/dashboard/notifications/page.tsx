@@ -105,7 +105,7 @@ export default function NotificationsPage() {
     } else {
       fetchNotifications(1);
     }
-  }, [activeTab, selectedType, selectedPriority, searchQuery]);
+  }, [activeTab, selectedType, selectedPriority, searchQuery, currentPage, fetchNotifications]);
   
   // Handle page changes
   const handlePageChange = (page: number) => {

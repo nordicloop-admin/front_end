@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Bell, Check, Settings, ExternalLink, X } from 'lucide-react';
 import { 
@@ -40,14 +40,7 @@ export default function NotificationDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
-  // Fetch notifications when dropdown opens
-  useEffect(() => {
-    if (isOpen && notifications.length === 0) {
-      fetchNotifications();
-    }
-  }, [isOpen, notifications.length]);
-  
-  const fetchNotifications = async (retryCount: number = 0) => {
+  const fetchNotifications = useCallback(async (retryCount: number = 0) => {
     try {
       setLoading(true);
       setError(null);
@@ -71,7 +64,14 @@ export default function NotificationDropdown({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+  
+  // Fetch notifications when dropdown opens
+  useEffect(() => {
+    if (isOpen && notifications.length === 0) {
+      fetchNotifications();
+    }
+  }, [isOpen, notifications.length, fetchNotifications]);
   
   const handleMarkAsRead = async (id: number) => {
     try {

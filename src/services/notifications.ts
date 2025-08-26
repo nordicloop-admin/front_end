@@ -81,7 +81,7 @@ export async function getUserNotifications(params?: {
     }
 
     return response;
-  } catch (error) {
+  } catch (_error) {
     // Fallback for any unexpected errors
     return {
       data: {
@@ -145,7 +145,7 @@ export async function getUnreadNotifications(params?: {
     }
 
     return response;
-  } catch (error) {
+  } catch (_error) {
     // Fallback for any unexpected errors
     return {
       data: {
