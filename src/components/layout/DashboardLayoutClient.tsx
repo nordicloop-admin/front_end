@@ -13,7 +13,8 @@ import {
   Package,
   User,
   LogOut,
-  Megaphone
+  Megaphone,
+  Bell
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
 import { getUserAdsCount } from '@/services/auction';
