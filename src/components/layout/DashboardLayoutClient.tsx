@@ -13,8 +13,7 @@ import {
   Package,
   User,
   LogOut,
-  Megaphone,
-  Bell
+  Megaphone
 } from 'lucide-react';
 import DashboardHeader from './DashboardHeader';
 import { getUserAdsCount } from '@/services/auction';
@@ -123,7 +122,7 @@ export default function DashboardLayoutClient({
 
           <Link
             href="/dashboard/my-activity"
-            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/my-activity' || pathname === '/dashboard/my-auctions' || pathname === '/dashboard/my-bids' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/my-activity' || pathname === '/dashboard/my-auctions' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
             onClick={isMobile ? toggleSidebar : undefined}
           >
             <FileText size={18} className="mr-3" />
@@ -144,53 +143,6 @@ export default function DashboardLayoutClient({
             <span>Auctions</span>
           </Link>
 
-          <Link
-            href="/dashboard/my-bids"
-            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/my-bids' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
-            onClick={isMobile ? toggleSidebar : undefined}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="mr-3"
-            >
-              <path
-                d="M14 12C14 13.1046 13.1046 14 12 14C10.8954 14 10 13.1046 10 12C10 10.8954 10.8954 10 12 10C13.1046 10 14 10.8954 14 12Z"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M3 12H9"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <path
-                d="M15 12H21"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <path
-                d="M7 5H17"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <path
-                d="M7 19H17"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
-            <span>My Bids</span>
-          </Link>
-
-
 
           <Link
             href="/dashboard/notifications"
@@ -201,14 +153,7 @@ export default function DashboardLayoutClient({
             <span>Notifications</span>
           </Link>
 
-          <Link
-            href="/dashboard/subscriptions"
-            className={`flex items-center px-4 py-2.5 ${pathname === '/dashboard/subscriptions' ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
-            onClick={isMobile ? toggleSidebar : undefined}
-          >
-            <Bell size={18} className="mr-3" />
-            <span>Subscriptions</span>
-          </Link>
+
 
           <Link
             href="/dashboard/payments"
