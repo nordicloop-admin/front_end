@@ -7,7 +7,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 import {
-  Bell,
   User,
   LogOut,
   Search,

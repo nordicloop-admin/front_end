@@ -11,7 +11,6 @@ import {
   Home,
   FileText,
   Package,
-  Bell,
   User,
   LogOut,
   Megaphone

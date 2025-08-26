@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Building, Shield, Save, X, RefreshCw, AlertCircle, CheckCircle, MapPin, Plus, Trash2, Edit, Check, Calendar, ArrowRight, Bell } from 'lucide-react';
+import { Building, Shield, Save, X, RefreshCw, AlertCircle, CheckCircle, MapPin, Plus, Trash2, Edit, Check, Calendar, ArrowRight } from 'lucide-react';
 import { getUserProfile, updateUserProfile, changePassword, UserProfile, ProfileUpdateRequest, PasswordChangeRequest } from '@/services/userProfile';
 import { getUserAddresses, createUserAddress, updateUserAddress, deleteUserAddress, setPrimaryAddress, Address, AddressCreateRequest } from '@/services/userAddresses';
 import { getUserSubscription, updateUserSubscription, createUserSubscription, UserSubscription } from '@/services/userSubscription';
@@ -20,7 +20,7 @@ export default function Profile() {
   // Subscription-related state
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [pricingData, setPricingData] = useState<PricingData | null>(null);
-  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [_updateSuccess, setUpdateSuccess] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   
@@ -104,7 +104,7 @@ export default function Profile() {
         // Handle pricing data
         if (pricingResponse.error) {
           // Don't fail the whole page if pricing data fails
-          console.warn('Failed to load pricing data:', pricingResponse.error);
+          // Failed to load pricing data
         } else if (pricingResponse.data?.success) {
           setPricingData(pricingResponse.data.data);
         }
