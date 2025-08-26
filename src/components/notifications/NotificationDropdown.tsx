@@ -47,17 +47,24 @@ export default function NotificationDropdown({
     }
   }, [isOpen, notifications.length]);
   
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (retryCount: number = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getUnreadNotifications();
+      const response = await getUnreadNotifications({ page_size: 10 }); // Get first 10
       
       if (response.error) {
+        // If it's a connection issue and we haven't retried, try again
+        if (response.error.includes('Connection issue') && retryCount < 1) {
+          setTimeout(() => {
+            fetchNotifications(retryCount + 1);
+          }, 1500);
+          return;
+        }
         setError(response.error);
       } else if (response.data) {
-        const sortedNotifications = sortNotificationsByPriority(response.data);
-        setNotifications(sortedNotifications.slice(0, 10)); // Show only first 10
+        const sortedNotifications = sortNotificationsByPriority(response.data.results);
+        setNotifications(sortedNotifications);
       }
     } catch (_err) {
       setError('Failed to load notifications');

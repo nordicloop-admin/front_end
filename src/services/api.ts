@@ -65,7 +65,7 @@ export async function apiGet<T>(
       method: 'GET',
       headers,
       // Add timeout and error handling
-      signal: AbortSignal.timeout(30000), // 30 second timeout
+      signal: AbortSignal.timeout(60000), // 60 second timeout (increased for better reliability)
     });
 
     // Handle different content types
@@ -114,12 +114,15 @@ export async function apiGet<T>(
     let status = 500;
 
     if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        errorMessage = 'Request timeout - please try again';
+      if (error.name === 'AbortError' || error.message.includes('signal')) {
+        errorMessage = 'Connection timeout - the server is taking too long to respond';
         status = 408;
-      } else if (error.message.includes('fetch')) {
-        errorMessage = 'Network error - please check your connection';
+      } else if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
+        errorMessage = 'Network error - please check your internet connection';
         status = 0;
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Unable to connect to server - please try again later';
+        status = 503;
       } else {
         errorMessage = error.message;
       }
