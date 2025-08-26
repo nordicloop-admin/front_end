@@ -564,7 +564,7 @@ export default function MyActivity() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                 {bids.map((bid) => {
-                  const statusInfo = getStatusInfo(bid.status, bid.is_winning);
+                  const statusInfo = getStatusInfo(bid.status, bid.is_winning || false);
                   return (
                     <div key={bid.id} className="bg-white border border-gray-100 rounded-md overflow-hidden hover:shadow-sm transition-shadow">
                       <div className="p-4">

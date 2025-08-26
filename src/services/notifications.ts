@@ -81,7 +81,7 @@ export async function getUserNotifications(params?: {
     }
 
     return response;
-  } catch (error) {
+  } catch (_error) {
     // Fallback for any unexpected errors
     return {
       data: {
@@ -239,10 +239,10 @@ export async function getUnreadNotificationCount() {
   try {
     const response = await apiGet<{ count: number }>('/notifications/unread-count/', true);
     return response;
-  } catch (error) {
+  } catch (_error) {
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'An error occurred while fetching unread notification count',
+      error: _error instanceof Error ? _error.message : 'An error occurred while fetching unread notification count',
       status: 500
     };
   }
@@ -262,10 +262,10 @@ export async function getNotificationStats() {
       priority_counts: Record<string, number>;
     }>('/notifications/stats/', true);
     return response;
-  } catch (error) {
+  } catch (_error) {
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'An error occurred while fetching notification stats',
+      error: _error instanceof Error ? _error.message : 'An error occurred while fetching notification stats',
       status: 500
     };
   }
@@ -284,10 +284,10 @@ export async function markNotificationTypeAsRead(type: string) {
       type: string;
     }>('/notifications/mark-type-as-read/', { type }, true);
     return response;
-  } catch (error) {
+  } catch (_error) {
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'An error occurred while marking notifications as read',
+      error: _error instanceof Error ? _error.message : 'An error occurred while marking notifications as read',
       status: 500
     };
   }

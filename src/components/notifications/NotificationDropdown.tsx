@@ -44,7 +44,7 @@ export default function NotificationDropdown({
     try {
       setLoading(true);
       setError(null);
-      const response = await getUnreadNotifications({ page_size: 10 }); // Get first 10
+      const response = await getUnreadNotifications(); // Get unread notifications
       
       if (response.error) {
         // If it's a connection issue and we haven't retried, try again
@@ -56,8 +56,9 @@ export default function NotificationDropdown({
         }
         setError(response.error);
       } else if (response.data) {
-        const sortedNotifications = sortNotificationsByPriority(response.data.results);
-        setNotifications(sortedNotifications);
+        // Since getUnreadNotifications now returns Notification[] directly, not paginated results
+        const sortedNotifications = sortNotificationsByPriority(response.data);
+        setNotifications(sortedNotifications.slice(0, 10)); // Take first 10
       }
     } catch (_err) {
       setError('Failed to load notifications');

@@ -26,6 +26,7 @@ import {
 import { searchUsers } from '@/services/users';
 import Modal from '@/components/ui/modal';
 import Pagination from '@/components/ui/Pagination';
+import { PaginationInfo } from '@/components/shared/Pagination';
 import {
   getNotificationIconComponent,
   getNotificationTypeConfig,
@@ -69,6 +70,7 @@ export default function AdminNotificationsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,10 +111,6 @@ export default function AdminNotificationsPage() {
   const notificationCategories = getNotificationCategories();
 
   // Pagination handlers
-  const handlePageChange = (page: number) => {
-    fetchNotifications(page);
-  };
-
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);

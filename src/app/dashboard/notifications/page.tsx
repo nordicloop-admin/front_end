@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCircle } from 'lucide-react';
-import { getUserNotifications, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
+import { getUserNotificationsPaginated, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
 import NotificationCard from '@/components/notifications/NotificationCard';
 import NotificationFilters from '@/components/notifications/NotificationFilters';
 import Pagination, { PaginationInfo } from '@/components/shared/Pagination';
 
 // Fallback mock data in case API fails
-const mockNotifications = [
+const _mockNotifications = [
   {
     id: 1,
     title: "Welcome to Nordic Loop",
@@ -59,7 +59,7 @@ export default function NotificationsPage() {
       if (selectedPriority) params.priority = selectedPriority;
       if (searchQuery.trim()) params.search = searchQuery.trim();
       
-      const response = await getUserNotifications(params);
+      const response = await getUserNotificationsPaginated(params);
       
       if (response.error) {
         // Check if it's a timeout error and we haven't retried yet
@@ -117,7 +117,7 @@ export default function NotificationsPage() {
     } else {
       fetchNotifications(1);
     }
-  }, [activeTab, selectedType, selectedPriority, searchQuery]);
+  }, [activeTab, selectedType, selectedPriority, searchQuery, currentPage, fetchNotifications]);
 
   // Handle page changes
   const handlePageChange = (page: number) => {
