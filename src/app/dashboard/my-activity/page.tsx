@@ -85,18 +85,11 @@ export default function MyActivity() {
         const result = response.data as PaginatedAuctionResult;
 
         const convertedAuctions = result.auctions.map(auction => {
-          let status = 'inactive';
-          let auctionStatus = 'Inactive';
+          // Use the actual status from backend instead of transforming
+          const backendStatus = auction.status || (auction.is_active ? 'active' : 'draft');
           
-          if (auction.status === 'suspended') {
-            status = 'suspended';
-            auctionStatus = 'Suspended';
-          } else if (auction.is_active) {
-            status = 'active';
-            auctionStatus = 'Active';
-          } else if (!auction.is_active) {
-            auctionStatus = 'Draft';
-          }
+          // Capitalize first letter for display
+          const displayStatus = backendStatus.charAt(0).toUpperCase() + backendStatus.slice(1);
           
           return {
             id: auction.id.toString(),
@@ -105,8 +98,8 @@ export default function MyActivity() {
             subcategory: auction.subcategory_name,
             basePrice: auction.starting_bid_price || auction.total_starting_value,
             currentBid: '',
-            status: status,
-            auctionStatus: auctionStatus,
+            status: backendStatus,
+            auctionStatus: displayStatus,
             timeLeft: 'Available',
             volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
             image: auction.material_image || '/images/marketplace/categories/plastics.jpg',

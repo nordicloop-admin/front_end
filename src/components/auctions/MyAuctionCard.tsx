@@ -55,12 +55,13 @@ export default function MyAuctionCard({
               <h2 className="text-sm font-medium text-gray-900 line-clamp-1">{name}</h2>
               {auctionStatus && (
                 <span className={`text-xs px-1.5 py-0.5 rounded-sm font-medium ${
-                  status === 'suspended' ? 'bg-red-50 text-red-700' :
-                  auctionStatus === 'Active' ? 'bg-green-50 text-green-700' : 
-                  auctionStatus === 'Suspended' ? 'bg-red-50 text-red-700' : 
+                  ['suspended', 'Suspended'].includes(status || auctionStatus) ? 'bg-red-50 text-red-700' :
+                  ['active', 'Active'].includes(status || auctionStatus) ? 'bg-green-50 text-green-700' : 
+                  ['completed', 'won', 'Won', 'Completed'].includes(status || auctionStatus) ? 'bg-blue-50 text-blue-700' :
+                  ['closed', 'ended', 'Closed', 'Ended'].includes(status || auctionStatus) ? 'bg-gray-50 text-gray-700' :
                   'bg-yellow-50 text-yellow-700'
                 }`}>
-                  {status === 'suspended' ? 'Suspended' : auctionStatus}
+                  {auctionStatus}
                 </span>
               )}
             </div>

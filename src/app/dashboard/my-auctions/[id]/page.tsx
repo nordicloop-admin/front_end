@@ -212,7 +212,7 @@ export default function AuctionDetail() {
               subcategory: adData.subcategory_name,
               basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
               currentBid: '', // Will be updated if we fetch bids
-              status: adData.is_active ? 'active' : 'inactive',
+              status: adData.status || (adData.is_active ? 'active' : 'draft'),
               timeLeft: adData.time_remaining || adData.auction_duration_display,
               volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
               image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
@@ -276,7 +276,7 @@ export default function AuctionDetail() {
               subcategory: apiAuction.subcategory_name,
               basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
               currentBid: '',
-              status: apiAuction.is_active ? 'active' : 'inactive',
+              status: apiAuction.status || (apiAuction.is_active ? 'active' : 'draft'),
               timeLeft: 'Available',
               volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
               image: apiAuction.material_image ? getFullImageUrl(apiAuction.material_image) : getCategoryImage(apiAuction.category_name),
@@ -593,6 +593,7 @@ export default function AuctionDetail() {
                 auction.auctionStatus === 'Active' ? 'bg-green-50 text-green-700 border-green-200' :
                 auction.auctionStatus === 'Draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
                 auction.auctionStatus === 'Suspended' || auction.status === 'suspended' ? 'bg-red-50 text-red-700 border-red-200' :
+                auction.auctionStatus === 'Completed' || auction.status === 'completed' ? 'bg-blue-50 text-blue-700 border-blue-200' :
                 auction.status === 'active' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-gray-50 text-gray-700 border-gray-200'
               }`}>
                 {auction.auctionStatus || (auction.status === 'active' ? 'Active' : 'Inactive')}
@@ -626,23 +627,37 @@ export default function AuctionDetail() {
                   <div className="flex items-center ml-6">
                     {auction.isComplete && (
                       <>
-
-                        {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
-                          <button
-                            onClick={handleActivateAuction}
-                            className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5"
-                          >
-                            <Play className="w-3.5 h-3.5" />
-                            <span>Publish</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={handleDeactivateAuction}
-                            className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5"
-                          >
-                            <Pause className="w-3.5 h-3.5" />
-                            <span>Hide</span>
-                          </button>
+                        {/* Only show publish/hide buttons for non-final statuses */}
+                        {!['completed', 'won', 'closed', 'ended'].includes(auction.status) && 
+                         !['Completed', 'Won', 'Closed', 'Ended'].includes(auction.auctionStatus) && (
+                          <>
+                            {auction.status !== 'active' && auction.auctionStatus !== 'Active' ? (
+                              <button
+                                onClick={handleActivateAuction}
+                                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5"
+                              >
+                                <Play className="w-3.5 h-3.5" />
+                                <span>Publish</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={handleDeactivateAuction}
+                                className="px-4 py-2 bg-slate-500 hover:bg-slate-600 text-white text-sm font-medium rounded-md transition-colors flex items-center space-x-1.5"
+                              >
+                                <Pause className="w-3.5 h-3.5" />
+                                <span>Hide</span>
+                              </button>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Show status message for completed auctions */}
+                        {(['completed', 'won', 'closed', 'ended'].includes(auction.status) || 
+                          ['Completed', 'Won', 'Closed', 'Ended'].includes(auction.auctionStatus)) && (
+                          <div className="px-4 py-2 bg-gray-100 text-gray-600 text-sm font-medium rounded-md flex items-center space-x-1.5">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                            <span>Auction {auction.status === 'won' || auction.auctionStatus === 'Won' ? 'Won' : 'Completed'}</span>
+                          </div>
                         )}
                       </>
                     )}
@@ -1011,6 +1026,7 @@ export default function AuctionDetail() {
                     auction.auctionStatus === 'Active' ? 'bg-green-50 text-green-700' :
                     auction.auctionStatus === 'Draft' ? 'bg-yellow-50 text-yellow-700' :
                     auction.auctionStatus === 'Suspended' ? 'bg-red-50 text-red-700' :
+                    auction.auctionStatus === 'Completed' ? 'bg-blue-50 text-blue-700' :
                     'bg-gray-50 text-gray-700'
                   }`}>
                     {auction.auctionStatus || (auction.status === 'suspended' ? 'Suspended' : auction.status === 'active' ? 'Active' : 'Inactive')}
