@@ -51,7 +51,7 @@ export default function NotificationCard({
     }
   };
   
-  const CardContent = () => (
+  const CardContent = ({ isWrappedInLink = false }: { isWrappedInLink?: boolean }) => (
     <div className={cn(
       "relative transition-all duration-200 hover:shadow-sm",
       !notification.is_read && "bg-gray-50/50",
@@ -134,7 +134,8 @@ export default function NotificationCard({
             {/* Actions */}
             {showActions && (
               <div className="flex items-center space-x-2 ml-4">
-                {notification.action_url && (
+                {/* Only show action URL link if the whole card is NOT wrapped in a link */}
+                {notification.action_url && !isWrappedInLink && (
                   <Link
                     href={notification.action_url}
                     className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
@@ -176,7 +177,7 @@ export default function NotificationCard({
     return (
       <Link href={notification.action_url} className="block">
         <div className="border border-gray-200 rounded-lg hover:border-gray-300 transition-colors">
-          <CardContent />
+          <CardContent isWrappedInLink={true} />
         </div>
       </Link>
     );
@@ -184,7 +185,7 @@ export default function NotificationCard({
   
   return (
     <div className="border border-gray-200 rounded-lg">
-      <CardContent />
+      <CardContent isWrappedInLink={false} />
     </div>
   );
 }
