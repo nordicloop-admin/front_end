@@ -83,7 +83,7 @@ export default function PaymentSuccess({
       <div className="bg-amber-50 rounded-lg p-4 mb-6">
         <h3 className="font-semibold text-gray-900 mb-2">What happens next?</h3>
         <ul className="text-sm text-gray-700 space-y-1">
-          <li>• You'll receive a payment confirmation email shortly</li>
+          <li>• You&apos;ll receive a payment confirmation email shortly</li>
           <li>• The seller has been notified of your payment</li>
           <li>• The seller will contact you to arrange delivery/pickup</li>
           <li>• You can view this transaction in your payment history</li>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCircle } from 'lucide-react';
 import { getUserNotificationsPaginated, markNotificationAsRead, deleteNotification, markAllNotificationsAsRead, Notification } from '@/services/notifications';
 import NotificationCard from '@/components/notifications/NotificationCard';
@@ -38,8 +38,7 @@ export default function NotificationsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   
-  // Fetch notifications from API with pagination
-  const fetchNotifications = async (page: number = 1) => {
+  const fetchNotifications = useCallback(async (page = 1) => {
     try {
       setLoading(true);
       setError(null);
@@ -76,12 +75,12 @@ export default function NotificationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, selectedType, selectedPriority, searchQuery, pageSize]);
 
   // Initial fetch and refetch when filters change
   useEffect(() => {
     fetchNotifications(1);
-  }, [activeTab, selectedType, selectedPriority, searchQuery, pageSize]);
+  }, [fetchNotifications]);
   
   // Sort notifications by priority (server already orders by date)
   const sortedNotifications = sortNotificationsByPriority(notifications);

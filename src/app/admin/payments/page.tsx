@@ -29,7 +29,7 @@ export default function AdminPaymentsPage() {
           </div>
           <h2 className="text-xl font-semibold text-red-900 mb-2">Access Denied</h2>
           <p className="text-red-700 mb-4">
-            You don't have permission to access the admin payment dashboard.
+            You don&apos;t have permission to access the admin payment dashboard.
           </p>
           <p className="text-sm text-gray-600">
             This page is restricted to administrators only.

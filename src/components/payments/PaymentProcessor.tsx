@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { CreditCard, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { CreditCard, CheckCircle, Clock } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
 import { createPaymentIntent, PaymentIntent, formatCurrency, getCommissionRate } from '@/services/payments';
 import { getUserSubscription } from '@/services/userSubscription';
 import PaymentSuccess from './PaymentSuccess';
@@ -29,7 +29,7 @@ export default function PaymentProcessor({
   bidId,
   bidAmount,
   bidVolume,
-  sellerEmail,
+  sellerEmail, // eslint-disable-line @typescript-eslint/no-unused-vars
   winningBid,
   onPaymentSuccess,
   onPaymentError,
@@ -51,24 +51,24 @@ export default function PaymentProcessor({
     try {
       const subscription = await getUserSubscription();
       setUserSubscription(subscription);
-    } catch (error) {
-      console.error('Error loading user subscription:', error);
+    } catch (_error) {
+      // Handle error without console
+      toast.error('Failed to load subscription data', {
+        description: 'Please refresh the page and try again'
+      });
     }
   };
 
   const loadStripe = async () => {
     try {
-      console.log('Loading Stripe...');
       const stripeInstance = await stripePromise;
 
       if (stripeInstance) {
         setStripe(stripeInstance);
-        console.log('Stripe loaded successfully');
       } else {
         throw new Error('Failed to load Stripe');
       }
-    } catch (error) {
-      console.error('Error loading Stripe:', error);
+    } catch (_error) {
       toast.error('Failed to load payment system', {
         description: 'Please refresh the page and try again'
       });

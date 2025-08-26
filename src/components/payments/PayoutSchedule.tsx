@@ -50,8 +50,15 @@ export default function PayoutSchedule({ className = '' }: PayoutScheduleProps) 
     }
   };
 
+  const isOverdue = (schedule: PayoutScheduleType) => {
+    if (schedule.status !== 'scheduled') return false;
+    const now = new Date();
+    const scheduledDate = new Date(schedule.scheduled_date);
+    return now > scheduledDate;
+  };
+
   const getStatusMessage = (schedule: PayoutScheduleType) => {
-    if (schedule.is_overdue) {
+    if (isOverdue(schedule)) {
       return 'Overdue - Contact support if needed';
     }
     
@@ -163,7 +170,7 @@ export default function PayoutSchedule({ className = '' }: PayoutScheduleProps) 
             <div
               key={schedule.id}
               className={`border rounded-lg p-4 ${
-                schedule.is_overdue 
+                isOverdue(schedule) 
                   ? 'border-red-200 bg-red-50' 
                   : 'border-gray-200 hover:bg-gray-50'
               } transition-colors`}
@@ -171,7 +178,7 @@ export default function PayoutSchedule({ className = '' }: PayoutScheduleProps) 
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-3">
                   <div className="flex-shrink-0 mt-1">
-                    {getStatusIcon(schedule.status, schedule.is_overdue)}
+                    {getStatusIcon(schedule.status, isOverdue(schedule))}
                   </div>
                   <div>
                     <div className="flex items-center space-x-2 mb-1">
@@ -181,7 +188,7 @@ export default function PayoutSchedule({ className = '' }: PayoutScheduleProps) 
                       <span className={`text-xs px-2 py-1 rounded-full ${getStatusBadgeColor(schedule.status)}`}>
                         {schedule.status.charAt(0).toUpperCase() + schedule.status.slice(1)}
                       </span>
-                      {schedule.is_overdue && (
+                      {isOverdue(schedule) && (
                         <span className="text-xs px-2 py-1 rounded-full bg-red-100 text-red-800">
                           Overdue
                         </span>
@@ -191,11 +198,7 @@ export default function PayoutSchedule({ className = '' }: PayoutScheduleProps) 
                       {getStatusMessage(schedule)}
                     </p>
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
-                      <span>{schedule.transaction_count} transaction{schedule.transaction_count !== 1 ? 's' : ''}</span>
                       <span>Created {new Date(schedule.created_at).toLocaleDateString()}</span>
-                      {schedule.created_by_email && (
-                        <span>by {schedule.created_by_email}</span>
-                      )}
                     </div>
                     {schedule.notes && (
                       <p className="text-sm text-gray-600 mt-2 italic">
@@ -234,7 +237,7 @@ export default function PayoutSchedule({ className = '' }: PayoutScheduleProps) 
             <p className="font-medium mb-1">About Payouts</p>
             <p>
               Payouts are processed manually by our admin team according to the scheduled dates. 
-              You'll receive a notification when your payout is processed and the funds are sent to your bank account.
+              You&apos;ll receive a notification when your payout is processed and the funds are sent to your bank account.
             </p>
           </div>
         </div>

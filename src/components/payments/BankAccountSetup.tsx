@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Check, AlertCircle, CreditCard, Building, Edit2, X, Clock } from 'lucide-react';
-import { setupBankAccount, getUserStripeAccount, StripeAccount, BankAccountSetup } from '@/services/payments';
+import { setupBankAccount, getUserStripeAccount, StripeAccount } from '@/services/payments';
+import type { BankAccountSetup } from '@/services/payments';
 
 interface BankAccountSetupProps {
   onSetupComplete?: (account: StripeAccount) => void;
@@ -32,9 +33,8 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
     try {
       const account = await getUserStripeAccount();
       setExistingAccount(account);
-    } catch (error) {
+    } catch (_error) {
       // Error occurred while checking account (not just "no account found")
-      console.error('Error checking existing account:', error);
       setExistingAccount(null);
       toast.error('Failed to check existing account', {
         description: 'Please refresh the page and try again'
@@ -294,7 +294,7 @@ export default function BankAccountSetup({ onSetupComplete, className = '' }: Ba
             <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
               <h4 className="text-xs font-medium text-green-900 mb-2">What happens next?</h4>
               <p className="text-xs text-green-800">
-                Stripe will verify your information automatically. You'll receive an email notification
+                Stripe will verify your information automatically. You&apos;ll receive an email notification
                 when your account is approved and ready to receive payments.
               </p>
             </div>

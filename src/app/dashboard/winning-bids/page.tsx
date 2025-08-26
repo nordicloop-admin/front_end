@@ -6,6 +6,7 @@ import { Trophy, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { getUserWinningBids, BidItem } from '@/services/bid';
 import WinningBidPayment from '@/components/payments/WinningBidPayment';
 import { PaymentIntent } from '@/services/payments';
+import Link from 'next/link';
 
 export default function WinningBidsPage() {
   const [winningBids, setWinningBids] = useState<BidItem[]>([]);
@@ -51,7 +52,7 @@ export default function WinningBidsPage() {
     }
   };
 
-  const handlePaymentComplete = (paymentIntent: PaymentIntent) => {
+  const handlePaymentComplete = (_paymentIntent: PaymentIntent) => {
     toast.success('Payment completed successfully!', {
       description: 'The seller has been notified and will coordinate delivery with you.'
     });
@@ -195,14 +196,14 @@ export default function WinningBidsPage() {
             <Trophy size={48} className="text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Auctions Won Yet</h3>
             <p className="text-gray-500 mb-6">
-              You haven't won any auctions yet. Keep bidding to win great deals on materials!
+              You haven&apos;t won any auctions yet. Keep bidding to win great deals on materials!
             </p>
-            <a
+            <Link
               href="/dashboard/auctions"
               className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            >n
+            >
               Browse Auctions
-            </a>
+            </Link>
           </div>
         </div>
       ) : (

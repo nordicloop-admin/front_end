@@ -122,7 +122,12 @@ export const setupBankAccount = async (bankAccountData: BankAccountSetup): Promi
   stripe_account?: StripeAccount;
 }> => {
   const response = await apiPost('/payments/bank-account/', bankAccountData, true);
-  return response.data || { success: false, message: response.error || 'Failed to setup bank account' };
+  
+  if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+    return response.data as { success: boolean; message: string; stripe_account?: StripeAccount };
+  }
+  
+  return { success: false, message: response.error || 'Failed to setup bank account' };
 };
 
 export const getUserStripeAccount = async (): Promise<StripeAccount | null> => {
@@ -153,7 +158,12 @@ export const createPaymentIntent = async (bidId: number, returnUrl?: string): Pr
     bid_id: bidId,
     return_url: returnUrl
   }, true);
-  return response.data || { success: false, message: response.error || 'Failed to create payment intent' };
+  
+  if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+    return response.data as { success: boolean; payment_intent?: PaymentIntent; client_secret?: string; message: string };
+  }
+  
+  return { success: false, message: response.error || 'Failed to create payment intent' };
 };
 
 export const confirmPaymentCompletion = async (paymentIntentId: string): Promise<{
@@ -163,7 +173,12 @@ export const confirmPaymentCompletion = async (paymentIntentId: string): Promise
   completion_result?: any;
 }> => {
   const response = await apiPost(`/payments/payment-intent/${paymentIntentId}/confirm/`, {}, true);
-  return response.data || { success: false, message: response.error || 'Failed to confirm payment completion' };
+  
+  if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+    return response.data as { success: boolean; message: string; already_processed?: boolean; completion_result?: any };
+  }
+  
+  return { success: false, message: response.error || 'Failed to confirm payment completion' };
 };
 
 export const getUserPaymentIntents = async (): Promise<PaymentIntent[]> => {
@@ -266,7 +281,17 @@ export const createPayoutSchedules = async (data: {
   message: string;
 }> => {
   const response = await apiPost('/payments/admin/payout-schedules/', data, true);
-  return response.data || { success: false, created_schedules: [], errors: [response.error || 'Failed to create payout schedules'], message: response.error || 'Failed to create payout schedules' };
+  
+  if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+    return response.data as { success: boolean; created_schedules: PayoutSchedule[]; errors: string[]; message: string };
+  }
+  
+  return { 
+    success: false, 
+    created_schedules: [], 
+    errors: [response.error || 'Failed to create payout schedules'], 
+    message: response.error || 'Failed to create payout schedules' 
+  };
 };
 
 export const getAllPayoutSchedules = async (): Promise<PayoutSchedule[]> => {
@@ -288,7 +313,17 @@ export const processPayouts = async (data: {
   message: string;
 }> => {
   const response = await apiPost('/payments/admin/process-payouts/', data, true);
-  return response.data || { success: false, processed_payouts: [], errors: [response.error || 'Failed to process payouts'], message: response.error || 'Failed to process payouts' };
+  
+  if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+    return response.data as { success: boolean; processed_payouts: PayoutSchedule[]; errors: string[]; message: string };
+  }
+  
+  return { 
+    success: false, 
+    processed_payouts: [], 
+    errors: [response.error || 'Failed to process payouts'], 
+    message: response.error || 'Failed to process payouts' 
+  };
 };
 
 // Utility functions

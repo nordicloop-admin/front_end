@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { History, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle, XCircle, Filter } from 'lucide-react';
-import { getUserTransactions, Transaction, formatCurrency, getStatusColor, getStatusBadgeColor } from '@/services/payments';
+import { getUserTransactions, Transaction, formatCurrency, getStatusBadgeColor } from '@/services/payments';
 
 interface TransactionHistoryProps {
   className?: string;
@@ -55,8 +55,8 @@ export default function TransactionHistory({ className = '' }: TransactionHistor
     switch (transaction.transaction_type) {
       case 'payment':
         return isIncoming 
-          ? `Payment received from ${transaction.from_user_email || 'buyer'}`
-          : `Payment to ${transaction.to_user_email || 'seller'}`;
+          ? `Payment received from ${transaction.buyer_company_name || 'buyer'}`
+          : `Payment to ${transaction.seller_company_name || 'seller'}`;
       case 'commission':
         return 'Platform commission';
       case 'payout':
@@ -152,7 +152,7 @@ export default function TransactionHistory({ className = '' }: TransactionHistor
       ) : (
         <div className="space-y-3">
           {filteredTransactions.map((transaction) => {
-            const isIncoming = !!transaction.to_user;
+            const isIncoming = !!transaction.to_user_id;
             const amount = parseFloat(transaction.amount);
             
             return (
@@ -178,11 +178,6 @@ export default function TransactionHistory({ className = '' }: TransactionHistor
                           minute: '2-digit'
                         })}
                       </span>
-                      {transaction.stripe_transfer_id && (
-                        <span className="text-xs text-gray-400 font-mono">
-                          {transaction.stripe_transfer_id.slice(-8)}
-                        </span>
-                      )}
                     </div>
                   </div>
                 </div>

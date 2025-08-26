@@ -74,7 +74,6 @@ export default function StripePaymentForm({
       );
 
       if (error) {
-        console.error('Payment confirmation error:', error);
         const errorMessage = error.message || 'Payment failed';
         setCardError(errorMessage);
         onPaymentError(errorMessage);
@@ -82,7 +81,6 @@ export default function StripePaymentForm({
           description: errorMessage
         });
       } else if (confirmedPaymentIntent && confirmedPaymentIntent.status === 'succeeded') {
-        console.log('Payment succeeded:', confirmedPaymentIntent);
 
         // Update the payment intent with the confirmed status
         const updatedPaymentIntent = {
@@ -94,17 +92,10 @@ export default function StripePaymentForm({
         // Call backend to confirm payment completion (fallback for webhook)
         try {
           const confirmationResult = await confirmPaymentCompletion(paymentIntent.id);
-          if (confirmationResult.success) {
-            console.log('Payment completion confirmed with backend');
-            if (confirmationResult.already_processed) {
-              console.log('Payment was already processed by webhook');
-            }
-          } else {
-            console.warn('Backend confirmation failed:', confirmationResult.message);
-            // Still proceed with frontend success - webhook might handle it
+          if (confirmationResult.success && !confirmationResult.already_processed) {
+            // Payment successfully processed
           }
-        } catch (error) {
-          console.warn('Error confirming payment with backend:', error);
+        } catch (_error) {
           // Still proceed with frontend success - webhook might handle it
         }
 
@@ -114,7 +105,6 @@ export default function StripePaymentForm({
         });
       }
     } catch (error) {
-      console.error('Payment processing error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
       setCardError(errorMessage);
       onPaymentError(errorMessage);
@@ -164,7 +154,7 @@ export default function StripePaymentForm({
               {paymentIntent.total_amount} {paymentIntent.currency?.toUpperCase() || 'SEK'}
             </span>
           </div>
-          {paymentIntent.commission_amount > 0 && (
+          {parseFloat(paymentIntent.commission_amount) > 0 && (
             <div className="flex justify-between items-center text-sm mt-1">
               <span className="text-gray-600">Platform Fee:</span>
               <span className="text-gray-600">

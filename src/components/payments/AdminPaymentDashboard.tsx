@@ -1,14 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { 
   DollarSign, 
   TrendingUp, 
   Users, 
-  Calendar, 
-  AlertTriangle,
-  CheckCircle,
   Clock,
   Filter
 } from 'lucide-react';
@@ -16,7 +13,6 @@ import {
   getPaymentStats,
   getPendingPayouts,
   createPayoutSchedules,
-  processPayouts,
   getUserPaymentIntents,
   getUserTransactions,
   PaymentStats,
@@ -45,11 +41,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
   const [isCreatingSchedule, setIsCreatingSchedule] = useState(false);
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [dateRange]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -80,7 +72,11 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dateRange]);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [dateRange, loadDashboardData]);
 
   const handleSellerToggle = (sellerId: number) => {
     setSelectedSellers(prev => 

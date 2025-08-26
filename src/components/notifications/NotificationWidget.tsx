@@ -179,7 +179,7 @@ export default function NotificationWidget({
             <Bell className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             <p className="text-sm text-gray-500">No notifications yet</p>
             <p className="text-xs text-gray-400 mt-1">
-              You'll see your latest notifications here
+              You&apos;ll see your latest notifications here
             </p>
           </div>
         </div>
