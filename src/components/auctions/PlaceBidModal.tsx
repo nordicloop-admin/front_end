@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
 import Modal from '@/components/ui/modal';
+import PaymentMethodSelector from '@/components/payments/PaymentMethodSelector';
 
 interface PlaceBidModalProps {
   isOpen: boolean;
@@ -13,6 +14,7 @@ interface PlaceBidModalProps {
     volumeType?: 'partial' | 'full';
     notes?: string;
     maxAutoBidPrice?: string;
+    paymentMethodId: string;
   }) => void;
   auction: {
     id: string;
@@ -37,6 +39,9 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
   const [error, setError] = useState('');
   const [volumeError, setVolumeError] = useState('');
   const [autoBidError, setAutoBidError] = useState('');
+  const [paymentMethodId, setPaymentMethodId] = useState('');
+  const [paymentMethodError, setPaymentMethodError] = useState('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Format price string to number (remove commas)
   const formatPrice = useCallback((price: string): number => {
@@ -93,6 +98,9 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
       setError('');
       setVolumeError('');
       setAutoBidError('');
+      setPaymentMethodId('');
+      setPaymentMethodError('');
+      setIsProcessingPayment(false);
     }
   }, [isOpen, auction, calculateMinimumBid, extractVolumeValue, initialBidAmount]);
 
@@ -142,18 +150,33 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
       hasError = true;
     }
 
+    // Validate payment method
+    if (!paymentMethodId) {
+      setPaymentMethodError('Payment method is required to place a bid');
+      hasError = true;
+    }
+
     if (hasError) {
       return;
     }
 
+    setIsProcessingPayment(true);
+
     // Submit the bid with all the data
-    onSubmit({
-      bidAmount,
-      bidVolume: bidVolume || undefined,
-      volumeType,
-      notes: notes.trim() || undefined,
-      maxAutoBidPrice: isAutoBidEnabled ? maxAutoBidPrice : undefined,
-    });
+    onSubmit(
+      {
+        bidAmount,
+        bidVolume: bidVolume || undefined,
+        volumeType,
+        notes: notes.trim() || undefined,
+        maxAutoBidPrice: isAutoBidEnabled ? maxAutoBidPrice : undefined,
+        paymentMethodId,
+      },
+      () => {
+        // Reset processing state when complete
+        setIsProcessingPayment(false);
+      }
+    );
   };
 
   if (!isOpen) return null;
@@ -363,6 +386,28 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
               <div className="mt-1 text-xs text-gray-500">
                 {notes.length}/500 characters
               </div>
+            </div>
+
+            {/* Payment Method Section */}
+            <div className="mb-6">
+              <PaymentMethodSelector
+                onPaymentMethodReady={(paymentMethodId) => {
+                  setPaymentMethodId(paymentMethodId);
+                  setPaymentMethodError('');
+                }}
+                onError={(error) => {
+                  setPaymentMethodError(error);
+                  setPaymentMethodId('');
+                }}
+                isProcessing={isProcessingPayment}
+                className="mb-4"
+              />
+              {paymentMethodError && (
+                <div className="mt-2 text-sm text-red-600 flex items-start">
+                  <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
+                  <span>{paymentMethodError}</span>
+                </div>
+              )}
             </div>
 
             {/* Submit Buttons */}

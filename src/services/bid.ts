@@ -14,6 +14,7 @@ export interface BidCreateData {
   volume_type?: 'partial' | 'full';    // Volume type (optional, defaults to "partial")
   notes?: string;                      // Optional notes
   max_auto_bid_price?: string;         // Auto-bidding max price (optional)
+  payment_method_id: string;           // Stripe payment method ID (required for pre-authorization)
 }
 
 /**
