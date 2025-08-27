@@ -9,10 +9,12 @@ import {
   Clock,
   Filter
 } from 'lucide-react';
+import Pagination from '@/components/ui/Pagination';
 import {
   getPaymentStats,
   getPendingPayouts,
   createPayoutSchedules,
+  processPayouts,
   getUserPaymentIntents,
   getUserTransactions,
   PaymentStats,
@@ -26,7 +28,7 @@ interface AdminPaymentDashboardProps {
   className?: string;
 }
 
-type TabType = 'overview' | 'transactions';
+type TabType = 'overview' | 'payment-intents' | 'transactions';
 
 export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDashboardProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -41,7 +43,13 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
   const [isCreatingSchedule, setIsCreatingSchedule] = useState(false);
   const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
 
-  const loadDashboardData = useCallback(async () => {
+  // Pagination states
+  const [paymentIntentsPage, setPaymentIntentsPage] = useState(1);
+  const [transactionsPage, setTransactionsPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Separate loading functions for each tab
+  const loadOverviewData = useCallback(async () => {
     try {
       setIsLoading(true);
       
@@ -54,19 +62,15 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
         startDate = date.toISOString().split('T')[0];
       }
 
-      const [statsData, pendingData, paymentIntentsData, transactionsData] = await Promise.all([
+      const [statsData, pendingData] = await Promise.all([
         getPaymentStats(startDate),
-        getPendingPayouts(),
-        getUserPaymentIntents(),
-        getUserTransactions()
+        getPendingPayouts()
       ]);
 
       setStats(statsData);
       setPendingPayouts(pendingData);
-      setPaymentIntents(paymentIntentsData);
-      setTransactions(transactionsData);
     } catch (error) {
-      toast.error('Failed to load dashboard data', {
+      toast.error('Failed to load overview data', {
         description: error instanceof Error ? error.message : 'An unexpected error occurred'
       });
     } finally {
@@ -74,9 +78,64 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
     }
   }, [dateRange]);
 
+  const loadPaymentIntentsData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const paymentIntentsData = await getUserPaymentIntents();
+      setPaymentIntents(paymentIntentsData);
+    } catch (error) {
+      toast.error('Failed to load payment intents', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loadTransactionsData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const transactionsData = await getUserTransactions();
+      setTransactions(transactionsData);
+    } catch (error) {
+      toast.error('Failed to load transactions', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    loadDashboardData();
-  }, [dateRange, loadDashboardData]);
+    // Only load overview data initially
+    if (activeTab === 'overview') {
+      loadOverviewData();
+    }
+  }, [dateRange, loadOverviewData, activeTab]);
+
+  // Handle tab changes with lazy loading
+  const handleTabChange = (tab: TabType) => {
+    setActiveTab(tab);
+    
+    // Load data only when tab is clicked
+    switch (tab) {
+      case 'overview':
+        if (!stats || !pendingPayouts) {
+          loadOverviewData();
+        }
+        break;
+      case 'payment-intents':
+        if (paymentIntents.length === 0) {
+          loadPaymentIntentsData();
+        }
+        break;
+      case 'transactions':
+        if (transactions.length === 0) {
+          loadTransactionsData();
+        }
+        break;
+    }
+  };
 
   const handleSellerToggle = (sellerId: number) => {
     setSelectedSellers(prev => 
@@ -121,7 +180,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
         setSelectedSellers([]);
         setScheduledDate('');
         setNotes('');
-        loadDashboardData(); // Refresh data
+        loadOverviewData(); // Refresh data
       } else {
         toast.error('Failed to create payout schedules', {
           description: result.message
@@ -133,6 +192,53 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
       });
     } finally {
       setIsCreatingSchedule(false);
+    }
+  };
+
+  const handleDirectPayout = async (sellerId: number) => {
+    if (!confirm('Are you sure you want to process this payout immediately?')) {
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Create immediate payout schedule (today's date)
+      const today = new Date().toISOString().split('T')[0];
+      const result = await createPayoutSchedules({
+        seller_ids: [sellerId],
+        scheduled_date: today,
+        notes: 'Direct payout - processed immediately'
+      });
+
+      if (result.success && result.created_schedules.length > 0) {
+        // Process the payout immediately
+        const processResult = await processPayouts({
+          payout_schedule_ids: result.created_schedules.map(s => s.id),
+          force_process: true
+        });
+
+        if (processResult.success) {
+          toast.success('Payout processed successfully', {
+            description: 'Payment has been sent to the seller'
+          });
+          loadOverviewData(); // Refresh data
+        } else {
+          toast.error('Failed to process payout', {
+            description: processResult.message
+          });
+        }
+      } else {
+        toast.error('Failed to create payout schedule', {
+          description: result.message
+        });
+      }
+    } catch (error) {
+      toast.error('Failed to process direct payout', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred'
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -170,7 +276,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('overview')}
+            onClick={() => handleTabChange('overview')}
             className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeTab === 'overview'
                 ? 'border-[#FF8A00] text-[#FF8A00]'
@@ -181,7 +287,18 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
             Overview & Payouts
           </button>
           <button
-            onClick={() => setActiveTab('transactions')}
+            onClick={() => handleTabChange('payment-intents')}
+            className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              activeTab === 'payment-intents'
+                ? 'border-[#FF8A00] text-[#FF8A00]'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <TrendingUp size={16} className="mr-2" />
+            Payment Intents
+          </button>
+          <button
+            onClick={() => handleTabChange('transactions')}
             className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               activeTab === 'transactions'
                 ? 'border-[#FF8A00] text-[#FF8A00]'
@@ -189,7 +306,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
             }`}
           >
             <TrendingUp size={16} className="mr-2" />
-            All Transactions
+            Transactions
           </button>
         </nav>
       </div>
@@ -320,28 +437,39 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                   {pendingPayouts.pending_payouts?.map((payout: any) => (
                     <div
                       key={payout.seller.id}
-                      className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+                      className="border border-gray-200 rounded-lg hover:bg-gray-50"
                     >
-                      <div className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          checked={selectedSellers.includes(payout.seller.id)}
-                          onChange={() => handleSellerToggle(payout.seller.id)}
-                          className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
-                        />
-                        <div>
-                          <p className="font-medium text-gray-900">{payout.seller.email}</p>
-                          <p className="text-sm text-gray-600">
-                            {payout.transaction_count} transaction{payout.transaction_count !== 1 ? 's' : ''}
-                            {' • '}
-                            Oldest: {new Date(payout.oldest_transaction).toLocaleDateString()}
-                          </p>
+                      <div className="flex items-center justify-between p-3">
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedSellers.includes(payout.seller.id)}
+                            onChange={() => handleSellerToggle(payout.seller.id)}
+                            className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900">{payout.seller.name || payout.seller.email}</p>
+                            <p className="text-sm text-gray-600">{payout.seller.email}</p>
+                            <p className="text-sm text-gray-600">
+                              {payout.transaction_count} transaction{payout.transaction_count !== 1 ? 's' : ''}
+                              {' • '}
+                              Oldest: {new Date(payout.oldest_transaction).toLocaleDateString()}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium text-gray-900">
-                          {formatCurrency(parseFloat(payout.total_amount))}
-                        </p>
+                        <div className="flex items-center space-x-3">
+                          <div className="text-right">
+                            <p className="font-medium text-gray-900">
+                              {formatCurrency(parseFloat(payout.total_amount), 'SEK')}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => handleDirectPayout(payout.seller.id)}
+                            className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                          >
+                            Pay Now
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -356,54 +484,53 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
         </>
       )}
 
-      {/* Transactions Tab */}
-      {activeTab === 'transactions' && (
+      {/* Payment Intents Tab */}
+      {activeTab === 'payment-intents' && (
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">All Transactions</h2>
+            <h2 className="text-xl font-semibold">Payment Intents</h2>
             <div className="text-sm text-gray-600">
-              {paymentIntents.length} payment{paymentIntents.length !== 1 ? 's' : ''} • {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+              {paymentIntents.length} payment intent{paymentIntents.length !== 1 ? 's' : ''}
             </div>
           </div>
 
-          {/* Payment Intents Table */}
-          <div className="mb-8">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Intents</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Payment ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Auction
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Buyer Company
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Commission
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Commission Rate
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Seller Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {paymentIntents.map((payment) => (
+          <div className="overflow-x-auto mb-6">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Payment ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Auction
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Buyer Company
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Seller Company
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Commission
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Seller Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paymentIntents
+                  .slice((paymentIntentsPage - 1) * itemsPerPage, paymentIntentsPage * itemsPerPage)
+                  .map((payment) => (
                     <tr key={payment.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {payment.stripe_payment_intent_id.slice(-8)}
@@ -416,17 +543,18 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                         <div className="font-medium">{payment.buyer_company_name || 'Unknown Company'}</div>
                         <div className="text-xs text-gray-500">{payment.buyer_email}</div>
                       </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div className="font-medium">{payment.seller_company_name || 'Unknown Company'}</div>
+                        <div className="text-xs text-gray-500">{payment.seller_email}</div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                        {formatCurrency(parseFloat(payment.total_amount))}
+                        {formatCurrency(parseFloat(payment.total_amount), payment.currency)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-[#FF8A00] font-medium">
-                        {formatCurrency(parseFloat(payment.commission_amount))}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {parseFloat(payment.commission_rate)}%
+                        {formatCurrency(parseFloat(payment.commission_amount), payment.currency)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-medium">
-                        {formatCurrency(parseFloat(payment.seller_amount))}
+                        {formatCurrency(parseFloat(payment.seller_amount), payment.currency)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(payment.status)}`}>
@@ -438,56 +566,80 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination for Payment Intents */}
+          <Pagination
+            currentPage={paymentIntentsPage}
+            totalPages={Math.ceil(paymentIntents.length / itemsPerPage)}
+            totalItems={paymentIntents.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setPaymentIntentsPage}
+          />
+        </div>
+      )}
+
+      {/* Transactions Tab */}
+      {activeTab === 'transactions' && (
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">Transaction Details</h2>
+            <div className="text-sm text-gray-600">
+              {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
             </div>
           </div>
 
-          {/* Transactions Table */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Transaction Details</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Transaction ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Auction
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Companies
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {transactions.map((transaction) => (
+          <div className="overflow-x-auto mb-6">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Transaction ID
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Auction
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    From Company
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    To Company
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {transactions
+                  .slice((transactionsPage - 1) * itemsPerPage, transactionsPage * itemsPerPage)
+                  .map((transaction) => (
                     <tr key={transaction.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {transaction.id}
+                        {transaction.id.slice(-8)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div className="font-medium">{transaction.auction_title || `Auction #${transaction.auction_id}`}</div>
                         <div className="text-xs text-gray-500">ID: #{transaction.auction_id}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="text-xs">
-                          <div className="font-medium text-blue-600">Buyer: {transaction.buyer_company_name}</div>
-                          <div className="font-medium text-green-600">Seller: {transaction.seller_company_name}</div>
-                        </div>
+                        <div className="font-medium text-blue-600">{transaction.buyer_company_name || 'Unknown Company'}</div>
+                        <div className="text-xs text-gray-500">{transaction.from_user_email}</div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900">
+                        <div className="font-medium text-green-600">{transaction.seller_company_name || 'Unknown Company'}</div>
+                        <div className="text-xs text-gray-500">{transaction.to_user_email}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -508,7 +660,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                             ? 'text-green-600'
                             : 'text-gray-900'
                         }>
-                          {formatCurrency(parseFloat(transaction.amount))}
+                          {formatCurrency(parseFloat(transaction.amount), transaction.currency)}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -521,10 +673,18 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+              </tbody>
+            </table>
           </div>
+
+          {/* Pagination for Transactions */}
+          <Pagination
+            currentPage={transactionsPage}
+            totalPages={Math.ceil(transactions.length / itemsPerPage)}
+            totalItems={transactions.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setTransactionsPage}
+          />
         </div>
       )}
     </div>
