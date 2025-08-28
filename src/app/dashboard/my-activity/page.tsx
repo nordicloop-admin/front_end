@@ -27,7 +27,7 @@ export default function MyActivity() {
   const [auctionsError, setAuctionsError] = useState<string | null>(null);
   const [auctionSearchTerm, setAuctionSearchTerm] = useState('');
   const [auctionCurrentPage, setAuctionCurrentPage] = useState(1);
-  const [auctionPageSize, setAuctionPageSize] = useState(10);
+  const [auctionPageSize, _setAuctionPageSize] = useState(10);
   const [auctionPaginationData, setAuctionPaginationData] = useState({
     count: 0,
     totalPages: 1,
@@ -41,7 +41,7 @@ export default function MyActivity() {
   const [bidsError, setBidsError] = useState<string | null>(null);
   const [activeBidTab, setActiveBidTab] = useState<BidTabType>('all');
   const [bidCurrentPage, setBidCurrentPage] = useState(1);
-  const [bidPageSize, setBidPageSize] = useState(10);
+  const [bidPageSize, _setBidPageSize] = useState(10);
   const [bidPaginationData, setBidPaginationData] = useState({
     count: 0,
     totalPages: 1,
@@ -468,13 +468,9 @@ export default function MyActivity() {
                     <Pagination
                       currentPage={auctionPaginationData.currentPage}
                       totalPages={auctionPaginationData.totalPages}
-                      totalCount={auctionPaginationData.count}
-                      pageSize={auctionPaginationData.pageSize}
+                      totalItems={auctionPaginationData.count}
+                      itemsPerPage={auctionPaginationData.pageSize}
                       onPageChange={setAuctionCurrentPage}
-                      onPageSizeChange={(size) => {
-                        setAuctionPageSize(size);
-                        setAuctionCurrentPage(1);
-                      }}
                     />
                   )}
                 </>
@@ -670,13 +666,9 @@ export default function MyActivity() {
               <Pagination
                 currentPage={bidPaginationData.currentPage}
                 totalPages={bidPaginationData.totalPages}
-                totalCount={bidPaginationData.count}
-                pageSize={bidPaginationData.pageSize}
+                totalItems={bidPaginationData.count}
+                itemsPerPage={bidPaginationData.pageSize}
                 onPageChange={setBidCurrentPage}
-                onPageSizeChange={(size) => {
-                  setBidPageSize(size);
-                  setBidCurrentPage(1);
-                }}
               />
             </>
           ) : (

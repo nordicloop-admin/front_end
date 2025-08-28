@@ -1,150 +1,133 @@
+"use client";
+
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
-  totalCount: number;
-  pageSize: number;
+  totalItems: number;
+  itemsPerPage: number;
   onPageChange: (page: number) => void;
-  onPageSizeChange?: (pageSize: number) => void;
-  showPageSizeSelector?: boolean;
+  className?: string;
 }
 
-const Pagination: React.FC<PaginationProps> = ({
+export default function Pagination({
   currentPage,
   totalPages,
-  totalCount,
-  pageSize,
+  totalItems,
+  itemsPerPage,
   onPageChange,
-  onPageSizeChange,
-  showPageSizeSelector = true
-}) => {
-  // Calculate the range of items being displayed
-  const startItem = (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalCount);
+  className = ''
+}: PaginationProps) {
+  const startItem = (currentPage - 1) * itemsPerPage + 1;
+  const endItem = Math.min(currentPage * itemsPerPage, totalItems);
 
-  // Generate page numbers to display
-  const getPageNumbers = () => {
-    const pages = [];
-    const maxVisiblePages = 5;
-
-    if (totalPages <= maxVisiblePages) {
-      // Show all pages if total pages is small
-      for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
-      }
-    } else {
-      // Show first page, current page range, and last page
-      const startPage = Math.max(1, currentPage - 2);
-      const endPage = Math.min(totalPages, currentPage + 2);
-
-      if (startPage > 1) {
-        pages.push(1);
-        if (startPage > 2) {
-          pages.push('...');
-        }
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        pages.push(i);
-      }
-
-      if (endPage < totalPages) {
-        if (endPage < totalPages - 1) {
-          pages.push('...');
-        }
-        pages.push(totalPages);
-      }
+  const getVisiblePages = () => {
+    const delta = 2;
+    const pages: (number | string)[] = [];
+    
+    // Always show first page
+    pages.push(1);
+    
+    // Calculate start and end of visible range
+    const start = Math.max(2, currentPage - delta);
+    const end = Math.min(totalPages - 1, currentPage + delta);
+    
+    // Add ellipsis if there's a gap after first page
+    if (start > 2) {
+      pages.push('...');
     }
-
+    
+    // Add pages in range
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    
+    // Add ellipsis if there's a gap before last page
+    if (end < totalPages - 1) {
+      pages.push('...');
+    }
+    
+    // Always show last page (if more than 1 page)
+    if (totalPages > 1) {
+      pages.push(totalPages);
+    }
+    
     return pages;
   };
 
-  const pageNumbers = getPageNumbers();
-
   if (totalPages <= 1) {
-    return null; // Don't show pagination if there's only one page
+    return null;
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-md p-4">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-        {/* Results info */}
-        <div className="text-sm text-gray-700">
-          Showing <span className="font-medium">{startItem}</span> to{' '}
-          <span className="font-medium">{endItem}</span> of{' '}
-          <span className="font-medium">{totalCount}</span> results
+    <div className={`flex items-center justify-between ${className}`}>
+      <div className="flex-1 flex justify-between sm:hidden">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage <= 1}
+          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage >= totalPages}
+          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Next
+        </button>
+      </div>
+      
+      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Showing <span className="font-medium">{startItem}</span> to{' '}
+            <span className="font-medium">{endItem}</span> of{' '}
+            <span className="font-medium">{totalItems}</span> results
+          </p>
         </div>
-
-        <div className="flex items-center gap-4">
-          {/* Page size selector */}
-          {showPageSizeSelector && onPageSizeChange && (
-            <div className="flex items-center gap-2">
-              <label htmlFor="pageSize" className="text-sm text-gray-700">
-                Show:
-              </label>
-              <select
-                id="pageSize"
-                value={pageSize}
-                onChange={(e) => onPageSizeChange(parseInt(e.target.value))}
-                className="border border-gray-100 rounded text-sm px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00]"
-              >
-                <option value={10}>10</option>
-                <option value={20}>20</option>
-                <option value={50}>50</option>
-                <option value={100}>100</option>
-              </select>
-            </div>
-          )}
-
-          {/* Pagination controls */}
-          <div className="flex items-center gap-1">
-            {/* Previous button */}
+        
+        <div>
+          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
             <button
               onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="p-2 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+              disabled={currentPage <= 1}
+              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ChevronLeft size={16} />
+              <span className="sr-only">Previous</span>
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
             </button>
-
-            {/* Page numbers */}
-            <div className="flex items-center gap-1">
-              {pageNumbers.map((page, index) =>
-                page === '...' ? (
-                  <span key={index} className="px-2 py-1 text-gray-500">
-                    ...
-                  </span>
-                ) : (
-                  <button
-                    key={index}
-                    onClick={() => onPageChange(page as number)}
-                    className={`px-3 py-1 text-sm rounded transition-colors ${
-                      currentPage === page
-                        ? 'bg-[#FF8A00] text-white'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
-            </div>
-
-            {/* Next button */}
+            
+            {getVisiblePages().map((page, index) => (
+              <button
+                key={index}
+                onClick={() => typeof page === 'number' ? onPageChange(page) : undefined}
+                disabled={typeof page !== 'number'}
+                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                  page === currentPage
+                    ? 'z-10 bg-[#FF8A00] border-[#FF8A00] text-white'
+                    : typeof page === 'number'
+                    ? 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                    : 'bg-white border-gray-300 text-gray-300 cursor-default'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            
             <button
               onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="p-2 text-gray-500 hover:text-gray-700 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
+              disabled={currentPage >= totalPages}
+              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <ChevronRight size={16} />
+              <span className="sr-only">Next</span>
+              <ChevronRight className="h-5 w-5" aria-hidden="true" />
             </button>
-          </div>
+          </nav>
         </div>
       </div>
     </div>
   );
-};
-
-export default Pagination; 
+}

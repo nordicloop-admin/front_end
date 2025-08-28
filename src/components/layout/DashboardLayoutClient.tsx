@@ -140,7 +140,7 @@ export default function DashboardLayoutClient({
             onClick={isMobile ? toggleSidebar : undefined}
           >
             <Package size={18} className="mr-3" />
-            <span>Auctions</span>
+            <span>Marketplace</span>
           </Link>
 
 

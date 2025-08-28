@@ -111,7 +111,7 @@ export default function AdminNotificationsPage() {
   const notificationCategories = getNotificationCategories();
 
   // Pagination handlers
-  const handlePageSizeChange = (newPageSize: number) => {
+  const _handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
     setCurrentPage(1);
   };
@@ -542,11 +542,9 @@ export default function AdminNotificationsPage() {
                 <Pagination
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalCount={totalCount}
-                  pageSize={pageSize}
+                  totalItems={totalCount}
+                  itemsPerPage={pageSize}
                   onPageChange={handlePageChange}
-                  onPageSizeChange={handlePageSizeChange}
-                  showPageSizeSelector={true}
                 />
               </div>
             )}

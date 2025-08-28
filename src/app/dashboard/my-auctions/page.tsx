@@ -138,7 +138,7 @@ export default function MyAuctions() {
   };
 
   // Handle page size change
-  const handlePageSizeChange = (size: number) => {
+  const _handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
   };
@@ -246,10 +246,9 @@ export default function MyAuctions() {
                 <Pagination
                   currentPage={paginationData.currentPage}
                   totalPages={paginationData.totalPages}
-                  totalCount={paginationData.count}
-                  pageSize={paginationData.pageSize}
+                  totalItems={paginationData.count}
+                  itemsPerPage={paginationData.pageSize}
                   onPageChange={handlePageChange}
-                  onPageSizeChange={handlePageSizeChange}
                 />
               )}
             </>
