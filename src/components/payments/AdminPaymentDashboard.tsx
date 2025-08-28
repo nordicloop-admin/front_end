@@ -15,8 +15,8 @@ import {
   getPendingPayouts,
   createPayoutSchedules,
   processPayouts,
-  getUserPaymentIntents,
-  getUserTransactions,
+  getAdminPaymentIntents,
+  getAdminTransactions,
   PaymentStats,
   PaymentIntent,
   Transaction,
@@ -81,9 +81,11 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
   const loadPaymentIntentsData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const paymentIntentsData = await getUserPaymentIntents();
-      setPaymentIntents(paymentIntentsData);
+      const paymentIntentsData = await getAdminPaymentIntents();
+      // Ensure paymentIntentsData is an array
+      setPaymentIntents(Array.isArray(paymentIntentsData) ? paymentIntentsData : []);
     } catch (error) {
+      setPaymentIntents([]); // Reset to empty array on error
       toast.error('Failed to load payment intents', {
         description: error instanceof Error ? error.message : 'An unexpected error occurred'
       });
@@ -95,9 +97,11 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
   const loadTransactionsData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const transactionsData = await getUserTransactions();
-      setTransactions(transactionsData);
+      const transactionsData = await getAdminTransactions();
+      // Ensure transactionsData is an array
+      setTransactions(Array.isArray(transactionsData) ? transactionsData : []);
     } catch (error) {
+      setTransactions([]); // Reset to empty array on error
       toast.error('Failed to load transactions', {
         description: error instanceof Error ? error.message : 'An unexpected error occurred'
       });
@@ -125,12 +129,12 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
         }
         break;
       case 'payment-intents':
-        if (paymentIntents.length === 0) {
+        if (!Array.isArray(paymentIntents) || paymentIntents.length === 0) {
           loadPaymentIntentsData();
         }
         break;
       case 'transactions':
-        if (transactions.length === 0) {
+        if (!Array.isArray(transactions) || transactions.length === 0) {
           loadTransactionsData();
         }
         break;
@@ -490,7 +494,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Payment Intents</h2>
             <div className="text-sm text-gray-600">
-              {paymentIntents.length} payment intent{paymentIntents.length !== 1 ? 's' : ''}
+              {Array.isArray(paymentIntents) ? paymentIntents.length : 0} payment intent{(Array.isArray(paymentIntents) ? paymentIntents.length : 0) !== 1 ? 's' : ''}
             </div>
           </div>
 
@@ -528,7 +532,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {paymentIntents
+                {(Array.isArray(paymentIntents) ? paymentIntents : [])
                   .slice((paymentIntentsPage - 1) * itemsPerPage, paymentIntentsPage * itemsPerPage)
                   .map((payment) => (
                     <tr key={payment.id} className="hover:bg-gray-50">
@@ -573,8 +577,8 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
           {/* Pagination for Payment Intents */}
           <Pagination
             currentPage={paymentIntentsPage}
-            totalPages={Math.ceil(paymentIntents.length / itemsPerPage)}
-            totalItems={paymentIntents.length}
+            totalPages={Math.ceil((Array.isArray(paymentIntents) ? paymentIntents.length : 0) / itemsPerPage)}
+            totalItems={Array.isArray(paymentIntents) ? paymentIntents.length : 0}
             itemsPerPage={itemsPerPage}
             onPageChange={setPaymentIntentsPage}
           />
@@ -587,7 +591,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold">Transaction Details</h2>
             <div className="text-sm text-gray-600">
-              {transactions.length} transaction{transactions.length !== 1 ? 's' : ''}
+              {Array.isArray(transactions) ? transactions.length : 0} transaction{(Array.isArray(transactions) ? transactions.length : 0) !== 1 ? 's' : ''}
             </div>
           </div>
 
@@ -622,7 +626,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {transactions
+                {(Array.isArray(transactions) ? transactions : [])
                   .slice((transactionsPage - 1) * itemsPerPage, transactionsPage * itemsPerPage)
                   .map((transaction) => (
                     <tr key={transaction.id} className="hover:bg-gray-50">
@@ -630,16 +634,16 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                         {transaction.id.slice(-8)}
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="font-medium">{transaction.auction_title || `Auction #${transaction.auction_id}`}</div>
-                        <div className="text-xs text-gray-500">ID: #{transaction.auction_id}</div>
+                        <div className="font-medium">{transaction.auction_title || 'Unknown Auction'}</div>
+                        <div className="text-xs text-gray-500">Transaction ID: {transaction.id.slice(-8)}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="font-medium text-blue-600">{transaction.buyer_company_name || 'Unknown Company'}</div>
-                        <div className="text-xs text-gray-500">{transaction.from_user_email}</div>
+                        <div className="font-medium text-blue-600">{transaction.other_party_company || 'Unknown Company'}</div>
+                        <div className="text-xs text-gray-500">{transaction.other_party_email || 'No email'}</div>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="font-medium text-green-600">{transaction.seller_company_name || 'Unknown Company'}</div>
-                        <div className="text-xs text-gray-500">{transaction.to_user_email}</div>
+                        <div className="font-medium text-green-600">{transaction.other_party_company || 'Unknown Company'}</div>
+                        <div className="text-xs text-gray-500">{transaction.other_party_email || 'No email'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -669,7 +673,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(transaction.created_at).toLocaleDateString()}
+                        {new Date(transaction.transaction_date).toLocaleDateString()}
                       </td>
                     </tr>
                   ))}
@@ -680,8 +684,8 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
           {/* Pagination for Transactions */}
           <Pagination
             currentPage={transactionsPage}
-            totalPages={Math.ceil(transactions.length / itemsPerPage)}
-            totalItems={transactions.length}
+            totalPages={Math.ceil((Array.isArray(transactions) ? transactions.length : 0) / itemsPerPage)}
+            totalItems={Array.isArray(transactions) ? transactions.length : 0}
             itemsPerPage={itemsPerPage}
             onPageChange={setTransactionsPage}
           />

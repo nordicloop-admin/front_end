@@ -298,7 +298,7 @@ const MarketplacePage = () => {
   };
 
   // Handle page size change
-  const handlePageSizeChange = (size: number) => {
+  const _handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
   };
@@ -429,10 +429,9 @@ const MarketplacePage = () => {
             <Pagination
               currentPage={paginationData.currentPage}
               totalPages={paginationData.totalPages}
-              totalCount={paginationData.count}
-              pageSize={paginationData.pageSize}
+              totalItems={paginationData.count}
+              itemsPerPage={paginationData.pageSize}
               onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
             />
           )}
         </>

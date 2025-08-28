@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CreditCard, AlertCircle, Shield } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -23,7 +23,7 @@ interface CardFormProps {
 function CardForm({ onPaymentMethodReady, onError, isProcessing }: CardFormProps) {
   const stripe = useStripe();
   const elements = useElements();
-  const [isReady, setIsReady] = useState(false);
+  const [_isReady, setIsReady] = useState(false);
 
   const handleCardChange = async (event: any) => {
     if (event.complete && stripe && elements) {
@@ -45,7 +45,7 @@ function CardForm({ onPaymentMethodReady, onError, isProcessing }: CardFormProps
         } else if (paymentMethod) {
           onPaymentMethodReady(paymentMethod.id);
         }
-      } catch (err) {
+      } catch (_err) {
         onError('Error creating payment method');
         setIsReady(false);
       }
@@ -97,9 +97,9 @@ function CardForm({ onPaymentMethodReady, onError, isProcessing }: CardFormProps
           <div className="text-sm text-green-800">
             <p className="font-medium mb-1">Secure Pre-Authorization</p>
             <p>
-              We'll place a temporary hold on your card for the bid amount. 
-              You'll only be charged if you win the auction. 
-              If you don't win, the hold will be automatically released.
+              We&apos;ll place a temporary hold on your card for the bid amount. 
+              You&apos;ll only be charged if you win the auction. 
+              If you don&apos;t win, the hold will be automatically released.
             </p>
           </div>
         </div>
@@ -162,3 +162,4 @@ export default function PaymentMethodSelector({
     </div>
   );
 }
+

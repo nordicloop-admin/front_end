@@ -163,20 +163,17 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
     setIsProcessingPayment(true);
 
     // Submit the bid with all the data
-    onSubmit(
-      {
-        bidAmount,
-        bidVolume: bidVolume || undefined,
-        volumeType,
-        notes: notes.trim() || undefined,
-        maxAutoBidPrice: isAutoBidEnabled ? maxAutoBidPrice : undefined,
-        paymentMethodId,
-      },
-      () => {
-        // Reset processing state when complete
-        setIsProcessingPayment(false);
-      }
-    );
+    onSubmit({
+      bidAmount,
+      bidVolume: bidVolume || undefined,
+      volumeType,
+      notes: notes.trim() || undefined,
+      maxAutoBidPrice: isAutoBidEnabled ? maxAutoBidPrice : undefined,
+      paymentMethodId,
+    });
+    
+    // Reset processing state when complete
+    setIsProcessingPayment(false);
   };
 
   if (!isOpen) return null;

@@ -62,22 +62,16 @@ export interface PaymentIntent {
 
 export interface Transaction {
   id: string;
-  payment_intent_id: string;
   transaction_type: 'payment' | 'commission' | 'payout' | 'refund';
   amount: string;
   currency: string;
   status: 'pending' | 'completed' | 'failed' | 'canceled';
-  from_user_id?: number;
-  to_user_id?: number;
   description?: string;
-  created_at: string;
-  updated_at: string;
-  processed_at?: string;
-  // Additional auction and company information
+  transaction_date: string;
   auction_title?: string;
-  auction_id?: number;
-  buyer_company_name?: string;
-  seller_company_name?: string;
+  user_role: 'buyer' | 'seller' | 'unknown';
+  other_party_email?: string;
+  other_party_company?: string;
 }
 
 export interface PayoutSchedule {
@@ -324,6 +318,24 @@ export const processPayouts = async (data: {
     errors: [response.error || 'Failed to process payouts'], 
     message: response.error || 'Failed to process payouts' 
   };
+};
+
+export const getAdminPaymentIntents = async (): Promise<PaymentIntent[]> => {
+  if (USE_MOCK_DATA) {
+    return mockPaymentIntents;
+  }
+
+  const response = await apiGet<PaymentIntent[]>('/payments/admin/payment-intents/', true);
+  return response.data || [];
+};
+
+export const getAdminTransactions = async (): Promise<Transaction[]> => {
+  if (USE_MOCK_DATA) {
+    return mockTransactions;
+  }
+
+  const response = await apiGet<Transaction[]>('/payments/admin/transactions/', true);
+  return response.data || [];
 };
 
 // Utility functions
