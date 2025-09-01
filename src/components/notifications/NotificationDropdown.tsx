@@ -56,9 +56,9 @@ export default function NotificationDropdown({
         }
         setError(response.error);
       } else if (response.data) {
-        // Since getUnreadNotifications now returns Notification[] directly, not paginated results
+        // getUnreadNotifications now returns Notification[] from the paginated API
         const sortedNotifications = sortNotificationsByPriority(response.data);
-        setNotifications(sortedNotifications.slice(0, 10)); // Take first 10
+        setNotifications(sortedNotifications); // Already limited to 10 by the API call
       }
     } catch (_err) {
       setError('Failed to load notifications');
