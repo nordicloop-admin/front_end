@@ -163,7 +163,12 @@ export async function getUnreadNotifications() {
       };
     }
     
-    return response;
+    // If no data but no error, return empty array
+    return {
+      data: [],
+      error: response.error || 'No notifications found',
+      status: response.status || 200
+    };
   } catch (_error) {
     // Fallback for any unexpected errors
     return {
