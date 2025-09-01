@@ -27,7 +27,7 @@ export default function MyActivity() {
   const [auctionsError, setAuctionsError] = useState<string | null>(null);
   const [auctionSearchTerm, setAuctionSearchTerm] = useState('');
   const [auctionCurrentPage, setAuctionCurrentPage] = useState(1);
-  const [auctionPageSize, _setAuctionPageSize] = useState(10);
+  const [auctionPageSize] = useState(10);
   const [auctionPaginationData, setAuctionPaginationData] = useState({
     count: 0,
     totalPages: 1,
@@ -41,7 +41,7 @@ export default function MyActivity() {
   const [bidsError, setBidsError] = useState<string | null>(null);
   const [activeBidTab, setActiveBidTab] = useState<BidTabType>('all');
   const [bidCurrentPage, setBidCurrentPage] = useState(1);
-  const [bidPageSize, _setBidPageSize] = useState(10);
+  const [bidPageSize] = useState(10);
   const [bidPaginationData, setBidPaginationData] = useState({
     count: 0,
     totalPages: 1,

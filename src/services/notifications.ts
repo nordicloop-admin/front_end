@@ -128,12 +128,55 @@ export async function getUserNotificationsPaginated(params?: {
 }
 
 /**
- * Get all unread notifications for the current user with pagination
- * @param params - Query parameters for pagination and filtering
- * @returns Promise with paginated unread notifications data
+ * Get unread notifications for the current user (first page only for dropdown)
+ * @returns Promise with unread notifications data
  */
 export async function getUnreadNotifications() {
-  return apiGet<Notification[]>('/notifications/unread', true);
+  try {
+    // Get first page of unread notifications with a reasonable page size for dropdown
+    const response = await apiGet<{
+      count: number;
+      next: string | null;
+      previous: string | null;
+      results: Notification[];
+    }>('/notifications/unread?page=1&page_size=10', true);
+    
+    // If we get a timeout or network error, return a graceful fallback
+    if (response.error && (
+      response.error.includes('timeout') || 
+      response.error.includes('network') ||
+      response.error.includes('signal')
+    )) {
+      return {
+        data: [],
+        error: 'Connection issue - please refresh to reload notifications',
+        status: response.status
+      };
+    }
+    
+    // If successful, return just the results array
+    if (response.data) {
+      return {
+        data: response.data.results,
+        error: null,
+        status: response.status
+      };
+    }
+    
+    // If no data but no error, return empty array
+    return {
+      data: [],
+      error: response.error || 'No notifications found',
+      status: response.status || 200
+    };
+  } catch (_error) {
+    // Fallback for any unexpected errors
+    return {
+      data: [],
+      error: 'Failed to load notifications - please try again',
+      status: 500
+    };
+  }
 }
 
 /**
