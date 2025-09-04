@@ -1,15 +1,16 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 
 interface OriginFilterProps {
   selectedOrigin: string;
   setOrigin: (origin: string) => void;
   onOriginChange: (origin: string | null) => void;
+  resetTrigger?: number;
 }
 
-export function OriginFilter({ selectedOrigin, setOrigin, onOriginChange }: OriginFilterProps) {
+export function OriginFilter({ selectedOrigin, setOrigin, onOriginChange, resetTrigger }: OriginFilterProps) {
   const originOptions = [
     { value: '', label: 'All Origins' },
     { value: 'post_industrial', label: 'Post-industrial' },
@@ -26,6 +27,14 @@ export function OriginFilter({ selectedOrigin, setOrigin, onOriginChange }: Orig
     setOrigin(value);
     onOriginChange(value || null);
   };
+
+  // Reset component state when resetTrigger changes
+  useEffect(() => {
+    if (resetTrigger) {
+      setOrigin('');
+      onOriginChange(null);
+    }
+  }, [resetTrigger, setOrigin, onOriginChange]);
 
   return (
     <FilterDropdown

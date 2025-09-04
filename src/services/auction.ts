@@ -206,8 +206,11 @@ export interface PaginationParams {
   only_brokers?: boolean;
   category?: number;
   subcategory?: number;
+  subcategories?: number[];  // New: support multiple subcategories
   origin?: string;
+  origins?: string[];        // New: support multiple origins
   contamination?: string;
+  contaminations?: string[]; // New: support multiple contamination levels
   country?: string;
   city?: string;
 }
@@ -241,9 +244,28 @@ export async function getAuctions(params?: PaginationParams) {
     if (params?.exclude_brokers) queryParams.set('exclude_brokers', 'true');
     if (params?.only_brokers) queryParams.set('only_brokers', 'true');
     if (params?.category) queryParams.set('category', params.category.toString());
-    if (params?.subcategory) queryParams.set('subcategory', params.subcategory.toString());
-    if (params?.origin) queryParams.set('origin', params.origin);
-    if (params?.contamination) queryParams.set('contamination', params.contamination);
+    
+    // Handle subcategories - prioritize multiple subcategories over single
+    if (params?.subcategories && params.subcategories.length > 0) {
+      queryParams.set('subcategory', params.subcategories.join(','));
+    } else if (params?.subcategory) {
+      queryParams.set('subcategory', params.subcategory.toString());
+    }
+    
+    // Handle origins - prioritize multiple origins over single
+    if (params?.origins && params.origins.length > 0) {
+      queryParams.set('origin', params.origins.join(','));
+    } else if (params?.origin) {
+      queryParams.set('origin', params.origin);
+    }
+    
+    // Handle contamination levels - prioritize multiple over single
+    if (params?.contaminations && params.contaminations.length > 0) {
+      queryParams.set('contamination', params.contaminations.join(','));
+    } else if (params?.contamination) {
+      queryParams.set('contamination', params.contamination);
+    }
+    
     if (params?.country) queryParams.set('country', params.country);
     if (params?.city) queryParams.set('city', params.city);
     

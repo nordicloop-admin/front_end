@@ -20,9 +20,10 @@ interface LocationFilterProps {
   selectedLocation: string;
   setSelectedLocation: (location: string) => void;
   onLocationChange: (countries: string[]) => void;
+  resetTrigger?: number;
 }
 
-export function LocationFilter({ selectedLocation, setSelectedLocation, onLocationChange }: LocationFilterProps) {
+export function LocationFilter({ selectedLocation, setSelectedLocation, onLocationChange, resetTrigger }: LocationFilterProps) {
   const [countries, setCountries] = useState<Country[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
@@ -36,6 +37,15 @@ export function LocationFilter({ selectedLocation, setSelectedLocation, onLocati
     setCountries(locationsData.countries);
     setRegions(locationsData.regions);
   }, []);
+
+  // Reset component state when resetTrigger changes
+  useEffect(() => {
+    if (resetTrigger) {
+      setSelectedCountries([]);
+      setLocationType('select-country');
+      setShowRegionDetails(null);
+    }
+  }, [resetTrigger]);
 
   // Helper function to split countries into three columns
   const splitIntoThreeColumns = (countriesList: Country[]) => {
