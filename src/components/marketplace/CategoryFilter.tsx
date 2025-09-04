@@ -14,7 +14,7 @@ interface CategoryFilterProps {
   resetTrigger?: number;
 }
 
-export function CategoryFilter({ selectedCategory, setSelectedCategory, onCategoryChange, onGlobalSubcategoryChange, globalSubcategorySelections, resetTrigger }: CategoryFilterProps) {
+export function CategoryFilter({ selectedCategory, setSelectedCategory, onCategoryChange: _onCategoryChange, onGlobalSubcategoryChange, globalSubcategorySelections, resetTrigger }: CategoryFilterProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryObj, setSelectedCategoryObj] = useState<Category | null>(null);
   const [showSubcategories, setShowSubcategories] = useState(false);
@@ -124,10 +124,10 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory, onCatego
         };
       }).filter(item => item.name);
       
+      // Only call the global handler - this will manage all state properly
       onGlobalSubcategoryChange(selectedCategoryObj.id, selectedSubcategories, subcategoryData);
       
-      // Also call the original callback for backward compatibility
-      onCategoryChange(selectedCategoryObj?.id || null, selectedSubcategories);
+      // Don't call onCategoryChange as it conflicts with global state management
     }
     setShowSubcategories(false);
   };

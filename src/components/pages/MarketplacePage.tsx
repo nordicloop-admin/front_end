@@ -221,19 +221,21 @@ const MarketplacePage = () => {
 
 
 
-  // Filter callback functions
-  const handleCategoryChange = (categoryId: number | null, subcategoryIds: number[]) => {
+  // Filter callback functions (legacy - kept for backward compatibility)
+  const handleCategoryChange = (categoryId: number | null, _subcategoryIds: number[]) => {
     setCategoryId(categoryId);
-    setSubcategoryIds(subcategoryIds);
+    // Don't set subcategoryIds here - let global management handle it
   };
   
-  // Global subcategory management
+  // Global subcategory management - this is the main handler
   const handleGlobalSubcategoryChange = (categoryId: number, subcategoryIds: number[], subcategoryData?: { id: number; name: string; categoryName: string }[]) => {
     // Update global selections for this category
-    setGlobalSubcategorySelections(prev => ({
-      ...prev,
+    const newGlobalSelections = {
+      ...globalSubcategorySelections,
       [categoryId]: subcategoryIds
-    }));
+    };
+    
+    setGlobalSubcategorySelections(newGlobalSelections);
     
     // Update subcategory names for display
     if (subcategoryData) {
@@ -242,17 +244,30 @@ const MarketplacePage = () => {
         subcategoryData.forEach(sub => {
           updated[sub.id] = { name: sub.name, categoryName: sub.categoryName };
         });
+        // Remove names for subcategories no longer selected
+        Object.keys(updated).forEach(subcatId => {
+          const id = parseInt(subcatId);
+          const stillSelected = Object.values(newGlobalSelections).flat().includes(id);
+          if (!stillSelected) {
+            delete updated[id];
+          }
+        });
         return updated;
       });
     }
     
     // Calculate all selected subcategories across all categories
-    const allSelectedSubcategories = Object.values({
-      ...globalSubcategorySelections,
-      [categoryId]: subcategoryIds
-    }).flat();
+    const allSelectedSubcategories = Object.values(newGlobalSelections).flat();
     
+    // Update the main subcategory list for API calls
     setSubcategoryIds(allSelectedSubcategories);
+    
+    // Update category ID if we're working with a specific category
+    if (categoryId && allSelectedSubcategories.length > 0) {
+      setCategoryId(categoryId);
+    } else if (allSelectedSubcategories.length === 0) {
+      setCategoryId(null);
+    }
   };
 
   const handleLocationChange = (countries: string[]) => {
@@ -299,6 +314,8 @@ const MarketplacePage = () => {
         contamination: selectedContamination || undefined,
         country: selectedCountries.length > 0 ? selectedCountries[0] : undefined, // API supports single country
       };
+      
+      // API call with aggregated subcategories from all categories
 
       const response = await getAuctions({
         page,
@@ -327,6 +344,16 @@ const MarketplacePage = () => {
     }
   };
 
+  // Sync subcategoryIds with globalSubcategorySelections to ensure consistency
+  useEffect(() => {
+    const allSelectedSubcategories = Object.values(globalSubcategorySelections).flat();
+    
+    // Only update if different to avoid infinite loops
+    if (JSON.stringify(allSelectedSubcategories.sort()) !== JSON.stringify(subcategoryIds.sort())) {
+      setSubcategoryIds(allSelectedSubcategories);
+    }
+  }, [globalSubcategorySelections, subcategoryIds]);
+  
   // Check if any filters are active
   useEffect(() => {
     const hasFilters = 
@@ -505,6 +532,7 @@ const MarketplacePage = () => {
                         <button
                           onClick={() => {
                             // Remove this specific subcategory
+                            // Find which category this subcategory belongs to and remove it
                             const categoryOfSubcat = Object.entries(globalSubcategorySelections).find(([, subcatIds]) => 
                               subcatIds.includes(subcatId)
                             );
