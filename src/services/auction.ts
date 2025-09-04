@@ -181,6 +181,9 @@ export interface AuctionItem {
   suspended_by_admin?: boolean;
   auction_status?: string;
   allow_broker_bids?: boolean;
+  auction_start_date?: string | null;
+  auction_end_date?: string | null;
+  time_remaining?: string | null;
 }
 
 /**

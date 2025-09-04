@@ -9,6 +9,7 @@ import { getAuctions, getUserAuctions, AuctionItem, PaginatedAuctionResult } fro
 import Pagination from '@/components/ui/Pagination';
 import { getUser } from '@/services/auth';
 import { getUserBids, BidItem } from '@/services/bid';
+import { calculateTimeRemaining, formatTimeRemaining } from '@/utils/timeUtils';
 
 // Interface for auction display data
 interface AuctionDisplayData {
@@ -244,13 +245,17 @@ export default function Auctions() {
       // Found my bid on auction
     }
 
+    // Calculate time remaining from auction end date or use API provided time_remaining
+    const timeRemaining = auction.time_remaining || calculateTimeRemaining(auction.auction_end_date);
+    const displayTimeLeft = formatTimeRemaining(timeRemaining);
+
     return {
       id: auction.id.toString(),
       name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
       category: auction.category_name,
       basePrice: auction.starting_bid_price || auction.total_starting_value,
       highestBid: null, // API doesn't provide highest bid yet
-      timeLeft: 'Available', // API doesn't provide end date/time in this format
+      timeLeft: displayTimeLeft,
       volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
       seller: 'Unknown', // API doesn't provide seller info yet
       countryOfOrigin: auction.location_summary || 'Unknown',

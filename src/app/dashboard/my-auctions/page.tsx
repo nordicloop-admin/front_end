@@ -8,6 +8,7 @@ import MyAuctionCard from '@/components/auctions/MyAuctionCard';
 import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
 import Link from 'next/link';
+import { calculateTimeRemaining, formatTimeRemaining } from '@/utils/timeUtils';
 
 
 
@@ -73,6 +74,10 @@ export default function MyAuctions() {
           // Capitalize first letter for display
           const displayStatus = backendStatus.charAt(0).toUpperCase() + backendStatus.slice(1);
           
+          // Calculate time remaining from auction end date or use API provided time_remaining
+          const timeRemaining = auction.time_remaining || calculateTimeRemaining(auction.auction_end_date);
+          const displayTimeLeft = formatTimeRemaining(timeRemaining);
+
           return {
             id: auction.id.toString(),
             name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
@@ -82,7 +87,7 @@ export default function MyAuctions() {
             currentBid: '',
             status: backendStatus,
             auctionStatus: displayStatus,
-            timeLeft: 'Available',
+            timeLeft: displayTimeLeft,
             volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
             image: auction.material_image || '/images/marketplace/categories/plastics.jpg',
             description: auction.title || '',
