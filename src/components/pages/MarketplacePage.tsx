@@ -193,6 +193,18 @@ const MarketplacePage = () => {
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [subcategoryIds, setSubcategoryIds] = useState<number[]>([]);
   const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(0);
+  
+  // Global subcategory selection state - persists across category switches
+  const [globalSubcategorySelections, setGlobalSubcategorySelections] = useState<{
+    [categoryId: number]: number[];
+  }>({});
+  
+  // Store subcategory names for display purposes
+  const [subcategoryNames, setSubcategoryNames] = useState<{
+    [subcategoryId: number]: { name: string; categoryName: string };
+  }>({});
 
   // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
@@ -209,10 +221,53 @@ const MarketplacePage = () => {
 
 
 
-  // Filter callback functions
-  const handleCategoryChange = (categoryId: number | null, subcategoryIds: number[]) => {
+  // Filter callback functions (legacy - kept for backward compatibility)
+  const handleCategoryChange = (categoryId: number | null, _subcategoryIds: number[]) => {
     setCategoryId(categoryId);
-    setSubcategoryIds(subcategoryIds);
+    // Don't set subcategoryIds here - let global management handle it
+  };
+  
+  // Global subcategory management - this is the main handler
+  const handleGlobalSubcategoryChange = (categoryId: number, subcategoryIds: number[], subcategoryData?: { id: number; name: string; categoryName: string }[]) => {
+    // Update global selections for this category
+    const newGlobalSelections = {
+      ...globalSubcategorySelections,
+      [categoryId]: subcategoryIds
+    };
+    
+    setGlobalSubcategorySelections(newGlobalSelections);
+    
+    // Update subcategory names for display
+    if (subcategoryData) {
+      setSubcategoryNames(prev => {
+        const updated = { ...prev };
+        subcategoryData.forEach(sub => {
+          updated[sub.id] = { name: sub.name, categoryName: sub.categoryName };
+        });
+        // Remove names for subcategories no longer selected
+        Object.keys(updated).forEach(subcatId => {
+          const id = parseInt(subcatId);
+          const stillSelected = Object.values(newGlobalSelections).flat().includes(id);
+          if (!stillSelected) {
+            delete updated[id];
+          }
+        });
+        return updated;
+      });
+    }
+    
+    // Calculate all selected subcategories across all categories
+    const allSelectedSubcategories = Object.values(newGlobalSelections).flat();
+    
+    // Update the main subcategory list for API calls
+    setSubcategoryIds(allSelectedSubcategories);
+    
+    // Update category ID if we're working with a specific category
+    if (categoryId && allSelectedSubcategories.length > 0) {
+      setCategoryId(categoryId);
+    } else if (allSelectedSubcategories.length === 0) {
+      setCategoryId(null);
+    }
   };
 
   const handleLocationChange = (countries: string[]) => {
@@ -253,11 +308,14 @@ const MarketplacePage = () => {
         exclude_brokers: selectedBrokerFilter === 'exclude_brokers',
         only_brokers: selectedBrokerFilter === 'only_brokers',
         category: categoryId || undefined,
-        subcategory: subcategoryIds.length === 1 ? subcategoryIds[0] : undefined,
+        // Use multiple subcategories - the backend now supports this!
+        subcategories: subcategoryIds.length > 0 ? subcategoryIds : undefined,
         origin: selectedOrigin || undefined,
         contamination: selectedContamination || undefined,
         country: selectedCountries.length > 0 ? selectedCountries[0] : undefined, // API supports single country
       };
+      
+      // API call with aggregated subcategories from all categories
 
       const response = await getAuctions({
         page,
@@ -286,6 +344,48 @@ const MarketplacePage = () => {
     }
   };
 
+  // Sync subcategoryIds with globalSubcategorySelections to ensure consistency
+  useEffect(() => {
+    const allSelectedSubcategories = Object.values(globalSubcategorySelections).flat();
+    
+    // Only update if different to avoid infinite loops
+    if (JSON.stringify(allSelectedSubcategories.sort()) !== JSON.stringify(subcategoryIds.sort())) {
+      setSubcategoryIds(allSelectedSubcategories);
+    }
+  }, [globalSubcategorySelections, subcategoryIds]);
+  
+  // Check if any filters are active
+  useEffect(() => {
+    const hasFilters = 
+      selectedCategory !== 'All materials' ||
+      selectedLocation !== 'All Locations' ||
+      selectedBrokerFilter !== 'all' ||
+      selectedOrigin !== '' ||
+      selectedContamination !== '' ||
+      subcategoryIds.length > 0;
+    
+    setHasActiveFilters(hasFilters);
+  }, [selectedCategory, selectedLocation, selectedBrokerFilter, selectedOrigin, selectedContamination, subcategoryIds]);
+  
+  // Helper function to get display text for selected subcategories
+  const getSelectedSubcategoriesDisplay = () => {
+    if (subcategoryIds.length === 0) return 'All materials';
+    
+    const categoriesWithCounts: { [categoryName: string]: number } = {};
+    subcategoryIds.forEach(id => {
+      const subcat = subcategoryNames[id];
+      if (subcat) {
+        categoriesWithCounts[subcat.categoryName] = (categoriesWithCounts[subcat.categoryName] || 0) + 1;
+      }
+    });
+    
+    const parts = Object.entries(categoriesWithCounts).map(([categoryName, count]) => 
+      `${categoryName} (${count})`
+    );
+    
+    return parts.join(', ');
+  };
+
   // Initial fetch and refetch when filters change
   useEffect(() => {
     fetchAuctions(currentPage, pageSize);
@@ -301,6 +401,24 @@ const MarketplacePage = () => {
   const _handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setSelectedCategory('All materials');
+    setSelectedLocation('All Locations');
+    setSelectedBrokerFilter('all');
+    setSelectedOrigin('');
+    setSelectedContamination('');
+    setCategoryId(null);
+    setSubcategoryIds([]);
+    setSelectedCountries([]);
+    setCurrentPage(1);
+    // Clear global subcategory selections
+    setGlobalSubcategorySelections({});
+    setSubcategoryNames({});
+    // Trigger reset in filter components
+    setResetTrigger(prev => prev + 1);
   };
 
   // Convert API auctions to the format expected by the UI
@@ -332,34 +450,55 @@ const MarketplacePage = () => {
           </span>
         </div>
 
-
+        {/* Clear Filters Button */}
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c-1 0 2 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+            <span>Clear Filters</span>
+          </button>
+        )}
       </div>
 
       {/* Materials Filter Dropdown */}
       <div className="mb-6">
         <div className="flex items-center space-x-0 overflow-x-auto border-t border-b border-gray-200">
           <CategoryFilter
-            selectedCategory={selectedCategory}
+            selectedCategory={getSelectedSubcategoriesDisplay()}
             setSelectedCategory={setSelectedCategory}
             onCategoryChange={handleCategoryChange}
+            onGlobalSubcategoryChange={handleGlobalSubcategoryChange}
+            globalSubcategorySelections={globalSubcategorySelections}
+            resetTrigger={resetTrigger}
           />
 
           <LocationFilter
             selectedLocation={selectedLocation}
             setSelectedLocation={setSelectedLocation}
             onLocationChange={handleLocationChange}
+            resetTrigger={resetTrigger}
           />
 
           <OriginFilter
             selectedOrigin={selectedOrigin}
             setOrigin={setSelectedOrigin}
             onOriginChange={handleOriginChange}
+            resetTrigger={resetTrigger}
           />
 
           <ContaminationFilter
             selectedContamination={selectedContamination}
             setContamination={setSelectedContamination}
             onContaminationChange={handleContaminationChange}
+            resetTrigger={resetTrigger}
           />
 
           <BrokerFilter
@@ -368,6 +507,58 @@ const MarketplacePage = () => {
           />
         </div>
       </div>
+
+      {/* Selected subcategories display */}
+      {subcategoryIds.length > 0 && (
+        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-md p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-2 flex-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 mt-0.5 flex-shrink-0">
+                <path d="M9 12l2 2 4-4"/>
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+              <div className="text-sm flex-1">
+                <p className="font-medium text-blue-800 mb-2">Active Filters ({subcategoryIds.length} subcategories selected)</p>
+                <div className="flex flex-wrap gap-2">
+                  {subcategoryIds.map(subcatId => {
+                    const subcatInfo = subcategoryNames[subcatId];
+                    if (!subcatInfo) return null;
+                    return (
+                      <span
+                        key={subcatId}
+                        className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
+                      >
+                        {subcatInfo.categoryName}: {subcatInfo.name}
+                        <button
+                          onClick={() => {
+                            // Remove this specific subcategory
+                            // Find which category this subcategory belongs to and remove it
+                            const categoryOfSubcat = Object.entries(globalSubcategorySelections).find(([, subcatIds]) => 
+                              subcatIds.includes(subcatId)
+                            );
+                            if (categoryOfSubcat) {
+                              const [catId, subcatIds] = categoryOfSubcat;
+                              const newSubcatIds = subcatIds.filter(id => id !== subcatId);
+                              handleGlobalSubcategoryChange(parseInt(catId), newSubcatIds);
+                            }
+                          }}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+                <p className="text-blue-700 mt-2 text-xs">Results include all ads matching any of these subcategories. Add more by selecting different categories.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading State */}
       {isLoading && (

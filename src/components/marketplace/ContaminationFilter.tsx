@@ -1,15 +1,16 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 
 interface ContaminationFilterProps {
   selectedContamination: string;
   setContamination: (contamination: string) => void;
   onContaminationChange: (contamination: string | null) => void;
+  resetTrigger?: number;
 }
 
-export function ContaminationFilter({ selectedContamination, setContamination, onContaminationChange }: ContaminationFilterProps) {
+export function ContaminationFilter({ selectedContamination, setContamination, onContaminationChange, resetTrigger }: ContaminationFilterProps) {
   const contaminationOptions = [
     { value: '', label: 'All Levels' },
     { value: 'clean', label: 'Clean' },
@@ -26,6 +27,14 @@ export function ContaminationFilter({ selectedContamination, setContamination, o
     setContamination(value);
     onContaminationChange(value || null);
   };
+
+  // Reset component state when resetTrigger changes
+  useEffect(() => {
+    if (resetTrigger) {
+      setContamination('');
+      onContaminationChange(null);
+    }
+  }, [resetTrigger, setContamination, onContaminationChange]);
 
   return (
     <FilterDropdown

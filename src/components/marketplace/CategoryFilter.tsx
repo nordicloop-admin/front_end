@@ -9,9 +9,12 @@ interface CategoryFilterProps {
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
   onCategoryChange: (categoryId: number | null, subcategoryIds: number[]) => void;
+  onGlobalSubcategoryChange: (categoryId: number, subcategoryIds: number[], subcategoryData?: { id: number; name: string; categoryName: string }[]) => void;
+  globalSubcategorySelections: { [categoryId: number]: number[] };
+  resetTrigger?: number;
 }
 
-export function CategoryFilter({ selectedCategory, setSelectedCategory, onCategoryChange }: CategoryFilterProps) {
+export function CategoryFilter({ selectedCategory, setSelectedCategory, onCategoryChange: _onCategoryChange, onGlobalSubcategoryChange, globalSubcategorySelections, resetTrigger }: CategoryFilterProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryObj, setSelectedCategoryObj] = useState<Category | null>(null);
   const [showSubcategories, setShowSubcategories] = useState(false);
@@ -43,6 +46,23 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory, onCatego
     fetchCategories();
   }, []);
 
+  // Reset component state when resetTrigger changes
+  useEffect(() => {
+    if (resetTrigger) {
+      setSelectedSubcategories([]);
+      setShowSubcategories(false);
+      setSelectedCategoryObj(null);
+    }
+  }, [resetTrigger]);
+  
+  // Update local selections when showing subcategories for a specific category
+  useEffect(() => {
+    if (selectedCategoryObj && selectedCategoryObj.id > 0) {
+      const existingSelections = globalSubcategorySelections[selectedCategoryObj.id] || [];
+      setSelectedSubcategories(existingSelections);
+    }
+  }, [selectedCategoryObj, globalSubcategorySelections]);
+
   useEffect(() => {
     // Find the selected category object
     const categoryObj = categories.find(cat => cat.name === selectedCategory);
@@ -57,8 +77,9 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory, onCatego
     if (category.subcategories.length > 0) {
       setSelectedCategoryObj(category);
       setShowSubcategories(true);
-      // Reset selected subcategories when changing categories
-      setSelectedSubcategories([]);
+      // Load existing selections for this category instead of resetting
+      const existingSelections = globalSubcategorySelections[category.id] || [];
+      setSelectedSubcategories(existingSelections);
     } else {
       setSelectedCategory(category.name);
       setShowSubcategories(false);
@@ -92,19 +113,21 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory, onCatego
   };
 
   const handleApply = () => {
-    if (selectedSubcategories.length > 0) {
-      // If subcategories are selected, use them
-      setSelectedCategory(`${selectedCategoryObj?.name} (${selectedSubcategories.length})`);
-      onCategoryChange(selectedCategoryObj?.id || null, selectedSubcategories);
-    } else if (selectedCategoryObj) {
-      // If no subcategories selected, use the main category
-      setSelectedCategory(selectedCategoryObj.name);
-      if (selectedCategoryObj.id === 0) {
-        // "All materials" selected
-        onCategoryChange(null, []);
-      } else {
-        onCategoryChange(selectedCategoryObj.id, []);
-      }
+    if (selectedCategoryObj) {
+      // Update global selections for this category
+      const subcategoryData = selectedSubcategories.map(id => {
+        const subcat = selectedCategoryObj.subcategories.find(s => s.id === id);
+        return {
+          id,
+          name: subcat?.name || '',
+          categoryName: selectedCategoryObj.name
+        };
+      }).filter(item => item.name);
+      
+      // Only call the global handler - this will manage all state properly
+      onGlobalSubcategoryChange(selectedCategoryObj.id, selectedSubcategories, subcategoryData);
+      
+      // Don't call onCategoryChange as it conflicts with global state management
     }
     setShowSubcategories(false);
   };
@@ -243,6 +266,36 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory, onCatego
               ))}
             </div>
           </div>
+
+          {/* Cross-category selection info */}
+          {(() => {
+            const totalSelections = Object.values(globalSubcategorySelections).flat().length;
+            const currentCategorySelections = selectedSubcategories.length;
+            const otherCategorySelections = totalSelections - currentCategorySelections;
+            
+            if (totalSelections > 0) {
+              return (
+                <div className="px-6 py-3 bg-blue-50 border-t border-blue-200">
+                  <div className="flex items-start space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 mt-0.5 flex-shrink-0">
+                      <path d="M9 12l2 2 4-4"/>
+                      <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-800">
+                        {currentCategorySelections > 0 && `${currentCategorySelections} selected in ${selectedCategoryObj?.name}`}
+                        {currentCategorySelections > 0 && otherCategorySelections > 0 && ' • '}
+                        {otherCategorySelections > 0 && `${otherCategorySelections} selected in other categories`}
+                      </p>
+                      <p className="text-blue-700 mt-1">Total: {totalSelections} subcategories across all categories</p>
+                      <p className="text-blue-600 text-xs mt-1">✓ Cross-category filtering active! Add more or switch categories to modify selections.</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Apply button */}
           <div className="flex justify-end p-4 border-t border-gray-200">
