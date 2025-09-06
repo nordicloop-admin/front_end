@@ -14,7 +14,7 @@ interface CategoryFilterProps {
   resetTrigger?: number;
 }
 
-export function CategoryFilter({ selectedCategory, setSelectedCategory, onCategoryChange: _onCategoryChange, onGlobalSubcategoryChange, globalSubcategorySelections, resetTrigger }: CategoryFilterProps) {
+export function CategoryFilter({ selectedCategory, setSelectedCategory, onCategoryChange, onGlobalSubcategoryChange, globalSubcategorySelections, resetTrigger }: CategoryFilterProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryObj, setSelectedCategoryObj] = useState<Category | null>(null);
   const [showSubcategories, setShowSubcategories] = useState(false);
@@ -83,6 +83,13 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory, onCatego
     } else {
       setSelectedCategory(category.name);
       setShowSubcategories(false);
+      // CRITICAL FIX: Call onCategoryChange to update parent component's categoryId
+      // For categories without subcategories, we need to inform the parent
+      if (category.name === 'All materials') {
+        onCategoryChange(null, []); // Clear category filter
+      } else {
+        onCategoryChange(category.id, []); // Set specific category
+      }
     }
   };
 
@@ -124,10 +131,11 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory, onCatego
         };
       }).filter(item => item.name);
       
-      // Only call the global handler - this will manage all state properly
+      // Call both handlers for complete state management
       onGlobalSubcategoryChange(selectedCategoryObj.id, selectedSubcategories, subcategoryData);
       
-      // Don't call onCategoryChange as it conflicts with global state management
+      // CRITICAL FIX: Also call onCategoryChange to ensure categoryId is set
+      onCategoryChange(selectedCategoryObj.id, selectedSubcategories);
     }
     setShowSubcategories(false);
   };

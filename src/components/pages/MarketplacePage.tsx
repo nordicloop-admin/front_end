@@ -317,7 +317,6 @@ const MarketplacePage = () => {
       };
       
       // API call with aggregated subcategories from all categories
-
       const response = await getAuctions({
         page,
         page_size: size,
