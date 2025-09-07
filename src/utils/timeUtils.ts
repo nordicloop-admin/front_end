@@ -33,8 +33,8 @@ export function calculateTimeRemaining(endDate: string | null): string | null {
     } else {
       return `${minutes}m`;
     }
-  } catch (error) {
-    console.error('Error calculating time remaining:', error);
+  } catch {
+    // Silently handle time calculation errors
     return null;
   }
 }
@@ -82,8 +82,8 @@ export function isAuctionActive(startDate: string | null, endDate: string | null
     const end = new Date(endDate);
     
     return now >= start && now <= end;
-  } catch (error) {
-    console.error('Error checking auction status:', error);
+  } catch {
+    // Silently handle date parsing errors
     return false;
   }
 }
@@ -120,8 +120,8 @@ export function getAuctionStatus(
     } else {
       return 'Active';
     }
-  } catch (error) {
-    console.error('Error getting auction status:', error);
+  } catch {
+    // Silently handle date parsing errors
     return 'Unknown';
   }
 }

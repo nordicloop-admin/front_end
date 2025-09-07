@@ -424,7 +424,7 @@ const MarketplacePage = () => {
   // Convert API auctions to the format expected by the UI
   const convertedAuctions = apiAuctions.map(auction => {
     // Use backend-calculated time remaining (backend filters out expired auctions)
-    const displayTimeLeft = formatTimeRemaining(auction.time_remaining);
+    const displayTimeLeft = formatTimeRemaining(auction.time_remaining || null);
     
     return {
       id: auction.id.toString(),

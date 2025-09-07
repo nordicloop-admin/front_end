@@ -246,7 +246,7 @@ export default function Auctions() {
     }
 
     // Calculate time remaining from auction end date or use API provided time_remaining
-    const timeRemaining = auction.time_remaining || calculateTimeRemaining(auction.auction_end_date);
+    const timeRemaining = auction.time_remaining || calculateTimeRemaining(auction.auction_end_date || null);
     const displayTimeLeft = formatTimeRemaining(timeRemaining);
 
     return {
