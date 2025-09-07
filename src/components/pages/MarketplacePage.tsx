@@ -15,6 +15,7 @@ import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auc
 import Pagination from '@/components/ui/Pagination';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { getCategoryImage } from '@/utils/categoryImages';
+import { formatTimeRemaining } from '@/utils/timeUtils';
 
 // Mock data for marketplace items
 const _marketplaceItems = [
@@ -316,7 +317,6 @@ const MarketplacePage = () => {
       };
       
       // API call with aggregated subcategories from all categories
-
       const response = await getAuctions({
         page,
         page_size: size,
@@ -422,17 +422,22 @@ const MarketplacePage = () => {
   };
 
   // Convert API auctions to the format expected by the UI
-  const convertedAuctions = apiAuctions.map(auction => ({
-    id: auction.id.toString(),
-    name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
-    category: auction.category_name,
-    basePrice: auction.starting_bid_price || auction.total_starting_value,
-    highestBid: null, // API doesn't provide highest bid yet
-    timeLeft: 'Available', // API doesn't provide end date/time in this format
-    volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-    countryOfOrigin: auction.location_summary || 'Unknown',
-    image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
-  }));
+  const convertedAuctions = apiAuctions.map(auction => {
+    // Use backend-calculated time remaining (backend filters out expired auctions)
+    const displayTimeLeft = formatTimeRemaining(auction.time_remaining || null);
+    
+    return {
+      id: auction.id.toString(),
+      name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+      category: auction.category_name,
+      basePrice: auction.starting_bid_price || auction.total_starting_value,
+      highestBid: null, // API doesn't provide highest bid yet
+      timeLeft: displayTimeLeft,
+      volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+      countryOfOrigin: auction.location_summary || 'Unknown',
+      image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
+    };
+  });
 
   // Since we're now using server-side filtering, we use the API results directly
   // The server already filters based on category, location, origin, contamination, etc.
