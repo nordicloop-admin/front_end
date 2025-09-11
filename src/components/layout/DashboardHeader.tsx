@@ -5,11 +5,9 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { cn } from '@/lib/utils';
 import {
   User,
   LogOut,
-  Search,
   Plus,
   Menu,
   ChevronDown,
