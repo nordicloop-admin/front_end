@@ -90,7 +90,7 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
         )}
 
         {/* Search */}
-        <div className={cn(
+        {/* <div className={cn(
           "relative",
           isMobile ? "w-[160px]" : "w-[300px]"
         )}>
@@ -102,7 +102,7 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
             placeholder={isMobile ? "Search" : "Search something"}
             className="block w-full pl-10 pr-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
           />
-        </div>
+        </div> */}
       </div>
 
       {/* Right Side Actions */}
