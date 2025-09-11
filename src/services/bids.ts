@@ -25,8 +25,8 @@ interface AdminBid {
   itemName: string;
   bidderName: string;
   bidderEmail: string;
-  bidAmount: number;
-  volume: number;
+  bidAmount: string;
+  volume: string;
   unit: string;
   status: 'active' | 'pending' | 'outbid' | 'rejected' | 'won' | 'cancelled' | 'lost';
   bidDate: string;
