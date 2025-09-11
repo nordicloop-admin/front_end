@@ -214,7 +214,7 @@ export async function getUnreadNotificationsPaginated(params?: {
  * @returns Promise with updated notification data
  */
 export async function markNotificationAsRead(notificationId: number) {
-  return apiPut<Notification>(`/notifications/${notificationId}/read`, {}, true);
+  return apiPut<Notification>(`/notifications/${notificationId}/read/`, {}, true);
 }
 
 /**
@@ -231,7 +231,7 @@ export async function markAllNotificationsAsRead() {
  * @returns Promise with success status
  */
 export async function deleteNotification(notificationId: number) {
-  return apiDelete<{ success: boolean }>(`/notifications/${notificationId}`, true);
+  return apiDelete<{ success: boolean }>(`/notifications/${notificationId}/`, true);
 }
 
 // Admin functions
