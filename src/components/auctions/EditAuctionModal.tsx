@@ -477,6 +477,46 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Validation states for integer fields
+  const [quantityErrors, setQuantityErrors] = useState({
+    availableQuantity: '',
+    minimumOrder: ''
+  });
+  const [priceErrors, setPriceErrors] = useState({
+    startingPrice: '',
+    reservePrice: ''
+  });
+
+  // Validate integer input - only allows positive integers
+  const validateIntegerInput = useCallback((value: string, fieldName: string, allowZero: boolean = false): { isValid: boolean; error: string } => {
+    if (value === '') {
+      return { isValid: true, error: '' };
+    }
+    
+    // Check if value contains only digits
+    if (!/^\d+$/.test(value)) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} must contain only numbers (no decimals, letters, or special characters)` 
+      };
+    }
+    
+    const numValue = parseInt(value);
+    if (allowZero && numValue < 0) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} cannot be negative` 
+      };
+    } else if (!allowZero && numValue <= 0) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} must be greater than 0` 
+      };
+    }
+    
+    return { isValid: true, error: '' };
+  }, []);
+
   // NEW: Validation state for better UX (synchronized with AlternativeAuctionForm)
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [showValidationErrors, setShowValidationErrors] = useState(false);
@@ -859,6 +899,39 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       }
     }
   }, [activeStep, showValidationErrors, validationErrors]);
+
+  // Handle integer field changes with validation
+  const handleIntegerFieldChange = useCallback((fieldName: string, value: string) => {
+    const fieldDisplayNames: { [key: string]: string } = {
+      availableQuantity: 'Available Quantity',
+      minimumOrder: 'Minimum Order Quantity',
+      startingPrice: 'Starting Bid Price',
+      reservePrice: 'Reserve Price'
+    };
+    
+    const displayName = fieldDisplayNames[fieldName] || fieldName;
+    const isOptionalField = fieldName === 'minimumOrder' || fieldName === 'reservePrice';
+    const validation = validateIntegerInput(value, displayName, isOptionalField);
+    
+    // Update error states
+    if (fieldName === 'availableQuantity' || fieldName === 'minimumOrder') {
+      setQuantityErrors(prev => ({
+        ...prev,
+        [fieldName]: validation.error
+      }));
+    } else if (fieldName === 'startingPrice' || fieldName === 'reservePrice') {
+      setPriceErrors(prev => ({
+        ...prev,
+        [fieldName]: validation.error
+      }));
+    }
+    
+    // Only update form data if valid or empty (to allow clearing)
+    if (validation.isValid) {
+      const numericValue = value === '' ? 0 : parseInt(value);
+      handleStepDataChange({ [fieldName]: numericValue });
+    }
+  }, [validateIntegerInput, handleStepDataChange]);
 
   // Keywords handling functions (matching creation form)
   const getKeywordsTextLength = () => {
@@ -2292,14 +2365,23 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     Available Quantity *
                   </label>
                   <input
-                    type="number"
-                    min="0"
-                    step="0.1"
+                    type="text"
                     placeholder="e.g., 1000"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
+                      quantityErrors.availableQuantity 
+                        ? 'border-red-300 bg-red-50' 
+                        : 'border-gray-300'
+                    }`}
                     value={stepData.availableQuantity || ''}
-                    onChange={(e) => handleStepDataChange({ availableQuantity: parseFloat(e.target.value) })}
+                    onChange={(e) => {
+                      // Filter out non-digits
+                      const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                      handleIntegerFieldChange('availableQuantity', filteredValue);
+                    }}
                   />
+                  {quantityErrors.availableQuantity && (
+                    <p className="text-red-500 text-xs mt-1">{quantityErrors.availableQuantity}</p>
+                  )}
                   <p className="text-xs text-gray-500 mt-1">
                     Total quantity available for auction
                   </p>
@@ -2332,16 +2414,25 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </label>
               <div className="flex items-center space-x-4">
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
+                  type="text"
                   placeholder="e.g., 100"
-                  className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                  className={`flex-1 px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${
+                    quantityErrors.minimumOrder 
+                      ? 'border-red-300 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
                   value={stepData.minimumOrder || ''}
-                  onChange={(e) => handleStepDataChange({ minimumOrder: parseFloat(e.target.value) })}
+                  onChange={(e) => {
+                    // Filter out non-digits
+                    const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                    handleIntegerFieldChange('minimumOrder', filteredValue);
+                  }}
                 />
                 <span className="text-gray-500">{stepData.unit || 'units'}</span>
               </div>
+              {quantityErrors.minimumOrder && (
+                <p className="text-red-500 text-xs mt-1">{quantityErrors.minimumOrder}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 Minimum quantity buyers must purchase (leave 0 for no minimum)
               </p>
@@ -2358,15 +2449,24 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   </label>
                   <div className="relative">
                     <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0.00"
-                      className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                      type="text"
+                      placeholder="0"
+                      className={`w-full px-4 py-3 pr-16 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
+                        priceErrors.startingPrice 
+                          ? 'border-red-300 bg-red-50' 
+                          : 'border-gray-300'
+                      }`}
                       value={stepData.startingPrice || ''}
-                      onChange={(e) => handleStepDataChange({ startingPrice: parseFloat(e.target.value) })}
+                      onChange={(e) => {
+                        // Filter out non-digits
+                        const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                        handleIntegerFieldChange('startingPrice', filteredValue);
+                      }}
                     />
                   </div>
+                  {priceErrors.startingPrice && (
+                    <p className="text-red-500 text-xs mt-1">{priceErrors.startingPrice}</p>
+                  )}
                   <p className="text-xs text-gray-500 mt-1">
                     Initial bid price per {stepData.unit || 'unit'}
                   </p>
@@ -2467,14 +2567,23 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 Reserve Price (Optional)
               </label>
               <input
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
                 placeholder="Minimum acceptable price"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${
+                  priceErrors.reservePrice 
+                    ? 'border-red-300 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
                 value={stepData.reservePrice || ''}
-                onChange={(e) => handleStepDataChange({ reservePrice: parseFloat(e.target.value) })}
+                onChange={(e) => {
+                  // Filter out non-digits
+                  const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                  handleIntegerFieldChange('reservePrice', filteredValue);
+                }}
               />
+              {priceErrors.reservePrice && (
+                <p className="text-red-500 text-xs mt-1">{priceErrors.reservePrice}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 If no bids reach this price, the auction will not complete
               </p>
