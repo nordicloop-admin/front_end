@@ -131,15 +131,13 @@ export default function AuctionCard({
                 ) : (
                   <>
                     <div>
-                      <div className="text-xs text-gray-500">Base price</div>
-                      <div className="text-sm font-medium text-[#FF8A00]">{basePrice}</div>
-                    </div>
-                    {currentBid && (
-                      <div>
-                        <div className="text-xs text-gray-500">Current Bid</div>
-                        <div className="text-sm font-medium">{currentBid}</div>
+                      <div className="text-xs text-gray-500">
+                        {currentBid ? 'Current Highest Bid' : 'Base price'}
                       </div>
-                    )}
+                      <div className="text-sm font-medium text-[#FF8A00]">
+                        {currentBid || basePrice}
+                      </div>
+                    </div>
                   </>
                 )}
               </div>

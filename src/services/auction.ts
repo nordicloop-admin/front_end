@@ -184,6 +184,8 @@ export interface AuctionItem {
   auction_start_date?: string | null;
   auction_end_date?: string | null;
   time_remaining?: string | null;
+  highest_bid_price?: number | null;
+  base_price?: number;
 }
 
 /**

@@ -249,16 +249,29 @@ export default function Auctions() {
     const timeRemaining = auction.time_remaining || calculateTimeRemaining(auction.auction_end_date || null);
     const displayTimeLeft = formatTimeRemaining(timeRemaining);
 
+    // Determine highest bid value based on new data structure
+    let highestBidFormatted = null;
+    if (auction.highest_bid_price) {
+      // Format highest bid price with currency
+      const formattedPrice = auction.highest_bid_price.toLocaleString('sv-SE');
+      highestBidFormatted = `${formattedPrice} ${auction.currency}`;
+    } else if (auction.base_price) {
+      // If no bids, show base price
+      const formattedPrice = auction.base_price.toLocaleString('sv-SE');
+      highestBidFormatted = `${formattedPrice} ${auction.currency}`;
+    }
+
     return {
       id: auction.id.toString(),
       name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
       category: auction.category_name,
       basePrice: auction.starting_bid_price || auction.total_starting_value,
-      highestBid: null, // API doesn't provide highest bid yet
+      highestBid: highestBidFormatted,
       timeLeft: displayTimeLeft,
       volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
       seller: 'Unknown', // API doesn't provide seller info yet
       countryOfOrigin: auction.location_summary || 'Unknown',
+      currency: auction.currency, // Include currency from API data
       image: auction.material_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
       isMyAuction: isMyAuction,
       hasBid: hasBid
