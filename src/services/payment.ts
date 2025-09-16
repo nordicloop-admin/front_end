@@ -7,18 +7,26 @@ import { apiGet, apiPost } from './api';
  * Interface for account status response
  */
 export interface AccountStatusResponse {
-  has_stripe_account: boolean;
-  account_id: string | null;
-  is_ready_for_payments: boolean;
-  requirements: {
-    currently_due: string[];
-    eventually_due: string[];
-    past_due: string[];
-    pending_verification: string[];
-  } | null;
-  charges_enabled: boolean;
-  payouts_enabled: boolean;
-  details_submitted: boolean;
+  company_id: number;
+  company_name: string;
+  payment_ready: boolean;
+  stripe_onboarding_complete: boolean;
+  stripe_capabilities_complete: boolean;
+  account_info: {
+    exists: boolean;
+    account_id: string | null;
+    charges_enabled: boolean;
+    payouts_enabled: boolean;
+    details_submitted: boolean;
+    requirements: string[];
+    capabilities: {
+      card_payments?: string;
+      transfers?: string;
+    };
+    country?: string;
+    email?: string;
+    type?: string;
+  };
 }
 
 /**
