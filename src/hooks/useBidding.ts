@@ -12,6 +12,7 @@ interface Auction {
   timeLeft: string;
   volume: string;
   countryOfOrigin: string;
+  currency?: string; // Add currency field
   originalBidAmount?: string; // Original bid amount for pre-filling the bid form
   bidId?: number; // ID of the existing bid if updating
 }

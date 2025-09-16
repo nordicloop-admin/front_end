@@ -772,4 +772,30 @@ export const getAuctionBidHistory = async (auctionId: number): Promise<ApiRespon
   }
 };
 
+/**
+ * Interface for ad bid statistics response
+ */
+export interface AdBidStatsResponse {
+  ad_id: number;
+  statistics: BidStatistics;
+}
+
+/**
+ * Get bid statistics for a specific ad
+ * @param adId The ad ID
+ * @returns The API response with bid statistics
+ */
+export async function getAdBidStats(adId: number): Promise<ApiResponse<AdBidStatsResponse>> {
+  try {
+    const response = await apiGet<AdBidStatsResponse>(`/bids/ad/${adId}/stats/`, false);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to fetch bid statistics',
+      status: 500
+    };
+  }
+}
+
 

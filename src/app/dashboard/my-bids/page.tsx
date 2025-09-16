@@ -177,6 +177,7 @@ export default function MyBids() {
       timeLeft: 'Available',
       volume: `${bid.volume_requested} ${bid.unit}`,
       countryOfOrigin: 'Unknown',
+      currency: bid.currency || 'SEK', // Include currency from bid data
       originalBidAmount: bid.bid_price_per_unit,
       bidId: bid.id
     });

@@ -426,12 +426,28 @@ const MarketplacePage = () => {
     // Use backend-calculated time remaining (backend filters out expired auctions)
     const displayTimeLeft = formatTimeRemaining(auction.time_remaining || null);
     
+    // Determine current price based on highest bid or base price
+    let currentPrice = '';
+    if (auction.highest_bid_price) {
+      // Format highest bid price with currency
+      const formattedPrice = auction.highest_bid_price.toLocaleString('sv-SE');
+      currentPrice = `${formattedPrice} ${auction.currency}`;
+    } else if (auction.base_price) {
+      // Format base price with currency
+      const formattedPrice = auction.base_price.toLocaleString('sv-SE');
+      currentPrice = `${formattedPrice} ${auction.currency}`;
+    } else {
+      // Fallback to starting bid price
+      const price = auction.starting_bid_price || '0';
+      currentPrice = `${price} ${auction.currency}`;
+    }
+    
     return {
       id: auction.id.toString(),
       name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
       category: auction.category_name,
       basePrice: auction.starting_bid_price || auction.total_starting_value,
-      highestBid: null, // API doesn't provide highest bid yet
+      currentBid: currentPrice,
       timeLeft: displayTimeLeft,
       volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
       countryOfOrigin: auction.location_summary || 'Unknown',
