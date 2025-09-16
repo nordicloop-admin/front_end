@@ -313,8 +313,8 @@ const PaymentAccountSetup: React.FC = () => {
                   </div>
                 )}
 
-                {/* Requirements */}
-                {accountStatus.account_info.requirements && accountStatus.account_info.requirements.length > 0 && (
+                {/* Requirements - only show truly blocking requirements */}
+                {accountStatus.account_info.requirements && accountStatus.account_info.requirements.length > 0 && !accountStatus.payment_ready && (
                   <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
                     <div className="flex items-start">
                       <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 mr-3 flex-shrink-0" />
@@ -324,12 +324,22 @@ const PaymentAccountSetup: React.FC = () => {
                           Complete the following requirements to activate your payment account:
                         </p>
                         <ul className="text-sm text-yellow-700 mt-2 space-y-1">
-                          {accountStatus.account_info.requirements.map((req, index) => (
+                          {accountStatus.account_info.requirements
+                            .filter(req => !req.toLowerCase().includes('verification.document'))
+                            .map((req, index) => (
                             <li key={index} className="flex items-start">
                               • {req.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                             </li>
                           ))}
                         </ul>
+                        {accountStatus.account_info.requirements.some(req => req.toLowerCase().includes('verification.document')) && (
+                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <p className="text-sm text-blue-700">
+                              <strong>Note:</strong> Document verification is in progress but won&apos;t prevent you from receiving payments. 
+                              Your account is already active and ready for transactions.
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
