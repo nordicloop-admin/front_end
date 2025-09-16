@@ -311,7 +311,7 @@ const deliveryOptions = [
   }
 ];
 
-const currencies = ['SEK', 'EUR'];
+const currencies = ['SEK'];
 
 // Use all units supported by backend - matching Ad.UNIT_CHOICES
 const units = [
@@ -2478,14 +2478,18 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     Currency *
                   </label>
                   <select
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg bg-gray-100"
                     value={stepData.currency || 'SEK'}
-                    onChange={(e) => handleStepDataChange({ currency: e.target.value })}
+                    disabled
+                    title="Only SEK currency is supported"
                   >
                     {currencies.map(currency => (
                       <option key={currency} value={currency}>{currency}</option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Only Swedish Krona (SEK) is currently supported
+                  </p>
                 </div>
               </div>
             </div>
