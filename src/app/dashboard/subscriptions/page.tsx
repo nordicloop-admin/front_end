@@ -2,10 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Check, X, Calendar, ArrowRight, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 import { getUserSubscription, updateUserSubscription, createUserSubscription, UserSubscription } from '@/services/userSubscription';
 import { getUserProfile, UserProfile } from '@/services/userProfile';
 import { getPricingData, PricingData } from '@/services/pricing';
+import { changeSubscriptionPlan, verifyCheckoutSession } from '@/services/subscriptionPayments';
 
 // Helper function to get commission rate from plan type
 const _getCommissionRate = (planType: string): string => {
@@ -18,6 +20,7 @@ const _getCommissionRate = (planType: string): string => {
 };
 
 export default function Subscriptions() {
+  const searchParams = useSearchParams();
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [pricingData, setPricingData] = useState<PricingData | null>(null);
@@ -26,6 +29,46 @@ export default function Subscriptions() {
   const [updateSuccess, setUpdateSuccess] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+
+  // Check for payment success from URL parameters
+  useEffect(() => {
+    const success = searchParams.get('success');
+    const sessionId = searchParams.get('session_id');
+    const canceled = searchParams.get('canceled');
+
+    if (success === 'true' && sessionId) {
+      // Verify the payment with Stripe
+      const verifyPayment = async () => {
+        setIsVerifyingPayment(true);
+        try {
+          const verificationResponse = await verifyCheckoutSession(sessionId);
+          
+          if (verificationResponse.data?.success && 
+              verificationResponse.data.payment_status === 'paid') {
+            setPaymentSuccess(true);
+            setUpdateSuccess(true);
+            
+            // Wait a moment for webhook to process, then reload data
+            setTimeout(() => {
+              window.location.reload();
+            }, 3000);
+          } else {
+            setError('Payment verification failed. Please contact support if you were charged.');
+          }
+        } catch (_err) {
+          setError('Failed to verify payment. Please contact support.');
+        } finally {
+          setIsVerifyingPayment(false);
+        }
+      };
+
+      verifyPayment();
+    } else if (canceled === 'true') {
+      setError('Payment was canceled. Your subscription has not been changed.');
+    }
+  }, [searchParams]);
 
   // Fetch subscription data, user profile, and pricing data
   useEffect(() => {
@@ -78,7 +121,7 @@ export default function Subscriptions() {
     fetchData();
   }, []);
 
-  // Handle plan change (upgrade or create new)
+  // Handle plan change with Stripe integration
   const handlePlanChange = async (planId: string) => {
     // If updating or trying to select the current plan, do nothing
     if (isUpdating || (subscription && subscription.plan === planId)) return;
@@ -88,65 +131,72 @@ export default function Subscriptions() {
       setError(null);
       setUpdateSuccess(false);
       
-      let response;
+      // Use Stripe payment integration for plan changes
+      const result = await changeSubscriptionPlan(planId as 'free' | 'standard' | 'premium');
       
-      // If user has no subscription, create a new one
-      if (!hasSubscription) {
-        // Get current date and one year from now
-        const today = new Date();
-        const nextYear = new Date(today);
-        nextYear.setFullYear(today.getFullYear() + 1);
-        
-        // Format dates as YYYY-MM-DD
-        const formatDate = (date: Date) => {
-          return date.toISOString().split('T')[0];
-        };
-        
-        const startDate = formatDate(today);
-        const endDate = formatDate(nextYear);
-        
-        // Create subscription with required format
-        const createData = {
-          plan: planId,
-          status: 'active',
-          start_date: startDate,
-          end_date: endDate,
-          auto_renew: true,
-          last_payment: startDate,
-          amount: planId === 'free' ? '0' : planId === 'standard' ? '599' : '799',
-          // Use user profile information for contact details if available
-          contact_name: userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() : '',
-          contact_email: userProfile ? userProfile.email : ''
-        };
-        
-        response = await createUserSubscription(createData);
-      } else if (subscription) {
-        // Otherwise update the existing subscription
-        const updateData = {
-          plan: planId,
-          auto_renew: subscription.auto_renew,
-          payment_method: subscription.payment_method,
-          contact_name: subscription.contact_name,
-          contact_email: subscription.contact_email
-        };
-        
-        response = await updateUserSubscription(updateData);
+      if (result.success) {
+        if (result.redirect_url) {
+          // Redirect to Stripe Checkout for paid plans
+          window.location.href = result.redirect_url;
+          return;
+        } else if (result.is_free_plan) {
+          // Handle free plan locally
+          let response;
+          
+          if (!hasSubscription) {
+            // Create new free subscription
+            const today = new Date();
+            const nextYear = new Date(today);
+            nextYear.setFullYear(today.getFullYear() + 1);
+            
+            const formatDate = (date: Date) => {
+              return date.toISOString().split('T')[0];
+            };
+            
+            const createData = {
+              plan: planId,
+              status: 'active',
+              start_date: formatDate(today),
+              end_date: formatDate(nextYear),
+              auto_renew: true,
+              last_payment: formatDate(today),
+              amount: '0',
+              contact_name: userProfile ? `${userProfile.first_name} ${userProfile.last_name}`.trim() : '',
+              contact_email: userProfile ? userProfile.email : ''
+            };
+            
+            response = await createUserSubscription(createData);
+          } else if (subscription) {
+            // Update existing subscription to free
+            const updateData = {
+              plan: planId,
+              auto_renew: subscription.auto_renew,
+              payment_method: subscription.payment_method,
+              contact_name: subscription.contact_name,
+              contact_email: subscription.contact_email
+            };
+            
+            response = await updateUserSubscription(updateData);
+          }
+          
+          if (response?.error) {
+            setError(response.error);
+          } else if (response?.data) {
+            setSubscription(response.data.subscription);
+            setHasSubscription(true);
+            setUpdateSuccess(true);
+            
+            // Hide success message after 3 seconds
+            setTimeout(() => {
+              setUpdateSuccess(false);
+            }, 3000);
+          }
+        }
+      } else {
+        setError(result.message);
       }
-      
-      if (response?.error) {
-        setError(response.error);
-      } else if (response?.data) {
-        setSubscription(response.data.subscription);
-        setHasSubscription(true);
-        setUpdateSuccess(true);
-        
-        // Hide success message after 3 seconds
-        setTimeout(() => {
-          setUpdateSuccess(false);
-        }, 3000);
-      }
-    } catch (_error) {
-      setError('Failed to update subscription');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to change subscription plan');
     } finally {
       setIsUpdating(false);
     }
@@ -168,6 +218,28 @@ export default function Subscriptions() {
   return (
     <div className="p-5">
       <h1 className="text-xl font-medium mb-5">Subscription Plans</h1>
+
+      {/* Payment verification loading */}
+      {isVerifyingPayment && (
+        <div className="p-4 bg-blue-50 border border-blue-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <RefreshCw className="text-blue-500 mr-2 animate-spin" size={16} />
+            <p className="text-sm text-blue-700">Verifying your payment...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Payment success message */}
+      {paymentSuccess && !isVerifyingPayment && (
+        <div className="p-4 bg-green-50 border border-green-100 rounded-md mb-5">
+          <div className="flex items-center">
+            <CheckCircle className="text-green-500 mr-2" size={16} />
+            <p className="text-sm text-green-700">
+              Payment successful! Your subscription is being activated...
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Error message */}
       {error && (

@@ -23,11 +23,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: '/favicon.ico', sizes: 'any' },
-      { url: '/favicon.png', type: 'image/png', sizes: '32x32' },
-      { url: '/favicon.png', type: 'image/png', sizes: '16x16' },
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
     ],
     apple: [
-      { url: '/favicon.png', sizes: '180x180', type: 'image/png' },
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
     shortcut: '/favicon.ico',
   },
@@ -82,9 +82,9 @@ export default function RootLayout({
       <head>
         {/* Favicon links for better compatibility */}
         <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/site.webmanifest" />
         <meta name="theme-color" content="#1E2A36" />
 
