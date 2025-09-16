@@ -166,14 +166,14 @@ const PaymentAccountSetup: React.FC = () => {
       )}
 
       {loading && !accountStatus ? (
-        <div className="bg-white border border-gray-100 rounded-md p-12 flex flex-col items-center justify-center shadow-sm">
+        <div className="bg-white border border-gray-100 rounded-md p-12 flex flex-col items-center justify-center">
           <Loader2 size={32} className="text-[#FF8A00] animate-spin mb-4" />
           <p className="text-gray-500">Loading payment setup...</p>
         </div>
       ) : (
         <>
           {/* Account Status Card */}
-          <div className="bg-white border border-gray-100 rounded-md p-6 shadow-sm">
+          <div className="bg-white border border-gray-100 rounded-md p-6">
             <div className="flex items-start justify-between mb-6">
               <div className="flex items-start">
                 <div className="h-14 w-14 bg-[#FF8A00]/10 rounded-lg flex items-center justify-center">
@@ -412,7 +412,7 @@ const PaymentAccountSetup: React.FC = () => {
           </div>
 
           {/* Payment Information Card */}
-          <div className="bg-white border border-gray-100 rounded-md p-6 shadow-sm">
+          <div className="bg-white border border-gray-100 rounded-md p-6">
             <div className="flex items-start">
               <div className="h-14 w-14 bg-blue-50 rounded-lg flex items-center justify-center">
                 <CheckCircle size={24} className="text-blue-600" />
