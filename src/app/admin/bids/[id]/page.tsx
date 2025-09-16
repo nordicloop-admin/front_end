@@ -44,12 +44,13 @@ export default function BidDetailPage() {
   }, [fetchBidDetails]);
 
   // Format bid amount
-  const formatBidAmount = (amount: number) => {
+  const formatBidAmount = (amount: number | string) => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 3,
       maximumFractionDigits: 3
-    }).format(amount);
+    }).format(numAmount);
   };
 
   // Format date

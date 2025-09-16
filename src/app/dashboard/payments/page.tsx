@@ -2,19 +2,19 @@
 
 import React, { useState } from 'react';
 import { CreditCard, History, Calendar, Settings } from 'lucide-react';
-import BankAccountSetup from '@/components/payments/BankAccountSetup';
+import PaymentAccountSetup from '@/components/payment/PaymentAccountSetup';
 import TransactionHistory from '@/components/payments/TransactionHistory';
 import PayoutSchedule from '@/components/payments/PayoutSchedule';
 
 type TabType = 'account' | 'transactions' | 'payouts';
 
 export default function PaymentsPage() {
-  const [activeTab, setActiveTab] = useState<TabType>('transactions');
+  const [activeTab, setActiveTab] = useState<TabType>('account');
 
   const tabs = [
+    { key: 'account' as TabType, label: 'Payment Account', icon: CreditCard },
     { key: 'transactions' as TabType, label: 'Transaction History', icon: History },
     { key: 'payouts' as TabType, label: 'Payout Schedule', icon: Calendar },
-    { key: 'account' as TabType, label: 'Payment Account', icon: CreditCard },
   ];
 
   return (
@@ -53,7 +53,7 @@ export default function PaymentsPage() {
       {/* Tab Content */}
       <div className="space-y-6">
         {activeTab === 'account' && (
-          <BankAccountSetup className="w-full" />
+          <PaymentAccountSetup />
         )}
         
         {activeTab === 'transactions' && (
@@ -72,9 +72,9 @@ export default function PaymentsPage() {
           <div className="text-sm text-blue-800">
             <h3 className="font-medium mb-2">Payment Information</h3>
             <ul className="space-y-1">
-              <li>• Set up your bank account to receive payments from sales</li>
+              <li>• Set up your bank account to receive payments from winning auctions</li>
               <li>• All payments are processed securely through Stripe</li>
-              <li>• Payouts are processed manually by our admin team</li>
+              <li>• Payouts are processed automatically based on your subscription plan</li>
               <li>• Commission rates depend on your subscription plan</li>
               <li>• Contact support if you need help with payments</li>
             </ul>
