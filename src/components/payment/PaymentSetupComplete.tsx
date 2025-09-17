@@ -10,11 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Clock, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { getAccountStatus } from '@/services/payment';
+import { getAccountStatus, AccountStatusResponse } from '@/services/payment';
 
 const PaymentSetupComplete: React.FC = () => {
   const [status, setStatus] = useState<'checking' | 'complete' | 'pending' | 'error'>('checking');
-  const [_accountStatus, setAccountStatus] = useState<any>(null);
+  const [_accountStatus, setAccountStatus] = useState<AccountStatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -32,9 +32,9 @@ const PaymentSetupComplete: React.FC = () => {
       } else if (response.data) {
         setAccountStatus(response.data);
         
-        if (response.data.is_ready_for_payments) {
+        if (response.data.payment_ready) {
           setStatus('complete');
-        } else if (response.data.details_submitted) {
+        } else if (response.data.account_info.details_submitted) {
           setStatus('pending');
         } else {
           setStatus('error');
