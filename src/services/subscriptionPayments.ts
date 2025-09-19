@@ -22,10 +22,16 @@ export interface SubscriptionStatusResponse {
     start_date: string;
     end_date: string;
     auto_renew: boolean;
-    last_payment: string;
-    amount: number;
+    last_payment: string | null;
+    next_billing_date: string | null;
+    amount: string;
     contact_name: string;
     contact_email: string;
+    stripe_customer_id: string | null;
+    stripe_subscription_id: string | null;
+    cancel_at_period_end: boolean;
+    canceled_at: string | null;
+    trial_end: string | null;
   } | null;
   has_subscription: boolean;
   message: string;
@@ -126,8 +132,8 @@ export async function verifyCheckoutSession(
 }
 
 /**
- * Handle subscription plan changes with Stripe payment
- * Redirects to Stripe Checkout for paid plans
+ * Handle subscription plan changes with improved Stripe payment integration
+ * Now supports proper plan upgrades, downgrades, and proration
  */
 export async function changeSubscriptionPlan(
   newPlanType: 'free' | 'standard' | 'premium'
@@ -136,37 +142,46 @@ export async function changeSubscriptionPlan(
   redirect_url?: string;
   message: string;
   is_free_plan?: boolean;
+  prorated?: boolean;
+  session_id?: string;
 }> {
   try {
-    // For free plan, no payment required
-    if (newPlanType === 'free') {
-      return {
-        success: true,
-        message: 'Free plan selected - no payment required',
-        is_free_plan: true
-      };
-    }
+    // Use the new plan change endpoint
+    const response = await apiPost<{
+      success: boolean;
+      message: string;
+      redirect_url?: string;
+      is_free_plan?: boolean;
+      prorated?: boolean;
+      session_id?: string;
+    }>(
+      '/payments/subscriptions/change-plan/',
+      { plan_type: newPlanType },
+      true
+    );
 
-    // For paid plans, create Stripe checkout session
-    const checkoutResponse = await createSubscriptionCheckout(newPlanType);
-    
-    if (checkoutResponse.error || !checkoutResponse.data) {
+    if (response.error || !response.data) {
       return {
         success: false,
-        message: checkoutResponse.error || 'Failed to create checkout session'
+        message: response.error || 'Failed to change subscription plan'
       };
     }
 
-    if (checkoutResponse.data.success && checkoutResponse.data.checkout_url) {
+    const result = response.data;
+    
+    if (result.success) {
       return {
         success: true,
-        redirect_url: checkoutResponse.data.checkout_url,
-        message: `Redirecting to payment for ${newPlanType} plan...`
+        message: result.message,
+        redirect_url: result.redirect_url,
+        is_free_plan: result.is_free_plan,
+        prorated: result.prorated,
+        session_id: result.session_id
       };
     } else {
       return {
         success: false,
-        message: checkoutResponse.data.message || 'Failed to create checkout session'
+        message: result.message || 'Failed to change subscription plan'
       };
     }
   } catch (error) {
@@ -243,6 +258,77 @@ export function getPlanFeatures(planType: string): string[] {
     default:
       return [];
   }
+}
+
+/**
+ * Check if subscription is currently active and usable
+ */
+export function isSubscriptionActive(subscription: SubscriptionStatusResponse['subscription']): boolean {
+  if (!subscription) return false;
+  return subscription.status === 'active' || subscription.status === 'trialing';
+}
+
+/**
+ * Check if subscription is scheduled for cancellation
+ */
+export function isSubscriptionCanceling(subscription: SubscriptionStatusResponse['subscription']): boolean {
+  if (!subscription) return false;
+  return subscription.cancel_at_period_end === true;
+}
+
+/**
+ * Check if subscription has payment issues
+ */
+export function hasPaymentIssues(subscription: SubscriptionStatusResponse['subscription']): boolean {
+  if (!subscription) return false;
+  return subscription.status === 'past_due' || subscription.status === 'payment_failed';
+}
+
+/**
+ * Get user-friendly subscription status text
+ */
+export function getSubscriptionStatusText(subscription: SubscriptionStatusResponse['subscription']): string {
+  if (!subscription) return 'No subscription';
+  
+  switch (subscription.status) {
+    case 'active':
+      if (subscription.cancel_at_period_end) {
+        return `Active until ${subscription.end_date}`;
+      }
+      return 'Active';
+    case 'trialing':
+      return `Trial until ${subscription.trial_end}`;
+    case 'past_due':
+      return 'Payment overdue';
+    case 'payment_failed':
+      return 'Payment failed';
+    case 'canceled':
+      return 'Canceled';
+    case 'expired':
+      return 'Expired';
+    default:
+      return subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1);
+  }
+}
+
+/**
+ * Get days until next billing or cancellation
+ */
+export function getDaysUntilNextBilling(subscription: SubscriptionStatusResponse['subscription']): number | null {
+  if (!subscription) return null;
+  
+  const targetDate = subscription.cancel_at_period_end 
+    ? subscription.end_date 
+    : subscription.next_billing_date;
+    
+  if (!targetDate) return null;
+  
+  const today = new Date();
+  const billing = new Date(targetDate);
+  const diffTime = billing.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays > 0 ? diffDays : 0;
 }
 
 /**
