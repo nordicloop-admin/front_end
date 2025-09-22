@@ -365,6 +365,13 @@ export default function Profile() {
       if (response?.error) {
         setError(response.error);
       } else if (response?.data) {
+        // Check if payment is required (plan upgrade)
+        if (response.data.requires_payment && response.data.redirect_url) {
+          // Redirect to Stripe Checkout for payment
+          window.location.href = response.data.redirect_url;
+          return;
+        }
+        
         setSubscription(response.data.subscription);
         setHasSubscription(true);
         setUpdateSuccess(true);
