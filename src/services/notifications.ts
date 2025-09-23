@@ -118,7 +118,7 @@ export async function getUserNotificationsPaginated(params?: {
   if (params?.search) queryParams.append('search', params.search);
   if (params?.is_read !== undefined) queryParams.append('is_read', params.is_read.toString());
 
-  const url = `/notifications${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const url = `/notifications/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
   return apiGet<{
     count: number;
     next: string | null;
@@ -139,7 +139,7 @@ export async function getUnreadNotifications() {
       next: string | null;
       previous: string | null;
       results: Notification[];
-    }>('/notifications/unread?page=1&page_size=10', true);
+    }>('/notifications/unread/?page=1&page_size=10', true);
     
     // If we get a timeout or network error, return a graceful fallback
     if (response.error && (
@@ -199,7 +199,7 @@ export async function getUnreadNotificationsPaginated(params?: {
   if (params?.priority) queryParams.append('priority', params.priority);
   if (params?.search) queryParams.append('search', params.search);
 
-  const url = `/notifications/unread${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const url = `/notifications/unread/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
   return apiGet<{
     count: number;
     next: string | null;
