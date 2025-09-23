@@ -8,7 +8,6 @@ import React, { useState, useEffect } from 'react';
 import { 
   CheckCircle, 
   Clock, 
-  ExternalLink, 
   AlertTriangle, 
   CreditCard,
   Building2,
@@ -16,9 +15,6 @@ import {
 } from 'lucide-react';
 import { 
   getAccountStatus, 
-  createPaymentAccount, 
-  createOnboardingLink, 
-  getDashboardLink
 } from '@/services/payment';
 
 interface AccountStatus {
@@ -49,7 +45,7 @@ const PaymentAccountSetup: React.FC = () => {
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [success] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAccountStatus();
@@ -73,6 +69,7 @@ const PaymentAccountSetup: React.FC = () => {
     }
   };
 
+  /*
   const createStripeAccount = async () => {
     try {
       setLoading(true);
@@ -144,6 +141,7 @@ const PaymentAccountSetup: React.FC = () => {
       setLoading(false);
     }
   };
+  */
 
   return (
     <div className="space-y-6">
@@ -356,7 +354,7 @@ const PaymentAccountSetup: React.FC = () => {
             )}
 
             {/* Action Buttons */}
-            <div className="mt-6 pt-4 border-t border-gray-100">
+            {/* <div className="mt-6 pt-4 border-t border-gray-100">
               <div className="flex flex-col sm:flex-row gap-3">
                 {!accountStatus?.account_info.exists ? (
                   <button
@@ -418,7 +416,7 @@ const PaymentAccountSetup: React.FC = () => {
               <p className="text-xs text-gray-400 text-center mt-3">
                 All payments are processed securely through Stripe Connect
               </p>
-            </div>
+            </div> */}
           </div>
 
           {/* Payment Information Card */}

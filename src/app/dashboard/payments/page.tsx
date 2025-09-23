@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { CreditCard, History, Calendar } from 'lucide-react';
+import { CreditCard, History } from 'lucide-react';
 import PaymentAccountSetup from '@/components/payment/PaymentAccountSetup';
 import TransactionHistory from '@/components/payments/TransactionHistory';
-import PayoutSchedule from '@/components/payments/PayoutSchedule';
+// import PayoutSchedule from '@/components/payments/PayoutSchedule';
 
 type TabType = 'transactions' | 'payouts' | 'account';
 
@@ -13,7 +13,7 @@ export default function PaymentsPage() {
 
   const tabs = [
     { key: 'transactions' as TabType, label: 'Transaction History', icon: History },
-    { key: 'payouts' as TabType, label: 'Payout Schedule', icon: Calendar },
+    // { key: 'payouts' as TabType, label: 'Payout Schedule', icon: Calendar },
     { key: 'account' as TabType, label: 'Payment Account', icon: CreditCard },
   ];
 
@@ -56,9 +56,9 @@ export default function PaymentsPage() {
           <TransactionHistory className="w-full" />
         )}
         
-        {activeTab === 'payouts' && (
+        {/* {activeTab === 'payouts' && (
           <PayoutSchedule className="w-full" />
-        )}
+        )} */}
         
         {activeTab === 'account' && (
           <PaymentAccountSetup />
