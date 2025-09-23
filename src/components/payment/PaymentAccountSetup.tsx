@@ -364,55 +364,19 @@ const PaymentAccountSetup: React.FC = () => {
                     disabled={loading}
                     className="flex-1 flex items-center justify-center px-4 py-3 bg-[#FF8A00] text-white rounded-md font-medium hover:bg-[#e67e00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Building2 className="mr-2 h-4 w-4" />
-                    )}
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Building2 className="mr-2 h-4 w-4" />}
                     {loading ? 'Creating...' : 'Create Payment Account'}
                   </button>
-                ) : accountStatus.payment_ready ? (
-                  <button
-                    onClick={openDashboard}
-                    disabled={loading}
-                    className="flex-1 flex items-center justify-center px-4 py-3 bg-[#FF8A00] text-white rounded-md font-medium hover:bg-[#e67e00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                    )}
-                    {loading ? 'Opening...' : 'Manage Payment Account'}
-                  </button>
-                ) : (
+                ) : !accountStatus.payment_ready ? (
                   <button
                     onClick={startOnboarding}
                     disabled={loading}
                     className="flex-1 flex items-center justify-center px-4 py-3 bg-[#FF8A00] text-white rounded-md font-medium hover:bg-[#e67e00] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                    )}
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
                     {loading ? 'Opening...' : 'Complete Account Setup'}
                   </button>
-                )}
-
-                {accountStatus?.account_info.exists && (
-                  <button
-                    onClick={openDashboard}
-                    disabled={loading}
-                    className="flex items-center justify-center px-4 py-3 border border-gray-200 text-gray-700 rounded-md font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {loading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                    )}
-                    Open Stripe Dashboard
-                  </button>
-                )}
+                ) : null}
               </div>
 
               <p className="text-xs text-gray-400 text-center mt-3">
