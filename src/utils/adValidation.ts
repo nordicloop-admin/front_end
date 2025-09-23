@@ -290,6 +290,95 @@ export const convertLabelToValue = (field: string, label: string): string => {
   return label;
 };
 
+// Convert backend value to display label
+export const convertValueToLabel = (field: string, value: string): string => {
+  if (!value) return '';
+
+  const valueMappings: Record<string, Record<string, string>> = {
+    packaging: {
+      'baled': 'Baled',
+      'loose': 'Loose',
+      'big_bag': 'Big-bag',
+      'octabin': 'Octabin',
+      'roles': 'Roles',
+      'container': 'Container',
+      'other': 'Other',
+    },
+    material_frequency: {
+      'one_time': 'One-time',
+      'weekly': 'Weekly',
+      'bi_weekly': 'Bi-weekly',
+      'monthly': 'Monthly',
+      'quarterly': 'Quarterly',
+      'yearly': 'Yearly',
+    },
+    origin: {
+      'post_industrial': 'Post-industrial',
+      'post_consumer': 'Post-consumer',
+      'mix': 'Mix',
+    },
+    contamination: {
+      'clean': 'Clean',
+      'slightly_contaminated': 'Slightly Contaminated',
+      'heavily_contaminated': 'Heavily Contaminated',
+    },
+    additives: {
+      'uv_stabilizer': 'UV Stabilizer',
+      'antioxidant': 'Antioxidant',
+      'flame_retardants': 'Flame retardants',
+      'chlorides': 'Chlorides',
+      'no_additives': 'No additives',
+    },
+    storage_conditions: {
+      'climate_controlled': 'Climate Controlled',
+      'protected_outdoor': 'Protected Outdoor',
+      'unprotected_outdoor': 'Unprotected Outdoor',
+    },
+    processing_methods: {
+      'blow_moulding': 'Blow moulding',
+      'injection_moulding': 'Injection moulding',
+      'extrusion': 'Extrusion',
+      'calendering': 'Calendering',
+      'rotational_moulding': 'Rotational moulding',
+      'sintering': 'Sintering',
+      'thermoforming': 'Thermoforming',
+    },
+    delivery_options: {
+      'pickup_only': 'Pickup Only',
+      'local_delivery': 'Local Delivery',
+      'national_shipping': 'National Shipping',
+      'international_shipping': 'International Shipping',
+      'freight_forwarding': 'Freight Forwarding',
+    },
+    unit_of_measurement: {
+      'kg': 'Kilogram',
+      'g': 'Gram',
+      'lb': 'Pound',
+      'tons': 'Tons',
+      'tonnes': 'Tonnes',
+      'lbs': 'Pounds',
+      'pieces': 'Pieces',
+      'units': 'Units',
+      'bales': 'Bales',
+      'containers': 'Containers',
+      'm³': 'Cubic Meters',
+      'cubic_meters': 'Cubic Meters',
+      'liters': 'Liters',
+      'gallons': 'Gallons',
+      'meters': 'Meters',
+    }
+  };
+
+  const label = valueMappings[field]?.[value];
+  if (label) {
+    return label;
+  }
+
+  // Fallback for values that don't have a direct mapping
+  // (e.g., 'post_industrial' -> 'Post Industrial')
+  return value.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
 // Validation helper for Step data before sending to API
 export const validateStepData = (step: number, data: any): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
@@ -413,4 +502,4 @@ export const validateStepData = (step: number, data: any): { isValid: boolean; e
     isValid: errors.length === 0,
     errors
   };
-}; 
+};
