@@ -27,65 +27,7 @@ interface AuctionDisplayData {
   hasBid?: boolean;
 }
 
-// Mock data for marketplace auctions
-const marketplaceAuctions: AuctionDisplayData[] = [
-  {
-    id: '1',
-    name: 'PPA Thermocomp UFW49RSC (Black)',
-    category: 'Plastics',
-    basePrice: '5,013,008',
-    highestBid: '5,250,000',
-    timeLeft: '2d 4h',
-    volume: '500 kg',
-    seller: 'Eco Solutions AB',
-    countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/plastics.jpg',
-    isMyAuction: false,
-    hasBid: false
-  },
-  {
-    id: '2',
-    name: 'PPA Thermocomp UFW49RSC (White)',
-    category: 'Plastics',
-    basePrice: '4,850,000',
-    highestBid: null,
-    timeLeft: '5d 12h',
-    volume: '750 kg',
-    seller: 'Green Tech Norway',
-    countryOfOrigin: 'Norway',
-    image: '/images/marketplace/categories/plastics-alt.jpg',
-    isMyAuction: false,
-    hasBid: false
-  },
-  {
-    id: '3',
-    name: 'Aluminum Scrap 6061',
-    category: 'Metals',
-    basePrice: '7,250,000',
-    highestBid: '7,500,000',
-    timeLeft: '3d 6h',
-    volume: '1200 kg',
-    seller: 'Circular Materials Oy',
-    countryOfOrigin: 'Finland',
-    image: '/images/marketplace/categories/metals.jpg',
-    isMyAuction: false,
-    hasBid: false
-  },
-  {
-    id: '4',
-    name: 'Recycled Cardboard Sheets',
-    category: 'Paper',
-    basePrice: '2,500,000',
-    highestBid: null,
-    timeLeft: '6d 18h',
-    volume: '850 kg',
-    seller: 'Eco Solutions AB',
-    countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/paper.jpg',
-    isMyAuction: false,
-    hasBid: false
-  }
-];
+// No mock data - show proper message when no auctions available
 
 // Categories for filter
 const categories = [
@@ -278,11 +220,11 @@ export default function Auctions() {
     };
   });
 
-  // Use API auctions if available, otherwise fall back to mock data
-  const auctionsToDisplay = (apiAuctions && apiAuctions.length > 0) ? convertedAuctions : marketplaceAuctions;
+  // Use API auctions only - no fallback to mock data
+  const auctionsToDisplay = convertedAuctions;
 
   // Filter auctions based on search term and category
-  const filteredAuctions = (auctionsToDisplay || []).filter(auction => {
+  const filteredAuctions = (auctionsToDisplay || []).filter((auction: AuctionDisplayData) => {
     const matchesSearch = searchTerm === '' ||
       auction.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (auction.seller && auction.seller.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -399,10 +341,10 @@ export default function Auctions() {
       )}
 
       {/* Auctions Grid */}
-      {!isLoading && !error && (
+      {!isLoading && !error && filteredAuctions.length > 0 && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-            {filteredAuctions.map((auction) => (
+            {filteredAuctions.map((auction: AuctionDisplayData) => (
               <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden hover:shadow-md transition-all duration-200">
                 <div className="relative h-40 w-full">
                   <Image
@@ -467,7 +409,7 @@ export default function Auctions() {
           </div>
 
           {/* Pagination */}
-          {apiAuctions.length > 0 && (
+          {apiAuctions.length > 0 && paginationData.totalPages > 1 && (
             <Pagination
               currentPage={paginationData.currentPage}
               totalPages={paginationData.totalPages}
@@ -480,8 +422,38 @@ export default function Auctions() {
       )}
 
       {!isLoading && !error && filteredAuctions.length === 0 && (
-        <div className="bg-white border border-gray-100 rounded-md p-6 text-center">
-          <p className="text-gray-500 text-sm">No auctions found matching your criteria.</p>
+        <div className="bg-white border border-gray-100 rounded-md p-8 text-center">
+          <div className="flex justify-center mb-4">
+            <svg className="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4-4-4m0 4l4 4 4-4" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Active Auctions</h3>
+          <p className="text-gray-500 mb-4">
+            {apiAuctions.length === 0 ? 
+              "There are currently no active auctions in the marketplace. Be the first to create one!" :
+              "No auctions match your search criteria. Try adjusting your filters or search terms."
+            }
+          </p>
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => window.location.href = '/dashboard/auctions/create-alternative'}
+              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
+            >
+              Create Auction
+            </button>
+            {apiAuctions.length > 0 && (
+              <button
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedCategory('All materials');
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-50 transition-colors"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
         </div>
       )}
 

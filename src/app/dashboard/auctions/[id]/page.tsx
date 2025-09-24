@@ -11,108 +11,8 @@ import { getAuctionBidHistory } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { getFullImageUrl } from '@/utils/imageUtils';
 
-// Mock data for marketplace auctions
-const marketplaceAuctions = [
-  {
-    id: '1',
-    name: 'PPA Thermocomp UFW49RSC (Black)',
-    category: 'Plastics',
-    basePrice: '5,013,008',
-    highestBid: '5,250,000',
-    timeLeft: '2d 4h',
-    volume: '500 kg',
-    seller: 'Eco Solutions AB',
-    countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/plastics.jpg',
-    description: 'High-quality recycled PPA Thermocomp material in black color. This material has been processed and tested to meet industry standards. Suitable for automotive and industrial applications.',
-    bidHistory: [
-      { bidder: 'Company A', amount: '5,250,000', date: '2023-06-14T15:30:00Z' },
-      { bidder: 'Company B', amount: '5,150,000', date: '2023-06-14T12:15:00Z' },
-      { bidder: 'Company C', amount: '5,100,000', date: '2023-06-13T09:45:00Z' },
-    ],
-    specifications: [
-      { name: 'Material Type', value: 'PPA Thermocomp' },
-      { name: 'Color', value: 'Black' },
-      { name: 'Grade', value: 'UFW49RSC' },
-      { name: 'Quantity', value: '500 kg' },
-      { name: 'Packaging', value: 'Bulk bags' },
-      { name: 'Recycled Content', value: '100%' },
-      { name: 'Certification', value: 'ISO 14001' },
-    ]
-  },
-  {
-    id: '2',
-    name: 'PPA Thermocomp UFW49RSC (White)',
-    category: 'Plastics',
-    basePrice: '4,850,000',
-    highestBid: null,
-    timeLeft: '5d 12h',
-    volume: '750 kg',
-    seller: 'Green Tech Norway',
-    countryOfOrigin: 'Norway',
-    image: '/images/marketplace/categories/plastics-alt.jpg',
-    description: 'Premium recycled PPA Thermocomp material in white color. This material has been carefully processed to maintain color consistency and quality. Ideal for consumer products and medical applications.',
-    bidHistory: [],
-    specifications: [
-      { name: 'Material Type', value: 'PPA Thermocomp' },
-      { name: 'Color', value: 'White' },
-      { name: 'Grade', value: 'UFW49RSC' },
-      { name: 'Quantity', value: '750 kg' },
-      { name: 'Packaging', value: 'Bulk bags' },
-      { name: 'Recycled Content', value: '100%' },
-      { name: 'Certification', value: 'ISO 14001' },
-    ]
-  },
-  {
-    id: '3',
-    name: 'Aluminum Scrap 6061',
-    category: 'Metals',
-    basePrice: '7,250,000',
-    highestBid: '7,500,000',
-    timeLeft: '3d 6h',
-    volume: '1200 kg',
-    seller: 'Circular Materials Oy',
-    countryOfOrigin: 'Finland',
-    image: '/images/marketplace/categories/metals.jpg',
-    description: 'High-grade aluminum scrap 6061 alloy. Clean and sorted material suitable for recycling and manufacturing. This material has been tested for purity and meets industry standards.',
-    bidHistory: [
-      { bidder: 'Company D', amount: '7,500,000', date: '2023-06-15T10:30:00Z' },
-      { bidder: 'Company E', amount: '7,400,000', date: '2023-06-14T14:45:00Z' },
-      { bidder: 'Company F', amount: '7,300,000', date: '2023-06-14T08:20:00Z' },
-    ],
-    specifications: [
-      { name: 'Material Type', value: 'Aluminum' },
-      { name: 'Grade', value: '6061' },
-      { name: 'Form', value: 'Scrap' },
-      { name: 'Quantity', value: '1200 kg' },
-      { name: 'Packaging', value: 'Pallets' },
-      { name: 'Purity', value: '98%' },
-      { name: 'Certification', value: 'ISO 9001' },
-    ]
-  },
-  {
-    id: '4',
-    name: 'Recycled Cardboard Sheets',
-    category: 'Paper',
-    basePrice: '2,500,000',
-    highestBid: null,
-    timeLeft: '6d 18h',
-    volume: '850 kg',
-    seller: 'Eco Solutions AB',
-    countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/paper.jpg',
-    description: 'High-quality recycled cardboard sheets suitable for packaging and manufacturing. These sheets have been processed to maintain structural integrity and are free from contaminants.',
-    bidHistory: [],
-    specifications: [
-      { name: 'Material Type', value: 'Cardboard' },
-      { name: 'Thickness', value: '2mm' },
-      { name: 'Quantity', value: '850 kg' },
-      { name: 'Packaging', value: 'Flat stacks' },
-      { name: 'Recycled Content', value: '100%' },
-      { name: 'Certification', value: 'FSC' },
-    ]
-  }
-];
+// No mock data - show proper error when auction not found
+
 
 export default function AuctionDetail() {
   const params = useParams();
@@ -276,14 +176,8 @@ export default function AuctionDetail() {
         })
         .then(fallbackResponse => {
           if (fallbackResponse && (fallbackResponse.error || !fallbackResponse.data)) {
-            // Both APIs failed, try mock data
-            const foundAuction = marketplaceAuctions.find(a => a.id === params.id);
-
-            if (foundAuction) {
-              setAuction(foundAuction);
-            } else {
-              router.push('/dashboard/auctions');
-            }
+            // Both APIs failed, auction not found
+            router.push('/dashboard/auctions');
           } else if (fallbackResponse && fallbackResponse.data) {
             // Format fallback API data
             const apiAuction = fallbackResponse.data;
@@ -313,13 +207,8 @@ export default function AuctionDetail() {
           }
         })
         .catch(_error => {
-          // All attempts failed, try mock data as last resort
-          const foundAuction = marketplaceAuctions.find(a => a.id === params.id);
-          if (foundAuction) {
-            setAuction(foundAuction);
-          } else {
-            router.push('/dashboard/auctions');
-          }
+          // All attempts failed, auction not found
+          router.push('/dashboard/auctions');
         })
         .finally(() => {
           setIsLoading(false);
