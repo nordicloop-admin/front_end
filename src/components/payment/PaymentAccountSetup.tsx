@@ -49,7 +49,7 @@ const PaymentAccountSetup: React.FC = () => {
   const [accountStatus, setAccountStatus] = useState<AccountStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAccountStatus();
@@ -126,7 +126,7 @@ const PaymentAccountSetup: React.FC = () => {
     }
   };
 
-  const openDashboard = async () => {
+  const _openDashboard = async () => {
     try {
       setLoading(true);
       setError(null);
