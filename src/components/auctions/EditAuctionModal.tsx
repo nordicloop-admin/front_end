@@ -462,9 +462,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const [adDataLoaded, setAdDataLoaded] = useState(false);
   // Initialize steps based on provided materialType or auction category
   // Default to non-plastic steps (4 steps) if no material type is available yet
-  const initialMaterialType = materialType || auction?.category?.toLowerCase() || '';
   const [steps, setSteps] = useState(() => {
-    if (!initialMaterialType) {
+    // Always use the provided materialType prop first, then fall back to auction data
+    const typeToUse = materialType || auction?.category?.toLowerCase() || '';
+    if (!typeToUse) {
       // Default to 4 steps while waiting for data (better UX than showing all 8)
       return [
         allSteps[0], // Material Type
@@ -473,7 +474,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         { id: 8, title: 'Title & Description', description: 'Final details and images' }
       ];
     }
-    return getStepsByMaterialType(initialMaterialType);
+    return getStepsByMaterialType(typeToUse);
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -714,7 +715,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         }
       }
       
-      const materialType = auction.category.toLowerCase();
+      // Use the materialType prop if provided, otherwise fall back to auction.category
+      const determinedMaterialType = materialType || auction.category?.toLowerCase() || '';
 
 
 
@@ -723,7 +725,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           // Step 1 - Use complete ad data with safe property access
           category: completeAdData?.category_name || auction?.category || '',
           subcategory: completeAdData?.subcategory_name || auction?.subcategory || '',
-          materialType: materialType || '',
+          materialType: determinedMaterialType || '',
           specificMaterial: completeAdData?.specific_material || '',
           packaging: completeAdData?.packaging || '',
           materialFrequency: completeAdData?.material_frequency || '',
@@ -791,9 +793,12 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         setImageLoadError(false);
 
         // Set steps based on material type (only if not already set correctly)
-        const expectedSteps = getStepsByMaterialType(materialType);
+        const expectedSteps = getStepsByMaterialType(determinedMaterialType);
         if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
-          setSteps(expectedSteps);
+          // Use setTimeout to avoid conflicts with other state updates
+          setTimeout(() => {
+            setSteps(expectedSteps);
+          }, 0);
         }
       } catch (error) {
         // Handle any errors during data initialization
@@ -843,7 +848,15 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         });
       }
     }
-  }, [auction, categoriesLoaded, adDataLoaded, completeAdData, categories.length, steps]);
+  }, [auction, categoriesLoaded, adDataLoaded, completeAdData, categories.length, steps, materialType]);
+
+  // Update steps when materialType prop changes
+  useEffect(() => {
+    if (materialType) {
+      const newSteps = getStepsByMaterialType(materialType);
+      setSteps(newSteps);
+    }
+  }, [materialType]);
 
   // Reset state when modal closes
   useEffect(() => {
@@ -862,21 +875,30 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   }, [isOpen]);
 
   const handleStepDataChange = useCallback((updates: Partial<StepData>) => {
-    setStepData(prev => ({ ...prev, ...updates }));
-    setHasChanges(true);
-
-    // If material type is being updated, update the steps
-    if (updates.materialType || updates.category) {
-      const materialType = updates.materialType || updates.category?.toLowerCase() || '';
-      const newSteps = getStepsByMaterialType(materialType);
-      setSteps(newSteps);
-
-      // If current active step is not available in new steps, go to step 1
-      const currentStepExists = newSteps.some(step => step.id === activeStep);
-      if (!currentStepExists) {
-        setActiveStep(1);
+    setStepData(prev => {
+      const newData = { ...prev, ...updates };
+      
+      // If material type or category is being updated, update the steps
+      if (updates.materialType || updates.category) {
+        const materialType = updates.materialType || updates.category?.toLowerCase() || '';
+        const newSteps = getStepsByMaterialType(materialType);
+        
+        // Use setTimeout to avoid state update conflicts
+        setTimeout(() => {
+          setSteps(newSteps);
+          
+          // If current active step is not available in new steps, go to step 1
+          const currentStepExists = newSteps.some(step => step.id === activeStep);
+          if (!currentStepExists) {
+            setActiveStep(1);
+          }
+        }, 0);
       }
-    }
+      
+      return newData;
+    });
+    
+    setHasChanges(true);
 
     // Clear validation errors when user starts fixing them (synchronized with AlternativeAuctionForm)
     if (showValidationErrors) {
@@ -1072,7 +1094,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             stepData.images[0]
           );
         } else {
-          // Use step 8 specific method without image
+          // Use step 8 spmaterialType={auction.category?.toLowerCase()ecific method without image
           updateResult = await adUpdateService.updateAdStep8WithImage(
             parseInt(auction.id),
             title,
@@ -1498,8 +1520,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     return stepNumber <= (auction.currentStep || 1) ? 'completed' : 'pending';
   };
 
-  const selectedCategory = categories.find(cat => cat.name === stepData.category);
-  const availableSubcategories = selectedCategory?.subcategories || [];
+  // TEMPORARILY COMMENTED OUT FOR TESTING
+  // const selectedCategory = React.useMemo(() => {
+  //   return categories.find(cat => cat.name === stepData.category);
+  // }, [categories, stepData.category]);
+  
+  // const availableSubcategories = React.useMemo(() => {
+  //   return selectedCategory?.subcategories || [];
+  // }, [selectedCategory]);
   const materialTypeForSpecs = stepData.materialType || stepData.category?.toLowerCase() || 'default';
   const availableGrades = materialGrades[materialTypeForSpecs as keyof typeof materialGrades] || materialGrades.default;
   const availableForms = materialForms[materialTypeForSpecs as keyof typeof materialForms] || materialForms.default;
@@ -1524,62 +1552,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
             ) : (
               <>
-                {/* Category Selection - Based on MaterialTypeStep */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-4">
-                    Main Category *
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {categories.filter(cat => cat.name !== 'All materials').map((category) => (
-                      <button
-                        key={category.id}
-                        onClick={() => handleStepDataChange({
-                          category: category.name,
-                          materialType: category.name,
-                          subcategory: '', // Reset subcategory when category changes
-                          specificMaterial: ''
-                        })}
-                        className={`
-                          p-4 rounded-lg border-2 text-left transition-all hover:scale-105
-                          ${stepData.category === category.name
-                            ? 'border-[#FF8A00] bg-orange-50'
-                            : 'border-gray-200 hover:border-gray-300'
-                          }
-                        `}
-                      >
-                        <div className="flex items-center justify-center">
-                          <h4 className="text-gray-900 text-center">{category.name}</h4>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                {/* Subcategory Selection */}
-                {selectedCategory && selectedCategory.subcategories.length > 0 && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-4">
-                      Subcategory *
-                    </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {availableSubcategories.map((subcategory) => (
-                        <button
-                          key={subcategory.id}
-                          onClick={() => handleStepDataChange({ subcategory: subcategory.name })}
-                          className={`
-                            p-3 rounded-lg border-2 text-sm text-left transition-all hover:scale-105
-                            ${stepData.subcategory === subcategory.name
-                              ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                            }
-                          `}
-                        >
-                          {subcategory.name}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* TEMPORARILY REMOVED FOR TESTING - Material Type and Subcategory sections deleted */}
 
                 {/* Specific Material Input */}
                 {stepData.subcategory && (
