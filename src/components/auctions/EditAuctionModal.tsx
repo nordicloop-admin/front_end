@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -362,6 +363,7 @@ interface EditAuctionModalProps {
   onSubmit: (auctionData: AuctionData) => Promise<void>;
   auction: AuctionData;
   materialType?: string; // Optional: if provided, use this instead of waiting for API
+  onRefresh?: () => Promise<void>; // Optional: callback to refresh parent data
 }
 
 interface StepData {
@@ -447,9 +449,10 @@ const getStepsByMaterialType = (materialType: string) => {
   ];
 };
 
-export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, materialType }: EditAuctionModalProps) {
+export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, materialType, onRefresh }: EditAuctionModalProps) {
   const [activeStep, setActiveStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
   const [stepData, setStepData] = useState<StepData>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
@@ -1186,6 +1189,19 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       toast.success('Changes saved successfully!', {
         description: `Step ${activeStep} has been updated.`
       });
+      // Force refresh of the auction detail page so latest data shows up immediately
+      try {
+        if (onRefresh) {
+          await onRefresh(); // Call parent's refresh function if available
+        } else {
+          router.refresh(); // Fallback to Next.js refresh if no parent callback
+        }
+      } catch (_e) {
+        // Fallback hard reload if refresh fails or errors
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+        }
+      }
 
       // Reload complete ad data to refresh step completion status
       try {
