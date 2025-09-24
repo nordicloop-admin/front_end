@@ -369,7 +369,7 @@ interface StepData {
   materialType?: string;
   category?: string;
   subcategory?: string;
-  specificMaterial?: string;
+  specificMaterial?: string[];
   packaging?: string;
   materialFrequency?: string;
   
@@ -726,8 +726,18 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           category: completeAdData?.category_name || auction?.category || '',
           subcategory: completeAdData?.subcategory_name || auction?.subcategory || '',
           materialType: determinedMaterialType || '',
-          specificMaterial: completeAdData?.specific_material || '',
-          packaging: completeAdData?.packaging || '',
+          specificMaterial: completeAdData?.specific_material ? 
+            (typeof completeAdData.specific_material === 'string' ? 
+              completeAdData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean) : 
+              []) : [],
+          packaging: (() => {
+            const backendPackaging = completeAdData?.packaging || '';
+            // Convert backend packaging value to display name
+            const matchingOption = packagingOptions.find(opt => 
+              opt.id === backendPackaging || opt.name === backendPackaging
+            );
+            return matchingOption ? matchingOption.name : backendPackaging;
+          })(),
           materialFrequency: completeAdData?.material_frequency || '',
 
           // Step 2: Initialize specifications data from complete ad data with null checks
@@ -813,7 +823,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           category: auction?.category || '',
           subcategory: auction?.subcategory || '',
           materialType: auction?.category?.toLowerCase() || '',
-          specificMaterial: '',
+          specificMaterial: [],
           packaging: '',
           materialFrequency: '',
           grade: '',
@@ -857,6 +867,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       setSteps(newSteps);
     }
   }, [materialType]);
+
 
   // Reset state when modal closes
   useEffect(() => {
@@ -922,6 +933,27 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     }
   }, [activeStep, showValidationErrors, validationErrors]);
 
+  // Category selection handler - moved after handleStepDataChange to fix initialization order
+  const handleCategorySelect = useCallback((category: any) => {
+    // Set the selected category ID to trigger subcategory loading
+    setSelectedCategoryId(category.id);
+    
+    // Update step data with new category using proper data change handler
+    handleStepDataChange({
+      category: category.name,
+      materialType: category.name.toLowerCase(),
+      subcategory: '', // Clear subcategory when category changes
+      specificMaterial: [] // Clear specific material too
+    });
+  }, [handleStepDataChange]);
+
+  // Subcategory selection handler - moved after handleStepDataChange to fix initialization order
+  const handleSubcategorySelect = useCallback((subcategory: any) => {
+    handleStepDataChange({
+      subcategory: subcategory.name
+    });
+  }, [handleStepDataChange]);
+
   // Handle integer field changes with validation
   const handleIntegerFieldChange = useCallback((fieldName: string, value: string) => {
     const fieldDisplayNames: { [key: string]: string } = {
@@ -981,6 +1013,21 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const handleKeywordRemove = (index: number) => {
     handleStepDataChange({
       keywords: (stepData.keywords || []).filter((_, i) => i !== index)
+    });
+  };
+
+  // Specific Material handling functions (similar to keywords)
+  const handleSpecificMaterialAdd = (material: string) => {
+    if (material.trim() && !(stepData.specificMaterial || []).includes(material.trim())) {
+      handleStepDataChange({
+        specificMaterial: [...(stepData.specificMaterial || []), material.trim()]
+      });
+    }
+  };
+
+  const handleSpecificMaterialRemove = (index: number) => {
+    handleStepDataChange({
+      specificMaterial: (stepData.specificMaterial || []).filter((_, i) => i !== index)
     });
   };
 
@@ -1053,6 +1100,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
   // Submit changes to backend
   const handleSubmit = async () => {
+    // Skip submission for step 1 - UI only mode
+    if (activeStep === 1) {
+      toast.success('Step 1 changes saved locally');
+      setHasChanges(false);
+      return;
+    }
+
     // Clear previous validation errors
     setValidationErrors({});
     setShowValidationErrors(false);
@@ -1153,7 +1207,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             materialType: freshData.category_name || '',
             category: freshData.category_name || '',
             subcategory: freshData.subcategory_name || '',
-            specificMaterial: freshData.specific_material || '',
+            specificMaterial: freshData.specific_material ? 
+              (typeof freshData.specific_material === 'string' ? 
+                freshData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean) : 
+                []) : [],
             packaging: freshData.packaging || '',
             materialFrequency: freshData.material_frequency || '',
 
@@ -1237,38 +1294,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const getCurrentStepData = () => {
     switch (activeStep) {
       case 1:
-        // Material Type step - match creation form structure exactly
-        if (!stepData.category) {
-          return null;
-        }
-
-        const selectedCategory = categories.find(cat => cat.name === stepData.category);
-        if (!selectedCategory) {
-          return null;
-        }
-
-        const selectedSubcategory = selectedCategory.subcategories.find(sub => sub.name === stepData.subcategory);
-        if (!selectedSubcategory) {
-          return null;
-        }
-
-        if (!stepData.packaging) {
-          return null;
-        }
-
-        if (!stepData.materialFrequency) {
-          return null;
-        }
-
-        const step1Data = {
-          category_id: selectedCategory.id,
-          subcategory_id: selectedSubcategory.id,
-          specific_material: stepData.specificMaterial || '',
-          packaging: convertLabelToValue('packaging', stepData.packaging),
-          material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency)
-        };
-
-        return step1Data;
+        // Step 1 data submission disabled - UI only mode
+        return null;
         
       case 2:
         // Specifications step - match NEW backend API format
@@ -1426,11 +1453,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     if (completeAdData) {
       switch (stepNumber) {
         case 1:
-          // Step 1: Material Type - check basic fields
-          if (completeAdData.category_name && completeAdData.subcategory_name &&
-              completeAdData.packaging && completeAdData.material_frequency) {
-            return 'completed';
-          }
+          // Step 1: UI only mode - never mark as completed from data
           break;
         case 2:
           // Step 2: Specifications - check if specification OR additional_specifications exist
@@ -1520,14 +1543,53 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     return stepNumber <= (auction.currentStep || 1) ? 'completed' : 'pending';
   };
 
-  // TEMPORARILY COMMENTED OUT FOR TESTING
-  // const selectedCategory = React.useMemo(() => {
-  //   return categories.find(cat => cat.name === stepData.category);
-  // }, [categories, stepData.category]);
-  
-  // const availableSubcategories = React.useMemo(() => {
-  //   return selectedCategory?.subcategories || [];
-  // }, [selectedCategory]);
+  // New state management for categories and subcategories
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [availableSubcategories, setAvailableSubcategories] = useState<any[]>([]);
+  const [isLoadingSubcategories, setIsLoadingSubcategories] = useState(false);
+
+  // Find selected category object - moved here to fix initialization order
+  const selectedCategory = React.useMemo(() => {
+    if (!selectedCategoryId || !categories.length) return null;
+    return categories.find(cat => cat.id === selectedCategoryId) || null;
+  }, [selectedCategoryId, categories]);
+
+  // Handle subcategory loading when category is selected
+  useEffect(() => {
+    if (selectedCategory && selectedCategory.subcategories) {
+      setIsLoadingSubcategories(true);
+      
+      // Simulate loading delay for better UX (can be removed if not needed)
+      const timer = setTimeout(() => {
+        setAvailableSubcategories(selectedCategory.subcategories || []);
+        setIsLoadingSubcategories(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setAvailableSubcategories([]);
+      setIsLoadingSubcategories(false);
+    }
+  }, [selectedCategory]);
+
+  // Initialize category selection from existing data
+  useEffect(() => {
+    if (categories.length > 0 && stepData.category && !selectedCategoryId) {
+      const existingCategory = categories.find(cat => cat.name === stepData.category);
+      if (existingCategory) {
+        setSelectedCategoryId(existingCategory.id);
+      }
+    }
+  }, [categories, stepData.category, selectedCategoryId]);
+
+  // Reset category state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedCategoryId(null);
+      setAvailableSubcategories([]);
+      setIsLoadingSubcategories(false);
+    }
+  }, [isOpen]);
   const materialTypeForSpecs = stepData.materialType || stepData.category?.toLowerCase() || 'default';
   const availableGrades = materialGrades[materialTypeForSpecs as keyof typeof materialGrades] || materialGrades.default;
   const availableForms = materialForms[materialTypeForSpecs as keyof typeof materialForms] || materialForms.default;
@@ -1552,23 +1614,119 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
             ) : (
               <>
-                {/* TEMPORARILY REMOVED FOR TESTING - Material Type and Subcategory sections deleted */}
+                {/* NEW CATEGORY SELECTION SYSTEM */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                    Main Category *
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categories.filter(cat => cat.name !== 'All materials').map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => handleCategorySelect(category)}
+                        className={`
+                          p-4 rounded-lg border-2 text-left transition-all hover:scale-105 relative
+                          ${selectedCategoryId === category.id
+                            ? 'border-[#FF8A00] bg-orange-50'
+                            : 'border-gray-200 hover:border-gray-300'
+                          }
+                        `}
+                      >
+                        <div className="flex items-center justify-center">
+                          <h4 className="text-gray-900 text-center font-medium">{category.name}</h4>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* NEW SUBCATEGORY SELECTION SYSTEM */}
+                {selectedCategoryId && (
+                  <div className="mt-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-4">
+                      Subcategory *
+                    </label>
+                    
+                    {isLoadingSubcategories ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-5 h-5 border-2 border-[#FF8A00] border-t-transparent rounded-full animate-spin mr-3" />
+                        <span className="text-gray-600 text-sm">Loading subcategories...</span>
+                      </div>
+                    ) : availableSubcategories.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {availableSubcategories.map((subcategory) => (
+                          <button
+                            key={subcategory.id}
+                            onClick={() => handleSubcategorySelect(subcategory)}
+                            className={`
+                              p-3 rounded-lg border-2 text-sm text-left transition-all hover:scale-105 relative
+                              ${stepData.subcategory === subcategory.name
+                                ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                              }
+                            `}
+                          >
+                            <span>{subcategory.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : selectedCategory ? (
+                      <div className="text-center py-8 border border-gray-200 rounded-lg bg-gray-50">
+                        <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">No subcategories available for {selectedCategory.name}</p>
+                      </div>
+                    ) : null}
+                  </div>
+                )}
 
-                {/* Specific Material Input */}
+                {/* Verify Category Button */}
+                {selectedCategory && (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                    >
+                      Verify Category
+                    </button>
+                  </div>
+                )}
+
+                {/* Specific Material Input - Tag-based like keywords */}
                 {stepData.subcategory && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Specific Material (Optional)
                     </label>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {(stepData.specificMaterial || []).map((material, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1 bg-[#FF8A00] text-white text-sm rounded-full">
+                          {material}
+                          <button
+                            onClick={() => handleSpecificMaterialRemove(index)}
+                            className="ml-2 text-white hover:text-gray-200"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
                     <input
                       type="text"
-                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc."
+                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc. Press Enter to add"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
-                      value={stepData.specificMaterial || ''}
-                      onChange={(e) => handleStepDataChange({ specificMaterial: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          const input = e.currentTarget;
+                          if (input.value.trim()) {
+                            handleSpecificMaterialAdd(input.value.trim());
+                            input.value = '';
+                          }
+                        }
+                      }}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Add specific details about the material if applicable
+                      Add specific details about the material and press Enter. You can add multiple materials.
                     </p>
                   </div>
                 )}
@@ -2981,26 +3139,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
     switch (activeStep) {
       case 1:
-        if (!stepData.category) {
-          const error = 'Category is required';
-          errors.push(error);
-          fieldErrors.category = [error];
-        }
-        if (!stepData.subcategory) {
-          const error = 'Subcategory is required';
-          errors.push(error);
-          fieldErrors.subcategory = [error];
-        }
-        if (!stepData.packaging) {
-          const error = 'Packaging type is required';
-          errors.push(error);
-          fieldErrors.packaging = [error];
-        }
-        if (!stepData.materialFrequency) {
-          const error = 'Material frequency is required';
-          errors.push(error);
-          fieldErrors.materialFrequency = [error];
-        }
+        // Step 1 validation disabled - UI only mode
         break;
 
       case 2:
@@ -3101,7 +3240,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const validateStep = (stepId: number): boolean => {
     switch (stepId) {
       case 1:
-        return !!(stepData.category && stepData.subcategory && stepData.packaging && stepData.materialFrequency);
+        // Step 1 validation disabled - always return true for UI only mode
+        return true;
       case 2:
         // Specifications are optional
         return true;
@@ -3340,7 +3480,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
 
               <div className="flex space-x-3">
-                {hasChanges && (
+                {hasChanges && activeStep !== 1 && (
                   <div className="flex items-center space-x-2 text-sm text-amber-600">
                     <AlertCircle className="w-4 h-4" />
                     <span>Unsaved changes</span>
@@ -3354,44 +3494,50 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   Cancel
                 </button>
                 
-                <Button
-                  onClick={handleSubmit}
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] disabled:opacity-50 flex items-center space-x-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Save Changes</span>
-                    </>
-                  )}
-                </Button>
+                {/* Hide save button for step 1 - UI only mode */}
+                {activeStep !== 1 && (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </Button>
+                )}
 
-                <Button
-                  onClick={() => {
-                    setShouldCloseAfterSave(true);
-                    handleSubmit();
-                  }}
-                  disabled={isSubmitting}
-                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Saving...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>Save & Close</span>
-                    </>
-                  )}
-                </Button>
+                {/* Hide save & close button for step 1 - UI only mode */}
+                {activeStep !== 1 && (
+                  <Button
+                    onClick={() => {
+                      setShouldCloseAfterSave(true);
+                      handleSubmit();
+                    }}
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Save & Close</span>
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
