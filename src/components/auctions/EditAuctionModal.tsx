@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -362,6 +363,7 @@ interface EditAuctionModalProps {
   onSubmit: (auctionData: AuctionData) => Promise<void>;
   auction: AuctionData;
   materialType?: string; // Optional: if provided, use this instead of waiting for API
+  onRefresh?: () => Promise<void>; // Optional: callback to refresh parent data
 }
 
 interface StepData {
@@ -369,7 +371,7 @@ interface StepData {
   materialType?: string;
   category?: string;
   subcategory?: string;
-  specificMaterial?: string;
+  specificMaterial?: string[];
   packaging?: string;
   materialFrequency?: string;
   
@@ -447,9 +449,10 @@ const getStepsByMaterialType = (materialType: string) => {
   ];
 };
 
-export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, materialType }: EditAuctionModalProps) {
+export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, materialType, onRefresh }: EditAuctionModalProps) {
   const [activeStep, setActiveStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const router = useRouter();
   const [stepData, setStepData] = useState<StepData>({});
   const [hasChanges, setHasChanges] = useState(false);
   const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
@@ -457,14 +460,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState<boolean>(false);
-  const [_error, setError] = useState<string | null>(null);
   const [completeAdData, setCompleteAdData] = useState<any>(null);
   const [adDataLoaded, setAdDataLoaded] = useState(false);
   // Initialize steps based on provided materialType or auction category
   // Default to non-plastic steps (4 steps) if no material type is available yet
-  const initialMaterialType = materialType || auction?.category?.toLowerCase() || '';
   const [steps, setSteps] = useState(() => {
-    if (!initialMaterialType) {
+    // Always use the provided materialType prop first, then fall back to auction data
+    const typeToUse = materialType || auction?.category?.toLowerCase() || '';
+    if (!typeToUse) {
       // Default to 4 steps while waiting for data (better UX than showing all 8)
       return [
         allSteps[0], // Material Type
@@ -473,7 +476,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         { id: 8, title: 'Title & Description', description: 'Final details and images' }
       ];
     }
-    return getStepsByMaterialType(initialMaterialType);
+    return getStepsByMaterialType(typeToUse);
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -539,10 +542,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         if (response.data && response.data.length > 0) {
           setCategories(response.data);
         } else {
-          setError('No categories available. Please try again later.');
+          // Categories not available - silently handle
         }
       } catch (_error) {
-        setError('Failed to load categories. Please check your connection and try again.');
+        // Failed to load categories - silently handle
       } finally {
         setCategoriesLoaded(true);
       }
@@ -714,7 +717,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         }
       }
       
-      const materialType = auction.category.toLowerCase();
+      // Use the materialType prop if provided, otherwise fall back to auction.category
+      const determinedMaterialType = materialType || auction.category?.toLowerCase() || '';
 
 
 
@@ -723,9 +727,19 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           // Step 1 - Use complete ad data with safe property access
           category: completeAdData?.category_name || auction?.category || '',
           subcategory: completeAdData?.subcategory_name || auction?.subcategory || '',
-          materialType: materialType || '',
-          specificMaterial: completeAdData?.specific_material || '',
-          packaging: completeAdData?.packaging || '',
+          materialType: determinedMaterialType || '',
+          specificMaterial: completeAdData?.specific_material ? 
+            (typeof completeAdData.specific_material === 'string' ? 
+              completeAdData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean) : 
+              []) : [],
+          packaging: (() => {
+            const backendPackaging = completeAdData?.packaging || '';
+            // Keep backend packaging value as ID for consistency
+            const matchingOption = packagingOptions.find(opt => 
+              opt.id === backendPackaging || opt.name === backendPackaging
+            );
+            return matchingOption ? matchingOption.id : backendPackaging;
+          })(),
           materialFrequency: completeAdData?.material_frequency || '',
 
           // Step 2: Initialize specifications data from complete ad data with null checks
@@ -791,9 +805,12 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         setImageLoadError(false);
 
         // Set steps based on material type (only if not already set correctly)
-        const expectedSteps = getStepsByMaterialType(materialType);
+        const expectedSteps = getStepsByMaterialType(determinedMaterialType);
         if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
-          setSteps(expectedSteps);
+          // Use setTimeout to avoid conflicts with other state updates
+          setTimeout(() => {
+            setSteps(expectedSteps);
+          }, 0);
         }
       } catch (error) {
         // Handle any errors during data initialization
@@ -801,14 +818,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           // eslint-disable-next-line no-console
           console.error('Error initializing auction edit data:', error);
         }
-        setError('Failed to load auction data. Some fields may not display correctly.');
+        // Failed to load auction data - silently handle
 
         // Set minimal default data to prevent crashes
         setStepData({
           category: auction?.category || '',
           subcategory: auction?.subcategory || '',
           materialType: auction?.category?.toLowerCase() || '',
-          specificMaterial: '',
+          specificMaterial: [],
           packaging: '',
           materialFrequency: '',
           grade: '',
@@ -843,7 +860,16 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         });
       }
     }
-  }, [auction, categoriesLoaded, adDataLoaded, completeAdData, categories.length, steps]);
+  }, [auction, categoriesLoaded, adDataLoaded, completeAdData, categories.length, steps, materialType]);
+
+  // Update steps when materialType prop changes
+  useEffect(() => {
+    if (materialType) {
+      const newSteps = getStepsByMaterialType(materialType);
+      setSteps(newSteps);
+    }
+  }, [materialType]);
+
 
   // Reset state when modal closes
   useEffect(() => {
@@ -855,28 +881,36 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       setShowValidationErrors(false);
       setUploadError(null);
       setImageLoadError(false);
-      setError(null);
       setCompleteAdData(null);
       setAdDataLoaded(false);
     }
   }, [isOpen]);
 
   const handleStepDataChange = useCallback((updates: Partial<StepData>) => {
-    setStepData(prev => ({ ...prev, ...updates }));
-    setHasChanges(true);
-
-    // If material type is being updated, update the steps
-    if (updates.materialType || updates.category) {
-      const materialType = updates.materialType || updates.category?.toLowerCase() || '';
-      const newSteps = getStepsByMaterialType(materialType);
-      setSteps(newSteps);
-
-      // If current active step is not available in new steps, go to step 1
-      const currentStepExists = newSteps.some(step => step.id === activeStep);
-      if (!currentStepExists) {
-        setActiveStep(1);
+    setStepData(prev => {
+      const newData = { ...prev, ...updates };
+      
+      // If material type or category is being updated, update the steps
+      if (updates.materialType || updates.category) {
+        const materialType = updates.materialType || updates.category?.toLowerCase() || '';
+        const newSteps = getStepsByMaterialType(materialType);
+        
+        // Use setTimeout to avoid state update conflicts
+        setTimeout(() => {
+          setSteps(newSteps);
+          
+          // If current active step is not available in new steps, go to step 1
+          const currentStepExists = newSteps.some(step => step.id === activeStep);
+          if (!currentStepExists) {
+            setActiveStep(1);
+          }
+        }, 0);
       }
-    }
+      
+      return newData;
+    });
+    
+    setHasChanges(true);
 
     // Clear validation errors when user starts fixing them (synchronized with AlternativeAuctionForm)
     if (showValidationErrors) {
@@ -899,6 +933,27 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       }
     }
   }, [activeStep, showValidationErrors, validationErrors]);
+
+  // Category selection handler - moved after handleStepDataChange to fix initialization order
+  const handleCategorySelect = useCallback((category: any) => {
+    // Set the selected category ID to trigger subcategory loading
+    setSelectedCategoryId(category.id);
+    
+    // Update step data with new category using proper data change handler
+    handleStepDataChange({
+      category: category.name,
+      materialType: category.name.toLowerCase(),
+      subcategory: '', // Clear subcategory when category changes
+      specificMaterial: [] // Clear specific material too
+    });
+  }, [handleStepDataChange]);
+
+  // Subcategory selection handler - moved after handleStepDataChange to fix initialization order
+  const handleSubcategorySelect = useCallback((subcategory: any) => {
+    handleStepDataChange({
+      subcategory: subcategory.name
+    });
+  }, [handleStepDataChange]);
 
   // Handle integer field changes with validation
   const handleIntegerFieldChange = useCallback((fieldName: string, value: string) => {
@@ -959,6 +1014,21 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const handleKeywordRemove = (index: number) => {
     handleStepDataChange({
       keywords: (stepData.keywords || []).filter((_, i) => i !== index)
+    });
+  };
+
+  // Specific Material handling functions (similar to keywords)
+  const handleSpecificMaterialAdd = (material: string) => {
+    if (material.trim() && !(stepData.specificMaterial || []).includes(material.trim())) {
+      handleStepDataChange({
+        specificMaterial: [...(stepData.specificMaterial || []), material.trim()]
+      });
+    }
+  };
+
+  const handleSpecificMaterialRemove = (index: number) => {
+    handleStepDataChange({
+      specificMaterial: (stepData.specificMaterial || []).filter((_, i) => i !== index)
     });
   };
 
@@ -1031,6 +1101,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
   // Submit changes to backend
   const handleSubmit = async () => {
+
     // Clear previous validation errors
     setValidationErrors({});
     setShowValidationErrors(false);
@@ -1072,7 +1143,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             stepData.images[0]
           );
         } else {
-          // Use step 8 specific method without image
+          // Use step 8 spmaterialType={auction.category?.toLowerCase()ecific method without image
           updateResult = await adUpdateService.updateAdStep8WithImage(
             parseInt(auction.id),
             title,
@@ -1102,8 +1173,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         const updatedAuction: AuctionData = {
           ...auction,
           name: backendData.title || auction.name,
-          category: backendData.category || auction.category,
-          subcategory: backendData.subcategory || auction.subcategory,
+          // Handle step 1 response format (category_name, subcategory_name) vs other steps (category, subcategory)
+          category: backendData.category_name || backendData.category || auction.category,
+          subcategory: backendData.subcategory_name || backendData.subcategory || auction.subcategory,
           description: backendData.description || auction.description,
           basePrice: backendData.starting_bid_price ? `${backendData.starting_bid_price} ${backendData.currency || 'SEK'}` : auction.basePrice,
           volume: backendData.available_quantity && backendData.unit_of_measurement ? `${backendData.available_quantity} ${backendData.unit_of_measurement}` : auction.volume,
@@ -1117,6 +1189,19 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       toast.success('Changes saved successfully!', {
         description: `Step ${activeStep} has been updated.`
       });
+      // Force refresh of the auction detail page so latest data shows up immediately
+      try {
+        if (onRefresh) {
+          await onRefresh(); // Call parent's refresh function if available
+        } else {
+          router.refresh(); // Fallback to Next.js refresh if no parent callback
+        }
+      } catch (_e) {
+        // Fallback hard reload if refresh fails or errors
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+        }
+      }
 
       // Reload complete ad data to refresh step completion status
       try {
@@ -1131,7 +1216,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             materialType: freshData.category_name || '',
             category: freshData.category_name || '',
             subcategory: freshData.subcategory_name || '',
-            specificMaterial: freshData.specific_material || '',
+            specificMaterial: freshData.specific_material ? 
+              (typeof freshData.specific_material === 'string' ? 
+                freshData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean) : 
+                []) : [],
             packaging: freshData.packaging || '',
             materialFrequency: freshData.material_frequency || '',
 
@@ -1204,7 +1292,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       setIsSubmitting(false);
     } catch (error) {
       setIsSubmitting(false);
-      setError(error instanceof Error ? error.message : 'Failed to save changes');
+      // Error already handled by toast notification
       toast.error('Failed to save changes', {
         description: error instanceof Error ? error.message : 'An unexpected error occurred'
       });
@@ -1215,36 +1303,39 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const getCurrentStepData = () => {
     switch (activeStep) {
       case 1:
-        // Material Type step - match creation form structure exactly
-        if (!stepData.category) {
+        // Step 1: Material Type - backend integration
+        if (!selectedCategoryId || !stepData.subcategory) {
           return null;
         }
 
-        const selectedCategory = categories.find(cat => cat.name === stepData.category);
-        if (!selectedCategory) {
+        // Find subcategory ID from the selected subcategory name
+        const selectedCategory = categories.find(cat => cat.id === selectedCategoryId);
+        if (!selectedCategory || !selectedCategory.subcategories) {
           return null;
         }
 
-        const selectedSubcategory = selectedCategory.subcategories.find(sub => sub.name === stepData.subcategory);
-        if (!selectedSubcategory) {
+        const subcategory = selectedCategory.subcategories.find(sub => sub.name === stepData.subcategory);
+        if (!subcategory) {
           return null;
         }
 
-        if (!stepData.packaging) {
-          return null;
-        }
-
-        if (!stepData.materialFrequency) {
-          return null;
-        }
-
-        const step1Data = {
-          category_id: selectedCategory.id,
-          subcategory_id: selectedSubcategory.id,
-          specific_material: stepData.specificMaterial || '',
-          packaging: convertLabelToValue('packaging', stepData.packaging),
-          material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency)
+        const step1Data: any = {
+          category_id: selectedCategoryId,
+          subcategory_id: subcategory.id
         };
+
+        // Add optional fields if they exist
+        if (stepData.specificMaterial && stepData.specificMaterial.length > 0) {
+          step1Data.specific_material = stepData.specificMaterial.join(', ');
+        }
+
+        if (stepData.packaging) {
+          step1Data.packaging = stepData.packaging;
+        }
+
+        if (stepData.materialFrequency) {
+          step1Data.material_frequency = stepData.materialFrequency;
+        }
 
         return step1Data;
         
@@ -1395,7 +1486,12 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   };
 
   const getStepStatus = (stepNumber: number): 'completed' | 'current' | 'pending' => {
-    // First check backend step completion status
+    // First check backend step completion status from completeAdData (fresh from API)
+    if (completeAdData?.step_completion_status && completeAdData.step_completion_status[stepNumber.toString()]) {
+      return 'completed';
+    }
+    
+    // Fallback to auction prop data if available
     if (auction.stepCompletionStatus && auction.stepCompletionStatus[stepNumber.toString()]) {
       return 'completed';
     }
@@ -1404,11 +1500,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     if (completeAdData) {
       switch (stepNumber) {
         case 1:
-          // Step 1: Material Type - check basic fields
-          if (completeAdData.category_name && completeAdData.subcategory_name &&
-              completeAdData.packaging && completeAdData.material_frequency) {
-            return 'completed';
-          }
+          // Step 1: UI only mode - never mark as completed from data
           break;
         case 2:
           // Step 2: Specifications - check if specification OR additional_specifications exist
@@ -1494,12 +1586,62 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       }
     }
 
-    // Fallback to current step logic
-    return stepNumber <= (auction.currentStep || 1) ? 'completed' : 'pending';
+    // Only use current step fallback if no step completion status is available at all
+    if (!completeAdData?.step_completion_status && !auction.stepCompletionStatus) {
+      return stepNumber <= (auction.currentStep || 1) ? 'completed' : 'pending';
+    }
+
+    // If we have step completion status but this specific step is not completed, return pending
+    return 'pending';
   };
 
-  const selectedCategory = categories.find(cat => cat.name === stepData.category);
-  const availableSubcategories = selectedCategory?.subcategories || [];
+  // New state management for categories and subcategories
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const [availableSubcategories, setAvailableSubcategories] = useState<any[]>([]);
+  const [isLoadingSubcategories, setIsLoadingSubcategories] = useState(false);
+
+  // Find selected category object - moved here to fix initialization order
+  const selectedCategory = React.useMemo(() => {
+    if (!selectedCategoryId || !categories.length) return null;
+    return categories.find(cat => cat.id === selectedCategoryId) || null;
+  }, [selectedCategoryId, categories]);
+
+  // Handle subcategory loading when category is selected
+  useEffect(() => {
+    if (selectedCategory && selectedCategory.subcategories) {
+      setIsLoadingSubcategories(true);
+      
+      // Simulate loading delay for better UX (can be removed if not needed)
+      const timer = setTimeout(() => {
+        setAvailableSubcategories(selectedCategory.subcategories || []);
+        setIsLoadingSubcategories(false);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    } else {
+      setAvailableSubcategories([]);
+      setIsLoadingSubcategories(false);
+    }
+  }, [selectedCategory]);
+
+  // Initialize category selection from existing data
+  useEffect(() => {
+    if (categories.length > 0 && stepData.category && !selectedCategoryId) {
+      const existingCategory = categories.find(cat => cat.name === stepData.category);
+      if (existingCategory) {
+        setSelectedCategoryId(existingCategory.id);
+      }
+    }
+  }, [categories, stepData.category, selectedCategoryId]);
+
+  // Reset category state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSelectedCategoryId(null);
+      setAvailableSubcategories([]);
+      setIsLoadingSubcategories(false);
+    }
+  }, [isOpen]);
   const materialTypeForSpecs = stepData.materialType || stepData.category?.toLowerCase() || 'default';
   const availableGrades = materialGrades[materialTypeForSpecs as keyof typeof materialGrades] || materialGrades.default;
   const availableForms = materialForms[materialTypeForSpecs as keyof typeof materialForms] || materialForms.default;
@@ -1524,7 +1666,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
             ) : (
               <>
-                {/* Category Selection - Based on MaterialTypeStep */}
+                {/* NEW CATEGORY SELECTION SYSTEM */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-4">
                     Main Category *
@@ -1533,69 +1675,110 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     {categories.filter(cat => cat.name !== 'All materials').map((category) => (
                       <button
                         key={category.id}
-                        onClick={() => handleStepDataChange({
-                          category: category.name,
-                          materialType: category.name,
-                          subcategory: '', // Reset subcategory when category changes
-                          specificMaterial: ''
-                        })}
+                        onClick={() => handleCategorySelect(category)}
                         className={`
-                          p-4 rounded-lg border-2 text-left transition-all hover:scale-105
-                          ${stepData.category === category.name
+                          p-4 rounded-lg border-2 text-left transition-all hover:scale-105 relative
+                          ${selectedCategoryId === category.id
                             ? 'border-[#FF8A00] bg-orange-50'
                             : 'border-gray-200 hover:border-gray-300'
                           }
                         `}
                       >
                         <div className="flex items-center justify-center">
-                          <h4 className="text-gray-900 text-center">{category.name}</h4>
+                          <h4 className="text-gray-900 text-center font-medium">{category.name}</h4>
                         </div>
                       </button>
                     ))}
                   </div>
                 </div>
                 
-                {/* Subcategory Selection */}
-                {selectedCategory && selectedCategory.subcategories.length > 0 && (
-                  <div>
+                {/* NEW SUBCATEGORY SELECTION SYSTEM */}
+                {selectedCategoryId && (
+                  <div className="mt-6">
                     <label className="block text-sm font-medium text-gray-700 mb-4">
                       Subcategory *
                     </label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {availableSubcategories.map((subcategory) => (
-                        <button
-                          key={subcategory.id}
-                          onClick={() => handleStepDataChange({ subcategory: subcategory.name })}
-                          className={`
-                            p-3 rounded-lg border-2 text-sm text-left transition-all hover:scale-105
-                            ${stepData.subcategory === subcategory.name
-                              ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                              : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                            }
-                          `}
-                        >
-                          {subcategory.name}
-                        </button>
-                      ))}
-                    </div>
+                    
+                    {isLoadingSubcategories ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-5 h-5 border-2 border-[#FF8A00] border-t-transparent rounded-full animate-spin mr-3" />
+                        <span className="text-gray-600 text-sm">Loading subcategories...</span>
+                      </div>
+                    ) : availableSubcategories.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {availableSubcategories.map((subcategory) => (
+                          <button
+                            key={subcategory.id}
+                            onClick={() => handleSubcategorySelect(subcategory)}
+                            className={`
+                              p-3 rounded-lg border-2 text-sm text-left transition-all hover:scale-105 relative
+                              ${stepData.subcategory === subcategory.name
+                                ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                                : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                              }
+                            `}
+                          >
+                            <span>{subcategory.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : selectedCategory ? (
+                      <div className="text-center py-8 border border-gray-200 rounded-lg bg-gray-50">
+                        <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                        <p className="text-gray-500 text-sm">No subcategories available for {selectedCategory.name}</p>
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
-                {/* Specific Material Input */}
+                {/* Verify Category Button */}
+                {selectedCategory && (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                    >
+                      Verify Category
+                    </button>
+                  </div>
+                )}
+
+                {/* Specific Material Input - Tag-based like keywords */}
                 {stepData.subcategory && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Specific Material (Optional)
                     </label>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {(stepData.specificMaterial || []).map((material, index) => (
+                        <span key={index} className="inline-flex items-center px-3 py-1 bg-[#FF8A00] text-white text-sm rounded-full">
+                          {material}
+                          <button
+                            onClick={() => handleSpecificMaterialRemove(index)}
+                            className="ml-2 text-white hover:text-gray-200"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
                     <input
                       type="text"
-                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc."
+                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc. Press Enter to add"
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
-                      value={stepData.specificMaterial || ''}
-                      onChange={(e) => handleStepDataChange({ specificMaterial: e.target.value })}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault();
+                          const input = e.currentTarget;
+                          if (input.value.trim()) {
+                            handleSpecificMaterialAdd(input.value.trim());
+                            input.value = '';
+                          }
+                        }
+                      }}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Add specific details about the material if applicable
+                      Add specific details about the material and press Enter. You can add multiple materials.
                     </p>
                   </div>
                 )}
@@ -1611,10 +1794,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       return (
                         <button
                           key={type.id}
-                          onClick={() => handleStepDataChange({ packaging: type.name })}
+                          onClick={() => handleStepDataChange({ packaging: type.id })}
                           className={`
                             p-4 rounded-lg border-2 transition-all text-left hover:scale-105
-                            ${stepData.packaging === type.name
+                            ${stepData.packaging === type.id
                               ? 'border-[#FF8A00] bg-orange-50'
                               : 'border-gray-200 hover:border-gray-300'
                             }
@@ -1623,7 +1806,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                           <div className="flex items-start space-x-3">
                             <div className={`
                               p-2 rounded-md
-                              ${stepData.packaging === type.name
+                              ${stepData.packaging === type.id
                                 ? 'bg-[#FF8A00] text-white'
                                 : 'bg-gray-100 text-gray-600'
                               }
@@ -3008,25 +3191,16 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
     switch (activeStep) {
       case 1:
-        if (!stepData.category) {
-          const error = 'Category is required';
+        // Step 1 validation - require category and subcategory
+        if (!selectedCategoryId) {
+          const error = 'Material category is required';
           errors.push(error);
           fieldErrors.category = [error];
         }
         if (!stepData.subcategory) {
-          const error = 'Subcategory is required';
+          const error = 'Material subcategory is required';
           errors.push(error);
           fieldErrors.subcategory = [error];
-        }
-        if (!stepData.packaging) {
-          const error = 'Packaging type is required';
-          errors.push(error);
-          fieldErrors.packaging = [error];
-        }
-        if (!stepData.materialFrequency) {
-          const error = 'Material frequency is required';
-          errors.push(error);
-          fieldErrors.materialFrequency = [error];
         }
         break;
 
@@ -3128,7 +3302,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const validateStep = (stepId: number): boolean => {
     switch (stepId) {
       case 1:
-        return !!(stepData.category && stepData.subcategory && stepData.packaging && stepData.materialFrequency);
+        // Step 1 validation - require category and subcategory
+        return !!(selectedCategoryId && stepData.subcategory);
       case 2:
         // Specifications are optional
         return true;
@@ -3158,43 +3333,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   };
 
   if (!isOpen) return null;
-
-  // Add error boundary for the entire modal
-  if (_error) {
-    return (
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        maxWidth="md"
-        showCloseButton={true}
-        className="p-6"
-      >
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Auction</h3>
-          <p className="text-sm text-gray-600 mb-4">{_error}</p>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => {
-                setError(null);
-                // Close and reopen the modal to trigger data reload
-                onClose();
-              }}
-              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] transition-colors"
-            >
-              Try Again
-            </button>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
-    );
-  }
 
   return (
     <Modal
@@ -3279,9 +3417,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                 <span>Completed</span>
                 <span>
-                  {auction.stepCompletionStatus 
-                    ? Object.values(auction.stepCompletionStatus).filter(Boolean).length 
-                    : auction.currentStep || 0
+                  {completeAdData?.step_completion_status 
+                    ? Object.values(completeAdData.step_completion_status).filter(Boolean).length 
+                    : (auction.stepCompletionStatus 
+                      ? Object.values(auction.stepCompletionStatus).filter(Boolean).length 
+                      : auction.currentStep || 0)
                   } / {steps.length}
                 </span>
               </div>
@@ -3289,10 +3429,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 <div 
                   className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
                   style={{ 
-                    width: `${((auction.stepCompletionStatus 
-                      ? Object.values(auction.stepCompletionStatus).filter(Boolean).length 
-                      : auction.currentStep || 0
-                    ) / steps.length) * 100}%` 
+                    width: `${(() => {
+                      const completedCount = completeAdData?.step_completion_status 
+                        ? Object.values(completeAdData.step_completion_status).filter(Boolean).length 
+                        : (auction.stepCompletionStatus 
+                          ? Object.values(auction.stepCompletionStatus).filter(Boolean).length 
+                          : auction.currentStep || 0);
+                      return (completedCount / steps.length) * 100;
+                    })()}%` 
                   }}
                 />
               </div>

@@ -5,8 +5,8 @@ import { ChevronLeft, ChevronRight, Check, Save, AlertCircle } from 'lucide-reac
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { adCreationService } from '@/services/ads';
-import { getCategories, Category } from '@/services/auction';
-import { validateStepData, convertLabelToValue } from '@/utils/adValidation';
+import { getCategories, Category, getAdDetails } from '@/services/auction';
+import { validateStepData, convertLabelToValue, convertValueToLabel } from '@/utils/adValidation';
 
 // Import form steps
 import { MaterialTypeStep } from './steps/MaterialTypeStep';
@@ -90,6 +90,13 @@ export interface FormData {
   keywords: string[];
 }
 
+export interface AlternativeAuctionFormProps {
+  isEditMode?: boolean;
+  auctionId?: number | null;
+  onClose?: () => void;
+  onAuctionUpdated?: () => void;
+}
+
 const initialFormData: FormData = {
   materialType: '',
   tradeType: '',
@@ -167,7 +174,12 @@ const getStepsByMaterialType = (materialType: string) => {
   ];
 };
 
-export function AlternativeAuctionForm() {
+export function AlternativeAuctionForm({ 
+  isEditMode = false, 
+  auctionId = null,
+  onClose,
+  onAuctionUpdated
+}: AlternativeAuctionFormProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [completedSteps, setCompletedSteps] = useState<Set<number>>(new Set());
@@ -205,6 +217,125 @@ export function AlternativeAuctionForm() {
 
     loadCategories();
   }, []);
+
+  /**
+   * Maps frontend step IDs to backend API step IDs based on material type
+   * For plastics, the mapping is 1:1 (frontend step = backend step)
+   * For other materials, we need to map the 4 frontend steps to the correct backend steps
+   */
+  const mapFrontendStepToBackendStep = useCallback((frontendStepId: number, materialType?: string): number => {
+    const type = materialType || formData.materialType;
+    // Step 1 is always the same for all material types
+    if (frontendStepId === 1) return 1;
+    
+    // For plastics, the mapping is 1:1
+    const isPlasticMaterial = type?.toLowerCase().includes('plastic');
+    if (isPlasticMaterial) return frontendStepId;
+    
+    // For other materials, map frontend steps 2, 3, 4 to backend steps 6, 7, 8
+    switch (frontendStepId) {
+      case 2: return 6; // Location & Logistics (frontend step 2) maps to backend step 6
+      case 3: return 7; // Quantity & Price (frontend step 3) maps to backend step 7
+      case 4: return 8; // Image & Description (frontend step 4) maps to backend step 8
+      default: return frontendStepId; // Fallback (should not happen)
+    }
+  }, [formData.materialType]);
+
+  // Effect to load and populate form data in edit mode
+  useEffect(() => {
+    if (isEditMode && auctionId && categoriesLoaded) {
+      const fetchAndSetAuctionData = async () => {
+        const response = await getAdDetails(auctionId);
+        if (!response.error && response.data) {
+          const adData = response.data.data;
+          
+          // Transform API data to frontend format
+          const transformedData: Partial<FormData> = {
+            materialType: adData.category_name,
+            tradeType: 'sell', // Assuming default
+            businessType: '', // Assuming default
+            sellFrequency: convertValueToLabel('material_frequency', adData.material_frequency),
+            category: adData.category_name,
+            subcategory: adData.subcategory_name,
+            specificMaterial: adData.specific_material,
+            specifications: {
+              additionalSpecs: adData.additional_specifications?.split(',').map(s => s.trim()) || [],
+            },
+            origin: {
+              source: adData.origin ? convertValueToLabel('origin', adData.origin) : '',
+            },
+            contamination: {
+              level: adData.contamination ? convertValueToLabel('contamination', adData.contamination) : '',
+              additives: adData.additives ? [convertValueToLabel('additives', adData.additives)] : [],
+              storage: adData.storage_conditions ? convertValueToLabel('storage_conditions', adData.storage_conditions) : '',
+            },
+            processing: {
+              methods: adData.processing_methods?.map(m => convertValueToLabel('processing_methods', m)) || [],
+            },
+            location: {
+              country: adData.location?.country || '',
+              region: adData.location?.state_province || '',
+              city: adData.location?.city || '',
+              pickupAvailable: adData.pickup_available,
+              deliveryOptions: adData.delivery_options?.map(o => convertValueToLabel('delivery_options', o)) || [],
+              fullAddress: adData.location?.address_line || '',
+            },
+            quantity: {
+              available: adData.available_quantity || 0,
+              unit: convertValueToLabel('unit_of_measurement', adData.unit_of_measurement),
+              minimumOrder: parseInt(adData.minimum_order_quantity) || 0,
+              packaging: convertValueToLabel('packaging', adData.packaging),
+            },
+            price: {
+              basePrice: adData.starting_bid_price || 0,
+              currency: adData.currency,
+              priceType: 'auction',
+              reservePrice: adData.reserve_price || undefined,
+              auctionDuration: adData.auction_duration?.toString(),
+              customAuctionDuration: adData.auction_duration,
+              allowBrokerBids: adData.allow_broker_bids,
+            },
+            images: [], // Images are handled separately and not re-downloaded
+            title: adData.title || undefined,
+            description: adData.description || undefined,
+            keywords: adData.keywords?.split(',').map(k => k.trim()) || [],
+          };
+
+          setFormData(prev => ({ ...prev, ...transformedData }));
+          setAdId(adData.id);
+          
+          const newSteps = getStepsByMaterialType(adData.category_name);
+          setSteps(newSteps);
+
+          // Set completion status from backend
+          const apiStatus = adData.step_completion_status || {};
+          setApiCompletedSteps(apiStatus);
+          
+          const completed = new Set<number>();
+          newSteps.forEach(step => {
+            const backendStepId = mapFrontendStepToBackendStep(step.id, adData.category_name);
+            if (apiStatus[backendStepId.toString()]) {
+              completed.add(step.id);
+            }
+          });
+          setCompletedSteps(completed);
+          
+          // Set current step
+          const nextIncompleteFrontendStep = newSteps.find(step => {
+            const backendStepId = mapFrontendStepToBackendStep(step.id, adData.category_name);
+            return !apiStatus[backendStepId.toString()];
+          });
+
+          setCurrentStep(nextIncompleteFrontendStep ? nextIncompleteFrontendStep.id : newSteps.length);
+        } else {
+          toast.error("Failed to load auction data for editing.");
+          if (onClose) onClose();
+        }
+      };
+
+      fetchAndSetAuctionData();
+    }
+  }, [isEditMode, auctionId, categoriesLoaded, onClose, mapFrontendStepToBackendStep]);
 
   const findCategoryId = useCallback((categoryName: string): number => {
     const category = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
@@ -321,27 +452,7 @@ export function AlternativeAuctionForm() {
     }
   }, [findCategoryId, findSubcategoryId]);
 
-  /**
-   * Maps frontend step IDs to backend API step IDs based on material type
-   * For plastics, the mapping is 1:1 (frontend step = backend step)
-   * For other materials, we need to map the 4 frontend steps to the correct backend steps
-   */
-  const mapFrontendStepToBackendStep = useCallback((frontendStepId: number): number => {
-    // Step 1 is always the same for all material types
-    if (frontendStepId === 1) return 1;
-    
-    // For plastics, the mapping is 1:1
-    const isPlasticMaterial = formData.materialType?.toLowerCase().includes('plastic');
-    if (isPlasticMaterial) return frontendStepId;
-    
-    // For other materials, map frontend steps 2, 3, 4 to backend steps 6, 7, 8
-    switch (frontendStepId) {
-      case 2: return 6; // Location & Logistics (frontend step 2) maps to backend step 6
-      case 3: return 7; // Quantity & Price (frontend step 3) maps to backend step 7
-      case 4: return 8; // Image & Description (frontend step 4) maps to backend step 8
-      default: return frontendStepId; // Fallback (should not happen)
-    }
-  }, [formData.materialType]);
+
 
   const handleAutoSave = useCallback(async () => {
     if (!adId || !hasUnsavedChanges || !categoriesLoaded) return;
@@ -565,7 +676,7 @@ export function AlternativeAuctionForm() {
     };
   };
 
-  const validateStep = (stepId: number): boolean => {
+  const validateStep = useCallback((stepId: number): boolean => {
     // Find the actual step object based on step ID
     const stepObj = steps.find(step => step.id === stepId);
     if (!stepObj) return false;
@@ -617,7 +728,7 @@ export function AlternativeAuctionForm() {
       default:
         return false;
     }
-  };
+  }, [formData, steps]);
 
   const handleNext = async () => {
     // Clear previous validation errors
@@ -703,7 +814,7 @@ export function AlternativeAuctionForm() {
           // Check if at least one image is provided
           if (!formData.images || formData.images.length === 0) {
             toast.error('Image validation failed', {
-              description: 'At least one image is required'
+              description: 'At least one image is required for a new ad. For edits, you can skip if images already exist.'
             });
             setIsSubmitting(false);
             return;
@@ -721,7 +832,10 @@ export function AlternativeAuctionForm() {
             setApiCompletedSteps(result.data.step_completion_status);
             setCompletedSteps(prev => new Set([...prev, currentStep]));
             setHasUnsavedChanges(false);
-            toast.success(`Step ${currentStep} completed!`);
+            toast.success(`Step ${currentStep} updated!`);
+            if (isEditMode && onAuctionUpdated) {
+              onAuctionUpdated();
+            }
           } else {
             toast.error(`Failed to update step ${currentStep}`, {
               description: result.error || 'Please check your data and try again'
@@ -754,7 +868,10 @@ export function AlternativeAuctionForm() {
               setCurrentStep(currentStep + 1);
             }
             setHasUnsavedChanges(false);
-            toast.success(`Step ${currentStep} completed!`);
+            toast.success(`Step ${currentStep} updated!`);
+             if (isEditMode && onAuctionUpdated) {
+              onAuctionUpdated();
+            }
           } else {
             toast.error(`Failed to update step ${currentStep}`, {
               description: result.error || 'Please check your data and try again'
@@ -801,8 +918,12 @@ export function AlternativeAuctionForm() {
     }
 
     if (!formData.images || formData.images.length === 0) {
-      toast.error('Please upload at least one image');
-      return;
+      // In edit mode, images might already exist, so this check is not always required.
+      // We can rely on the backend to enforce this if no images have ever been uploaded.
+      if (!isEditMode) {
+        toast.error('Please upload at least one image');
+        return;
+      }
     }
     
     // If we get here, all validation has passed
@@ -821,12 +942,13 @@ export function AlternativeAuctionForm() {
 
       if (result.success && result.data) {
         if (result.data.is_complete) {
-          toast.success('Auction created successfully!', {
+          toast.success(isEditMode ? 'Auction updated successfully!' : 'Auction created successfully!', {
             description: 'Your material is now listed for auction.'
           });
           
-          // Redirect to the auction or listing page
-          window.location.href = '/dashboard/my-auctions';
+          if (onAuctionUpdated) onAuctionUpdated();
+          if (onClose) onClose();
+
         } else {
           toast.warning('Ad updated but not complete', {
             description: 'Please complete all required steps.'
@@ -850,13 +972,31 @@ export function AlternativeAuctionForm() {
   const currentStepObj = steps.find(step => step.id === currentStep);
   const CurrentStepComponent = currentStepObj?.component;
 
+  // Real-time calculation of completed steps based on current form data
+  const calculateCompletedSteps = useCallback(() => {
+    const completed = new Set<number>();
+    
+    steps.forEach(step => {
+      if (validateStep(step.id)) {
+        completed.add(step.id);
+      }
+    });
+    
+    return completed;
+  }, [steps, validateStep]);
+
+  // Get real-time completed steps
+  const realTimeCompletedSteps = calculateCompletedSteps();
+  const totalCompleted = realTimeCompletedSteps.size;
+  const progressPercentage = steps.length > 0 ? (totalCompleted / steps.length) * 100 : 0;
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
       {/* Progress Header */}
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            Step {currentStep} of {steps.length}
+            {isEditMode ? 'Edit Auction' : `Step ${currentStep} of ${steps.length}`}
           </h2>
           <div className="flex items-center gap-3">
             {isAutoSaving && (
@@ -866,7 +1006,7 @@ export function AlternativeAuctionForm() {
               </div>
             )}
             <span className="text-sm text-gray-500">
-              {Math.round((currentStep / steps.length) * 100)}% Complete
+              {totalCompleted} of {steps.length} steps completed
             </span>
           </div>
         </div>
@@ -875,7 +1015,7 @@ export function AlternativeAuctionForm() {
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div 
             className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(currentStep / steps.length) * 100}%` }}
+            style={{ width: `${progressPercentage}%` }}
           />
         </div>
       </div>
@@ -886,7 +1026,8 @@ export function AlternativeAuctionForm() {
           {steps.map((step) => {
             const isApiCompleted = apiCompletedSteps[step.id.toString()] || false;
             const isLocalCompleted = completedSteps.has(step.id);
-            const isCompleted = isApiCompleted || isLocalCompleted;
+            const isRealTimeCompleted = realTimeCompletedSteps.has(step.id);
+            const isCompleted = isApiCompleted || isLocalCompleted || isRealTimeCompleted;
             
             return (
               <button
@@ -965,11 +1106,11 @@ export function AlternativeAuctionForm() {
             {isSubmitting ? (
               <>
                 <Save className="w-4 h-4 animate-spin" />
-                Creating Auction...
+                {isEditMode ? 'Updating...' : 'Creating...'}
               </>
             ) : (
               <>
-                Create Auction
+                {isEditMode ? 'Update Auction' : 'Create Auction'}
                 <Check className="w-4 h-4" />
               </>
             )}
@@ -996,4 +1137,4 @@ export function AlternativeAuctionForm() {
       </div>
     </div>
   );
-} 
+}

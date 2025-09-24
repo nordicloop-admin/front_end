@@ -55,6 +55,9 @@ export interface SubscriptionCreateRequest {
 export interface SubscriptionUpdateResponse {
   message: string;
   subscription: UserSubscription;
+  redirect_url?: string;
+  requires_payment?: boolean;
+  prorated?: boolean;
 }
 
 /**

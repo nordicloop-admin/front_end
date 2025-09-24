@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ArrowLeft, Clock, Package, User, Calendar, AlertCircle, Edit, Trash2, Play, Pause } from 'lucide-react';
@@ -193,121 +193,118 @@ export default function AuctionDetail() {
     return `${diffDays}d ${diffHours}h`;
   };
 
-  // Fetch auction data
-  useEffect(() => {
-    if (params.id) {
-      setIsLoading(true);
+  // Function to fetch auction data - extracted for reuse
+  const fetchAuctionData = useCallback(async () => {
+    if (!params.id) return;
+    
+    setIsLoading(true);
 
+    try {
       // Try to fetch enhanced ad details first
-      getAdDetails(params.id as string)
-        .then(response => {
-          if (!response.error && response.data) {
-            const adData = response.data.data;
-            
-            // Format enhanced ad data for my auctions
-            const formattedAuction = {
-              id: adData.id.toString(),
-              name: adData.title || `${adData.category_name} - ${adData.subcategory_name}`,
-              category: adData.category_name,
-              subcategory: adData.subcategory_name,
-              basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
-              currentBid: '', // Will be updated if we fetch bids
-              status: (adData as any).status || (adData.is_active ? 'active' : 'draft'),
-              timeLeft: adData.time_remaining || adData.auction_duration_display,
-              volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
-              image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
-              description: adData.description || adData.specific_material || `${adData.category_name} material available for auction`,
-              createdAt: adData.created_at,
-              bidHistory: [],
-              
-              // Enhanced data
-              company: adData.company_name,
-              seller: adData.posted_by,
-              auctionStatus: adData.auction_status,
-              stepCompletionStatus: adData.step_completion_status,
-              isComplete: adData.is_complete,
-              currentStep: adData.current_step,
-              keywords: adData.keywords,
-              specifications: [
-                { name: 'Material Type', value: adData.category_name },
-                { name: 'Subcategory', value: adData.subcategory_name },
-                { name: 'Specific Material', value: adData.specific_material },
-                { name: 'Packaging', value: adData.packaging_display },
-                { name: 'Material Frequency', value: adData.material_frequency_display },
-                ...(adData.origin_display ? [{ name: 'Origin', value: adData.origin_display }] : []),
-                ...(adData.contamination_display ? [{ name: 'Contamination', value: adData.contamination_display }] : []),
-                ...(adData.additives_display ? [{ name: 'Additives', value: adData.additives_display }] : []),
-                ...(adData.storage_conditions_display ? [{ name: 'Storage Conditions', value: adData.storage_conditions_display }] : []),
-                ...(adData.processing_methods_display.length > 0 ? [{ name: 'Processing Methods', value: adData.processing_methods_display.join(', ') }] : []),
-                { name: 'Quantity', value: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A' },
-                { name: 'Minimum Order', value: `${adData.minimum_order_quantity} ${adData.unit_of_measurement_display}` },
-                { name: 'Currency', value: adData.currency_display },
-                { name: 'Auction Duration', value: adData.auction_duration_display },
-                ...(adData.reserve_price ? [{ name: 'Reserve Price', value: `${adData.reserve_price} ${adData.currency}` }] : []),
-                { name: 'Pickup Available', value: adData.pickup_available ? 'Yes' : 'No' },
-                ...(adData.delivery_options_display.length > 0 ? [{ name: 'Delivery Options', value: adData.delivery_options_display.join(', ') }] : []),
-                { name: 'Status', value: adData.auction_status },
-                { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of ${calculateStepCompletion(adData.step_completion_status, adData.category_name).total}` }
-              ]
-            };
+      const response = await getAdDetails(params.id as string);
+      
+      if (!response.error && response.data) {
+        const adData = response.data.data;
+        
+        // Format enhanced ad data for my auctions
+        const formattedAuction = {
+          id: adData.id.toString(),
+          name: adData.title || `${adData.category_name} - ${adData.subcategory_name}`,
+          category: adData.category_name,
+          subcategory: adData.subcategory_name,
+          basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
+          currentBid: '', // Will be updated if we fetch bids
+          status: (adData as any).status || (adData.is_active ? 'active' : 'draft'),
+          timeLeft: adData.time_remaining || adData.auction_duration_display,
+          volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
+          image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
+          description: adData.description || adData.specific_material || `${adData.category_name} material available for auction`,
+          createdAt: adData.created_at,
+          bidHistory: [],
+          
+          // Enhanced data
+          company: adData.company_name,
+          seller: adData.posted_by,
+          auctionStatus: adData.auction_status,
+          stepCompletionStatus: adData.step_completion_status,
+          isComplete: adData.is_complete,
+          currentStep: adData.current_step,
+          keywords: adData.keywords,
+          specifications: [
+            { name: 'Material Type', value: adData.category_name },
+            { name: 'Subcategory', value: adData.subcategory_name },
+            { name: 'Specific Material', value: adData.specific_material },
+            { name: 'Packaging', value: adData.packaging_display },
+            { name: 'Material Frequency', value: adData.material_frequency_display },
+            ...(adData.origin_display ? [{ name: 'Origin', value: adData.origin_display }] : []),
+            ...(adData.contamination_display ? [{ name: 'Contamination', value: adData.contamination_display }] : []),
+            ...(adData.additives_display ? [{ name: 'Additives', value: adData.additives_display }] : []),
+            ...(adData.storage_conditions_display ? [{ name: 'Storage Conditions', value: adData.storage_conditions_display }] : []),
+            ...(adData.processing_methods_display.length > 0 ? [{ name: 'Processing Methods', value: adData.processing_methods_display.join(', ') }] : []),
+            { name: 'Quantity', value: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A' },
+            { name: 'Minimum Order', value: `${adData.minimum_order_quantity} ${adData.unit_of_measurement_display}` },
+            { name: 'Currency', value: adData.currency_display },
+            { name: 'Auction Duration', value: adData.auction_duration_display },
+            ...(adData.reserve_price ? [{ name: 'Reserve Price', value: `${adData.reserve_price} ${adData.currency}` }] : []),
+            { name: 'Pickup Available', value: adData.pickup_available ? 'Yes' : 'No' },
+            ...(adData.delivery_options_display.length > 0 ? [{ name: 'Delivery Options', value: adData.delivery_options_display.join(', ') }] : []),
+            { name: 'Status', value: adData.auction_status },
+            { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of ${calculateStepCompletion(adData.step_completion_status, adData.category_name).total}` }
+          ]
+        };
 
-            setAuction(formattedAuction);
+        setAuction(formattedAuction);
 
-            // Fetch complete bid history for this auction
-            fetchCompleteBidHistory(adData.id);
-          } else {
-            // Fallback to old API if enhanced endpoint fails
-            return getAuctionById(params.id as string);
-          }
-        })
-        .then(fallbackResponse => {
-          if (fallbackResponse && fallbackResponse.error) {
-            router.push('/dashboard/my-auctions');
-            return;
-          }
-
-          if (fallbackResponse && fallbackResponse.data) {
-            // Format fallback API data
-            const apiAuction = fallbackResponse.data;
-            const formattedAuction = {
-              id: apiAuction.id.toString(),
-              name: apiAuction.title || `${apiAuction.category_name} - ${apiAuction.subcategory_name}`,
-              category: apiAuction.category_name,
-              subcategory: apiAuction.subcategory_name,
-              basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
-              currentBid: '',
-              status: apiAuction.status || (apiAuction.is_active ? 'active' : 'draft'),
-              timeLeft: 'Available',
-              volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
-              image: apiAuction.material_image ? getFullImageUrl(apiAuction.material_image) : getCategoryImage(apiAuction.category_name),
-              description: apiAuction.title || `${apiAuction.category_name} material available for auction`,
-              createdAt: apiAuction.created_at,
-              bidHistory: []
-            };
-            setAuction(formattedAuction);
-
-            // Also fetch complete bid history for fallback path
-            fetchCompleteBidHistory(apiAuction.id);
-          }
-        })
-        .catch(_error => {
+        // Fetch complete bid history for this auction
+        fetchCompleteBidHistory(adData.id);
+      } else {
+        // Fallback to old API if enhanced endpoint fails
+        const fallbackResponse = await getAuctionById(params.id as string);
+        
+        if (fallbackResponse && fallbackResponse.error) {
           router.push('/dashboard/my-auctions');
-        })
-        .finally(() => {
-          setIsLoading(false);
-        });
+          return;
+        }
+
+        if (fallbackResponse && fallbackResponse.data) {
+          // Format fallback API data
+          const apiAuction = fallbackResponse.data;
+          const formattedAuction = {
+            id: apiAuction.id.toString(),
+            name: apiAuction.title || `${apiAuction.category_name} - ${apiAuction.subcategory_name}`,
+            category: apiAuction.category_name,
+            subcategory: apiAuction.subcategory_name,
+            basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
+            currentBid: '',
+            status: apiAuction.status || (apiAuction.is_active ? 'active' : 'draft'),
+            timeLeft: 'Available',
+            volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
+            image: apiAuction.material_image ? getFullImageUrl(apiAuction.material_image) : getCategoryImage(apiAuction.category_name),
+            description: apiAuction.title || `${apiAuction.category_name} material available for auction`,
+            createdAt: apiAuction.created_at,
+            bidHistory: []
+          };
+          setAuction(formattedAuction);
+
+          // Also fetch complete bid history for fallback path
+          fetchCompleteBidHistory(apiAuction.id);
+        }
+      }
+    } catch (_error) {
+      router.push('/dashboard/my-auctions');
+    } finally {
+      setIsLoading(false);
     }
   }, [params.id, router]);
 
-  // Handle edit auction - Reload data after successful edit
-  const handleEditAuction = async (updatedAuction: AuctionData) => {
-    try {
-      // Update local state with the new data
-      setAuction({
-        ...auction,
-        ...updatedAuction
-      });
+  // Fetch auction data on component mount
+  useEffect(() => {
+    fetchAuctionData();
+  }, [params.id, router, fetchAuctionData]);
 
+  // Handle edit auction - Reload data after successful edit
+  const handleEditAuction = async (_updatedAuction: AuctionData) => {
+    try {
       // Close the modal
       setIsEditModalOpen(false);
 
@@ -317,55 +314,8 @@ export default function AuctionDetail() {
         duration: 3000,
       });
 
-      // Reload the auction data from backend to get fresh data
-      try {
-        const response = await fetch(`/api/ads/${params.id}/`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-          },
-        });
-
-        if (response.ok) {
-          const result = await response.json();
-          if (result.success && result.data) {
-            // Convert backend data to AuctionData format
-            const backendData = result.data;
-            const refreshedAuction: AuctionData = {
-              id: backendData.id.toString(),
-              name: backendData.title || backendData.category_name || 'Untitled Auction',
-              category: backendData.category_name || '',
-              subcategory: backendData.subcategory_name || '',
-              description: backendData.description || '',
-              basePrice: backendData.starting_bid_price ?
-                `${backendData.starting_bid_price} ${backendData.currency || 'SEK'}` :
-                'Not set',
-              volume: backendData.available_quantity && backendData.unit_of_measurement ?
-                `${backendData.available_quantity} ${backendData.unit_of_measurement}` :
-                'Not set',
-              timeLeft: 'Active', // You might want to calculate this properly
-              image: backendData.material_image || '/images/placeholder-material.jpg',
-              keywords: backendData.keywords || '',
-              status: backendData.status || 'active',
-              auctionStatus: backendData.auction_status || 'Active',
-              specifications: [
-                { name: 'Material Type', value: backendData.category_name || 'Not specified' },
-                { name: 'Volume', value: backendData.available_quantity && backendData.unit_of_measurement ?
-                  `${backendData.available_quantity} ${backendData.unit_of_measurement}` : 'Not set' },
-                { name: 'Base Price', value: backendData.starting_bid_price ?
-                  `${backendData.starting_bid_price} ${backendData.currency || 'SEK'}` : 'Not set' }
-              ]
-            };
-
-            setAuction(refreshedAuction);
-
-          }
-        } else {
-
-        }
-      } catch (_reloadError) {
-
-        // Don't show error to user, edit was successful
-      }
+      // Refetch the latest auction data from backend
+      await fetchAuctionData();
 
     } catch (error) {
       // Show error toast
@@ -1092,6 +1042,7 @@ export default function AuctionDetail() {
           onSubmit={handleEditAuction}
           auction={auction}
           materialType={auction.category?.toLowerCase()}
+          onRefresh={fetchAuctionData}
         />
       )}
 

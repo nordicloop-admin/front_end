@@ -5,7 +5,6 @@ import "./globals.css";
 import RootLayoutClient from "../components/layout/RootLayoutClient";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from 'sonner';
-import ErrorBoundary from "@/components/ErrorBoundary";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -81,11 +80,11 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Favicon links for better compatibility */}
-        <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/site.webmanifest" />
+        <link rel="icon" type="image/x-icon" href="/favicon_io/favicon.ico" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon_io/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon_io/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/favicon_io/apple-touch-icon.png" />
+        <link rel="manifest" href="/favicon_io/site.webmanifest" />
         <meta name="theme-color" content="#1E2A36" />
 
         {/* Google Analytics */}
@@ -114,14 +113,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ErrorBoundary>
-          <AuthProvider>
-            <RootLayoutClient>
-              <Toaster position="top-right" richColors />
-              {children}
-            </RootLayoutClient>
-          </AuthProvider>
-        </ErrorBoundary>
+        <AuthProvider>
+          <RootLayoutClient>
+            <Toaster position="top-right" richColors />
+            {children}
+          </RootLayoutClient>
+        </AuthProvider>
       </body>
     </html>
   );

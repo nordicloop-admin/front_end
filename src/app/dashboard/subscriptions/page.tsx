@@ -7,7 +7,7 @@ import { Check, X, Calendar, ArrowRight, AlertCircle, CheckCircle, RefreshCw } f
 import { getUserSubscription, updateUserSubscription, createUserSubscription, UserSubscription } from '@/services/userSubscription';
 import { getUserProfile, UserProfile } from '@/services/userProfile';
 import { getPricingData, PricingData } from '@/services/pricing';
-import { changeSubscriptionPlan, verifyCheckoutSession } from '@/services/subscriptionPayments';
+import { changeSubscriptionPlan, verifyCheckoutSession, getSubscriptionPaymentStatus } from '@/services/subscriptionPayments';
 
 // Helper function to get commission rate from plan type
 const _getCommissionRate = (planType: string): string => {
@@ -31,6 +31,69 @@ export default function Subscriptions() {
   const [hasSubscription, setHasSubscription] = useState<boolean | null>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Manual refresh function for user-initiated refresh
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    setError(null);
+    
+    const success = await refreshSubscriptionData();
+    
+    if (success) {
+      setUpdateSuccess(true);
+      setTimeout(() => setUpdateSuccess(false), 3000);
+    } else {
+      setError('Failed to refresh data. Please try again.');
+    }
+    
+    setIsRefreshing(false);
+  };
+  const refreshSubscriptionData = async () => {
+    try {
+      const [subscriptionResponse, profileResponse] = await Promise.all([
+        getSubscriptionPaymentStatus(), // Use payment-specific endpoint for better real-time data
+        getUserProfile()
+      ]);
+
+      // Handle subscription
+      if (subscriptionResponse.error) {
+        if (subscriptionResponse.status === 404 ||
+            subscriptionResponse.error.includes('not found') ||
+            subscriptionResponse.error.includes('No subscription')) {
+          setHasSubscription(false);
+        }
+      } else if (subscriptionResponse.data?.success && subscriptionResponse.data.subscription) {
+        const sub = subscriptionResponse.data.subscription;
+        setSubscription({
+          id: 0, // Payment endpoint doesn't return ID, but it's not needed for display
+          plan: sub.plan,
+          plan_display: sub.plan.charAt(0).toUpperCase() + sub.plan.slice(1) + ' Plan',
+          status: sub.status,
+          status_display: sub.status.charAt(0).toUpperCase() + sub.status.slice(1),
+          start_date: sub.start_date,
+          end_date: sub.end_date,
+          auto_renew: sub.auto_renew,
+          payment_method: 'stripe', // Default for payment subscriptions
+          payment_method_display: 'Stripe',
+          last_payment: sub.last_payment || '',
+          amount: sub.amount,
+          contact_name: sub.contact_name,
+          contact_email: sub.contact_email
+        });
+        setHasSubscription(subscriptionResponse.data.has_subscription);
+      }
+
+      // Handle user profile
+      if (!profileResponse.error && profileResponse.data) {
+        setUserProfile(profileResponse.data);
+      }
+      
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  };
 
   // Check for payment success from URL parameters
   useEffect(() => {
@@ -50,16 +113,42 @@ export default function Subscriptions() {
             setPaymentSuccess(true);
             setUpdateSuccess(true);
             
-            // Wait a moment for webhook to process, then reload data
-            setTimeout(() => {
-              window.location.reload();
-            }, 3000);
+            // Clear URL parameters first
+            const url = new URL(window.location.href);
+            url.searchParams.delete('success');
+            url.searchParams.delete('session_id');
+            window.history.replaceState({}, '', url.toString());
+            
+            // Poll for updated subscription data with retries
+            let retries = 0;
+            const maxRetries = 10;
+            const pollInterval = 2000; // 2 seconds
+            
+            const pollForUpdates = async () => {
+              const success = await refreshSubscriptionData();
+              retries++;
+              
+              if (success) {
+                // Successfully refreshed data
+                setIsVerifyingPayment(false);
+              } else if (retries < maxRetries) {
+                // Retry after delay
+                setTimeout(pollForUpdates, pollInterval);
+              } else {
+                // Max retries reached, do full page reload as fallback
+                window.location.reload();
+              }
+            };
+            
+            // Start polling after a short delay to allow webhook processing
+            setTimeout(pollForUpdates, 3000);
+            
           } else {
             setError('Payment verification failed. Please contact support if you were charged.');
+            setIsVerifyingPayment(false);
           }
         } catch (_err) {
           setError('Failed to verify payment. Please contact support.');
-        } finally {
           setIsVerifyingPayment(false);
         }
       };
@@ -224,7 +313,12 @@ export default function Subscriptions() {
         <div className="p-4 bg-blue-50 border border-blue-100 rounded-md mb-5">
           <div className="flex items-center">
             <RefreshCw className="text-blue-500 mr-2 animate-spin" size={16} />
-            <p className="text-sm text-blue-700">Verifying your payment...</p>
+            <div>
+              <p className="text-sm text-blue-700 font-medium">Processing your payment...</p>
+              <p className="text-xs text-blue-600 mt-1">
+                We&apos;re verifying your payment and updating your subscription. This may take a few moments.
+              </p>
+            </div>
           </div>
         </div>
       )}
@@ -232,11 +326,30 @@ export default function Subscriptions() {
       {/* Payment success message */}
       {paymentSuccess && !isVerifyingPayment && (
         <div className="p-4 bg-green-50 border border-green-100 rounded-md mb-5">
-          <div className="flex items-center">
-            <CheckCircle className="text-green-500 mr-2" size={16} />
-            <p className="text-sm text-green-700">
-              Payment successful! Your subscription is being activated...
-            </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <CheckCircle className="text-green-500 mr-2" size={16} />
+              <p className="text-sm text-green-700">
+                Payment successful! Your subscription is being activated...
+              </p>
+            </div>
+            <button
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              className="text-sm bg-green-100 hover:bg-green-200 text-green-800 px-3 py-1 rounded-md transition-colors disabled:opacity-50"
+            >
+              {isRefreshing ? (
+                <span className="flex items-center">
+                  <RefreshCw className="animate-spin mr-1" size={12} />
+                  Refreshing...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <RefreshCw className="mr-1" size={12} />
+                  Refresh
+                </span>
+              )}
+            </button>
           </div>
         </div>
       )}
@@ -314,9 +427,6 @@ export default function Subscriptions() {
                     <span className="text-red-600 font-medium">Disabled</span>
                   )}
                 </div>
-                <Link href="/dashboard/subscriptions/payment" className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium">
-                  Manage Payment Methods
-                </Link>
               </div>
             </div>
           </>

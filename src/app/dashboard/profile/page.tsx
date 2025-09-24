@@ -365,6 +365,13 @@ export default function Profile() {
       if (response?.error) {
         setError(response.error);
       } else if (response?.data) {
+        // Check if payment is required (plan upgrade)
+        if (response.data.requires_payment && response.data.redirect_url) {
+          // Redirect to Stripe Checkout for payment
+          window.location.href = response.data.redirect_url;
+          return;
+        }
+        
         setSubscription(response.data.subscription);
         setHasSubscription(true);
         setUpdateSuccess(true);
@@ -1043,9 +1050,6 @@ export default function Profile() {
                                 <span className="text-red-600 font-medium">Disabled</span>
                               )}
                             </div>
-                            <Link href="/dashboard/subscriptions/payment" className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium">
-                              Manage Payment Methods
-                            </Link>
                           </div>
                         </div>
                       </>
