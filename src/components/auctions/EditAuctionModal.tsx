@@ -731,11 +731,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               []) : [],
           packaging: (() => {
             const backendPackaging = completeAdData?.packaging || '';
-            // Convert backend packaging value to display name
+            // Keep backend packaging value as ID for consistency
             const matchingOption = packagingOptions.find(opt => 
               opt.id === backendPackaging || opt.name === backendPackaging
             );
-            return matchingOption ? matchingOption.name : backendPackaging;
+            return matchingOption ? matchingOption.id : backendPackaging;
           })(),
           materialFrequency: completeAdData?.material_frequency || '',
 
@@ -1768,10 +1768,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       return (
                         <button
                           key={type.id}
-                          onClick={() => handleStepDataChange({ packaging: type.name })}
+                          onClick={() => handleStepDataChange({ packaging: type.id })}
                           className={`
                             p-4 rounded-lg border-2 transition-all text-left hover:scale-105
-                            ${stepData.packaging === type.name
+                            ${stepData.packaging === type.id
                               ? 'border-[#FF8A00] bg-orange-50'
                               : 'border-gray-200 hover:border-gray-300'
                             }
@@ -1780,7 +1780,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                           <div className="flex items-start space-x-3">
                             <div className={`
                               p-2 rounded-md
-                              ${stepData.packaging === type.name
+                              ${stepData.packaging === type.id
                                 ? 'bg-[#FF8A00] text-white'
                                 : 'bg-gray-100 text-gray-600'
                               }
