@@ -1470,7 +1470,12 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   };
 
   const getStepStatus = (stepNumber: number): 'completed' | 'current' | 'pending' => {
-    // First check backend step completion status
+    // First check backend step completion status from completeAdData (fresh from API)
+    if (completeAdData?.step_completion_status && completeAdData.step_completion_status[stepNumber.toString()]) {
+      return 'completed';
+    }
+    
+    // Fallback to auction prop data if available
     if (auction.stepCompletionStatus && auction.stepCompletionStatus[stepNumber.toString()]) {
       return 'completed';
     }
@@ -1565,8 +1570,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       }
     }
 
-    // Fallback to current step logic
-    return stepNumber <= (auction.currentStep || 1) ? 'completed' : 'pending';
+    // Only use current step fallback if no step completion status is available at all
+    if (!completeAdData?.step_completion_status && !auction.stepCompletionStatus) {
+      return stepNumber <= (auction.currentStep || 1) ? 'completed' : 'pending';
+    }
+
+    // If we have step completion status but this specific step is not completed, return pending
+    return 'pending';
   };
 
   // New state management for categories and subcategories
@@ -3391,9 +3401,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                 <span>Completed</span>
                 <span>
-                  {auction.stepCompletionStatus 
-                    ? Object.values(auction.stepCompletionStatus).filter(Boolean).length 
-                    : auction.currentStep || 0
+                  {completeAdData?.step_completion_status 
+                    ? Object.values(completeAdData.step_completion_status).filter(Boolean).length 
+                    : (auction.stepCompletionStatus 
+                      ? Object.values(auction.stepCompletionStatus).filter(Boolean).length 
+                      : auction.currentStep || 0)
                   } / {steps.length}
                 </span>
               </div>
@@ -3401,10 +3413,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 <div 
                   className="bg-[#FF8A00] h-2 rounded-full transition-all duration-300"
                   style={{ 
-                    width: `${((auction.stepCompletionStatus 
-                      ? Object.values(auction.stepCompletionStatus).filter(Boolean).length 
-                      : auction.currentStep || 0
-                    ) / steps.length) * 100}%` 
+                    width: `${(() => {
+                      const completedCount = completeAdData?.step_completion_status 
+                        ? Object.values(completeAdData.step_completion_status).filter(Boolean).length 
+                        : (auction.stepCompletionStatus 
+                          ? Object.values(auction.stepCompletionStatus).filter(Boolean).length 
+                          : auction.currentStep || 0);
+                      return (completedCount / steps.length) * 100;
+                    })()}%` 
                   }}
                 />
               </div>
