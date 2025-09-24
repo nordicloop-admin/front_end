@@ -189,7 +189,9 @@ const DashboardPage = () => {
               <Check size={18} />
             </div>
           </div>
-          <div className="text-md font-medium mb-1">{stats?.subscription || 'Free Plan'}</div>
+          <div className="text-md font-medium mb-1">
+            {isLoading ? 'Loading...' : (stats?.subscription || 'Free Plan')}
+          </div>
           <Link
             href="/dashboard/subscriptions"
             className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium flex items-center"
