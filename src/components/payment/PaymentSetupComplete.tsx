@@ -5,9 +5,6 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, Clock, AlertTriangle, Loader2, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getAccountStatus, AccountStatusResponse } from '@/services/payment';
@@ -61,35 +58,37 @@ const PaymentSetupComplete: React.FC = () => {
 
   if (status === 'checking') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="flex flex-col items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mb-4" />
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-full max-w-md mx-4 bg-white border border-gray-200 rounded-lg p-6">
+          <div className="flex flex-col items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-[#FF8A00] mb-4" />
             <h3 className="text-lg font-semibold mb-2">Checking your account status...</h3>
             <p className="text-gray-600 text-center">
               We&apos;re verifying your payment setup with Stripe
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (status === 'error') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-lg mx-4">
-          <CardHeader>
-            <CardTitle className="flex items-center text-red-600">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-full max-w-lg mx-4 bg-white border border-gray-200 rounded-lg">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="flex items-center text-red-600 text-xl font-semibold">
               <AlertTriangle className="h-6 w-6 mr-2" />
               Setup Incomplete
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            </h2>
+          </div>
+          <div className="p-6 space-y-4">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                <p className="text-red-700">{error}</p>
+              </div>
+            </div>
             
             <div className="text-center space-y-4">
               <p className="text-gray-600">
@@ -97,35 +96,41 @@ const PaymentSetupComplete: React.FC = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button onClick={retrySetup} className="bg-blue-600 hover:bg-blue-700">
+                <button 
+                  onClick={retrySetup} 
+                  className="px-4 py-2 bg-[#FF8A00] hover:bg-orange-600 text-white rounded-lg transition-colors flex items-center justify-center"
+                >
                   <ArrowRight className="mr-2 h-4 w-4" />
                   Retry Setup
-                </Button>
-                <Button variant="outline" onClick={goToDashboard}>
+                </button>
+                <button 
+                  onClick={goToDashboard}
+                  className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors"
+                >
                   Back to Dashboard
-                </Button>
+                </button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (status === 'pending') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-lg mx-4">
-          <CardHeader>
-            <CardTitle className="flex items-center text-yellow-600">
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-full max-w-lg mx-4 bg-white border border-gray-200 rounded-lg">
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="flex items-center text-yellow-600 text-xl font-semibold">
               <Clock className="h-6 w-6 mr-2" />
               Setup In Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </h2>
+          </div>
+          <div className="p-6 space-y-4">
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center">
-                <Clock className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0" />
+              <div className="flex items-start">
+                <Clock className="h-5 w-5 text-yellow-600 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
                   <h4 className="font-medium text-yellow-800">Account Under Review</h4>
                   <p className="text-sm text-yellow-700 mt-1">
@@ -142,32 +147,38 @@ const PaymentSetupComplete: React.FC = () => {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button onClick={goToPayments} className="bg-blue-600 hover:bg-blue-700">
+                <button 
+                  onClick={goToPayments} 
+                  className="px-4 py-2 bg-[#FF8A00] hover:bg-orange-600 text-white rounded-lg transition-colors flex items-center justify-center"
+                >
                   <ArrowRight className="mr-2 h-4 w-4" />
                   View Payment Dashboard
-                </Button>
-                <Button variant="outline" onClick={goToDashboard}>
+                </button>
+                <button 
+                  onClick={goToDashboard}
+                  className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors"
+                >
                   Back to Dashboard
-                </Button>
+                </button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     );
   }
 
   // status === 'complete'
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <Card className="w-full max-w-lg mx-4">
-        <CardHeader>
-          <CardTitle className="flex items-center text-green-600">
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="w-full max-w-lg mx-4 bg-white border border-gray-200 rounded-lg">
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="flex items-center text-green-600 text-xl font-semibold">
             <CheckCircle className="h-6 w-6 mr-2" />
             Payment Setup Complete!
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+          </h2>
+        </div>
+        <div className="p-6 space-y-6">
           <div className="p-6 bg-green-50 border border-green-200 rounded-lg text-center">
             <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-green-800 mb-2">
@@ -201,16 +212,22 @@ const PaymentSetupComplete: React.FC = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={goToDashboard} className="bg-blue-600 hover:bg-blue-700 flex-1">
+            <button 
+              onClick={goToDashboard} 
+              className="flex-1 px-4 py-2 bg-[#FF8A00] hover:bg-orange-600 text-white rounded-lg transition-colors flex items-center justify-center"
+            >
               <ArrowRight className="mr-2 h-4 w-4" />
               Go to Dashboard
-            </Button>
-            <Button variant="outline" onClick={goToPayments} className="flex-1">
+            </button>
+            <button 
+              onClick={goToPayments}
+              className="flex-1 px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg transition-colors"
+            >
               View Payments
-            </Button>
+            </button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
