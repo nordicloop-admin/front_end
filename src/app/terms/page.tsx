@@ -75,22 +75,16 @@ export default function TermsAndConditions() {
           </p>
           
           <h2 className="text-xl font-medium mt-8 mb-4">5. Your Rights and Responsibilities</h2>
-          <p className="mb-4">You agree to:</p>
-          <ul className="list-disc pl-6 mb-4">
-            <li>Provide accurate, non-misleading information in listings</li>
-            <li>Only upload content and images you have the right to use</li>
-            <li>Not engage in spam, fraud, or abusive behavior</li>
-          </ul>
-          <p className="mb-6">
-            You can request account deletion at any time by emailing us at info@nordicloop.se. We&apos;ll
-            process the request within 30 days.
+          <p className="mb-4">
+
+            The content (including information and/or material) of the Website (for example, under the Knowledge Library, in reference projects, in advertisements on the Marketplace, etc.) should not be perceived as advice of any kind from Nordic Loop. Nordic Loop does not warrant that the content of the Website is complete, accurate or current. The content of the Website may be changed or removed without special notice. Nordic Loop does not guarantee that the Website will function without interruption or interference. All use of the content on the Website is at your own risk and Nordic Loop thus assumes no responsibility for its content or how the content is used. Nordic Loop is not responsible in any case for any direct or indirect damage, cost, loss or claim based on the use of or decisions made pursuant to the content of the Website. 
           </p>
+          
           
           <h2 className="text-xl font-medium mt-8 mb-4">6. Our Role</h2>
           <p className="mb-6">
-            Nordic Loop provides the infrastructure for businesses to connect and trade reusable
-            materials. However, we are not responsible for the accuracy of user-generated content or for
-            transactions made between users.
+            
+            These terms and conditions are governed by Swedish law. Disputes regarding the interpretation or application of these terms and conditions must be settled in the Stockholm district court in the first instance.
           </p>
           <p className="mb-6">
             We reserve the right to moderate or remove content that violates these Terms.

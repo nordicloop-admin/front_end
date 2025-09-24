@@ -12,6 +12,7 @@ interface Auction {
   timeLeft: string;
   volume: string;
   countryOfOrigin: string;
+  currency?: string; // Add currency field
   originalBidAmount?: string; // Original bid amount for pre-filling the bid form
   bidId?: number; // ID of the existing bid if updating
 }
@@ -22,6 +23,7 @@ interface BidSubmissionData {
   volumeType?: 'partial' | 'full';
   notes?: string;
   maxAutoBidPrice?: string;
+  paymentMethodId: string;
 }
 
 interface UseBiddingReturn {
@@ -29,7 +31,7 @@ interface UseBiddingReturn {
   isModalOpen: boolean;
   openBidModal: (auction: Auction) => void;
   closeBidModal: () => void;
-  submitBid: (data: BidSubmissionData) => Promise<void>;
+  submitBid: (data: BidSubmissionData, onComplete?: () => void) => Promise<void>;
 }
 
 export default function useBidding(): UseBiddingReturn {
@@ -46,7 +48,7 @@ export default function useBidding(): UseBiddingReturn {
     setIsModalOpen(false);
   };
 
-  const submitBid = async (data: BidSubmissionData): Promise<void> => {
+  const submitBid = async (data: BidSubmissionData, onComplete?: () => void): Promise<void> => {
     if (!selectedAuction) return;
 
     try {
@@ -116,6 +118,7 @@ export default function useBidding(): UseBiddingReturn {
           ad: parseInt(selectedAuction.id),
           bid_price_per_unit: parsedAmount,
           volume_requested: parsedVolume || '1', // Default to 1 if not provided
+          payment_method_id: data.paymentMethodId, // Required for pre-authorization
         };
 
         // Add volume type if provided
@@ -197,15 +200,27 @@ export default function useBidding(): UseBiddingReturn {
       // Refresh the page to show updated data
       window.location.reload();
 
+      // Call completion callback
+      onComplete?.();
+
     } catch (error) {
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
-      
-      // Show error message
+
+      // Check if this is a broker restriction error
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      const isBrokerRestriction = errorMessage.includes('chosen not to sell this material to brokers');
+
+      // Show appropriate error message
       const isUpdate = !!selectedAuction?.bidId;
       toast.error(`Failed to ${isUpdate ? 'update' : 'place'} bid`, {
-        description: error instanceof Error ? error.message : 'An unknown error occurred',
+        description: isBrokerRestriction
+          ? 'This company has chosen not to sell this material to brokers.'
+          : errorMessage,
         duration: 5000,
       });
+
+      // Call completion callback even on error to reset state
+      onComplete?.();
     }
   };
 

@@ -5,11 +5,30 @@ import { Search, Filter, Clock, ArrowUpRight, AlertCircle, Loader2 } from 'lucid
 import Image from 'next/image';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
 import useBidding from '@/hooks/useBidding';
-import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
+import { getAuctions, getUserAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
+import { getUser } from '@/services/auth';
+import { getUserBids, BidItem } from '@/services/bid';
+import { calculateTimeRemaining, formatTimeRemaining } from '@/utils/timeUtils';
+
+// Interface for auction display data
+interface AuctionDisplayData {
+  id: string;
+  name: string;
+  category: string;
+  basePrice: string;
+  highestBid: string | null;
+  timeLeft: string;
+  volume: string;
+  seller: string;
+  countryOfOrigin: string;
+  image: string;
+  isMyAuction?: boolean;
+  hasBid?: boolean;
+}
 
 // Mock data for marketplace auctions
-const marketplaceAuctions = [
+const marketplaceAuctions: AuctionDisplayData[] = [
   {
     id: '1',
     name: 'PPA Thermocomp UFW49RSC (Black)',
@@ -20,7 +39,9 @@ const marketplaceAuctions = [
     volume: '500 kg',
     seller: 'Eco Solutions AB',
     countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/plastics.jpg'
+    image: '/images/marketplace/categories/plastics.jpg',
+    isMyAuction: false,
+    hasBid: false
   },
   {
     id: '2',
@@ -32,7 +53,9 @@ const marketplaceAuctions = [
     volume: '750 kg',
     seller: 'Green Tech Norway',
     countryOfOrigin: 'Norway',
-    image: '/images/marketplace/categories/plastics-alt.jpg'
+    image: '/images/marketplace/categories/plastics-alt.jpg',
+    isMyAuction: false,
+    hasBid: false
   },
   {
     id: '3',
@@ -44,7 +67,9 @@ const marketplaceAuctions = [
     volume: '1200 kg',
     seller: 'Circular Materials Oy',
     countryOfOrigin: 'Finland',
-    image: '/images/marketplace/categories/metals.jpg'
+    image: '/images/marketplace/categories/metals.jpg',
+    isMyAuction: false,
+    hasBid: false
   },
   {
     id: '4',
@@ -56,7 +81,9 @@ const marketplaceAuctions = [
     volume: '850 kg',
     seller: 'Eco Solutions AB',
     countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/paper.jpg'
+    image: '/images/marketplace/categories/paper.jpg',
+    isMyAuction: false,
+    hasBid: false
   }
 ];
 
@@ -78,8 +105,11 @@ export default function Auctions() {
 
   // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
+  const [userAuctions, setUserAuctions] = useState<AuctionItem[]>([]);
+  const [userBids, setUserBids] = useState<BidItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [_currentUser, setCurrentUser] = useState<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [paginationData, setPaginationData] = useState({
@@ -95,7 +125,14 @@ export default function Auctions() {
     setError(null);
 
     try {
+      // Fetch all auctions
       const response = await getAuctions({ page, page_size: size });
+
+      // Fetch user's own auctions
+      const userResponse = await getUserAuctions();
+
+      // Fetch user's bids
+      const bidsResponse = await getUserBids();
 
       if (response.error) {
         // Error handling for auction fetch failures
@@ -110,6 +147,7 @@ export default function Auctions() {
         // Successfully fetched auctions
         const result = response.data as PaginatedAuctionResult;
         setApiAuctions(result.auctions || []);
+        // All auctions loaded
         setPaginationData({
           count: result.pagination.count,
           totalPages: result.pagination.total_pages,
@@ -120,6 +158,23 @@ export default function Auctions() {
         // No auction data available
         setApiAuctions([]);
         setError('No auctions found');
+      }
+
+      // Set user auctions (even if there's an error, we might still have user auctions)
+      if (userResponse.data) {
+        const userResult = userResponse.data as PaginatedAuctionResult;
+        setUserAuctions(userResult.auctions || []);
+        // User auctions loaded
+      } else {
+        // No user auctions data
+      }
+
+      // Set user bids
+      if (bidsResponse.data) {
+        setUserBids(bidsResponse.data.bids || []);
+        // User bids loaded
+      } else {
+        // No user bids data
       }
     } catch (err) {
       // Handle unexpected errors
@@ -134,13 +189,19 @@ export default function Auctions() {
     fetchAuctions(currentPage, pageSize);
   }, [currentPage, pageSize]);
 
+  // Get current user
+  useEffect(() => {
+    const user = getUser();
+    setCurrentUser(user);
+  }, []);
+
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
   };
 
   // Handle page size change
-  const handlePageSizeChange = (size: number) => {
+  const _handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
   };
@@ -162,18 +223,60 @@ export default function Auctions() {
   };
 
   // Convert API auctions to the format expected by the UI
-  const convertedAuctions = (apiAuctions || []).map(auction => ({
-    id: auction.id.toString(),
-    name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
-    category: auction.category_name,
-    basePrice: auction.starting_bid_price || auction.total_starting_value,
-    highestBid: null, // API doesn't provide highest bid yet
-    timeLeft: 'Available', // API doesn't provide end date/time in this format
-    volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-    seller: 'Unknown', // API doesn't provide seller info yet
-    countryOfOrigin: auction.location_summary || 'Unknown',
-    image: auction.material_image || '/images/marketplace/categories/plastics.jpg' // Fallback image
-  }));
+  const convertedAuctions: AuctionDisplayData[] = (apiAuctions || []).map(auction => {
+    // Check if this auction belongs to the current user
+    // Make sure we're comparing the same data types
+    const isMyAuction = userAuctions.some(userAuction =>
+      userAuction.id === auction.id || userAuction.id.toString() === auction.id.toString()
+    );
+
+    // Check if user has bid on this auction
+    // Make sure we're comparing the same data types for ad_id
+    const userBid = userBids.find(bid =>
+      bid.ad_id === auction.id || (bid.ad_id && bid.ad_id.toString() === auction.id.toString())
+    );
+    const hasBid = !!userBid;
+
+    // Debug logging (remove in production)
+    if (isMyAuction) {
+      // Found my auction
+    }
+    if (hasBid) {
+      // Found my bid on auction
+    }
+
+    // Calculate time remaining from auction end date or use API provided time_remaining
+    const timeRemaining = auction.time_remaining || calculateTimeRemaining(auction.auction_end_date || null);
+    const displayTimeLeft = formatTimeRemaining(timeRemaining);
+
+    // Determine highest bid value based on new data structure
+    let highestBidFormatted = null;
+    if (auction.highest_bid_price) {
+      // Format highest bid price with currency
+      const formattedPrice = auction.highest_bid_price.toLocaleString('sv-SE');
+      highestBidFormatted = `${formattedPrice} ${auction.currency}`;
+    } else if (auction.base_price) {
+      // If no bids, show base price
+      const formattedPrice = auction.base_price.toLocaleString('sv-SE');
+      highestBidFormatted = `${formattedPrice} ${auction.currency}`;
+    }
+
+    return {
+      id: auction.id.toString(),
+      name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+      category: auction.category_name,
+      basePrice: auction.starting_bid_price || auction.total_starting_value,
+      highestBid: highestBidFormatted,
+      timeLeft: displayTimeLeft,
+      volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+      seller: 'Unknown', // API doesn't provide seller info yet
+      countryOfOrigin: auction.location_summary || 'Unknown',
+      currency: auction.currency, // Include currency from API data
+      image: auction.material_image || '/images/marketplace/categories/plastics.jpg', // Fallback image
+      isMyAuction: isMyAuction,
+      hasBid: hasBid
+    };
+  });
 
   // Use API auctions if available, otherwise fall back to mock data
   const auctionsToDisplay = (apiAuctions && apiAuctions.length > 0) ? convertedAuctions : marketplaceAuctions;
@@ -193,7 +296,30 @@ export default function Auctions() {
 
   return (
     <div className="p-5">
-      <h1 className="text-xl font-medium mb-5">Available Auctions</h1>
+      <div className="mb-5">
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-xl font-medium">All Active Auctions</h1>
+            <p className="text-sm text-gray-600 mt-1">Browse all active auctions in the marketplace. Your auctions and bids are highlighted with colored borders and badges.</p>
+          </div>
+          {!isLoading && (
+            <div className="flex gap-4 text-sm">
+              <div className="text-center">
+                <div className="font-medium text-[#FF8A00]">{userAuctions.length}</div>
+                <div className="text-gray-500">Your Auctions</div>
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-blue-600">{userBids.length}</div>
+                <div className="text-gray-500">Your Bids</div>
+              </div>
+              <div className="text-center">
+                <div className="font-medium text-gray-900">{paginationData.count}</div>
+                <div className="text-gray-500">Total Active</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row gap-3 mb-5">
@@ -245,6 +371,8 @@ export default function Auctions() {
         ))}
       </div>
 
+
+
       {/* Loading State */}
       {isLoading && (
         <div className="bg-white border border-gray-100 rounded-md p-6 flex justify-center items-center">
@@ -275,7 +403,7 @@ export default function Auctions() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
             {filteredAuctions.map((auction) => (
-              <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden">
+              <div key={auction.id} className="bg-white border border-gray-100 rounded-md overflow-hidden hover:shadow-md transition-all duration-200">
                 <div className="relative h-40 w-full">
                   <Image
                     src={auction.image}
@@ -286,6 +414,21 @@ export default function Auctions() {
                   <div className="absolute top-2 left-2 bg-white/90 px-2 py-1 rounded text-xs">
                     {auction.category}
                   </div>
+
+                  {/* Simple Banner for User's Own Auction */}
+                  {auction.isMyAuction && (
+                    <div className="absolute bottom-2 left-2 bg-emerald-500 text-white px-2 py-1 rounded text-xs font-medium shadow-sm">
+                      Your Auction
+                    </div>
+                  )}
+
+                  {/* Simple Banner for User's Bid */}
+                  {auction.hasBid && !auction.isMyAuction && (
+                    <div className="absolute bottom-2 left-2 bg-purple-500 text-white px-2 py-1 rounded text-xs font-medium shadow-sm">
+                      You Bidded
+                    </div>
+                  )}
+
                   <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white flex items-center">
                     <Clock size={12} className="mr-1" />
                     {auction.timeLeft}
@@ -328,10 +471,9 @@ export default function Auctions() {
             <Pagination
               currentPage={paginationData.currentPage}
               totalPages={paginationData.totalPages}
-              totalCount={paginationData.count}
-              pageSize={paginationData.pageSize}
+              totalItems={paginationData.count}
+              itemsPerPage={paginationData.pageSize}
               onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
             />
           )}
         </>

@@ -121,7 +121,7 @@ export default function MyBids() {
   };
 
   // Handle page size change
-  const handlePageSizeChange = (size: number) => {
+  const _handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
   };
@@ -177,6 +177,7 @@ export default function MyBids() {
       timeLeft: 'Available',
       volume: `${bid.volume_requested} ${bid.unit}`,
       countryOfOrigin: 'Unknown',
+      currency: bid.currency || 'SEK', // Include currency from bid data
       originalBidAmount: bid.bid_price_per_unit,
       bidId: bid.id
     });
@@ -195,7 +196,7 @@ export default function MyBids() {
   };
 
   // Get status display info
-  const getStatusInfo = (status: string, _isWinning: boolean) => {
+  const getStatusInfo = (status: string, _isWinning?: boolean) => {
     const statusMap = {
       'active': { color: 'bg-blue-100 text-blue-800', label: 'Active' },
       'winning': { color: 'bg-green-100 text-green-800', label: 'Winning' },
@@ -395,10 +396,9 @@ export default function MyBids() {
           <Pagination
             currentPage={paginationData.currentPage}
             totalPages={paginationData.totalPages}
-            totalCount={paginationData.count}
-            pageSize={paginationData.pageSize}
+            totalItems={paginationData.count}
+            itemsPerPage={paginationData.pageSize}
             onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
           />
         </>
       ) : (

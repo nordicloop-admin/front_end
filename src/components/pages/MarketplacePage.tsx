@@ -6,14 +6,16 @@ import { Loader2, AlertCircle } from 'lucide-react';
 // import { SlidersHorizontal } from '@/components/ui/Icons';
 import { CategoryFilter } from '@/components/marketplace/CategoryFilter';
 import { LocationFilter } from '@/components/marketplace/LocationFilter';
-import { TimeFilter } from '@/components/marketplace/TimeFilter';
-import { FormFilter } from '@/components/marketplace/FormFilter';
-import { QuantityFilter } from '@/components/marketplace/QuantityFilter';
-import { SortDropdown } from '@/components/marketplace/SortDropdown';
+
+import { BrokerFilter } from '@/components/marketplace/BrokerFilter';
+import { OriginFilter } from '@/components/marketplace/OriginFilter';
+import { ContaminationFilter } from '@/components/marketplace/ContaminationFilter';
+
 import { getAuctions, AuctionItem, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { getCategoryImage } from '@/utils/categoryImages';
+import { formatTimeRemaining } from '@/utils/timeUtils';
 
 // Mock data for marketplace items
 const _marketplaceItems = [
@@ -182,14 +184,29 @@ const ProductCard = ({ item }: { item: any }) => {
 };
 
 const MarketplacePage = () => {
-  const [sortOption, setSortOption] = useState('Recently');
   const [selectedCategory, setSelectedCategory] = useState('All materials');
   const [selectedLocation, setSelectedLocation] = useState('All Locations');
-  const [selectedForms, setSelectedForms] = useState<string[]>([]);
-  const [selectedDateFilter, setSelectedDateFilter] = useState('All time');
-  const [minQuantity, setMinQuantity] = useState(0);
-  const [maxQuantity, setMaxQuantity] = useState(10000);
+  const [selectedBrokerFilter, setSelectedBrokerFilter] = useState('all');
+  const [selectedOrigin, setSelectedOrigin] = useState('');
+  const [selectedContamination, setSelectedContamination] = useState('');
+
+  // Filter state for API calls
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [subcategoryIds, setSubcategoryIds] = useState<number[]>([]);
+  const [selectedCountries, setSelectedCountries] = useState<string[]>([]);
+  const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const [resetTrigger, setResetTrigger] = useState(0);
   
+  // Global subcategory selection state - persists across category switches
+  const [globalSubcategorySelections, setGlobalSubcategorySelections] = useState<{
+    [categoryId: number]: number[];
+  }>({});
+  
+  // Store subcategory names for display purposes
+  const [subcategoryNames, setSubcategoryNames] = useState<{
+    [subcategoryId: number]: { name: string; categoryName: string };
+  }>({});
+
   // State for API auctions and pagination
   const [apiAuctions, setApiAuctions] = useState<AuctionItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -203,13 +220,67 @@ const MarketplacePage = () => {
     pageSize: 12
   });
 
-  // Helper function to toggle form selection
-  const toggleFormSelection = (form: string) => {
-    if (selectedForms.includes(form)) {
-      setSelectedForms(selectedForms.filter(f => f !== form));
-    } else {
-      setSelectedForms([...selectedForms, form]);
+
+
+  // Filter callback functions (legacy - kept for backward compatibility)
+  const handleCategoryChange = (categoryId: number | null, _subcategoryIds: number[]) => {
+    setCategoryId(categoryId);
+    // Don't set subcategoryIds here - let global management handle it
+  };
+  
+  // Global subcategory management - this is the main handler
+  const handleGlobalSubcategoryChange = (categoryId: number, subcategoryIds: number[], subcategoryData?: { id: number; name: string; categoryName: string }[]) => {
+    // Update global selections for this category
+    const newGlobalSelections = {
+      ...globalSubcategorySelections,
+      [categoryId]: subcategoryIds
+    };
+    
+    setGlobalSubcategorySelections(newGlobalSelections);
+    
+    // Update subcategory names for display
+    if (subcategoryData) {
+      setSubcategoryNames(prev => {
+        const updated = { ...prev };
+        subcategoryData.forEach(sub => {
+          updated[sub.id] = { name: sub.name, categoryName: sub.categoryName };
+        });
+        // Remove names for subcategories no longer selected
+        Object.keys(updated).forEach(subcatId => {
+          const id = parseInt(subcatId);
+          const stillSelected = Object.values(newGlobalSelections).flat().includes(id);
+          if (!stillSelected) {
+            delete updated[id];
+          }
+        });
+        return updated;
+      });
     }
+    
+    // Calculate all selected subcategories across all categories
+    const allSelectedSubcategories = Object.values(newGlobalSelections).flat();
+    
+    // Update the main subcategory list for API calls
+    setSubcategoryIds(allSelectedSubcategories);
+    
+    // Update category ID if we're working with a specific category
+    if (categoryId && allSelectedSubcategories.length > 0) {
+      setCategoryId(categoryId);
+    } else if (allSelectedSubcategories.length === 0) {
+      setCategoryId(null);
+    }
+  };
+
+  const handleLocationChange = (countries: string[]) => {
+    setSelectedCountries(countries);
+  };
+
+  const handleOriginChange = (origin: string | null) => {
+    setSelectedOrigin(origin || '');
+  };
+
+  const handleContaminationChange = (contamination: string | null) => {
+    setSelectedContamination(contamination || '');
   };
 
   // Calculate time left for an auction
@@ -234,7 +305,23 @@ const MarketplacePage = () => {
     setError(null);
 
     try {
-      const response = await getAuctions({ page, page_size: size });
+      const filterParams = {
+        exclude_brokers: selectedBrokerFilter === 'exclude_brokers',
+        only_brokers: selectedBrokerFilter === 'only_brokers',
+        category: categoryId || undefined,
+        // Use multiple subcategories - the backend now supports this!
+        subcategories: subcategoryIds.length > 0 ? subcategoryIds : undefined,
+        origin: selectedOrigin || undefined,
+        contamination: selectedContamination || undefined,
+        country: selectedCountries.length > 0 ? selectedCountries[0] : undefined, // API supports single country
+      };
+      
+      // API call with aggregated subcategories from all categories
+      const response = await getAuctions({
+        page,
+        page_size: size,
+        ...filterParams
+      });
 
       if (response.error) {
         setError(response.error);
@@ -257,10 +344,53 @@ const MarketplacePage = () => {
     }
   };
 
-  // Initial fetch
+  // Sync subcategoryIds with globalSubcategorySelections to ensure consistency
+  useEffect(() => {
+    const allSelectedSubcategories = Object.values(globalSubcategorySelections).flat();
+    
+    // Only update if different to avoid infinite loops
+    if (JSON.stringify(allSelectedSubcategories.sort()) !== JSON.stringify(subcategoryIds.sort())) {
+      setSubcategoryIds(allSelectedSubcategories);
+    }
+  }, [globalSubcategorySelections, subcategoryIds]);
+  
+  // Check if any filters are active
+  useEffect(() => {
+    const hasFilters = 
+      selectedCategory !== 'All materials' ||
+      selectedLocation !== 'All Locations' ||
+      selectedBrokerFilter !== 'all' ||
+      selectedOrigin !== '' ||
+      selectedContamination !== '' ||
+      subcategoryIds.length > 0;
+    
+    setHasActiveFilters(hasFilters);
+  }, [selectedCategory, selectedLocation, selectedBrokerFilter, selectedOrigin, selectedContamination, subcategoryIds]);
+  
+  // Helper function to get display text for selected subcategories
+  const getSelectedSubcategoriesDisplay = () => {
+    if (subcategoryIds.length === 0) return 'All materials';
+    
+    const categoriesWithCounts: { [categoryName: string]: number } = {};
+    subcategoryIds.forEach(id => {
+      const subcat = subcategoryNames[id];
+      if (subcat) {
+        categoriesWithCounts[subcat.categoryName] = (categoriesWithCounts[subcat.categoryName] || 0) + 1;
+      }
+    });
+    
+    const parts = Object.entries(categoriesWithCounts).map(([categoryName, count]) => 
+      `${categoryName} (${count})`
+    );
+    
+    return parts.join(', ');
+  };
+
+  // Initial fetch and refetch when filters change
   useEffect(() => {
     fetchAuctions(currentPage, pageSize);
-  }, [currentPage, pageSize]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, selectedBrokerFilter, categoryId, subcategoryIds, selectedOrigin, selectedContamination, selectedCountries]);
 
   // Handle page change
   const handlePageChange = (page: number) => {
@@ -268,34 +398,66 @@ const MarketplacePage = () => {
   };
 
   // Handle page size change
-  const handlePageSizeChange = (size: number) => {
+  const _handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
+  // Clear all filters function
+  const clearAllFilters = () => {
+    setSelectedCategory('All materials');
+    setSelectedLocation('All Locations');
+    setSelectedBrokerFilter('all');
+    setSelectedOrigin('');
+    setSelectedContamination('');
+    setCategoryId(null);
+    setSubcategoryIds([]);
+    setSelectedCountries([]);
+    setCurrentPage(1);
+    // Clear global subcategory selections
+    setGlobalSubcategorySelections({});
+    setSubcategoryNames({});
+    // Trigger reset in filter components
+    setResetTrigger(prev => prev + 1);
+  };
+
   // Convert API auctions to the format expected by the UI
-  const convertedAuctions = apiAuctions.map(auction => ({
-    id: auction.id.toString(),
-    name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
-    category: auction.category_name,
-    basePrice: auction.starting_bid_price || auction.total_starting_value,
-    highestBid: null, // API doesn't provide highest bid yet
-    timeLeft: 'Available', // API doesn't provide end date/time in this format
-    volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
-    countryOfOrigin: auction.location_summary || 'Unknown',
-    image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
-  }));
-
-  // Filter auctions based on search term and category
-  const filteredAuctions = convertedAuctions.filter(auction => {
-    const matchesCategory = selectedCategory === 'All materials' ||
-      (auction.category && auction.category === selectedCategory);
-
-    const matchesLocation = selectedLocation === 'All Locations' ||
-      (auction.countryOfOrigin && auction.countryOfOrigin === selectedLocation);
-
-    return matchesCategory && matchesLocation;
+  const convertedAuctions = apiAuctions.map(auction => {
+    // Use backend-calculated time remaining (backend filters out expired auctions)
+    const displayTimeLeft = formatTimeRemaining(auction.time_remaining || null);
+    
+    // Determine current price based on highest bid or base price
+    let currentPrice = '';
+    if (auction.highest_bid_price) {
+      // Format highest bid price with currency
+      const formattedPrice = auction.highest_bid_price.toLocaleString('sv-SE');
+      currentPrice = `${formattedPrice} ${auction.currency}`;
+    } else if (auction.base_price) {
+      // Format base price with currency
+      const formattedPrice = auction.base_price.toLocaleString('sv-SE');
+      currentPrice = `${formattedPrice} ${auction.currency}`;
+    } else {
+      // Fallback to starting bid price
+      const price = auction.starting_bid_price || '0';
+      currentPrice = `${price} ${auction.currency}`;
+    }
+    
+    return {
+      id: auction.id.toString(),
+      name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
+      category: auction.category_name,
+      basePrice: auction.starting_bid_price || auction.total_starting_value,
+      currentBid: currentPrice,
+      timeLeft: displayTimeLeft,
+      volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+      countryOfOrigin: auction.location_summary || 'Unknown',
+      image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
+    };
   });
+
+  // Since we're now using server-side filtering, we use the API results directly
+  // The server already filters based on category, location, origin, contamination, etc.
+  const filteredAuctions = convertedAuctions;
 
   return (
     <div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
@@ -309,45 +471,115 @@ const MarketplacePage = () => {
           </span>
         </div>
 
-        <div className="flex w-full sm:w-auto space-x-3">
-          {/* Sort Dropdown */}
-          <div className="relative w-full sm:w-auto">
-            <SortDropdown sortOption={sortOption} setSortOption={setSortOption} />
-          </div>
-        </div>
+        {/* Clear Filters Button */}
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center space-x-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c-1 0 2 1 2 2v2" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+            <span>Clear Filters</span>
+          </button>
+        )}
       </div>
 
       {/* Materials Filter Dropdown */}
       <div className="mb-6">
         <div className="flex items-center space-x-0 overflow-x-auto border-t border-b border-gray-200">
           <CategoryFilter
-            selectedCategory={selectedCategory}
+            selectedCategory={getSelectedSubcategoriesDisplay()}
             setSelectedCategory={setSelectedCategory}
+            onCategoryChange={handleCategoryChange}
+            onGlobalSubcategoryChange={handleGlobalSubcategoryChange}
+            globalSubcategorySelections={globalSubcategorySelections}
+            resetTrigger={resetTrigger}
           />
 
           <LocationFilter
             selectedLocation={selectedLocation}
             setSelectedLocation={setSelectedLocation}
+            onLocationChange={handleLocationChange}
+            resetTrigger={resetTrigger}
           />
 
-          <QuantityFilter
-            minQuantity={minQuantity}
-            maxQuantity={maxQuantity}
-            setMinQuantity={setMinQuantity}
-            setMaxQuantity={setMaxQuantity}
+          <OriginFilter
+            selectedOrigin={selectedOrigin}
+            setOrigin={setSelectedOrigin}
+            onOriginChange={handleOriginChange}
+            resetTrigger={resetTrigger}
           />
 
-          <FormFilter
-            selectedForms={selectedForms}
-            toggleFormSelection={toggleFormSelection}
+          <ContaminationFilter
+            selectedContamination={selectedContamination}
+            setContamination={setSelectedContamination}
+            onContaminationChange={handleContaminationChange}
+            resetTrigger={resetTrigger}
           />
 
-          <TimeFilter
-            selectedDateFilter={selectedDateFilter}
-            setSelectedDateFilter={setSelectedDateFilter}
+          <BrokerFilter
+            selectedBrokerFilter={selectedBrokerFilter}
+            setBrokerFilter={setSelectedBrokerFilter}
           />
         </div>
       </div>
+
+      {/* Selected subcategories display */}
+      {subcategoryIds.length > 0 && (
+        <div className="mb-4 bg-blue-50 border border-blue-200 rounded-md p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start space-x-2 flex-1">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 mt-0.5 flex-shrink-0">
+                <path d="M9 12l2 2 4-4"/>
+                <circle cx="12" cy="12" r="10"/>
+              </svg>
+              <div className="text-sm flex-1">
+                <p className="font-medium text-blue-800 mb-2">Active Filters ({subcategoryIds.length} subcategories selected)</p>
+                <div className="flex flex-wrap gap-2">
+                  {subcategoryIds.map(subcatId => {
+                    const subcatInfo = subcategoryNames[subcatId];
+                    if (!subcatInfo) return null;
+                    return (
+                      <span
+                        key={subcatId}
+                        className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200"
+                      >
+                        {subcatInfo.categoryName}: {subcatInfo.name}
+                        <button
+                          onClick={() => {
+                            // Remove this specific subcategory
+                            // Find which category this subcategory belongs to and remove it
+                            const categoryOfSubcat = Object.entries(globalSubcategorySelections).find(([, subcatIds]) => 
+                              subcatIds.includes(subcatId)
+                            );
+                            if (categoryOfSubcat) {
+                              const [catId, subcatIds] = categoryOfSubcat;
+                              const newSubcatIds = subcatIds.filter(id => id !== subcatId);
+                              handleGlobalSubcategoryChange(parseInt(catId), newSubcatIds);
+                            }
+                          }}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/>
+                            <line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+                <p className="text-blue-700 mt-2 text-xs">Results include all ads matching any of these subcategories. Add more by selecting different categories.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading State */}
       {isLoading && (
@@ -389,8 +621,12 @@ const MarketplacePage = () => {
                   onClick={() => {
                     setSelectedCategory('All materials');
                     setSelectedLocation('All Locations');
-                    setSelectedForms([]);
-                    setSelectedDateFilter('All time');
+                    setSelectedBrokerFilter('all');
+                    setSelectedOrigin('');
+                    setSelectedContamination('');
+                    setCategoryId(null);
+                    setSubcategoryIds([]);
+                    setSelectedCountries([]);
                   }}
                   className="mt-2 text-[#FF8A00] hover:underline"
                 >
@@ -405,10 +641,9 @@ const MarketplacePage = () => {
             <Pagination
               currentPage={paginationData.currentPage}
               totalPages={paginationData.totalPages}
-              totalCount={paginationData.count}
-              pageSize={paginationData.pageSize}
+              totalItems={paginationData.count}
+              itemsPerPage={paginationData.pageSize}
               onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
             />
           )}
         </>

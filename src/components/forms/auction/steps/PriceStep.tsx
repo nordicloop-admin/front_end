@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, Scale, Package, Clock, Calendar } from 'lucide-react';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
   formData: FormData;
   updateFormData: (updates: Partial<FormData>) => void;
+  onValidationChange?: (isValid: boolean) => void; // New prop to communicate validation state
 }
 
-const currencies = ['SEK', 'EUR'];
+const currencies = ['SEK'];
 
+// Use all units supported by backend - matching Ad.UNIT_CHOICES
 const units = [
   'kg', 'tons', 'tonnes', 'lbs', 'pounds',
   'pieces', 'units', 'bales', 'containers',
-  'm³', 'cubic meters', 'liters', 'gallons'
+  'm³', 'cubic_meters', 'liters', 'gallons', 'meters'
 ];
 
 const bidDurationOptions = [
@@ -24,28 +26,129 @@ const bidDurationOptions = [
   { value: 'custom', label: 'Custom' }
 ];
 
-export function PriceStep({ formData, updateFormData }: Props) {
+export function PriceStep({ formData, updateFormData, onValidationChange }: Props) {
   // Initialize state based on form data
   const [showCustomDuration, setShowCustomDuration] = useState(formData.price.auctionDuration === 'custom');
   const [customEndDate, setCustomEndDate] = useState(formData.price.customEndDate || '');
 
-  const handlePriceUpdate = (field: string, value: string | number) => {
-    updateFormData({
-      price: {
-        ...formData.price,
-        [field]: value,
-        priceType: 'auction' // Always set to auction
+  // Validation states for integer fields
+  const [quantityErrors, setQuantityErrors] = useState({
+    available: '',
+    minimumOrder: ''
+  });
+  const [priceErrors, setPriceErrors] = useState({
+    basePrice: '',
+    reservePrice: ''
+  });
+
+  // Check overall validation state and notify parent
+  useEffect(() => {
+    const hasQuantityErrors = Object.values(quantityErrors).some(error => error !== '');
+    const hasPriceErrors = Object.values(priceErrors).some(error => error !== '');
+    const hasRequiredFields = !!(formData.price.basePrice && formData.price.basePrice > 0 && 
+                                formData.quantity.available && formData.quantity.available > 0 && 
+                                formData.quantity.unit && 
+                                formData.price.auctionDuration);
+    
+    const isValid = !hasQuantityErrors && !hasPriceErrors && hasRequiredFields;
+    onValidationChange?.(isValid);
+  }, [quantityErrors, priceErrors, formData, onValidationChange]);
+
+  // Validate integer input - only allows positive integers
+  const validateIntegerInput = (value: string, fieldName: string, allowZero: boolean = false): { isValid: boolean; error: string } => {
+    if (value === '') {
+      return { isValid: true, error: '' };
+    }
+    
+    // Check if value contains only digits
+    if (!/^\d+$/.test(value)) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} must contain only numbers (no decimals, letters, or special characters)` 
+      };
+    }
+    
+    const numValue = parseInt(value);
+    if (allowZero && numValue < 0) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} cannot be negative` 
+      };
+    } else if (!allowZero && numValue <= 0) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} must be greater than 0` 
+      };
+    }
+    
+    return { isValid: true, error: '' };
+  };
+
+  const handlePriceUpdate = (field: string, value: string | number | boolean) => {
+    // For integer price fields, validate input
+    if ((field === 'basePrice' || field === 'reservePrice') && typeof value === 'string') {
+      const fieldDisplayName = field === 'basePrice' ? 'Starting Bid Price' : 'Reserve Price';
+      const allowZero = field === 'reservePrice'; // Reserve price can be 0 (optional)
+      const validation = validateIntegerInput(value, fieldDisplayName, allowZero);
+      
+      setPriceErrors(prev => ({
+        ...prev,
+        [field]: validation.error
+      }));
+      
+      // Only update form data if valid or empty (to allow clearing)
+      if (validation.isValid) {
+        updateFormData({
+          price: {
+            ...formData.price,
+            [field]: value === '' ? 0 : parseInt(value),
+            priceType: 'auction' // Always set to auction
+          }
+        });
       }
-    });
+    } else {
+      // For non-integer fields, update normally
+      updateFormData({
+        price: {
+          ...formData.price,
+          [field]: value,
+          priceType: 'auction' // Always set to auction
+        }
+      });
+    }
   };
 
   const handleQuantityUpdate = (field: string, value: string | number) => {
-    updateFormData({
-      quantity: {
-        ...formData.quantity,
-        [field]: value
+    // For integer fields, validate input
+    if (field === 'available' || field === 'minimumOrder') {
+      const stringValue = typeof value === 'string' ? value : value.toString();
+      const fieldDisplayName = field === 'available' ? 'Available Quantity' : 'Minimum Order Quantity';
+      const allowZero = field === 'minimumOrder'; // Minimum order can be 0
+      const validation = validateIntegerInput(stringValue, fieldDisplayName, allowZero);
+      
+      setQuantityErrors(prev => ({
+        ...prev,
+        [field]: validation.error
+      }));
+      
+      // Only update form data if valid or empty (to allow clearing)
+      if (validation.isValid) {
+        updateFormData({
+          quantity: {
+            ...formData.quantity,
+            [field]: stringValue === '' ? 0 : parseInt(stringValue)
+          }
+        });
       }
-    });
+    } else {
+      // For non-integer fields, update normally
+      updateFormData({
+        quantity: {
+          ...formData.quantity,
+          [field]: value
+        }
+      });
+    }
   };
 
   const formatPrice = (price: number) => {
@@ -139,14 +242,23 @@ export function PriceStep({ formData, updateFormData }: Props) {
               Available Quantity *
             </label>
             <input
-              type="number"
-              min="0"
-              step="0.1"
+              type="text"
               placeholder="e.g., 1000"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+              className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
+                quantityErrors.available 
+                  ? 'border-red-300 bg-red-50' 
+                  : 'border-gray-300'
+              }`}
               value={formData.quantity.available || ''}
-              onChange={(e) => handleQuantityUpdate('available', parseFloat(e.target.value) || 0)}
+              onChange={(e) => {
+                // Filter out non-digits
+                const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                handleQuantityUpdate('available', filteredValue);
+              }}
             />
+            {quantityErrors.available && (
+              <p className="text-red-500 text-xs mt-1">{quantityErrors.available}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1">
               Total quantity available for auction
             </p>
@@ -179,16 +291,25 @@ export function PriceStep({ formData, updateFormData }: Props) {
         </label>
         <div className="flex items-center space-x-4">
           <input
-            type="number"
-            min="0"
-            step="0.1"
+            type="text"
             placeholder="e.g., 100"
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+            className={`flex-1 px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${
+              quantityErrors.minimumOrder 
+                ? 'border-red-300 bg-red-50' 
+                : 'border-gray-300'
+            }`}
             value={formData.quantity.minimumOrder || ''}
-            onChange={(e) => handleQuantityUpdate('minimumOrder', parseFloat(e.target.value) || 0)}
+            onChange={(e) => {
+              // Filter out non-digits
+              const filteredValue = e.target.value.replace(/[^\d]/g, '');
+              handleQuantityUpdate('minimumOrder', filteredValue);
+            }}
           />
           <span className="text-gray-500">{formData.quantity.unit || 'units'}</span>
         </div>
+        {quantityErrors.minimumOrder && (
+          <p className="text-red-500 text-xs mt-1">{quantityErrors.minimumOrder}</p>
+        )}
         <p className="text-xs text-gray-500 mt-1">
           Minimum quantity buyers must purchase (leave 0 for no minimum)
         </p>
@@ -205,15 +326,24 @@ export function PriceStep({ formData, updateFormData }: Props) {
             </label>
             <div className="relative">
               <input
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="0.00"
-                className="w-full px-4 py-3 pr-16 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                type="text"
+                placeholder="0"
+                className={`w-full px-4 py-3 pr-16 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
+                  priceErrors.basePrice 
+                    ? 'border-red-300 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
                 value={formData.price.basePrice || ''}
-                onChange={(e) => handlePriceUpdate('basePrice', parseFloat(e.target.value) || 0)}
+                onChange={(e) => {
+                  // Filter out non-digits
+                  const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                  handlePriceUpdate('basePrice', filteredValue);
+                }}
               />
             </div>
+            {priceErrors.basePrice && (
+              <p className="text-red-500 text-xs mt-1">{priceErrors.basePrice}</p>
+            )}
             <p className="text-xs text-gray-500 mt-1">
               Initial bid price per {formData.quantity.unit || 'unit'}
             </p>
@@ -225,14 +355,18 @@ export function PriceStep({ formData, updateFormData }: Props) {
               Currency *
             </label>
             <select
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg bg-gray-100"
               value={formData.price.currency}
-              onChange={(e) => handlePriceUpdate('currency', e.target.value)}
+              disabled
+              title="Only SEK currency is supported"
             >
               {currencies.map(currency => (
                 <option key={currency} value={currency}>{currency}</option>
               ))}
             </select>
+            <p className="text-xs text-gray-500 mt-1">
+              Only Swedish Krona (SEK) is currently supported
+            </p>
           </div>
         </div>
       </div>
@@ -302,17 +436,47 @@ export function PriceStep({ formData, updateFormData }: Props) {
           Reserve Price (Optional)
         </label>
         <input
-          type="number"
-          min="0"
-          step="0.01"
+          type="text"
           placeholder="Minimum acceptable price"
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+          className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${
+            priceErrors.reservePrice 
+              ? 'border-red-300 bg-red-50' 
+              : 'border-gray-300'
+          }`}
           value={formData.price.reservePrice || ''}
-          onChange={(e) => handlePriceUpdate('reservePrice', parseFloat(e.target.value) || 0)}
+          onChange={(e) => {
+            // Filter out non-digits
+            const filteredValue = e.target.value.replace(/[^\d]/g, '');
+            handlePriceUpdate('reservePrice', filteredValue);
+          }}
         />
+        {priceErrors.reservePrice && (
+          <p className="text-red-500 text-xs mt-1">{priceErrors.reservePrice}</p>
+        )}
         <p className="text-xs text-gray-500 mt-1">
           If no bids reach this price, the auction will not complete
         </p>
+      </div>
+
+      {/* Broker Bid Permission */}
+      <div className="pt-4 border-t border-gray-200">
+        <div className="flex items-start space-x-3">
+          <input
+            type="checkbox"
+            id="allowBrokerBids"
+            checked={formData.price.allowBrokerBids ?? true}
+            onChange={(e) => handlePriceUpdate('allowBrokerBids', e.target.checked)}
+            className="mt-1 h-4 w-4 text-[#FF8A00] focus:ring-[#FF8A00] border-gray-300 rounded"
+          />
+          <div className="flex-1">
+            <label htmlFor="allowBrokerBids" className="block text-sm font-medium text-gray-700">
+              Allow brokers to bid on this material
+            </label>
+            <p className="text-xs text-gray-500 mt-1">
+              If unchecked, brokers will not be able to place bids on this auction
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Price Summary */}

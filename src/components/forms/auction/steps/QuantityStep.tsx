@@ -7,10 +7,11 @@ interface Props {
   updateFormData: (updates: Partial<FormData>) => void;
 }
 
+// Use all units supported by backend - matching Ad.UNIT_CHOICES
 const units = [
   'kg', 'tons', 'tonnes', 'lbs', 'pounds',
   'pieces', 'units', 'bales', 'containers',
-  'm³', 'cubic meters', 'liters', 'gallons'
+  'm³', 'cubic_meters', 'liters', 'gallons', 'meters'
 ];
 
 const packagingOptions = [

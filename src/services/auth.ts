@@ -225,7 +225,16 @@ export function getAccessToken(): string | null {
     return null;
   }
 
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  try {
+    return localStorage.getItem(ACCESS_TOKEN_KEY);
+  } catch (error) {
+    // Only log in development
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.error('Error accessing localStorage for access token:', error);
+    }
+    return null;
+  }
 }
 
 /**
@@ -249,17 +258,28 @@ export function getUser(): User | null {
     return null;
   }
 
-  const user = localStorage.getItem(USER_KEY);
-
-  if (!user) {
-    return null;
-  }
-
   try {
+    const user = localStorage.getItem(USER_KEY);
+
+    if (!user) {
+      return null;
+    }
+
     return JSON.parse(user);
-  } catch (_error) {
-    // If there's an error parsing the user data, remove it and return null
-    localStorage.removeItem(USER_KEY);
+  } catch (error) {
+    // If there's an error accessing localStorage or parsing the user data, remove it and return null
+    if (process.env.NODE_ENV === 'development') {
+      // eslint-disable-next-line no-console
+      console.error('Error accessing user data from localStorage:', error);
+    }
+    try {
+      localStorage.removeItem(USER_KEY);
+    } catch (removeError) {
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('Error removing invalid user data:', removeError);
+      }
+    }
     return null;
   }
 }

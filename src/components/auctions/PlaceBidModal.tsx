@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
+import { ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
+import Modal from '@/components/ui/modal';
+import PaymentMethodSelector from '@/components/payments/PaymentMethodSelector';
 
 interface PlaceBidModalProps {
   isOpen: boolean;
@@ -12,6 +14,7 @@ interface PlaceBidModalProps {
     volumeType?: 'partial' | 'full';
     notes?: string;
     maxAutoBidPrice?: string;
+    paymentMethodId: string;
   }) => void;
   auction: {
     id: string;
@@ -22,6 +25,7 @@ interface PlaceBidModalProps {
     timeLeft: string;
     volume: string;
     countryOfOrigin: string;
+    currency?: string; // Add currency field
   };
   initialBidAmount?: string; // Optional initial bid amount to prefill
 }
@@ -36,28 +40,95 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
   const [error, setError] = useState('');
   const [volumeError, setVolumeError] = useState('');
   const [autoBidError, setAutoBidError] = useState('');
+  const [bidAmountInputError, setBidAmountInputError] = useState('');
+  const [volumeInputError, setVolumeInputError] = useState('');
+  const [maxAutoBidInputError, setMaxAutoBidInputError] = useState('');
+  const [paymentMethodId, setPaymentMethodId] = useState('');
+  const [paymentMethodError, setPaymentMethodError] = useState('');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  // Format price string to number (remove commas)
+  // Validate that input is a positive integer
+  const validateIntegerInput = useCallback((value: string, fieldName: string): { isValid: boolean; error: string } => {
+    if (value === '') {
+      return { isValid: true, error: '' };
+    }
+    
+    // Check if contains only digits
+    if (!/^\d+$/.test(value)) {
+      return { isValid: false, error: `${fieldName} must contain only numbers (no decimals, letters, or special characters)` };
+    }
+    
+    const numValue = parseInt(value, 10);
+    if (numValue <= 0) {
+      return { isValid: false, error: `${fieldName} must be greater than 0` };
+    }
+    
+    return { isValid: true, error: '' };
+  }, []);
+
+  // Format price string to number (handles both formatted and plain numbers)
   const formatPrice = useCallback((price: string): number => {
     return Number(price.replace(/,/g, ''));
   }, []);
 
-  // Calculate minimum bid (5% higher than current highest bid or base price)
+  // Calculate minimum bid - use highest bid if available, otherwise use base price as minimum
   const calculateMinimumBid = useCallback((): number => {
-    const currentPrice = auction.highestBid
-      ? formatPrice(auction.highestBid)
-      : formatPrice(auction.basePrice);
-    return Math.ceil(currentPrice * 1.05);
-  }, [auction, formatPrice]);
+    // Enhanced price parsing function
+    const parsePrice = (priceValue: any): number => {
+      if (typeof priceValue === 'number') {
+        return isNaN(priceValue) ? 0 : priceValue;
+      }
+      
+      if (typeof priceValue === 'string') {
+        // Remove all non-digit characters except decimal points and commas
+        let cleanedValue = priceValue.replace(/[^\d.,]/g, '');
+        
+        // Handle Swedish number format (1 000,50) and international format (1,000.50)
+        if (cleanedValue.includes(',') && cleanedValue.includes('.')) {
+          // Assume format is 1,000.50 (comma as thousands separator)
+          cleanedValue = cleanedValue.replace(/,/g, '');
+        } else if (cleanedValue.includes(',') && !cleanedValue.includes('.')) {
+          // Could be 1000,50 (comma as decimal) or 1,000 (comma as thousands)
+          const commaIndex = cleanedValue.lastIndexOf(',');
+          const afterComma = cleanedValue.substring(commaIndex + 1);
+          
+          // If only 1-2 digits after comma, it's likely decimal
+          if (afterComma.length <= 2) {
+            cleanedValue = cleanedValue.replace(',', '.');
+          } else {
+            cleanedValue = cleanedValue.replace(/,/g, '');
+          }
+        }
+        
+        const parsed = parseFloat(cleanedValue);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+      
+      return 0;
+    };
 
-  // Format number to price string with commas
-  const formatNumberToPrice = (num: number): string => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  };
+    // Check if there's a highest bid in the auction data
+    if (auction.highestBid) {
+      const highestBidAmount = parsePrice(auction.highestBid);
+      if (highestBidAmount > 0) {
+        // 5% higher than current highest bid
+        return Math.ceil(highestBidAmount * 1.05);
+      }
+    }
+
+    // If no highest bid, use base price as the minimum (no markup)
+    const basePrice = parsePrice(auction.basePrice);
+    if (basePrice > 0) {
+      return basePrice;
+    }
+
+    // Fallback minimum
+    return 50;
+  }, [auction.highestBid, auction.basePrice]);
 
   // Extract volume value from auction.volume (e.g., "100 kg" -> "100")
   const extractVolumeValue = useCallback((volumeString: string): string => {
-    const match = volumeString.match(/^(\d+(\.\d+)?)/);
+    const match = volumeString.match(/^(\d+)/); // Changed to only match integers
     return match ? match[1] : '';
   }, []);
 
@@ -70,21 +141,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
   // Set initial bid amount and volume when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Use initialBidAmount if provided, otherwise calculate minimum bid
-      if (initialBidAmount) {
-        // Format the initial bid amount with commas
-        const formattedInitialBid = formatNumberToPrice(parseFloat(initialBidAmount));
-        setBidAmount(formattedInitialBid);
-      } else {
-        const minBid = calculateMinimumBid();
-        setBidAmount(formatNumberToPrice(minBid));
-      }
-
-      // Extract volume from auction.volume (e.g., "100 kg" -> "100")
-      const volumeValue = extractVolumeValue(auction.volume);
-      setBidVolume(volumeValue);
-
-      // Reset all form states
+      // Reset all form states first
       setVolumeType('partial');
       setNotes('');
       setMaxAutoBidPrice('');
@@ -92,6 +149,25 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
       setError('');
       setVolumeError('');
       setAutoBidError('');
+      setBidAmountInputError('');
+      setVolumeInputError('');
+      setMaxAutoBidInputError('');
+      setPaymentMethodId('');
+      setPaymentMethodError('');
+      setIsProcessingPayment(false);
+
+      // Extract volume from auction.volume (e.g., "100 kg" -> "100")
+      const volumeValue = extractVolumeValue(auction.volume);
+      setBidVolume(volumeValue);
+
+      // Set bid amount using auction data only
+      if (initialBidAmount) {
+        // Use the raw number without comma formatting
+        setBidAmount(Math.floor(parseFloat(initialBidAmount)).toString());
+      } else {
+        const minBid = calculateMinimumBid();
+        setBidAmount(minBid.toString());
+      }
     }
   }, [isOpen, auction, calculateMinimumBid, extractVolumeValue, initialBidAmount]);
 
@@ -105,7 +181,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
     const currentBid = formatPrice(bidAmount);
 
     if (currentBid < minBid) {
-      setError(`Bid must be at least ${formatNumberToPrice(minBid)}`);
+      setError(`Bid must be at least ${minBid}`);
       hasError = true;
     } else if (currentBid <= 0) {
       setError('Bid amount must be greater than 0');
@@ -114,21 +190,24 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
 
     // Validate bid volume
     if (bidVolume) {
-      const volumeValue = parseFloat(bidVolume);
-      const maxVolume = parseFloat(extractVolumeValue(auction.volume));
-      const volumeUnit = extractVolumeUnit(auction.volume);
+      const volumeValidation = validateIntegerInput(bidVolume, 'Volume');
+      if (!volumeValidation.isValid) {
+        setVolumeError(volumeValidation.error);
+        hasError = true;
+      } else {
+        const volumeValue = parseInt(bidVolume, 10);
+        const maxVolume = parseInt(extractVolumeValue(auction.volume), 10);
+        const volumeUnit = extractVolumeUnit(auction.volume);
 
-      if (isNaN(volumeValue) || volumeValue <= 0) {
-        setVolumeError('Volume must be a positive number');
-        hasError = true;
-      } else if (volumeValue > maxVolume) {
-        setVolumeError(`Volume cannot exceed ${maxVolume} ${volumeUnit}`);
-        hasError = true;
+        if (volumeValue > maxVolume) {
+          setVolumeError(`Volume cannot exceed ${maxVolume} ${volumeUnit}`);
+          hasError = true;
+        }
       }
     }
 
     // Validate auto-bid price if enabled
-    if (isAutoBidEnabled && maxAutoBidPrice) {
+    if (isAutoBidEnabled && maxAutoBidPrice && !maxAutoBidInputError) {
       const autoBidPrice = formatPrice(maxAutoBidPrice);
       const currentBidPrice = formatPrice(bidAmount);
 
@@ -141,9 +220,17 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
       hasError = true;
     }
 
+    // Validate payment method
+    if (!paymentMethodId) {
+      setPaymentMethodError('Payment method is required to place a bid');
+      hasError = true;
+    }
+
     if (hasError) {
       return;
     }
+
+    setIsProcessingPayment(true);
 
     // Submit the bid with all the data
     onSubmit({
@@ -152,28 +239,59 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
       volumeType,
       notes: notes.trim() || undefined,
       maxAutoBidPrice: isAutoBidEnabled ? maxAutoBidPrice : undefined,
+      paymentMethodId,
     });
+    
+    // Reset processing state when complete
+    setIsProcessingPayment(false);
   };
 
   if (!isOpen) return null;
 
-  const minBid = formatNumberToPrice(calculateMinimumBid());
-  const currentPrice = auction.highestBid || auction.basePrice;
+  const minBid = calculateMinimumBid().toString();
+  
+  // Determine current price to display using auction data only
+  const getCurrentPriceDisplay = (): { price: string; label: string; isLoading: boolean } => {
+    // If there's a highest bid, show it
+    if (auction.highestBid && auction.highestBid !== '0' && auction.highestBid !== '0.000') {
+      return { 
+        price: auction.highestBid, // Use as-is since it already includes currency 
+        label: 'Current highest bid', 
+        isLoading: false 
+      };
+    } else {
+      // Show base price if no highest bid
+      const basePrice = auction.basePrice || '0';
+      return { 
+        price: basePrice, // Use as-is since it already includes currency
+        label: 'Base price', 
+        isLoading: false 
+      };
+    }
+  };
+  
+  const currentPriceInfo = getCurrentPriceDisplay();
   const volumeUnit = extractVolumeUnit(auction.volume);
   const maxVolume = extractVolumeValue(auction.volume);
+  
+  // Check if form has validation errors
+  const hasValidationErrors = !!(
+    bidAmountInputError || 
+    volumeInputError || 
+    maxAutoBidInputError ||
+    (isAutoBidEnabled && !maxAutoBidPrice) ||
+    !bidAmount ||
+    !bidVolume ||
+    !paymentMethodId
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-md max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-5 border-b border-gray-100">
-          <h2 className="text-lg font-medium">Place a Bid</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Place a Bid"
+      maxWidth="lg"
+    >
 
         <div className="p-5">
           <div className="mb-4">
@@ -186,9 +304,11 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
           <div className="flex justify-between items-center mb-6 p-3 bg-gray-50 rounded-md">
             <div>
               <div className="text-xs text-gray-500">
-                {auction.highestBid ? 'Current highest bid' : 'Base price'}
+                {currentPriceInfo.label}
               </div>
-              <div className="text-base font-medium">{currentPrice}</div>
+              <div className={`text-base font-medium ${currentPriceInfo.isLoading ? 'text-gray-400' : ''}`}>
+                {currentPriceInfo.price}
+              </div>
             </div>
             <div>
               <div className="text-xs text-gray-500">Time left</div>
@@ -207,22 +327,27 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
                 id="bidAmount"
                 value={bidAmount}
                 onChange={(e) => {
-                  // Only allow numbers and commas
-                  const value = e.target.value.replace(/[^\d,]/g, '');
+                  // Only allow digits (no decimals, commas, or other characters)
+                  const value = e.target.value.replace(/[^\d]/g, '');
+                  
+                  // Validate the input
+                  const validation = validateIntegerInput(value, 'Bid amount');
+                  
                   setBidAmount(value);
                   setError('');
+                  setBidAmountInputError(validation.error);
                 }}
-                className={`w-full px-3 py-2 border ${error ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
+                className={`w-full px-3 py-2 border ${error || bidAmountInputError ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
                 required
               />
-              {error && (
+              {(error || bidAmountInputError) && (
                 <div className="mt-1 text-xs text-red-500 flex items-start">
                   <AlertCircle size={12} className="mr-1 mt-0.5 flex-shrink-0" />
-                  <div className="whitespace-pre-line">{error}</div>
+                  <div className="whitespace-pre-line">{error || bidAmountInputError}</div>
                 </div>
               )}
               <div className="mt-1 text-xs text-gray-500">
-                Minimum bid: {minBid} (price per unit)
+                Minimum bid: {minBid} {auction.currency || 'SEK'} (price per unit)
               </div>
             </div>
 
@@ -266,19 +391,24 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
                 type="text"
                 value={bidVolume}
                 onChange={(e) => {
-                  // Only allow numbers and decimal point
-                  const value = e.target.value.replace(/[^\d.]/g, '');
+                  // Only allow digits (no decimals)
+                  const value = e.target.value.replace(/[^\d]/g, '');
+                  
+                  // Validate the input
+                  const validation = validateIntegerInput(value, 'Volume');
+                  
                   setBidVolume(value);
                   setVolumeError('');
+                  setVolumeInputError(validation.error);
                 }}
                 placeholder={`Enter volume in ${volumeUnit}`}
-                className={`w-full px-3 py-2 border ${volumeError ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
+                className={`w-full px-3 py-2 border ${volumeError || volumeInputError ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
                 disabled={volumeType === 'full'}
               />
-              {volumeError && (
+              {(volumeError || volumeInputError) && (
                 <div className="mt-1 text-xs text-red-500 flex items-start">
                   <AlertCircle size={12} className="mr-1 mt-0.5 flex-shrink-0" />
-                  <div className="whitespace-pre-line">{volumeError}</div>
+                  <div className="whitespace-pre-line">{volumeError || volumeInputError}</div>
                 </div>
               )}
               <div className="mt-1 text-xs text-gray-500">
@@ -329,18 +459,23 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
                     id="maxAutoBidPrice"
                     value={maxAutoBidPrice}
                     onChange={(e) => {
-                      // Only allow numbers and commas
-                      const value = e.target.value.replace(/[^\d,]/g, '');
+                      // Only allow digits (no decimals, commas, or other characters)
+                      const value = e.target.value.replace(/[^\d]/g, '');
+                      
+                      // Validate the input
+                      const validation = validateIntegerInput(value, 'Maximum auto-bid price');
+                      
                       setMaxAutoBidPrice(value);
                       setAutoBidError('');
+                      setMaxAutoBidInputError(validation.error);
                     }}
                     placeholder="Enter maximum price"
-                    className={`w-full px-3 py-2 border ${autoBidError ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
+                    className={`w-full px-3 py-2 border ${autoBidError || maxAutoBidInputError ? 'border-red-300' : 'border-gray-100'} rounded-md focus:outline-none focus:ring-1 focus:ring-[#FF8A00] text-sm`}
                   />
-                  {autoBidError && (
+                  {(autoBidError || maxAutoBidInputError) && (
                     <div className="mt-1 text-xs text-red-500 flex items-start">
                       <AlertCircle size={12} className="mr-1 mt-0.5 flex-shrink-0" />
-                      <div className="whitespace-pre-line">{autoBidError}</div>
+                      <div className="whitespace-pre-line">{autoBidError || maxAutoBidInputError}</div>
                     </div>
                   )}
                   <div className="mt-1 text-xs text-gray-500">
@@ -369,6 +504,28 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
               </div>
             </div>
 
+            {/* Payment Method Section */}
+            <div className="mb-6">
+              <PaymentMethodSelector
+                onPaymentMethodReady={(paymentMethodId) => {
+                  setPaymentMethodId(paymentMethodId);
+                  setPaymentMethodError('');
+                }}
+                onError={(error) => {
+                  setPaymentMethodError(error);
+                  setPaymentMethodId('');
+                }}
+                isProcessing={isProcessingPayment}
+                className="mb-4"
+              />
+              {paymentMethodError && (
+                <div className="mt-2 text-sm text-red-600 flex items-start">
+                  <AlertCircle size={16} className="mr-2 mt-0.5 flex-shrink-0" />
+                  <span>{paymentMethodError}</span>
+                </div>
+              )}
+            </div>
+
             {/* Submit Buttons */}
             <div className="flex justify-end space-x-3">
               <button
@@ -381,9 +538,14 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
 
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors flex items-center"
+                disabled={hasValidationErrors || isProcessingPayment}
+                className={`px-4 py-2 rounded-md text-sm flex items-center transition-colors ${
+                  hasValidationErrors || isProcessingPayment
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[#FF8A00] text-white hover:bg-[#e67e00]'
+                }`}
               >
-                Place Bid
+                {isProcessingPayment ? 'Processing...' : 'Place Bid'}
                 <ArrowRight size={16} className="ml-2" />
               </button>
             </div>
@@ -404,7 +566,6 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

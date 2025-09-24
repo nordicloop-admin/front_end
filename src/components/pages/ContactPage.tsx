@@ -79,7 +79,7 @@ const ContactPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white mt-3">
       {/* Hero Section - Full width with overlay */}
       <div className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden">
         <Image

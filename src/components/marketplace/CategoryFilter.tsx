@@ -3,35 +3,71 @@
 import React, { useState, useEffect } from 'react';
 import { FilterDropdown } from '@/components/ui/FilterDropdown';
 import { ChevronRight } from '@/components/ui/Icons';
-import categoriesData from '@/data/categories.json';
-
-interface Category {
-  id: string;
-  name: string;
-  subcategories: {
-    id: string;
-    name: string;
-  }[];
-}
+import { getCategories, Category } from '@/services/auction';
 
 interface CategoryFilterProps {
   selectedCategory: string;
   setSelectedCategory: (category: string) => void;
+  onCategoryChange: (categoryId: number | null, subcategoryIds: number[]) => void;
+  onGlobalSubcategoryChange: (categoryId: number, subcategoryIds: number[], subcategoryData?: { id: number; name: string; categoryName: string }[]) => void;
+  globalSubcategorySelections: { [categoryId: number]: number[] };
+  resetTrigger?: number;
 }
 
-export function CategoryFilter({ selectedCategory, setSelectedCategory }: CategoryFilterProps) {
+export function CategoryFilter({ selectedCategory, setSelectedCategory, onCategoryChange, onGlobalSubcategoryChange, globalSubcategorySelections, resetTrigger }: CategoryFilterProps) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryObj, setSelectedCategoryObj] = useState<Category | null>(null);
   const [showSubcategories, setShowSubcategories] = useState(false);
-  const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setCategories(categoriesData.categories);
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await getCategories();
+        if (response.data) {
+          // Add "All materials" option at the beginning
+          const allMaterialsCategory: Category = {
+            id: 0,
+            name: "All materials",
+            subcategories: []
+          };
+          setCategories([allMaterialsCategory, ...response.data]);
+        }
+      } catch (_error) {
+        // Handle error silently or show user-friendly message
+        setCategories([{ id: 0, name: "All materials", subcategories: [] }]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchCategories();
+  }, []);
+
+  // Reset component state when resetTrigger changes
+  useEffect(() => {
+    if (resetTrigger) {
+      setSelectedSubcategories([]);
+      setShowSubcategories(false);
+      setSelectedCategoryObj(null);
+    }
+  }, [resetTrigger]);
+  
+  // Update local selections when showing subcategories for a specific category
+  useEffect(() => {
+    if (selectedCategoryObj && selectedCategoryObj.id > 0) {
+      const existingSelections = globalSubcategorySelections[selectedCategoryObj.id] || [];
+      setSelectedSubcategories(existingSelections);
+    }
+  }, [selectedCategoryObj, globalSubcategorySelections]);
+
+  useEffect(() => {
     // Find the selected category object
-    const categoryObj = categoriesData.categories.find(cat => cat.name === selectedCategory);
+    const categoryObj = categories.find(cat => cat.name === selectedCategory);
     setSelectedCategoryObj(categoryObj || null);
-  }, [selectedCategory]);
+  }, [selectedCategory, categories]);
 
   // Split categories into two columns
   const leftCategories = categories.slice(0, Math.ceil(categories.length / 2));
@@ -41,11 +77,19 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
     if (category.subcategories.length > 0) {
       setSelectedCategoryObj(category);
       setShowSubcategories(true);
-      // Reset selected subcategories when changing categories
-      setSelectedSubcategories([]);
+      // Load existing selections for this category instead of resetting
+      const existingSelections = globalSubcategorySelections[category.id] || [];
+      setSelectedSubcategories(existingSelections);
     } else {
       setSelectedCategory(category.name);
       setShowSubcategories(false);
+      // CRITICAL FIX: Call onCategoryChange to update parent component's categoryId
+      // For categories without subcategories, we need to inform the parent
+      if (category.name === 'All materials') {
+        onCategoryChange(null, []); // Clear category filter
+      } else {
+        onCategoryChange(category.id, []); // Set specific category
+      }
     }
   };
 
@@ -53,12 +97,12 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
     setShowSubcategories(false);
   };
 
-  const handleSubcategoryToggle = (subcategoryName: string) => {
+  const handleSubcategoryToggle = (subcategoryId: number) => {
     setSelectedSubcategories(prev => {
-      if (prev.includes(subcategoryName)) {
-        return prev.filter(name => name !== subcategoryName);
+      if (prev.includes(subcategoryId)) {
+        return prev.filter(id => id !== subcategoryId);
       } else {
-        return [...prev, subcategoryName];
+        return [...prev, subcategoryId];
       }
     });
   };
@@ -70,18 +114,28 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
         setSelectedSubcategories([]);
       } else {
         // Otherwise, select all
-        setSelectedSubcategories(selectedCategoryObj.subcategories.map(sub => sub.name));
+        setSelectedSubcategories(selectedCategoryObj.subcategories.map(sub => sub.id));
       }
     }
   };
 
   const handleApply = () => {
-    if (selectedSubcategories.length > 0) {
-      // If subcategories are selected, use them
-      setSelectedCategory(`${selectedCategoryObj?.name} (${selectedSubcategories.length})`);
-    } else if (selectedCategoryObj) {
-      // If no subcategories selected, use the main category
-      setSelectedCategory(selectedCategoryObj.name);
+    if (selectedCategoryObj) {
+      // Update global selections for this category
+      const subcategoryData = selectedSubcategories.map(id => {
+        const subcat = selectedCategoryObj.subcategories.find(s => s.id === id);
+        return {
+          id,
+          name: subcat?.name || '',
+          categoryName: selectedCategoryObj.name
+        };
+      }).filter(item => item.name);
+      
+      // Call both handlers for complete state management
+      onGlobalSubcategoryChange(selectedCategoryObj.id, selectedSubcategories, subcategoryData);
+      
+      // CRITICAL FIX: Also call onCategoryChange to ensure categoryId is set
+      onCategoryChange(selectedCategoryObj.id, selectedSubcategories);
     }
     setShowSubcategories(false);
   };
@@ -107,7 +161,11 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
       label={selectedCategory}
       contentClassName="w-[750px]"
     >
-      {!showSubcategories ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-sm text-gray-500">Loading categories...</div>
+        </div>
+      ) : !showSubcategories ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-0 max-h-[400px] overflow-y-auto">
           {/* Left Column */}
           <div>
@@ -168,12 +226,12 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
                 <div key={subcategory.id} className="flex items-center mb-4">
                   <input
                     type="checkbox"
-                    id={subcategory.id}
+                    id={`sub-${subcategory.id}`}
                     className="h-4 w-4 border-gray-300 rounded"
-                    checked={selectedSubcategories.includes(subcategory.name)}
-                    onChange={() => handleSubcategoryToggle(subcategory.name)}
+                    checked={selectedSubcategories.includes(subcategory.id)}
+                    onChange={() => handleSubcategoryToggle(subcategory.id)}
                   />
-                  <label htmlFor={subcategory.id} className="ml-2 text-sm text-gray-700">
+                  <label htmlFor={`sub-${subcategory.id}`} className="ml-2 text-sm text-gray-700">
                     {subcategory.name}
                   </label>
                 </div>
@@ -186,12 +244,12 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
                 <div key={subcategory.id} className="flex items-center mb-4">
                   <input
                     type="checkbox"
-                    id={subcategory.id}
+                    id={`sub-${subcategory.id}`}
                     className="h-4 w-4 border-gray-300 rounded"
-                    checked={selectedSubcategories.includes(subcategory.name)}
-                    onChange={() => handleSubcategoryToggle(subcategory.name)}
+                    checked={selectedSubcategories.includes(subcategory.id)}
+                    onChange={() => handleSubcategoryToggle(subcategory.id)}
                   />
-                  <label htmlFor={subcategory.id} className="ml-2 text-sm text-gray-700">
+                  <label htmlFor={`sub-${subcategory.id}`} className="ml-2 text-sm text-gray-700">
                     {subcategory.name}
                   </label>
                 </div>
@@ -204,18 +262,48 @@ export function CategoryFilter({ selectedCategory, setSelectedCategory }: Catego
                 <div key={subcategory.id} className="flex items-center mb-4">
                   <input
                     type="checkbox"
-                    id={subcategory.id}
+                    id={`sub-${subcategory.id}`}
                     className="h-4 w-4 border-gray-300 rounded"
-                    checked={selectedSubcategories.includes(subcategory.name)}
-                    onChange={() => handleSubcategoryToggle(subcategory.name)}
+                    checked={selectedSubcategories.includes(subcategory.id)}
+                    onChange={() => handleSubcategoryToggle(subcategory.id)}
                   />
-                  <label htmlFor={subcategory.id} className="ml-2 text-sm text-gray-700">
+                  <label htmlFor={`sub-${subcategory.id}`} className="ml-2 text-sm text-gray-700">
                     {subcategory.name}
                   </label>
                 </div>
               ))}
             </div>
           </div>
+
+          {/* Cross-category selection info */}
+          {(() => {
+            const totalSelections = Object.values(globalSubcategorySelections).flat().length;
+            const currentCategorySelections = selectedSubcategories.length;
+            const otherCategorySelections = totalSelections - currentCategorySelections;
+            
+            if (totalSelections > 0) {
+              return (
+                <div className="px-6 py-3 bg-blue-50 border-t border-blue-200">
+                  <div className="flex items-start space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600 mt-0.5 flex-shrink-0">
+                      <path d="M9 12l2 2 4-4"/>
+                      <circle cx="12" cy="12" r="10"/>
+                    </svg>
+                    <div className="text-sm">
+                      <p className="font-medium text-blue-800">
+                        {currentCategorySelections > 0 && `${currentCategorySelections} selected in ${selectedCategoryObj?.name}`}
+                        {currentCategorySelections > 0 && otherCategorySelections > 0 && ' • '}
+                        {otherCategorySelections > 0 && `${otherCategorySelections} selected in other categories`}
+                      </p>
+                      <p className="text-blue-700 mt-1">Total: {totalSelections} subcategories across all categories</p>
+                      <p className="text-blue-600 text-xs mt-1">✓ Cross-category filtering active! Add more or switch categories to modify selections.</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* Apply button */}
           <div className="flex justify-end p-4 border-t border-gray-200">

@@ -85,17 +85,9 @@ export const SECTOR_CHOICES = [
   { value: 'packaging', label: 'Packaging & Printing' },
   { value: 'recycling', label: 'Recycling & Waste Management' },
   { value: 'energy', label: 'Energy & Utilities' },
+  { value: 'broker', label: 'Broker' },
 ];
 
 export const COUNTRY_CHOICES = [
   { value: 'Sweden', label: 'Sweden' },
-  { value: 'Norway', label: 'Norway' },
-  { value: 'Denmark', label: 'Denmark' },
-  { value: 'Finland', label: 'Finland' },
-  { value: 'Iceland', label: 'Iceland' },
-  { value: 'Rwanda', label: 'Rwanda' },
-  { value: 'Kenya', label: 'Kenya' },
-  { value: 'Uganda', label: 'Uganda' },
-  { value: 'Tanzania', label: 'Tanzania' },
-  // Add more countries as needed
 ];

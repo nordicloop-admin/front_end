@@ -250,7 +250,7 @@ export default function CategorySubscriptionsPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Category Alerts</h1>
+        <h1 className="text-2xl font-semibold text-gray-900">Wishlist</h1>
         <p className="text-gray-600 mt-1">
           Get notified when new auctions are posted in your preferred categories
         </p>
@@ -284,7 +284,7 @@ export default function CategorySubscriptionsPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Bell className="w-4 h-4 text-[#FF8A00] mr-2" />
-                    <h3 className="text-lg font-medium text-gray-900">Your Active Alerts</h3>
+                    <h3 className="text-lg font-medium text-gray-900">Your Wishlist Items</h3>
                     <span className="ml-2 bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
                       {subscriptions.length}
                     </span>
@@ -321,7 +321,7 @@ export default function CategorySubscriptionsPage() {
                           }}
                           disabled={loadingSubscriptions.has(subscription.id)}
                           className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                          title="Remove alert"
+                          title="Remove from wishlist"
                         >
                           {loadingSubscriptions.has(subscription.id) ? (
                             <Loader2 size={14} className="animate-spin" />
@@ -427,7 +427,7 @@ export default function CategorySubscriptionsPage() {
                   <h3 className="text-lg font-medium text-gray-900">Material Categories</h3>
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
-                  Click the + icon to get alerts for new auctions in these categories
+                  Click the + icon to add categories to your wishlist
                 </p>
               </div>
 
@@ -475,7 +475,7 @@ export default function CategorySubscriptionsPage() {
                               <div className="font-medium text-gray-900">{category.name}</div>
                               {subscribedSubcategories.length > 0 && (
                                 <div className="text-xs text-[#FF8A00]">
-                                  {subscribedSubcategories.length} subcategory alert{subscribedSubcategories.length > 1 ? 's' : ''}
+                                  {subscribedSubcategories.length} subcategory item{subscribedSubcategories.length > 1 ? 's' : ''}
                                 </div>
                               )}
                             </div>
@@ -490,7 +490,7 @@ export default function CategorySubscriptionsPage() {
                                 }}
                                 disabled={loadingCategories.has(category.id)}
                                 className="p-1 text-green-600 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                title="Remove category alert"
+                                title="Remove category from wishlist"
                               >
                                 {loadingCategories.has(category.id) ? (
                                   <Loader2 size={14} className="animate-spin" />
@@ -506,7 +506,7 @@ export default function CategorySubscriptionsPage() {
                                 }}
                                 disabled={loadingCategories.has(category.id)}
                                 className="p-1 text-gray-400 hover:text-[#FF8A00] hover:bg-orange-50 rounded transition-colors"
-                                title="Add category alert"
+                                title="Add category to wishlist"
                               >
                                 {loadingCategories.has(category.id) ? (
                                   <Loader2 size={14} className="animate-spin" />
@@ -566,7 +566,7 @@ export default function CategorySubscriptionsPage() {
                                           }}
                                           disabled={loadingSubcategories.has(`${category.id}-${subcategory.id}`)}
                                           className="p-1 text-green-600 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                          title="Remove subcategory alert"
+                                          title="Remove subcategory from wishlist"
                                         >
                                           {loadingSubcategories.has(`${category.id}-${subcategory.id}`) ? (
                                             <Loader2 size={12} className="animate-spin" />
@@ -579,7 +579,7 @@ export default function CategorySubscriptionsPage() {
                                           onClick={() => handleSubscribeToSubcategory(category.id, subcategory.id)}
                                           disabled={loadingSubcategories.has(`${category.id}-${subcategory.id}`)}
                                           className="p-1 text-gray-400 hover:text-[#FF8A00] hover:bg-orange-50 rounded transition-colors"
-                                          title="Add subcategory alert"
+                                          title="Add subcategory to wishlist"
                                         >
                                           {loadingSubcategories.has(`${category.id}-${subcategory.id}`) ? (
                                             <Loader2 size={12} className="animate-spin" />
@@ -607,7 +607,7 @@ export default function CategorySubscriptionsPage() {
               <Bell size={32} className="mx-auto mb-4 text-gray-300" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Categories Loaded</h3>
               <p className="text-gray-500 mb-6">
-                Browse available categories to set up your alerts
+                Browse available categories to add to your wishlist
               </p>
               <button
                 onClick={loadCategories}

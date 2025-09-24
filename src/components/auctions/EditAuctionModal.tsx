@@ -1,15 +1,16 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
-import { adUpdateService } from '@/services/ads';
+import { adUpdateService, adCreationService } from '@/services/ads';
 import { getFullImageUrl } from '@/utils/imageUtils';
-import { getCategoryImage } from '@/utils/categoryImages';
 import { convertLabelToValue } from '@/utils/adValidation';
+import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
 import { toast } from 'sonner';
+import Modal from '@/components/ui/modal';
 
 // Import comprehensive data from the auction creation form
 const packagingOptions = [
@@ -196,11 +197,26 @@ const contaminationLevels = [
 ];
 
 const additives = [
-  'UV Stabilizer',
-  'Antioxidant',
-  'Flame retardants',
-  'Chlorides',
-  'No additives'
+  {
+    id: 'uv_stabilizer',
+    name: 'UV Stabilizer'
+  },
+  {
+    id: 'antioxidant',
+    name: 'Antioxidant'
+  },
+  {
+    id: 'flame_retardants',
+    name: 'Flame retardants'
+  },
+  {
+    id: 'chlorides',
+    name: 'Chlorides'
+  },
+  {
+    id: 'no_additives',
+    name: 'No additives'
+  }
 ];
 
 const storageConditions = [
@@ -225,34 +241,83 @@ const storageConditions = [
 ];
 
 const processingMethods = [
-  'Blow moulding',
-  'Injection moulding',
-  'Extrusion',
-  'Calendering',
-  'Rotational moulding',
-  'Sintering',
-  'Thermoforming',
-  'Sorting',
-  'Cleaning',
-  'Shredding',
-  'Melting',
-  'Granulation'
+  {
+    id: 'blow_moulding',
+    name: 'Blow moulding',
+    description: 'Process for creating hollow plastic parts'
+  },
+  {
+    id: 'injection_moulding',
+    name: 'Injection moulding',
+    description: 'Molten plastic injected into molds'
+  },
+  {
+    id: 'extrusion',
+    name: 'Extrusion',
+    description: 'Continuous process creating uniform cross-sections'
+  },
+  {
+    id: 'calendering',
+    name: 'Calendering',
+    description: 'Process for creating films and sheets'
+  },
+  {
+    id: 'rotational_moulding',
+    name: 'Rotational moulding',
+    description: 'Hollow parts formed by rotation during heating'
+  },
+  {
+    id: 'sintering',
+    name: 'Sintering',
+    description: 'Powder compaction and heating process'
+  },
+  {
+    id: 'thermoforming',
+    name: 'Thermoforming',
+    description: 'Heating and shaping thermoplastic sheets'
+  }
 ];
 
 const deliveryOptions = [
-  'Pickup Only',
-  'Local Delivery',
-  'National Shipping',
-  'International Shipping',
-  'Freight Forwarding'
+  {
+    id: 'pickup_only',
+    name: 'Pickup Only',
+    description: 'Buyer arranges pickup from your location',
+    icon: Package
+  },
+  {
+    id: 'local_delivery',
+    name: 'Local Delivery',
+    description: 'You can deliver within local area',
+    icon: Truck
+  },
+  {
+    id: 'national_shipping',
+    name: 'National Shipping',
+    description: 'You can arrange national shipping',
+    icon: Truck
+  },
+  {
+    id: 'international_shipping',
+    name: 'International Shipping',
+    description: 'You can arrange international shipping',
+    icon: Truck
+  },
+  {
+    id: 'freight_forwarding',
+    name: 'Freight Forwarding',
+    description: 'Professional freight services available',
+    icon: Truck
+  }
 ];
 
-const currencies = ['SEK', 'EUR', 'USD', 'NOK', 'DKK'];
+const currencies = ['SEK'];
 
+// Use all units supported by backend - matching Ad.UNIT_CHOICES
 const units = [
   'kg', 'tons', 'tonnes', 'lbs', 'pounds',
   'pieces', 'units', 'bales', 'containers',
-  'm³', 'cubic meters', 'liters', 'gallons'
+  'm³', 'cubic_meters', 'liters', 'gallons', 'meters'
 ];
 
 const bidDurationOptions = [
@@ -296,6 +361,7 @@ interface EditAuctionModalProps {
   onClose: () => void;
   onSubmit: (auctionData: AuctionData) => Promise<void>;
   auction: AuctionData;
+  materialType?: string; // Optional: if provided, use this instead of waiting for API
 }
 
 interface StepData {
@@ -332,6 +398,7 @@ interface StepData {
     pickupAvailable?: boolean;
     deliveryOptions?: string[];
     fullAddress?: string;
+    postalCode?: string;
   };
   
   // Step 7: Quantity & Price
@@ -352,7 +419,8 @@ interface StepData {
   currentImageUrl?: string; // Current image from backend
 }
 
-const steps = [
+// All possible steps
+const allSteps = [
   { id: 1, title: 'Material Type', description: 'Category, packaging, and frequency' },
   { id: 2, title: 'Specifications', description: 'Grade, color, form, and details' },
   { id: 3, title: 'Material Origin', description: 'Source and origin information' },
@@ -363,20 +431,105 @@ const steps = [
   { id: 8, title: 'Title & Description', description: 'Final details and images' }
 ];
 
-export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }: EditAuctionModalProps) {
+// Function to get steps based on material type
+const getStepsByMaterialType = (materialType: string) => {
+  // For plastics, show all steps
+  if (materialType.toLowerCase() === 'plastic' || materialType.toLowerCase() === 'plastics') {
+    return allSteps;
+  }
+
+  // For all other materials, skip steps 2-5
+  return [
+    allSteps[0], // Material Type
+    { id: 6, title: 'Location & Logistics', description: 'Location and delivery options' },
+    { id: 7, title: 'Quantity & Price', description: 'Pricing and quantity details' },
+    { id: 8, title: 'Title & Description', description: 'Final details and images' }
+  ];
+};
+
+export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, materialType }: EditAuctionModalProps) {
   const [activeStep, setActiveStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepData, setStepData] = useState<StepData>({});
   const [hasChanges, setHasChanges] = useState(false);
+  const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [imageLoadError, setImageLoadError] = useState<boolean>(false);
   const [_error, setError] = useState<string | null>(null);
+  const [completeAdData, setCompleteAdData] = useState<any>(null);
+  const [adDataLoaded, setAdDataLoaded] = useState(false);
+  // Initialize steps based on provided materialType or auction category
+  // Default to non-plastic steps (4 steps) if no material type is available yet
+  const initialMaterialType = materialType || auction?.category?.toLowerCase() || '';
+  const [steps, setSteps] = useState(() => {
+    if (!initialMaterialType) {
+      // Default to 4 steps while waiting for data (better UX than showing all 8)
+      return [
+        allSteps[0], // Material Type
+        { id: 6, title: 'Location & Logistics', description: 'Location and delivery options' },
+        { id: 7, title: 'Quantity & Price', description: 'Pricing and quantity details' },
+        { id: 8, title: 'Title & Description', description: 'Final details and images' }
+      ];
+    }
+    return getStepsByMaterialType(initialMaterialType);
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Validation states for integer fields
+  const [quantityErrors, setQuantityErrors] = useState({
+    availableQuantity: '',
+    minimumOrder: ''
+  });
+  const [priceErrors, setPriceErrors] = useState({
+    startingPrice: '',
+    reservePrice: ''
+  });
+
+  // Validate integer input - only allows positive integers
+  const validateIntegerInput = useCallback((value: string, fieldName: string, allowZero: boolean = false): { isValid: boolean; error: string } => {
+    if (value === '') {
+      return { isValid: true, error: '' };
+    }
+    
+    // Check if value contains only digits
+    if (!/^\d+$/.test(value)) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} must contain only numbers (no decimals, letters, or special characters)` 
+      };
+    }
+    
+    const numValue = parseInt(value);
+    if (allowZero && numValue < 0) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} cannot be negative` 
+      };
+    } else if (!allowZero && numValue <= 0) {
+      return { 
+        isValid: false, 
+        error: `${fieldName} must be greater than 0` 
+      };
+    }
+    
+    return { isValid: true, error: '' };
+  }, []);
 
   // NEW: Validation state for better UX (synchronized with AlternativeAuctionForm)
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
   const [showValidationErrors, setShowValidationErrors] = useState(false);
+
+  // Google Maps integration state
+  const [_addressInput, setAddressInput] = useState('');
+  const [locationError, setLocationError] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const addressInputRef = useRef<HTMLInputElement>(null!);
+
+  // Load Google Maps API
+  const { isLoaded, loadError } = useGoogleMaps();
+  const { getPlaceDetails, selectedPlace } = usePlacesAutocomplete(addressInputRef, isLoaded && isOpen);
 
   // Load categories on component mount
   useEffect(() => {
@@ -398,9 +551,110 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
     loadCategories();
   }, []);
 
+  // Fetch complete ad data when modal opens
+  useEffect(() => {
+    if (isOpen && auction.id && !adDataLoaded) {
+      const fetchCompleteAdData = async () => {
+        try {
+
+
+          // Use the existing API to get complete ad details
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ads/${auction.id}/`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('nordic_loop_access_token')}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+
+            setCompleteAdData(result.data);
+            setAdDataLoaded(true);
+          } else {
+
+          }
+        } catch (_error) {
+
+        }
+      };
+
+      fetchCompleteAdData();
+    }
+  }, [isOpen, auction.id, adDataLoaded]);
+
+  // Handle Google Maps place selection
+  useEffect(() => {
+    if (selectedPlace) {
+      handleStepDataChange({
+        location: {
+          ...stepData.location,
+          country: selectedPlace.countryCode,
+          region: selectedPlace.region,
+          city: selectedPlace.city,
+          fullAddress: selectedPlace.formattedAddress
+        }
+      });
+      setLocationError('');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPlace]);
+
+  // Reinitialize Google Maps autocomplete when modal opens and we're on location step
+  useEffect(() => {
+    if (isOpen && activeStep === 6 && isLoaded && addressInputRef.current && window.google?.maps?.places) {
+      try {
+        // Create autocomplete instance
+        const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
+          types: ['address'],
+          fields: ['address_components', 'formatted_address', 'geometry', 'name'],
+          componentRestrictions: { country: 'se' } // Restrict to Sweden
+        });
+
+        // Add listener for place_changed event
+        autocomplete.addListener('place_changed', () => {
+          const place = autocomplete.getPlace();
+          if (place && place.address_components) {
+            // Extract address components
+            let city = '';
+            let region = '';
+            let countryCode = '';
+
+            place.address_components.forEach((component: any) => {
+              const types = component.types;
+
+              if (types.includes('locality') || types.includes('postal_town')) {
+                city = component.long_name;
+              } else if (types.includes('administrative_area_level_1')) {
+                region = component.long_name;
+              } else if (types.includes('country')) {
+                countryCode = component.short_name.toLowerCase();
+              }
+            });
+
+            handleStepDataChange({
+              location: {
+                ...stepData.location,
+                country: countryCode,
+                region: region,
+                city: city,
+                fullAddress: place.formatted_address || ''
+              }
+            });
+            setLocationError('');
+          }
+        });
+      } catch (_error) {
+        // Failed to initialize Google Maps autocomplete
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, activeStep, isLoaded]);
+
   // Initialize form data from auction
   useEffect(() => {
-    if (auction && categoriesLoaded) {
+    if (auction && categoriesLoaded && adDataLoaded && completeAdData) {
       const volumeParts = auction.volume.split(' ');
       const volumeValue = parseFloat(volumeParts[0]) || 0;
       const volumeUnit = volumeParts[1] || '';
@@ -460,43 +714,175 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         }
       }
       
-      setStepData({
-        // Step 1
-        category: auction.category,
-        subcategory: auction.subcategory,
-        materialType: auction.category.toLowerCase(),
-        
-        // Step 2: Initialize specifications data
-        grade: grade || '',
-        color: color || '',
-        form: form || '',
-        additionalSpecs: additionalSpecs,
-        
-        // Step 7
-        availableQuantity: volumeValue,
-        unit: volumeUnit,
-        startingPrice: basePriceValue,
-        currency: 'SEK',
-        
-        // Step 8
-        title: auction.name,
-        description: auction.description,
-        keywords: auction.keywords ? auction.keywords.split(',').map(k => k.trim()) : [],
-        currentImageUrl: auction.material_image || auction.image,
-        images: []
-      });
-    }
-  }, [auction, categoriesLoaded]);
+      const materialType = auction.category.toLowerCase();
 
-  const handleStepDataChange = (updates: Partial<StepData>) => {
+
+
+      try {
+        setStepData({
+          // Step 1 - Use complete ad data with safe property access
+          category: completeAdData?.category_name || auction?.category || '',
+          subcategory: completeAdData?.subcategory_name || auction?.subcategory || '',
+          materialType: materialType || '',
+          specificMaterial: completeAdData?.specific_material || '',
+          packaging: completeAdData?.packaging || '',
+          materialFrequency: completeAdData?.material_frequency || '',
+
+          // Step 2: Initialize specifications data from complete ad data with null checks
+          grade: completeAdData?.specification?.material_grade_display || grade || '',
+          color: completeAdData?.specification?.color || color || '',
+          form: completeAdData?.specification?.material_form_display || form || '',
+          additionalSpecs: completeAdData?.specification?.additional_specifications ?
+            [completeAdData.specification.additional_specifications] : (Array.isArray(additionalSpecs) ? additionalSpecs : []),
+
+          // Step 3: Material Origin - use ID value for form selection
+          origin: completeAdData?.origin || '',
+
+          // Step 4: Contamination - use ID values for form selection
+        contaminationLevel: completeAdData.contamination || '',
+        additives: completeAdData.additives ? [completeAdData.additives] : [],
+        storageConditions: completeAdData.storage_conditions || '',
+
+        // Step 5: Processing Methods
+        processingMethods: completeAdData.processing_methods || [],
+
+        // Step 6: Location & Logistics
+        location: completeAdData.location ? {
+          country: completeAdData.location.country || '',
+          region: completeAdData.location.state_province || '',
+          city: completeAdData.location.city || '',
+          fullAddress: completeAdData.location.address_line || '',
+          postalCode: completeAdData.location.postal_code || '',
+          pickupAvailable: completeAdData.pickup_available || false,
+          deliveryOptions: completeAdData.delivery_options || []
+        } : {
+          country: '',
+          region: '',
+          city: '',
+          fullAddress: '',
+          postalCode: '',
+          pickupAvailable: false,
+          deliveryOptions: []
+        },
+
+        // Step 7: Quantity & Price - use complete ad data when available
+        availableQuantity: completeAdData.available_quantity || volumeValue,
+        unit: completeAdData.unit_of_measurement || volumeUnit,
+        minimumOrder: completeAdData.minimum_order_quantity || 0,
+        startingPrice: completeAdData.starting_bid_price || basePriceValue,
+        currency: completeAdData.currency || 'SEK',
+        auctionDuration: completeAdData.auction_duration ? String(completeAdData.auction_duration) : '',
+        reservePrice: completeAdData.reserve_price || 0,
+        customAuctionDuration: completeAdData.custom_auction_duration || 0,
+
+        // Step 8: Title & Description - use complete ad data when available with safe property access
+        title: completeAdData?.title || auction?.name || '',
+        description: completeAdData?.description || auction?.description || '',
+        keywords: completeAdData?.keywords ?
+          (typeof completeAdData.keywords === 'string' ? completeAdData.keywords.split(', ').map((k: string) => k.trim()) : []) :
+          (auction?.keywords ?
+            (typeof auction.keywords === 'string' ? auction.keywords.split(',').map((k: string) => k.trim()) :
+             Array.isArray(auction.keywords) ? auction.keywords : []) : []),
+        currentImageUrl: completeAdData?.material_image || auction?.material_image || auction?.image || '',
+        images: []
+        });
+
+        // Reset image load error when new data is loaded
+        setImageLoadError(false);
+
+        // Set steps based on material type (only if not already set correctly)
+        const expectedSteps = getStepsByMaterialType(materialType);
+        if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
+          setSteps(expectedSteps);
+        }
+      } catch (error) {
+        // Handle any errors during data initialization
+        if (process.env.NODE_ENV === 'development') {
+          // eslint-disable-next-line no-console
+          console.error('Error initializing auction edit data:', error);
+        }
+        setError('Failed to load auction data. Some fields may not display correctly.');
+
+        // Set minimal default data to prevent crashes
+        setStepData({
+          category: auction?.category || '',
+          subcategory: auction?.subcategory || '',
+          materialType: auction?.category?.toLowerCase() || '',
+          specificMaterial: '',
+          packaging: '',
+          materialFrequency: '',
+          grade: '',
+          color: '',
+          form: '',
+          additionalSpecs: [],
+          origin: '',
+          contaminationLevel: '',
+          processingMethods: [],
+          location: {
+            country: '',
+            region: '',
+            city: '',
+            fullAddress: '',
+            postalCode: '',
+            pickupAvailable: false,
+            deliveryOptions: []
+          },
+          availableQuantity: 0,
+          unit: '',
+          minimumOrder: 0,
+          startingPrice: 0,
+          currency: 'SEK',
+          auctionDuration: '',
+          reservePrice: 0,
+          customAuctionDuration: 0,
+          title: auction?.name || '',
+          description: auction?.description || '',
+          keywords: [],
+          currentImageUrl: auction?.image || '',
+          images: []
+        });
+      }
+    }
+  }, [auction, categoriesLoaded, adDataLoaded, completeAdData, categories.length, steps]);
+
+  // Reset state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setActiveStep(1);
+      setStepData({});
+      setHasChanges(false);
+      setValidationErrors({});
+      setShowValidationErrors(false);
+      setUploadError(null);
+      setImageLoadError(false);
+      setError(null);
+      setCompleteAdData(null);
+      setAdDataLoaded(false);
+    }
+  }, [isOpen]);
+
+  const handleStepDataChange = useCallback((updates: Partial<StepData>) => {
     setStepData(prev => ({ ...prev, ...updates }));
     setHasChanges(true);
-    
+
+    // If material type is being updated, update the steps
+    if (updates.materialType || updates.category) {
+      const materialType = updates.materialType || updates.category?.toLowerCase() || '';
+      const newSteps = getStepsByMaterialType(materialType);
+      setSteps(newSteps);
+
+      // If current active step is not available in new steps, go to step 1
+      const currentStepExists = newSteps.some(step => step.id === activeStep);
+      if (!currentStepExists) {
+        setActiveStep(1);
+      }
+    }
+
     // Clear validation errors when user starts fixing them (synchronized with AlternativeAuctionForm)
     if (showValidationErrors) {
       const clearedErrors = { ...validationErrors };
       let hasChanges = false;
-      
+
       // Clear errors for fields being updated
       Object.keys(updates).forEach(field => {
         if (clearedErrors[field]) {
@@ -504,7 +890,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           hasChanges = true;
         }
       });
-      
+
       if (hasChanges) {
         setValidationErrors(clearedErrors);
         if (Object.keys(clearedErrors).length === 0) {
@@ -512,6 +898,68 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         }
       }
     }
+  }, [activeStep, showValidationErrors, validationErrors]);
+
+  // Handle integer field changes with validation
+  const handleIntegerFieldChange = useCallback((fieldName: string, value: string) => {
+    const fieldDisplayNames: { [key: string]: string } = {
+      availableQuantity: 'Available Quantity',
+      minimumOrder: 'Minimum Order Quantity',
+      startingPrice: 'Starting Bid Price',
+      reservePrice: 'Reserve Price'
+    };
+    
+    const displayName = fieldDisplayNames[fieldName] || fieldName;
+    const isOptionalField = fieldName === 'minimumOrder' || fieldName === 'reservePrice';
+    const validation = validateIntegerInput(value, displayName, isOptionalField);
+    
+    // Update error states
+    if (fieldName === 'availableQuantity' || fieldName === 'minimumOrder') {
+      setQuantityErrors(prev => ({
+        ...prev,
+        [fieldName]: validation.error
+      }));
+    } else if (fieldName === 'startingPrice' || fieldName === 'reservePrice') {
+      setPriceErrors(prev => ({
+        ...prev,
+        [fieldName]: validation.error
+      }));
+    }
+    
+    // Only update form data if valid or empty (to allow clearing)
+    if (validation.isValid) {
+      const numericValue = value === '' ? 0 : parseInt(value);
+      handleStepDataChange({ [fieldName]: numericValue });
+    }
+  }, [validateIntegerInput, handleStepDataChange]);
+
+  // Keywords handling functions (matching creation form)
+  const getKeywordsTextLength = () => {
+    return (stepData.keywords || []).join(', ').length;
+  };
+
+  const areKeywordsValid = () => {
+    return getKeywordsTextLength() <= 500;
+  };
+
+  const handleKeywordAdd = (keyword: string) => {
+    if (keyword.trim() && !(stepData.keywords || []).includes(keyword.trim())) {
+      const currentKeywordsText = (stepData.keywords || []).join(', ');
+      const newKeywordsText = currentKeywordsText ? `${currentKeywordsText}, ${keyword.trim()}` : keyword.trim();
+
+      // Check if adding this keyword would exceed 500 characters
+      if (newKeywordsText.length <= 500) {
+        handleStepDataChange({
+          keywords: [...(stepData.keywords || []), keyword.trim()]
+        });
+      }
+    }
+  };
+
+  const handleKeywordRemove = (index: number) => {
+    handleStepDataChange({
+      keywords: (stepData.keywords || []).filter((_, i) => i !== index)
+    });
   };
 
   // Handle image file upload
@@ -550,6 +998,37 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
     return URL.createObjectURL(file);
   };
 
+  // Google Maps address selection handler
+  const handleAddressSelect = async () => {
+    if (!isLoaded) return;
+
+    setIsSearching(true);
+
+    try {
+      const placeResult = await getPlaceDetails();
+
+      if (placeResult) {
+        handleStepDataChange({
+          location: {
+            ...stepData.location,
+            country: placeResult.countryCode,
+            region: placeResult.region,
+            city: placeResult.city,
+            fullAddress: placeResult.formattedAddress
+          }
+        });
+        setLocationError('');
+      } else {
+        setLocationError('Please select a valid address from the suggestions');
+      }
+    } catch (_error) {
+      // Handle error silently
+      setLocationError('Failed to get location details');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   // Submit changes to backend
   const handleSubmit = async () => {
     // Clear previous validation errors
@@ -568,50 +1047,159 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
     try {
       // Determine which step we're updating based on the current active step
       const currentStepData = getCurrentStepData();
-      
-      if (activeStep === 8) {
-        // Step 8: Handle title, description, keywords, and image using the update service for single image
-        const response = await adUpdateService.updateAdStep8WithImage(
-          parseInt(auction.id),
-          stepData.title || auction.name,
-          stepData.description || auction.description || '',
-          stepData.keywords?.join(', ') || '',
-          stepData.images && stepData.images.length > 0 ? stepData.images[0] : undefined
-        );
-        
-        if (!response.success) {
-          throw new Error(response.error);
-        }
-      } else if (currentStepData) {
-        // Steps 1-7: Use step-specific update endpoint
-        const response = await adUpdateService.updateAdStep(
-          parseInt(auction.id),
-          activeStep,
-          currentStepData
-        );
-        
-        if (!response.success) {
-          throw new Error(response.error || `Failed to update step ${activeStep}`);
-        }
-      } else {
+
+      if (!currentStepData && activeStep !== 8) {
         throw new Error(`No data to update for step ${activeStep}`);
       }
 
-      // Convert step data back to auction format for the parent component
-      const updatedAuction: AuctionData = {
-        ...auction,
-        name: stepData.title || auction.name,
-        category: stepData.category || auction.category,
-        subcategory: stepData.subcategory || auction.subcategory,
-        description: stepData.description || auction.description,
-        basePrice: stepData.startingPrice ? `${stepData.startingPrice} ${stepData.currency || 'SEK'}` : auction.basePrice,
-        volume: stepData.availableQuantity && stepData.unit ? `${stepData.availableQuantity} ${stepData.unit}` : auction.volume,
-        keywords: stepData.keywords ? stepData.keywords.join(', ') : auction.keywords
-      };
+      // Use backend API to update the ad
+      let updateResult;
 
-      await onSubmit(updatedAuction);
+      if (activeStep === 8) {
+        // For step 8, handle title, description, keywords, and image
+        const title = stepData.title || auction.name;
+        const description = stepData.description || auction.description || '';
+        const keywords = stepData.keywords?.join(', ') || '';
+
+        // Check if there's a new image to upload
+        if (stepData.images && stepData.images.length > 0 && stepData.images[0] instanceof File) {
+          // Use step 8 specific method with image upload
+          updateResult = await adUpdateService.updateAdStep8WithImage(
+            parseInt(auction.id),
+            title,
+            description,
+            keywords,
+            stepData.images[0]
+          );
+        } else {
+          // Use step 8 specific method without image
+          updateResult = await adUpdateService.updateAdStep8WithImage(
+            parseInt(auction.id),
+            title,
+            description,
+            keywords
+          );
+        }
+      } else {
+        // Use step-by-step update for other steps
+
+        updateResult = await adUpdateService.updateAdStep(parseInt(auction.id), activeStep, currentStepData);
+      }
+
+      if (!updateResult.success) {
+        // Handle validation errors from backend
+        if (updateResult.details) {
+          setValidationErrors(updateResult.details);
+          setShowValidationErrors(true);
+          throw new Error('Please fix the validation errors and try again');
+        }
+        throw new Error(updateResult.error || 'Failed to update ad');
+      }
+
+      // Convert updated backend data back to auction format for the parent component
+      const backendData = updateResult.data?.data;
+      if (backendData) {
+        const updatedAuction: AuctionData = {
+          ...auction,
+          name: backendData.title || auction.name,
+          category: backendData.category || auction.category,
+          subcategory: backendData.subcategory || auction.subcategory,
+          description: backendData.description || auction.description,
+          basePrice: backendData.starting_bid_price ? `${backendData.starting_bid_price} ${backendData.currency || 'SEK'}` : auction.basePrice,
+          volume: backendData.available_quantity && backendData.unit_of_measurement ? `${backendData.available_quantity} ${backendData.unit_of_measurement}` : auction.volume,
+          keywords: backendData.keywords || auction.keywords
+        };
+
+        await onSubmit(updatedAuction);
+      }
+
       setHasChanges(false);
-      
+      toast.success('Changes saved successfully!', {
+        description: `Step ${activeStep} has been updated.`
+      });
+
+      // Reload complete ad data to refresh step completion status
+      try {
+        const refreshedData = await adCreationService.getAdDetails(parseInt(auction.id));
+        if (refreshedData.success && refreshedData.data) {
+          setCompleteAdData(refreshedData.data);
+
+          // Re-initialize step data with fresh backend data
+          const freshData = refreshedData.data;
+          setStepData({
+            // Step 1: Material Type
+            materialType: freshData.category_name || '',
+            category: freshData.category_name || '',
+            subcategory: freshData.subcategory_name || '',
+            specificMaterial: freshData.specific_material || '',
+            packaging: freshData.packaging || '',
+            materialFrequency: freshData.material_frequency || '',
+
+            // Step 2: Specifications
+            grade: freshData.specification?.material_grade_display || '',
+            color: freshData.specification?.color || '',
+            form: freshData.specification?.material_form_display || '',
+            additionalSpecs: freshData.additional_specifications ? [freshData.additional_specifications] : [],
+
+            // Step 3: Origin
+            origin: freshData.origin_display || '',
+
+            // Step 4: Contamination
+            contaminationLevel: freshData.contamination_display || '',
+            additives: freshData.additives_display ? [freshData.additives_display] : [],
+            storageConditions: freshData.storage_conditions_display || '',
+
+            // Step 5: Processing Methods
+            processingMethods: freshData.processing_methods || [],
+
+            // Step 6: Location & Logistics
+            location: freshData.location ? {
+              country: freshData.location.country || '',
+              region: freshData.location.state_province || '',
+              city: freshData.location.city || '',
+              fullAddress: freshData.location.address_line || '',
+              postalCode: freshData.location.postal_code || '',
+              pickupAvailable: freshData.pickup_available || false,
+              deliveryOptions: freshData.delivery_options || []
+            } : {
+              country: '',
+              region: '',
+              city: '',
+              fullAddress: '',
+              postalCode: '',
+              pickupAvailable: false,
+              deliveryOptions: []
+            },
+
+            // Step 7: Quantity & Price
+            availableQuantity: freshData.available_quantity || 0,
+            unit: freshData.unit_of_measurement || '',
+            minimumOrder: freshData.minimum_order_quantity || 0,
+            startingPrice: freshData.starting_bid_price || 0,
+            currency: freshData.currency || 'SEK',
+            auctionDuration: freshData.auction_duration ? String(freshData.auction_duration) : '',
+            reservePrice: freshData.reserve_price || 0,
+            customAuctionDuration: freshData.custom_auction_duration || 0,
+
+            // Step 8: Details with image handling
+            title: freshData.title || '',
+            description: freshData.description || '',
+            keywords: freshData.keywords ? freshData.keywords.split(', ') : [],
+            images: [],
+            currentImageUrl: freshData.material_image || ''
+          });
+
+        }
+      } catch (_reloadError) {
+        // Don't throw error here, save was successful
+      }
+
+      // Close modal if requested
+      if (shouldCloseAfterSave) {
+        onClose();
+        setShouldCloseAfterSave(false);
+      }
+
       // Reset loading state on success
       setIsSubmitting(false);
     } catch (error) {
@@ -628,83 +1216,151 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
     switch (activeStep) {
       case 1:
         // Material Type step - match creation form structure exactly
-        if (!stepData.category) return null;
-        
+        if (!stepData.category) {
+          return null;
+        }
+
         const selectedCategory = categories.find(cat => cat.name === stepData.category);
-        const selectedSubcategory = selectedCategory?.subcategories.find(sub => sub.name === stepData.subcategory);
-        
-        return {
-          category_id: selectedCategory?.id,
-          subcategory_id: selectedSubcategory?.id,
+        if (!selectedCategory) {
+          return null;
+        }
+
+        const selectedSubcategory = selectedCategory.subcategories.find(sub => sub.name === stepData.subcategory);
+        if (!selectedSubcategory) {
+          return null;
+        }
+
+        if (!stepData.packaging) {
+          return null;
+        }
+
+        if (!stepData.materialFrequency) {
+          return null;
+        }
+
+        const step1Data = {
+          category_id: selectedCategory.id,
+          subcategory_id: selectedSubcategory.id,
           specific_material: stepData.specificMaterial || '',
-          packaging: convertLabelToValue('packaging', stepData.packaging || ''),
-          material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency || '')
+          packaging: convertLabelToValue('packaging', stepData.packaging),
+          material_frequency: convertLabelToValue('material_frequency', stepData.materialFrequency)
         };
+
+        return step1Data;
         
       case 2:
-        // Specifications step - match creation form structure exactly
-        // Backend expects only: specification_id and additional_specifications
-        // Combine all step 2 form fields into additional_specifications
-        const specs: string[] = [];
-        
-        // Add grade, color, form if selected
-        if (stepData.grade) {
-          specs.push(`Grade: ${stepData.grade}`);
-        }
+        // Specifications step - match NEW backend API format
+        // Backend expects: specification_color, specification_material_grade, specification_material_form, specification_additional
+
+        const step2Data: any = {};
+
+        // Map frontend values to backend field names
         if (stepData.color) {
-          specs.push(`Color: ${stepData.color}`);
+          step2Data.specification_color = stepData.color;
         }
+
+        if (stepData.grade) {
+          // Convert display name to backend value (e.g., "Virgin Grade" -> "virgin_grade")
+          step2Data.specification_material_grade = convertLabelToValue('material_grade', stepData.grade);
+        }
+
         if (stepData.form) {
-          specs.push(`Form: ${stepData.form}`);
+          // Convert display name to backend value (e.g., "Pellets/Granules" -> "pellets_granules")
+          step2Data.specification_material_form = convertLabelToValue('material_form', stepData.form);
         }
-        
-        // Add any additional specs from the form
+
+        // Combine additional specs into a single string
         if (stepData.additionalSpecs && stepData.additionalSpecs.length > 0) {
-          specs.push(...stepData.additionalSpecs.filter(spec => spec.trim()));
+          step2Data.specification_additional = stepData.additionalSpecs.filter(spec => spec.trim()).join(', ');
         }
-        
-        return {
-          specification_id: null,
-          additional_specifications: specs.join(', ')
-        };
+
+
+        // Ensure at least one field is provided (backend requirement)
+        if (Object.keys(step2Data).length === 0) {
+          return null;
+        }
+
+        return step2Data;
         
       case 3:
         // Material Origin step - match creation form structure
-        return {
-          origin: convertLabelToValue('origin', stepData.origin || '')
+        if (!stepData.origin) {
+          return null;
+        }
+
+        const step3Data = {
+          origin: stepData.origin // Already using correct ID
         };
+
+        return step3Data;
         
       case 4:
         // Contamination step - match creation form structure
-        return {
-          contamination: convertLabelToValue('contamination', stepData.contaminationLevel || ''),
-          additives: stepData.additives?.[0] ? convertLabelToValue('additives', stepData.additives[0]) : 'no_additives',
-          storage_conditions: stepData.storageConditions ? convertLabelToValue('storage_conditions', stepData.storageConditions) : 'climate_controlled'
+        if (!stepData.contaminationLevel) {
+          return null;
+        }
+
+        if (!stepData.additives || stepData.additives.length === 0) {
+          return null;
+        }
+
+        if (!stepData.storageConditions) {
+          return null;
+        }
+
+        const step4Data = {
+          contamination: stepData.contaminationLevel, // Already using correct ID
+          additives: stepData.additives[0], // Already using correct ID
+          storage_conditions: stepData.storageConditions // Already using correct ID
         };
+
+        return step4Data;
         
       case 5:
-        // Processing Methods step - match creation form structure
-        return {
-          processing_methods: Array.isArray(stepData.processingMethods) 
-            ? stepData.processingMethods.map(method => convertLabelToValue('processing_methods', method))
-            : (stepData.processingMethods ? [convertLabelToValue('processing_methods', stepData.processingMethods)] : [])
+        // Processing Methods step - use method IDs directly
+
+        const methods = Array.isArray(stepData.processingMethods)
+          ? stepData.processingMethods
+          : (stepData.processingMethods ? [stepData.processingMethods] : []);
+
+        if (!methods || methods.length === 0) {
+          return null;
+        }
+
+        const step5Data = {
+          processing_methods: methods
         };
+
+        return step5Data;
         
       case 6:
         // Location & Logistics step - match creation form structure
-        return {
+
+        if (!stepData.location?.country || !stepData.location?.city) {
+          return null;
+        }
+
+        const deliveryOptions = Array.isArray(stepData.location?.deliveryOptions)
+          ? stepData.location.deliveryOptions // Already using correct IDs
+          : (stepData.location?.deliveryOptions ? [stepData.location.deliveryOptions] : []);
+
+        if (!deliveryOptions || deliveryOptions.length === 0) {
+          return null;
+        }
+
+        const step6Data = {
           location_data: {
-            country: stepData.location?.country || '',
-            state_province: stepData.location?.region || undefined,
-            city: stepData.location?.city || '',
-            address_line: stepData.location?.fullAddress || undefined,
-            postal_code: ''
+            country: stepData.location.country,
+            state_province: stepData.location.region || undefined,
+            city: stepData.location.city,
+            address_line: stepData.location.fullAddress || undefined,
+            postal_code: stepData.location.postalCode || undefined
           },
-          pickup_available: Boolean(stepData.location?.pickupAvailable),
-          delivery_options: Array.isArray(stepData.location?.deliveryOptions) 
-            ? stepData.location.deliveryOptions.map(option => convertLabelToValue('delivery_options', option))
-            : (stepData.location?.deliveryOptions ? [convertLabelToValue('delivery_options', stepData.location.deliveryOptions)] : [])
+          pickup_available: Boolean(stepData.location.pickupAvailable),
+          delivery_options: deliveryOptions
         };
+
+        return step6Data;
         
       case 7:
         // Quantity & Price step - match creation form structure exactly
@@ -714,7 +1370,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         
         const step7Data: any = {
           available_quantity: Number(stepData.availableQuantity || 0),
-          unit_of_measurement: convertLabelToValue('unit_of_measurement', stepData.unit || ''),
+          unit_of_measurement: stepData.unit || '', // Already using correct unit values
           minimum_order_quantity: Number(stepData.minimumOrder || 0),
           starting_bid_price: Number(stepData.startingPrice || 0),
           currency: stepData.currency || 'SEK',
@@ -739,9 +1395,106 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
   };
 
   const getStepStatus = (stepNumber: number): 'completed' | 'current' | 'pending' => {
-    if (auction.stepCompletionStatus) {
-      return auction.stepCompletionStatus[stepNumber.toString()] ? 'completed' : 'pending';
+    // First check backend step completion status
+    if (auction.stepCompletionStatus && auction.stepCompletionStatus[stepNumber.toString()]) {
+      return 'completed';
     }
+
+    // If backend status is not available or incomplete, check data presence
+    if (completeAdData) {
+      switch (stepNumber) {
+        case 1:
+          // Step 1: Material Type - check basic fields
+          if (completeAdData.category_name && completeAdData.subcategory_name &&
+              completeAdData.packaging && completeAdData.material_frequency) {
+            return 'completed';
+          }
+          break;
+        case 2:
+          // Step 2: Specifications - check if specification OR additional_specifications exist
+          const hasSpecification = completeAdData.specification && (
+            completeAdData.specification.material_grade ||
+            completeAdData.specification.color ||
+            completeAdData.specification.material_form
+          );
+          const hasAdditionalSpecs = completeAdData.additional_specifications &&
+            (typeof completeAdData.additional_specifications === 'string' ?
+             completeAdData.additional_specifications.trim().length > 0 : false);
+
+          // Only mark as completed if there's actual specification data
+          if (hasSpecification || hasAdditionalSpecs) {
+            return 'completed';
+          }
+          break;
+        case 3:
+          // Step 3: Material Origin - check if origin exists
+          if (completeAdData.origin) {
+            return 'completed';
+          }
+          break;
+        case 4:
+          // Step 4: Contamination - check if ALL contamination fields exist (strict check)
+          const hasContamination = completeAdData.contamination &&
+            (typeof completeAdData.contamination === 'string' ? completeAdData.contamination.trim() !== '' : false);
+          const hasAdditives = completeAdData.additives &&
+            (typeof completeAdData.additives === 'string' ? completeAdData.additives.trim() !== '' : false);
+          const hasStorage = completeAdData.storage_conditions &&
+            (typeof completeAdData.storage_conditions === 'string' ? completeAdData.storage_conditions.trim() !== '' : false);
+
+          if (hasContamination && hasAdditives && hasStorage) {
+            return 'completed';
+          }
+          break;
+        case 5:
+          // Step 5: Processing Methods - check if processing_methods exist
+          if (completeAdData.processing_methods && completeAdData.processing_methods.length > 0) {
+            return 'completed';
+          }
+          break;
+        case 6:
+          // Step 6: Location & Logistics - check if ALL required fields exist (strict check)
+          const hasLocation = completeAdData.location &&
+            completeAdData.location.country &&
+            completeAdData.location.city;
+          const hasDeliveryOptions = completeAdData.delivery_options &&
+            Array.isArray(completeAdData.delivery_options) &&
+            completeAdData.delivery_options.length > 0;
+
+          if (hasLocation && hasDeliveryOptions) {
+            return 'completed';
+          }
+          break;
+        case 7:
+          // Step 7: Quantity & Pricing - check if ALL required fields exist (strict check)
+          const hasQuantity = completeAdData.available_quantity && completeAdData.available_quantity > 0;
+          const hasUnit = completeAdData.unit_of_measurement &&
+            (typeof completeAdData.unit_of_measurement === 'string' ? completeAdData.unit_of_measurement.trim() !== '' : false);
+          const hasStartingPrice = completeAdData.starting_bid_price && completeAdData.starting_bid_price > 0;
+          const hasCurrency = completeAdData.currency &&
+            (typeof completeAdData.currency === 'string' ? completeAdData.currency.trim() !== '' : false);
+          const hasAuctionDuration = completeAdData.auction_duration &&
+            (typeof completeAdData.auction_duration === 'string' ? completeAdData.auction_duration.trim() !== '' :
+             typeof completeAdData.auction_duration === 'number' ? completeAdData.auction_duration > 0 : false);
+
+          if (hasQuantity && hasUnit && hasStartingPrice && hasCurrency && hasAuctionDuration) {
+            return 'completed';
+          }
+          break;
+        case 8:
+          // Step 8: Title & Description - check if ALL required fields exist (strict check)
+          const hasTitle = completeAdData.title &&
+            (typeof completeAdData.title === 'string' ? completeAdData.title.trim().length >= 10 : false);
+          const hasDescription = completeAdData.description &&
+            (typeof completeAdData.description === 'string' ? completeAdData.description.trim().length >= 30 : false);
+
+          if (hasTitle && hasDescription) {
+            return 'completed';
+          }
+          break;
+      }
+    }
+
+    // Fallback to current step logic
     return stepNumber <= (auction.currentStep || 1) ? 'completed' : 'pending';
   };
 
@@ -771,46 +1524,50 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               </div>
             ) : (
               <>
+                {/* Category Selection - Based on MaterialTypeStep */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
-                    Category *
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                    Main Category *
                   </label>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {categories.filter(cat => cat.name !== 'All materials').map((category) => (
                       <button
                         key={category.id}
-                        onClick={() => handleStepDataChange({ 
+                        onClick={() => handleStepDataChange({
                           category: category.name,
-                          materialType: category.name.toLowerCase(),
+                          materialType: category.name,
                           subcategory: '', // Reset subcategory when category changes
                           specificMaterial: ''
                         })}
                         className={`
-                          p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
+                          p-4 rounded-lg border-2 text-left transition-all hover:scale-105
                           ${stepData.category === category.name
-                            ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                            : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                            ? 'border-[#FF8A00] bg-orange-50'
+                            : 'border-gray-200 hover:border-gray-300'
                           }
                         `}
                       >
-                        {category.name}
+                        <div className="flex items-center justify-center">
+                          <h4 className="text-gray-900 text-center">{category.name}</h4>
+                        </div>
                       </button>
                     ))}
                   </div>
                 </div>
                 
+                {/* Subcategory Selection */}
                 {selectedCategory && selectedCategory.subcategories.length > 0 && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-4">
                       Subcategory *
                     </label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                       {availableSubcategories.map((subcategory) => (
                         <button
                           key={subcategory.id}
                           onClick={() => handleStepDataChange({ subcategory: subcategory.name })}
                           className={`
-                            p-3 rounded-lg border text-sm text-left transition-all hover:scale-105
+                            p-3 rounded-lg border-2 text-sm text-left transition-all hover:scale-105
                             ${stepData.subcategory === subcategory.name
                               ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                               : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -824,6 +1581,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                   </div>
                 )}
 
+                {/* Specific Material Input */}
                 {stepData.subcategory && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -831,16 +1589,20 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                     </label>
                     <input
                       type="text"
+                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc."
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
                       value={stepData.specificMaterial || ''}
                       onChange={(e) => handleStepDataChange({ specificMaterial: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                      placeholder="e.g., Grade 5052 Aluminum, HDPE milk bottles, etc."
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Add specific details about the material if applicable
+                    </p>
                   </div>
                 )}
 
+                {/* Packaging Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
                     How is the material packaged? *
                   </label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -879,8 +1641,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                   </div>
                 </div>
 
+                {/* Sell Frequency Selection */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
                     How often do you have this material? *
                   </label>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -889,7 +1652,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                         key={frequency.id}
                         onClick={() => handleStepDataChange({ materialFrequency: frequency.id })}
                         className={`
-                          p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                          p-3 rounded-lg border-2 text-sm text-center transition-all hover:scale-105
                           ${stepData.materialFrequency === frequency.id
                             ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                             : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -908,12 +1671,22 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
       case 2:
         return (
-          <div className="space-y-6">
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Material Specifications
+              </h3>
+              <p className="text-gray-600">
+                Provide detailed specifications for your {stepData.materialType || 'material'}
+              </p>
+            </div>
+
+            {/* Grade Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Material Grade
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {availableGrades.map((grade) => (
                   <button
                     key={grade}
@@ -931,12 +1704,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                 ))}
               </div>
             </div>
-            
+
+            {/* Color Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Color
               </label>
-              <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {materialColors.map((color) => (
                   <button
                     key={color}
@@ -954,12 +1728,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                 ))}
               </div>
             </div>
-            
+
+            {/* Material Form Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Material Form
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {availableForms.map((form) => (
                   <button
                     key={form}
@@ -978,45 +1753,67 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               </div>
             </div>
 
+            {/* Additional Specifications */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Additional Specifications
               </label>
-              <div className="space-y-2">
-                {stepData.additionalSpecs?.map((spec, _index) => (
-                  <div key={_index} className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      value={spec}
-                      onChange={(e) => {
-                        const newSpecs = [...(stepData.additionalSpecs || [])];
-                        newSpecs[_index] = e.target.value;
+
+              {/* Custom specification input */}
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  placeholder="e.g., Melt Flow Index: 2.5, Density: 0.95 g/cm³"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const input = e.currentTarget;
+                      if (input.value.trim()) {
+                        const newSpecs = [...(stepData.additionalSpecs || []), input.value.trim()];
                         handleStepDataChange({ additionalSpecs: newSpecs });
-                      }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                      placeholder="Enter specification"
-                    />
-                    <button
-                      onClick={() => {
-                        const newSpecs = stepData.additionalSpecs?.filter((_, i) => i !== _index) || [];
-                        handleStepDataChange({ additionalSpecs: newSpecs });
-                      }}
-                      className="p-2 text-red-500 hover:bg-red-50 rounded-md"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-                <button
-                  onClick={() => {
-                    const newSpecs = [...(stepData.additionalSpecs || []), ''];
-                    handleStepDataChange({ additionalSpecs: newSpecs });
+                        input.value = '';
+                      }
+                    }
                   }}
-                  className="w-full p-2 border-2 border-dashed border-gray-300 rounded-md text-gray-500 hover:border-gray-400 hover:text-gray-700"
+                />
+                <button
+                  onClick={(e) => {
+                    const input = e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement;
+                    if (input && input.value.trim()) {
+                      const newSpecs = [...(stepData.additionalSpecs || []), input.value.trim()];
+                      handleStepDataChange({ additionalSpecs: newSpecs });
+                      input.value = '';
+                    }
+                  }}
+                  className="px-4 py-2 bg-[#FF8A00] text-white rounded-lg hover:bg-[#e67700] transition-colors flex items-center gap-2"
                 >
-                  + Add Specification
+                  <Plus className="w-4 h-4" />
+                  Add
                 </button>
               </div>
+
+              {/* Display added specifications */}
+              {stepData.additionalSpecs && stepData.additionalSpecs.length > 0 && (
+                <div className="space-y-2">
+                  {stepData.additionalSpecs.map((spec, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-lg p-3"
+                    >
+                      <span className="text-sm text-gray-700">{spec}</span>
+                      <button
+                        onClick={() => {
+                          const newSpecs = stepData.additionalSpecs?.filter((_, i) => i !== index) || [];
+                          handleStepDataChange({ additionalSpecs: newSpecs });
+                        }}
+                        className="text-red-500 hover:text-red-700 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -1076,13 +1873,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                     key={level.id}
                     onClick={() => handleStepDataChange({ contaminationLevel: level.id })}
                     className={`
-                      w-full p-4 rounded-lg border-2 text-left transition-all
+                      w-full p-4 rounded-lg border text-left transition-all
                       ${stepData.contaminationLevel === level.id
-                        ? level.color === 'green'
-                          ? 'border-green-500 bg-green-50'
-                          : level.color === 'yellow'
-                          ? 'border-yellow-500 bg-yellow-50'
-                          : 'border-red-500 bg-red-50'
+                        ? 'border-[#FF8A00] bg-orange-50'
                         : 'border-gray-200 hover:border-gray-300'
                       }
                     `}
@@ -1091,11 +1884,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                       <div className={`
                         p-2 rounded-md
                         ${stepData.contaminationLevel === level.id
-                          ? level.color === 'green'
-                            ? 'bg-green-500 text-white'
-                            : level.color === 'yellow'
-                            ? 'bg-yellow-500 text-white'
-                            : 'bg-red-500 text-white'
+                          ? 'bg-[#FF8A00] text-white'
                           : 'bg-gray-100 text-gray-600'
                         }
                       `}>
@@ -1122,30 +1911,30 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {additives.map((additive) => (
                   <button
-                    key={additive}
+                    key={additive.id}
                     onClick={() => {
                       const currentAdditives = stepData.additives || [];
-                      const isSelected = currentAdditives.includes(additive);
-                      
+                      const isSelected = currentAdditives.includes(additive.id);
+
                       if (isSelected) {
-                        handleStepDataChange({ 
-                          additives: currentAdditives.filter(a => a !== additive) 
+                        handleStepDataChange({
+                          additives: currentAdditives.filter(a => a !== additive.id)
                         });
                       } else {
-                        handleStepDataChange({ 
-                          additives: [...currentAdditives, additive] 
+                        handleStepDataChange({
+                          additives: [...currentAdditives, additive.id]
                         });
                       }
                     }}
                     className={`
                       p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                      ${stepData.additives?.includes(additive)
+                      ${stepData.additives?.includes(additive.id)
                         ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                         : 'border-gray-200 hover:border-gray-300 text-gray-700'
                       }
                     `}
                   >
-                    {additive}
+                    {additive.name}
                   </button>
                 ))}
               </div>
@@ -1195,43 +1984,98 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
       case 5:
         return (
-          <div className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Processing Methods *
-              </label>
-              <p className="text-sm text-gray-600 mb-4">
-                Select the processing methods suitable for this material.
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Processing methods
+              </h3>
+              <p className="text-gray-600">
+                Select the applicable processing methods.
               </p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            </div>
+
+            {/* Processing Methods Selection */}
+            <div>
+              <div className="space-y-3">
                 {processingMethods.map((method) => (
                   <button
-                    key={method}
+                    key={method.id}
                     onClick={() => {
                       const currentMethods = stepData.processingMethods || [];
-                      const isSelected = currentMethods.includes(method);
-                      
+                      const isSelected = currentMethods.includes(method.id);
+
                       if (isSelected) {
-                        handleStepDataChange({ 
-                          processingMethods: currentMethods.filter(m => m !== method) 
+                        handleStepDataChange({
+                          processingMethods: currentMethods.filter(m => m !== method.id)
                         });
                       } else {
-                        handleStepDataChange({ 
-                          processingMethods: [...currentMethods, method] 
+                        handleStepDataChange({
+                          processingMethods: [...currentMethods, method.id]
                         });
                       }
                     }}
                     className={`
-                      p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                      ${stepData.processingMethods?.includes(method)
-                        ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      w-full p-4 rounded-lg border text-left transition-all
+                      ${stepData.processingMethods?.includes(method.id)
+                        ? 'border-[#FF8A00] bg-orange-50'
+                        : 'border-gray-200 hover:border-gray-300'
                       }
                     `}
                   >
-                    {method}
+                    <div className="flex items-start space-x-3">
+                      <div className={`
+                        p-2 rounded-md
+                        ${stepData.processingMethods?.includes(method.id)
+                          ? 'bg-[#FF8A00] text-white'
+                          : 'bg-gray-100 text-gray-600'
+                        }
+                      `}>
+                        <Settings className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2">
+                          <h4 className="font-medium text-gray-900">{method.name}</h4>
+                          {stepData.processingMethods?.includes(method.id) && (
+                            <CheckCircle className="w-4 h-4 text-[#FF8A00]" />
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">{method.description}</p>
+                      </div>
+                    </div>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Processing Summary */}
+            {stepData.processingMethods && stepData.processingMethods.length > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-2">Selected Processing Methods</h4>
+                <div className="space-y-1 text-sm text-gray-600">
+                  {stepData.processingMethods.map(methodId => {
+                    const method = processingMethods.find(m => m.id === methodId);
+                    return (
+                      <div key={methodId}>
+                        <span className="font-medium text-gray-700">•</span> {method?.name}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Information Note */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="flex items-start space-x-3">
+                <Settings className="w-5 h-5 text-blue-600 mt-0.5" />
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900">Processing Guidelines</h4>
+                  <div className="text-sm text-blue-700 mt-1 space-y-1">
+                    <p>• Select all applicable processing methods for your material</p>
+                    <p>• Multiple methods can be selected if applicable</p>
+                    <p>• This helps buyers understand material compatibility</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1239,225 +2083,457 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
       case 6:
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Location & Logistics
+              </h3>
+              <p className="text-gray-600">
+                Specify material location and delivery options for buyers
+              </p>
+            </div>
+
+            {/* Location Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Country *
-                </label>
-                <input
-                  type="text"
-                  value={stepData.location?.country || ''}
-                  onChange={(e) => handleStepDataChange({ 
-                    location: { ...stepData.location, country: e.target.value }
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="Enter country"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Region/State
-                </label>
-                <input
-                  type="text"
-                  value={stepData.location?.region || ''}
-                  onChange={(e) => handleStepDataChange({ 
-                    location: { ...stepData.location, region: e.target.value }
-                  })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="Enter region or state"
-                />
+                <h4 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                  <MapPinned className="mr-2 h-5 w-5 text-[#FF8A00]" />
+                  Material Location
+                </h4>
+
+                {/* Google Maps Autocomplete */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Search Address in Sweden *
+                    </label>
+                    <div className="relative">
+                      <input
+                        ref={addressInputRef}
+                        type="text"
+                        placeholder="Start typing your address in Sweden..."
+                        className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${locationError ? 'border-red-500' : 'border-gray-300'}`}
+                        onChange={(e) => {
+                          setAddressInput(e.target.value);
+                          if (locationError) {
+                            setLocationError('');
+                          }
+                        }}
+                        disabled={!isLoaded || isSearching}
+                      />
+                      <button
+                        onClick={handleAddressSelect}
+                        disabled={!isLoaded || isSearching}
+                        className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${!isLoaded || isSearching ? 'text-gray-400 cursor-not-allowed' : 'text-[#FF8A00] hover:bg-orange-50'}`}
+                      >
+                        {isSearching ? (
+                          <div className="animate-spin h-5 w-5 border-2 border-[#FF8A00] border-t-transparent rounded-full"></div>
+                        ) : (
+                          <Search className="h-5 w-5" />
+                        )}
+                      </button>
+                    </div>
+                    {locationError && (
+                      <p className="mt-1 text-sm text-red-600">{locationError}</p>
+                    )}
+                    {!isLoaded && !loadError && (
+                      <p className="mt-1 text-sm text-gray-500">Loading Google Maps...</p>
+                    )}
+                    {loadError && (
+                      <p className="mt-1 text-sm text-red-600">Failed to load Google Maps. Please enter location manually.</p>
+                    )}
+                  </div>
+
+                  {/* Selected Location Summary */}
+                  {stepData.location?.country && stepData.location?.city && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <h5 className="font-medium text-gray-900 mb-2 flex items-center">
+                        <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
+                        Selected Location
+                      </h5>
+                      <div className="space-y-2 text-sm">
+                        {stepData.location.fullAddress && (
+                          <div className="flex">
+                            <MapPin className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0 mt-1" />
+                            <span className="text-gray-700">{stepData.location.fullAddress}</span>
+                          </div>
+                        )}
+                        <div className="flex">
+                          <Globe className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0 mt-1" />
+                          <span className="text-gray-700">
+                            {stepData.location.city}
+                            {stepData.location.region && `, ${stepData.location.region}`}
+                            {stepData.location.country && `, ${stepData.location.country.toUpperCase()}`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual Location Input (Fallback) */}
+                  {loadError && (
+                    <div className="space-y-4 mt-4 border-t border-gray-200 pt-4">
+                      <h5 className="font-medium text-gray-900">Manual Location Entry</h5>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Country *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter country"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                          value={stepData.location?.country || ''}
+                          onChange={(e) => handleStepDataChange({
+                            location: { ...stepData.location, country: e.target.value }
+                          })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Region/State
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter region or state"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                          value={stepData.location?.region || ''}
+                          onChange={(e) => handleStepDataChange({
+                            location: { ...stepData.location, region: e.target.value }
+                          })}
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          City *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Enter city"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
+                          value={stepData.location?.city || ''}
+                          onChange={(e) => handleStepDataChange({
+                            location: { ...stepData.location, city: e.target.value }
+                          })}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
+            {/* Pickup Available */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                City *
-              </label>
-              <input
-                type="text"
-                value={stepData.location?.city || ''}
-                onChange={(e) => handleStepDataChange({ 
-                  location: { ...stepData.location, city: e.target.value }
-                })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                placeholder="Enter city"
-              />
-            </div>
-            
-            <div>
-              <label className="flex items-center space-x-2">
+              <label className="flex items-center space-x-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={stepData.location?.pickupAvailable || false}
-                  onChange={(e) => handleStepDataChange({ 
+                  onChange={(e) => handleStepDataChange({
                     location: { ...stepData.location, pickupAvailable: e.target.checked }
                   })}
-                  className="rounded border-gray-300 text-[#FF8A00] focus:ring-[#FF8A00]"
+                  className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
                 />
-                <span className="text-sm text-gray-700">Pickup available at location</span>
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Pickup Available</span>
+                  <p className="text-xs text-gray-500">Buyers can collect material from your location</p>
+                </div>
               </label>
             </div>
 
+            {/* Delivery Options */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
+              <h4 className="text-lg font-medium text-gray-900 mb-4">
                 Delivery Options
-              </label>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {deliveryOptions.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => {
-                      const currentOptions = stepData.location?.deliveryOptions || [];
-                      const isSelected = currentOptions.includes(option);
-                      
-                      if (isSelected) {
-                        handleStepDataChange({ 
-                          location: {
-                            ...stepData.location,
-                            deliveryOptions: currentOptions.filter(o => o !== option)
+              </h4>
+              <p className="text-sm text-gray-600 mb-4">
+                Select all the delivery options that apply to this material.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {deliveryOptions.map((option) => {
+                  const Icon = option.icon;
+                  const isSelected = stepData.location?.deliveryOptions?.includes(option.id) || false;
+
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() => {
+                        const currentOptions = stepData.location?.deliveryOptions || [];
+                        const isSelected = currentOptions.includes(option.id);
+
+                        if (isSelected) {
+                          handleStepDataChange({
+                            location: {
+                              ...stepData.location,
+                              deliveryOptions: currentOptions.filter(o => o !== option.id)
+                            }
+                          });
+                        } else {
+                          handleStepDataChange({
+                            location: {
+                              ...stepData.location,
+                              deliveryOptions: [...currentOptions, option.id]
+                            }
+                          });
+                        }
+                      }}
+                      className={`
+                        p-4 rounded-lg border-2 text-left transition-all
+                        ${isSelected
+                          ? 'border-[#FF8A00] bg-orange-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }
+                      `}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`
+                          p-2 rounded-full
+                          ${isSelected
+                            ? 'bg-[#FF8A00] text-white'
+                            : 'bg-gray-100 text-gray-600'
                           }
-                        });
-                      } else {
-                        handleStepDataChange({ 
-                          location: {
-                            ...stepData.location,
-                            deliveryOptions: [...currentOptions, option]
-                          }
-                        });
-                      }
-                    }}
-                    className={`
-                      p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
-                      ${stepData.location?.deliveryOptions?.includes(option)
-                        ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
-                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
-                      }
-                    `}
-                  >
-                    {option}
-                  </button>
-                ))}
+                        `}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center">
+                            <h5 className="font-medium text-gray-900">{option.name}</h5>
+                            {isSelected && (
+                              <CheckCircle className="w-4 h-4 ml-2 text-[#FF8A00]" />
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500 mt-1">{option.description}</p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
+
+            {/* Information Box */}
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-blue-900">Why location matters</h4>
+                  <div className="text-sm text-blue-700 mt-1">
+                    <p className="mb-1">• Accurate location helps buyers calculate logistics costs</p>
+                    <p className="mb-1">• Currently, the Nordic Loop Marketplace only serves locations within Sweden</p>
+                    <p className="mb-1">• Specify delivery options to make your listing more attractive</p>
+                    <p>• For sensitive materials, you can choose to reveal exact location only to serious buyers</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Validation Message */}
+            {(!stepData.location?.country || !stepData.location?.city) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <p className="text-sm text-yellow-600">
+                  Please specify the location (country and city) where the material is available.
+                </p>
+              </div>
+            )}
           </div>
         );
 
       case 7:
         return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Available Quantity *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={stepData.availableQuantity || ''}
-                  onChange={(e) => handleStepDataChange({ availableQuantity: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="0"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Unit *
-                </label>
-                <select
-                  value={stepData.unit || ''}
-                  onChange={(e) => handleStepDataChange({ unit: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                >
-                  <option value="">Select unit</option>
-                  {units.map(unit => (
-                    <option key={unit} value={unit}>{unit}</option>
-                  ))}
-                </select>
+          <div className="space-y-8">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Quantity & Pricing
+              </h3>
+              <p className="text-gray-600">
+                Specify the quantity available and set your auction pricing
+              </p>
+            </div>
+
+            {/* Quantity Section */}
+            <div>
+              <h4 className="text-lg font-medium text-gray-900 mb-4">Quantity Information</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Available Quantity */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    <Package className="inline w-4 h-4 mr-2" />
+                    Available Quantity *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g., 1000"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
+                      quantityErrors.availableQuantity 
+                        ? 'border-red-300 bg-red-50' 
+                        : 'border-gray-300'
+                    }`}
+                    value={stepData.availableQuantity || ''}
+                    onChange={(e) => {
+                      // Filter out non-digits
+                      const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                      handleIntegerFieldChange('availableQuantity', filteredValue);
+                    }}
+                  />
+                  {quantityErrors.availableQuantity && (
+                    <p className="text-red-500 text-xs mt-1">{quantityErrors.availableQuantity}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Total quantity available for auction
+                  </p>
+                </div>
+
+                {/* Unit */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Unit of Measurement *
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg"
+                    value={stepData.unit || ''}
+                    onChange={(e) => handleStepDataChange({ unit: e.target.value })}
+                  >
+                    <option value="">Select unit...</option>
+                    {units.map(unit => (
+                      <option key={unit} value={unit}>{unit}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
-            
+
+            {/* Minimum Order Quantity */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Box className="inline w-4 h-4 mr-2" />
                 Minimum Order Quantity
               </label>
               <div className="flex items-center space-x-4">
                 <input
-                  type="number"
-                  min="0"
-                  step="0.1"
+                  type="text"
+                  placeholder="e.g., 100"
+                  className={`flex-1 px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${
+                    quantityErrors.minimumOrder 
+                      ? 'border-red-300 bg-red-50' 
+                      : 'border-gray-300'
+                  }`}
                   value={stepData.minimumOrder || ''}
-                  onChange={(e) => handleStepDataChange({ minimumOrder: parseFloat(e.target.value) })}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="0"
+                  onChange={(e) => {
+                    // Filter out non-digits
+                    const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                    handleIntegerFieldChange('minimumOrder', filteredValue);
+                  }}
                 />
                 <span className="text-gray-500">{stepData.unit || 'units'}</span>
               </div>
+              {quantityErrors.minimumOrder && (
+                <p className="text-red-500 text-xs mt-1">{quantityErrors.minimumOrder}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Minimum quantity buyers must purchase (leave 0 for no minimum)
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Starting Price *
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={stepData.startingPrice || ''}
-                  onChange={(e) => handleStepDataChange({ startingPrice: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Currency
-                </label>
-                <select
-                  value={stepData.currency || 'SEK'}
-                  onChange={(e) => handleStepDataChange({ currency: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                >
-                  {currencies.map(currency => (
-                    <option key={currency} value={currency}>{currency}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Auction Duration
-              </label>
-              <select
-                value={stepData.auctionDuration || '7'}
-                onChange={(e) => {
-                  const duration = e.target.value;
-                  handleStepDataChange({ auctionDuration: duration });
-                  // Clear custom duration fields if switching away from custom
-                  if (duration !== 'custom') {
-                    handleStepDataChange({ customAuctionDuration: 0 });
-                  }
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-              >
-                {bidDurationOptions.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              
-              {/* Custom Duration Date Picker */}
-              {stepData.auctionDuration === 'custom' && (
-                <div className="mt-3 p-3 border border-gray-200 rounded-md bg-gray-50">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select End Date
+            {/* Price Section */}
+            <div className="pt-4 border-t border-gray-200">
+              <h4 className="text-lg font-medium text-gray-900 mb-4">Auction Pricing</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Starting Bid Price */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Starting Bid Price *
                   </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="0"
+                      className={`w-full px-4 py-3 pr-16 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
+                        priceErrors.startingPrice 
+                          ? 'border-red-300 bg-red-50' 
+                          : 'border-gray-300'
+                      }`}
+                      value={stepData.startingPrice || ''}
+                      onChange={(e) => {
+                        // Filter out non-digits
+                        const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                        handleIntegerFieldChange('startingPrice', filteredValue);
+                      }}
+                    />
+                  </div>
+                  {priceErrors.startingPrice && (
+                    <p className="text-red-500 text-xs mt-1">{priceErrors.startingPrice}</p>
+                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    Initial bid price per {stepData.unit || 'unit'}
+                  </p>
+                </div>
+
+                {/* Currency */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Currency *
+                  </label>
+                  <select
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg bg-gray-100"
+                    value={stepData.currency || 'SEK'}
+                    disabled
+                    title="Only SEK currency is supported"
+                  >
+                    {currencies.map(currency => (
+                      <option key={currency} value={currency}>{currency}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Only Swedish Krona (SEK) is currently supported
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Auction Duration */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Thermometer className="inline w-4 h-4 mr-2" />
+                Auction Duration *
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {bidDurationOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      const duration = option.value;
+                      handleStepDataChange({ auctionDuration: duration });
+                      // Clear custom duration fields if switching away from custom
+                      if (duration !== 'custom') {
+                        handleStepDataChange({ customAuctionDuration: 0 });
+                      }
+                    }}
+                    className={`
+                      p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
+                      ${stepData.auctionDuration === option.value
+                        ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700'
+                      }
+                    `}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Custom Duration Calendar */}
+              {stepData.auctionDuration === 'custom' && (
+                <div className="mt-4 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center mb-3">
+                    <Thermometer className="w-4 h-4 mr-2 text-[#FF8A00]" />
+                    <label className="text-sm font-medium text-gray-700">
+                      Select End Date
+                    </label>
+                  </div>
                   <input
                     type="date"
                     min={new Date().toISOString().split('T')[0]}
@@ -1470,14 +2546,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                         const endDate = new Date(selectedDate);
                         const diffTime = endDate.getTime() - today.getTime();
                         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                        handleStepDataChange({ 
-                          customAuctionDuration: diffDays > 0 ? diffDays : 1 
+                        handleStepDataChange({
+                          customAuctionDuration: diffDays > 0 ? diffDays : 1
                         });
                       }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-2">
                     Select a date up to 90 days from today when the auction should end.
                   </p>
                   {stepData.customAuctionDuration && stepData.customAuctionDuration > 0 && (
@@ -1488,24 +2564,109 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                 </div>
               )}
             </div>
-            
+
+            {/* Reserve Price */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Reserve Price (Optional)
               </label>
               <input
-                type="number"
-                min="0"
-                step="0.01"
+                type="text"
+                placeholder="Minimum acceptable price"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${
+                  priceErrors.reservePrice 
+                    ? 'border-red-300 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
                 value={stepData.reservePrice || ''}
-                onChange={(e) => handleStepDataChange({ reservePrice: parseFloat(e.target.value) })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
-                placeholder="0.00"
+                onChange={(e) => {
+                  // Filter out non-digits
+                  const filteredValue = e.target.value.replace(/[^\d]/g, '');
+                  handleIntegerFieldChange('reservePrice', filteredValue);
+                }}
               />
+              {priceErrors.reservePrice && (
+                <p className="text-red-500 text-xs mt-1">{priceErrors.reservePrice}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
-                Minimum price you&apos;re willing to accept
+                If no bids reach this price, the auction will not complete
               </p>
             </div>
+
+            {/* Price Summary */}
+            {stepData.startingPrice && stepData.startingPrice > 0 && stepData.availableQuantity && stepData.availableQuantity > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 className="text-sm font-medium text-gray-900 mb-3">Auction Summary</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">
+                      Starting Price:
+                    </span>
+                    <span className="text-lg font-semibold text-gray-900">
+                      {stepData.startingPrice.toLocaleString('sv-SE', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                      })} {stepData.currency || 'SEK'} per {stepData.unit || 'unit'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Total Quantity:</span>
+                    <span className="text-lg font-semibold text-gray-700">
+                      {stepData.availableQuantity.toLocaleString('sv-SE', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                      })} {stepData.unit || 'units'}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-gray-600">Total Starting Value:</span>
+                    <span className="text-lg font-semibold text-[#FF8A00]">
+                      {(stepData.startingPrice * stepData.availableQuantity).toLocaleString('sv-SE', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 2
+                      })} {stepData.currency || 'SEK'}
+                    </span>
+                  </div>
+
+                  {stepData.auctionDuration && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Auction Duration:</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {stepData.auctionDuration === 'custom'
+                          ? (stepData.customAuctionDuration
+                              ? `${stepData.customAuctionDuration} days`
+                              : 'Custom duration')
+                          : bidDurationOptions.find(o => o.value === stepData.auctionDuration)?.label ||
+                            `${stepData.auctionDuration} days`}
+                      </span>
+                    </div>
+                  )}
+
+                  {stepData.reservePrice && stepData.reservePrice > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Reserve Price:</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {stepData.reservePrice.toLocaleString('sv-SE', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2
+                        })} {stepData.currency || 'SEK'} per {stepData.unit || 'unit'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Validation Message */}
+            {(!stepData.startingPrice || !stepData.availableQuantity || !stepData.unit || !stepData.auctionDuration) && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                <p className="text-sm text-yellow-600">
+                  Please set a starting price, available quantity, unit of measurement, and auction duration to continue.
+                </p>
+              </div>
+            )}
           </div>
         );
 
@@ -1529,20 +2690,23 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               </div>
             )}
 
+            {/* Title - Matching creation form */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Title *
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Type className="inline w-4 h-4 mr-2" />
+                Listing Title *
+                <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 10 characters)</span>
               </label>
               <input
                 type="text"
-                value={stepData.title || ''}
-                onChange={(e) => handleStepDataChange({ title: e.target.value })}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent ${
+                placeholder="e.g., High-Quality HDPE Post-Industrial Pellets - Food Grade"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
                   (stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 10) || (showValidationErrors && validationErrors?.title)
-                    ? 'border-red-300 bg-red-50' 
+                    ? 'border-red-300 bg-red-50'
                     : 'border-gray-300'
                 }`}
-                placeholder="Enter auction title"
+                value={stepData.title || ''}
+                onChange={(e) => handleStepDataChange({ title: e.target.value })}
                 maxLength={255}
               />
               {/* Validation Error Message */}
@@ -1569,20 +2733,22 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               </div>
             </div>
             
+            {/* Description - Matching creation form */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
                 Description *
+                <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 30 characters)</span>
               </label>
               <textarea
+                placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 30 characters)"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] resize-vertical min-h-[120px] ${
+                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30) || (showValidationErrors && validationErrors?.description)
+                    ? 'border-red-300 bg-red-50'
+                    : 'border-gray-300'
+                }`}
                 value={stepData.description || ''}
                 onChange={(e) => handleStepDataChange({ description: e.target.value })}
                 rows={4}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent resize-vertical min-h-[120px] ${
-                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50) || (showValidationErrors && validationErrors?.description)
-                    ? 'border-red-300 bg-red-50' 
-                    : 'border-gray-300'
-                }`}
-                placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 50 characters)"
               />
               {/* Validation Error Message */}
               {showValidationErrors && validationErrors?.description && (
@@ -1593,35 +2759,58 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               )}
               <div className="flex justify-between items-center mt-1">
                 <p className={`text-xs ${
-                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50) || (showValidationErrors && validationErrors?.description)
-                    ? 'text-red-600 font-medium' 
+                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30) || (showValidationErrors && validationErrors?.description)
+                    ? 'text-red-600 font-medium'
                     : 'text-gray-500'
                 }`}>
                   {(stepData.description || '').trim().length} characters
-                  {stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 50 && 
-                    ` - Need at least ${50 - stepData.description.trim().length} more characters`
+                  {stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30 &&
+                    ` - Need at least ${30 - stepData.description.trim().length} more characters`
                   }
                 </p>
-                {stepData.description && stepData.description.trim().length >= 50 && !validationErrors?.description && (
+                {stepData.description && stepData.description.trim().length >= 30 && !validationErrors?.description && (
                   <span className="text-xs text-green-600">✓ Valid length</span>
                 )}
               </div>
             </div>
             
+            {/* Keywords - Matching creation form */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Keywords (comma-separated, optional)
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                <Tag className="inline w-4 h-4 mr-2" />
+                Keywords (Optional)
+                <span className="text-xs text-gray-500 font-normal ml-2">(Maximum 500 characters total)</span>
               </label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {(stepData.keywords || []).map((keyword, index) => (
+                  <span key={index} className="inline-flex items-center px-3 py-1 bg-[#FF8A00] text-white text-sm rounded-full">
+                    {keyword}
+                    <button
+                      onClick={() => handleKeywordRemove(index)}
+                      className="ml-2 text-white hover:text-gray-200"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
               <input
                 type="text"
-                value={stepData.keywords?.join(', ') || ''}
-                onChange={(e) => handleStepDataChange({ 
-                  keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k.length > 0)
-                })}
-                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent ${
-                  showValidationErrors && validationErrors?.keywords ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                placeholder="Add keywords separated by commas (e.g., HDPE, recycling, food grade)"
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm ${
+                  !areKeywordsValid() || (showValidationErrors && validationErrors?.keywords) ? 'border-red-300 bg-red-50' : 'border-gray-300'
                 }`}
-                placeholder="plastic, recycled, high quality"
+                disabled={!areKeywordsValid()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    const input = e.currentTarget;
+                    if (input.value.trim()) {
+                      handleKeywordAdd(input.value.trim());
+                      input.value = '';
+                    }
+                  }
+                }}
               />
               {/* Validation Error Message */}
               {showValidationErrors && validationErrors?.keywords && (
@@ -1632,14 +2821,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
               )}
               <div className="flex justify-between items-center mt-1">
                 <p className={`text-xs ${
-                  showValidationErrors && validationErrors?.keywords ? 'text-red-600 font-medium' : 'text-gray-500'
+                  !areKeywordsValid() || (showValidationErrors && validationErrors?.keywords) ? 'text-red-600 font-medium' : 'text-gray-500'
                 }`}>
-                  {(stepData.keywords?.join(', ') || '').length}/500 characters total
-                  {(stepData.keywords?.join(', ') || '').length > 500 && 
-                    ` - Exceeded by ${(stepData.keywords?.join(', ') || '').length - 500} characters`
+                  {getKeywordsTextLength()}/500 characters total
+                  {!areKeywordsValid() &&
+                    ` - Exceeded by ${getKeywordsTextLength() - 500} characters`
                   }
                 </p>
-                {(stepData.keywords?.join(', ') || '').length <= 500 && (stepData.keywords?.join(', ') || '').length > 0 && !validationErrors?.keywords && (
+                {areKeywordsValid() && getKeywordsTextLength() > 0 && !validationErrors?.keywords && (
                   <span className="text-xs text-green-600">✓ Valid length</span>
                 )}
               </div>
@@ -1675,8 +2864,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                     New image: {stepData.images[0].name} - {(stepData.images[0].size / 1024 / 1024).toFixed(1)}MB
                   </p>
                 </div>
-              ) : stepData.currentImageUrl ? (
-                // Show current image from backend
+              ) : stepData.currentImageUrl && !imageLoadError ? (
+                // Show current image from backend (only if no load error)
                 <div className="relative">
                   <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
                     <Image
@@ -1685,17 +2874,16 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                       width={600}
                       height={400}
                       className="w-full h-full object-contain"
-                      onError={(e) => {
-                        // Fallback to category image on error
-                        const target = e.target as HTMLImageElement;
-                        target.src = getCategoryImage(auction.category);
+                      onError={() => {
+                        // Set error state to prevent infinite loop
+                        setImageLoadError(true);
                       }}
                     />
                   </div>
                   <div className="absolute top-2 right-2 bg-white bg-opacity-90 rounded-md px-2 py-1">
                     <span className="text-xs text-gray-600">Current image</span>
                   </div>
-                  
+
                   {/* Upload new image button */}
                   <div className="absolute bottom-2 left-2">
                     <button
@@ -1779,19 +2967,29 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       fieldErrors.title = [titleError];
     }
     
-    // Description validation (minimum 50 characters)
-    if (!stepData.description || stepData.description.trim().length < 50) {
-      const descError = 'Description must be at least 50 characters long';
+    // Description validation (minimum 30 characters - matching create form)
+    if (!stepData.description || stepData.description.trim().length < 30) {
+      const descError = 'Description must be at least 30 characters long';
       errors.push(descError);
       fieldErrors.description = [descError];
     }
-    
+
     // Keywords validation (optional, but if provided, max 500 chars total)
     const keywordsText = stepData.keywords?.join(', ') || '';
     if (keywordsText.length > 500) {
       const keywordsError = 'Keywords must not exceed 500 characters total';
       errors.push(keywordsError);
       fieldErrors.keywords = [keywordsError];
+    }
+
+    // Image validation (at least one image required - matching create form)
+    if (!stepData.images || stepData.images.length === 0) {
+      // Only require image if there's no current image URL
+      if (!stepData.currentImageUrl) {
+        const imageError = 'At least one image is required';
+        errors.push(imageError);
+        fieldErrors.images = [imageError];
+      }
     }
     
     // Update validation state
@@ -1832,6 +3030,20 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         }
         break;
 
+      case 2:
+        // Step 2: Specifications - At least one field must be provided (matching backend requirement)
+        const hasGrade = stepData.grade && stepData.grade.trim();
+        const hasColor = stepData.color && stepData.color.trim();
+        const hasForm = stepData.form && stepData.form.trim();
+        const hasAdditionalSpecs = stepData.additionalSpecs && stepData.additionalSpecs.length > 0 && stepData.additionalSpecs.some(spec => spec.trim());
+
+        if (!hasGrade && !hasColor && !hasForm && !hasAdditionalSpecs) {
+          const error = 'At least one specification field must be provided (grade, color, form, or additional specifications)';
+          errors.push(error);
+          fieldErrors.specifications = [error];
+        }
+        break;
+
       case 3:
         if (!stepData.origin) {
           const error = 'Material origin is required';
@@ -1849,11 +3061,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
         break;
 
       case 5:
-        if (!stepData.processingMethods || stepData.processingMethods.length === 0) {
-          const error = 'At least one processing method is required';
-          errors.push(error);
-          fieldErrors.processingMethods = [error];
-        }
+        // Processing methods are optional (matching create form)
         break;
 
       case 6:
@@ -1861,6 +3069,11 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           const error = 'Country is required';
           errors.push(error);
           fieldErrors.country = [error];
+        }
+        if (!stepData.location?.region) {
+          const error = 'Region is required';
+          errors.push(error);
+          fieldErrors.region = [error];
         }
         if (!stepData.location?.city) {
           const error = 'City is required';
@@ -1924,19 +3137,21 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
       case 4:
         return !!(stepData.contaminationLevel);
       case 5:
-        return !!(stepData.processingMethods && stepData.processingMethods.length > 0);
+        // Processing methods are optional (matching create form)
+        return true;
       case 6:
-        return !!(stepData.location?.country && stepData.location?.city);
+        return !!(stepData.location?.country && stepData.location?.region && stepData.location?.city);
       case 7:
-        const hasValidAuctionDuration = stepData.auctionDuration && 
-          (stepData.auctionDuration !== 'custom' || 
+        const hasValidAuctionDuration = stepData.auctionDuration &&
+          (stepData.auctionDuration !== 'custom' ||
            (stepData.auctionDuration === 'custom' && stepData.customAuctionDuration && stepData.customAuctionDuration > 0));
         return !!(stepData.availableQuantity && stepData.availableQuantity > 0 && stepData.unit && stepData.startingPrice && stepData.startingPrice > 0 && hasValidAuctionDuration);
       case 8:
-        // Step 8 validation
+        // Step 8 validation (matching create form requirements)
         const titleValid = stepData.title && stepData.title.trim().length >= 10;
-        const descriptionValid = stepData.description && stepData.description.trim().length >= 50;
-        return !!(titleValid && descriptionValid);
+        const descriptionValid = stepData.description && stepData.description.trim().length >= 30;
+        const imageValid = (stepData.images && stepData.images.length > 0) || stepData.currentImageUrl;
+        return !!(titleValid && descriptionValid && imageValid);
       default:
         return true;
     }
@@ -1944,15 +3159,58 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
 
   if (!isOpen) return null;
 
+  // Add error boundary for the entire modal
+  if (_error) {
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        maxWidth="md"
+        showCloseButton={true}
+        className="p-6"
+      >
+        <div className="text-center">
+          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Auction</h3>
+          <p className="text-sm text-gray-600 mb-4">{_error}</p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                setError(null);
+                // Close and reopen the modal to trigger data reload
+                onClose();
+              }}
+              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] transition-colors"
+            >
+              Try Again
+            </button>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      maxWidth="4xl"
+      showCloseButton={false}
+      className="h-[90vh] max-h-[90vh] flex flex-col p-0"
+    >
+      <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Edit Auction</h2>
             <p className="text-sm text-gray-600">
-              {auction.name} - Step {activeStep} of {steps.length}
+              {auction?.name || 'Auction'} - Step {steps.findIndex(step => step.id === activeStep) + 1} of {steps.length}
             </p>
           </div>
           <button
@@ -1963,9 +3221,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           </button>
         </div>
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 min-h-0">
           {/* Steps Sidebar */}
-          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto">
+          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto flex-shrink-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="space-y-3">
               {steps.map((step, _index) => {
                 const status = getStepStatus(step.id);
@@ -1979,7 +3237,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                       isActive
                         ? 'bg-[#FF8A00] text-white border-[#FF8A00]'
                         : status === 'completed'
-                        ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                        ? 'bg-white text-gray-700 border-emerald-300 hover:bg-gray-50'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                     }`}
                   >
@@ -1988,7 +3246,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                         isActive
                           ? 'bg-white text-[#FF8A00]'
                           : status === 'completed'
-                          ? 'bg-green-500 text-white'
+                          ? 'bg-emerald-400 text-white'
                           : 'bg-gray-200 text-gray-600'
                       }`}>
                         {status === 'completed' ? (
@@ -1999,7 +3257,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                       </div>
                       <div className="flex-1">
                         <div className={`text-sm font-medium ${
-                          isActive ? 'text-white' : status === 'completed' ? 'text-green-700' : 'text-gray-900'
+                          isActive ? 'text-white' : status === 'completed' ? 'text-gray-900' : 'text-gray-900'
                         }`}>
                           {step.title}
                         </div>
@@ -2042,9 +3300,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0">
             {/* Step Content */}
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               <div className="max-w-2xl">
                 <div className="mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
@@ -2055,25 +3313,52 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                   </p>
                 </div>
 
+                {/* Validation Errors Summary for non-step-8 components */}
+                {showValidationErrors && validationErrors && Object.keys(validationErrors).length > 0 && activeStep !== 8 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start">
+                      <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-medium text-red-900 mb-2">Please fix the following validation errors:</h4>
+                        <ul className="text-sm text-red-800 space-y-1">
+                          {Object.entries(validationErrors).map(([field, errors]) => (
+                            <li key={field}>• <strong>{field.charAt(0).toUpperCase() + field.slice(1)}:</strong> {errors[0]}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {renderStepContent()}
               </div>
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50">
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
               <div className="flex space-x-3">
                 <button
-                  onClick={() => setActiveStep(Math.max(1, activeStep - 1))}
-                  disabled={activeStep === 1}
+                  onClick={() => {
+                    const currentIndex = steps.findIndex(step => step.id === activeStep);
+                    if (currentIndex > 0) {
+                      setActiveStep(steps[currentIndex - 1].id);
+                    }
+                  }}
+                  disabled={steps.findIndex(step => step.id === activeStep) === 0}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   <span>Previous</span>
                 </button>
-                
+
                 <button
-                  onClick={() => setActiveStep(Math.min(steps.length, activeStep + 1))}
-                  disabled={activeStep === steps.length}
+                  onClick={() => {
+                    const currentIndex = steps.findIndex(step => step.id === activeStep);
+                    if (currentIndex < steps.length - 1) {
+                      setActiveStep(steps[currentIndex + 1].id);
+                    }
+                  }}
+                  disabled={steps.findIndex(step => step.id === activeStep) === steps.length - 1}
                   className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   <span>Next</span>
@@ -2113,11 +3398,32 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction }:
                     </>
                   )}
                 </Button>
+
+                <Button
+                  onClick={() => {
+                    setShouldCloseAfterSave(true);
+                    handleSubmit();
+                  }}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Save & Close</span>
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

@@ -4,12 +4,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown } from 'lucide-react';
+import { ArrowLeft, RefreshCw, Clock, User, Package, Building, MapPin, AlertCircle, ChevronDown, Bell } from 'lucide-react';
 import { getAdminAuction, AdminAuction, updateAuctionStatus } from '@/services/auctions';
 import { getAuctionBids } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { toast } from 'sonner';
 import { adminAdsService } from '@/services/adminAds';
+import { createNotification, type CreateNotificationRequest } from '@/services/notifications';
+import Modal from '@/components/ui/modal';
 
 export default function AuctionDetailPage() {
   const _router = useRouter();
@@ -20,8 +22,91 @@ export default function AuctionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bids, setBids] = useState<any[]>([]);
+  const [bidHistory, setBidHistory] = useState<any[]>([]);
   const [bidLoading, setBidLoading] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Notification modal state
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [sendingNotification, setSendingNotification] = useState(false);
+  const [notificationForm, setNotificationForm] = useState({
+    title: '',
+    message: '',
+    type: 'auction',
+    priority: 'normal' as 'low' | 'normal' | 'high' | 'urgent'
+  });
+
+  // Function to fetch complete bid history for an auction (including historical changes)
+  const fetchCompleteBidHistory = async (auctionId: number) => {
+    try {
+      // First, get all current bids for the auction
+      const bidsResponse = await getAuctionBids(auctionId);
+
+      if (bidsResponse.error || !bidsResponse.data) {
+        return;
+      }
+
+      const currentBids = bidsResponse.data.bids || [];
+
+      // Set current bids for the existing table
+      setBids(currentBids);
+
+      // Collect all historical entries
+      const allHistoryEntries: any[] = [];
+
+      // For each current bid, fetch its complete history
+      for (const bid of currentBids) {
+        try {
+          // Import API service to use dynamic URL
+          const { apiGet } = await import('@/services/api');
+
+          const historyResponse = await apiGet(`/bids/${bid.id}/history/`, true);
+
+          if (!historyResponse.error && historyResponse.data) {
+            const bidHistoryData = (historyResponse.data as any).history || [];
+
+
+
+            // Format each history entry as a separate row
+            bidHistoryData.forEach((entry: any, index: number) => {
+              const formattedEntry = {
+                bidder: bid.company_name || bid.bidder_name || 'Anonymous',
+                bidderEmail: bid.bidder_email || 'No email',
+                amount: `${entry.new_price} SEK`,
+                totalValue: `${parseFloat(entry.new_price) * parseFloat(entry.new_volume)} SEK`,
+                volume: `${entry.new_volume} kg`,
+                date: entry.timestamp,
+                status: 'active',
+                changeReason: entry.change_reason,
+                previousAmount: entry.previous_price ? `${entry.previous_price} SEK` : null,
+                bidId: bid.id,
+                historyIndex: index,
+                isLatest: index === 0 // First entry is the latest
+              };
+
+
+              allHistoryEntries.push(formattedEntry);
+            });
+          } else {
+
+          }
+        } catch (_error) {
+
+        }
+      }
+
+      // Sort all entries by date (newest first)
+      allHistoryEntries.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+
+
+      // Set the complete bid history
+      setBidHistory(allHistoryEntries);
+
+    } catch (_error) {
+
+    }
+  };
 
   // Fetch auction details
   const fetchAuctionDetails = useCallback(async () => {
@@ -35,14 +120,11 @@ export default function AuctionDetailPage() {
 
       if (response.data) {
         setAuction(response.data);
-        
-        // Fetch bids for this auction
+
+        // Fetch complete bid history for this auction
         setBidLoading(true);
         try {
-          const bidsResponse = await getAuctionBids(parseInt(id as string));
-          if (!bidsResponse.error && bidsResponse.data) {
-            setBids(bidsResponse.data.bids || []);
-          }
+          await fetchCompleteBidHistory(parseInt(id as string));
         } catch (_err) {
           // Failed to fetch bids - silently handle this error
         } finally {
@@ -62,17 +144,89 @@ export default function AuctionDetailPage() {
     fetchAuctionDetails();
   }, [fetchAuctionDetails]);
 
-  // Format price
-  const formatPrice = (amount: number | string) => {
+  // Format price with currency
+  const formatPrice = (amount: number | string, currency?: string) => {
     if (typeof amount === 'string') {
+      // If it's already a string, check if it already contains currency
+      if (amount.includes('USD') || amount.includes('SEK') || amount.includes('EUR')) {
+        return amount;
+      }
+      // If it's a string number, parse it and format with currency
+      const numAmount = parseFloat(amount);
+      if (!isNaN(numAmount)) {
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+          style: 'decimal',
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(numAmount);
+
+        if (currency) {
+          return `${formattedAmount} ${currency}`;
+        }
+        return formattedAmount;
+      }
       return amount;
     }
-    
-    return new Intl.NumberFormat('en-US', {
+
+    const formattedAmount = new Intl.NumberFormat('en-US', {
       style: 'decimal',
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
     }).format(amount);
+
+    // Add currency if available
+    if (currency) {
+      return `${formattedAmount} ${currency}`;
+    }
+
+    return formattedAmount;
+  };
+
+  // Format unit display name
+  const formatUnit = (unit: string) => {
+    // Convert backend unit values to proper display names
+    const unitDisplayMap: Record<string, string> = {
+      'kg': 'Kilogram',
+      'tons': 'Tons',
+      'tonnes': 'Tonnes',
+      'lbs': 'Pounds',
+      'pounds': 'Pounds',
+      'pieces': 'Pieces',
+      'units': 'Units',
+      'bales': 'Bales',
+      'containers': 'Containers',
+      'm³': 'Cubic Meters',
+      'cubic_meters': 'Cubic Meters',
+      'liters': 'Liters',
+      'gallons': 'Gallons',
+      'meters': 'Meters'
+    };
+
+    return unitDisplayMap[unit] || unit;
+  };
+
+  // Format volume string to ensure proper unit display
+  const formatVolume = (volume: string, unit_display?: string) => {
+    if (!volume) return 'N/A';
+
+    // If volume already contains a formatted unit, return as is
+    if (volume.includes(' ')) {
+      const parts = volume.split(' ');
+      if (parts.length >= 2) {
+        const quantity = parts[0];
+        const unit = parts.slice(1).join(' ');
+        // Check if unit needs formatting
+        const formattedUnit = formatUnit(unit);
+        return `${quantity} ${formattedUnit}`;
+      }
+    }
+
+    // If we have a separate unit_display, use it
+    if (unit_display) {
+      return `${volume} ${unit_display}`;
+    }
+
+    return volume;
   };
 
   // Format date
@@ -188,6 +342,68 @@ export default function AuctionDetailPage() {
     }
   };
 
+  // Handle notification sending
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!auction) return;
+
+    setSendingNotification(true);
+    try {
+      // First, get auction details to find the creator
+      const auctionResponse = await getAdminAuction(auction.id);
+      if (auctionResponse.error || !auctionResponse.data) {
+        toast.error('Failed to get auction details');
+        return;
+      }
+
+      // Get auction creator information
+      const _auctionData = auctionResponse.data;
+
+      // Get bidders for this auction
+      const bidsResponse = await getAuctionBids(parseInt(auction.id));
+      const _bidders = bidsResponse.data?.bids || [];
+
+      // Create notifications for auction creator
+      const creatorNotificationData: CreateNotificationRequest = {
+        title: `[Admin] ${notificationForm.title}`,
+        message: notificationForm.message,
+        type: notificationForm.type,
+        priority: notificationForm.priority,
+        metadata: {
+          auction_id: auction.id,
+          auction_title: auction.name,
+          admin_notification: true
+        }
+      };
+
+      // Send notification to auction creator (this will need backend support to target specific user)
+      const response = await createNotification(creatorNotificationData);
+
+      if (response.error) {
+        toast.error('Failed to send notification', {
+          description: response.error,
+        });
+      } else {
+        toast.success('Notification sent successfully', {
+          description: `Notification sent regarding auction: ${auction.name}`,
+        });
+        setNotificationForm({
+          title: '',
+          message: '',
+          type: 'auction',
+          priority: 'normal'
+        });
+        setShowNotificationModal(false);
+      }
+    } catch (_err) {
+      toast.error('Failed to send notification', {
+        description: 'An unexpected error occurred',
+      });
+    } finally {
+      setSendingNotification(false);
+    }
+  };
+
   // Get status badge color
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
@@ -243,6 +459,7 @@ export default function AuctionDetailPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 -mx-5">
       {/* Clean Header */}
       <div className="bg-white border-b border-gray-200">
@@ -338,7 +555,7 @@ export default function AuctionDetailPage() {
                     {auction.highestBid > auction.basePrice ? 'Current Highest Bid' : 'Starting Price'}
                   </div>
                   <div className="text-lg font-semibold text-[#FF8A00]">
-                    {formatPrice(auction.highestBid > auction.basePrice ? auction.highestBid : auction.basePrice)}
+                    {formatPrice(auction.highestBid > auction.basePrice ? auction.highestBid : auction.basePrice, auction.currency)}
                   </div>
                 </div>
 
@@ -348,7 +565,7 @@ export default function AuctionDetailPage() {
                     Volume
                   </div>
                   <div className="text-lg font-semibold text-gray-900">
-                    {auction.volume}
+                    {formatVolume(auction.volume, auction.unit_of_measurement_display)}
                   </div>
                 </div>
 
@@ -417,42 +634,171 @@ export default function AuctionDetailPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h2 className="text-sm font-medium text-gray-900 mb-4">Specifications</h2>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-3">
+                {/* Basic Information */}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Category</div>
                   <div className="text-gray-900 font-medium text-sm text-right">{auction.category}</div>
                 </div>
+                {auction.subcategory && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Subcategory</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.subcategory}</div>
+                  </div>
+                )}
+                {auction.specificMaterial && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Specific Material</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.specificMaterial}</div>
+                  </div>
+                )}
+
+                {/* Quantity and Pricing */}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <div className="text-gray-600 text-sm">Volume</div>
-                  <div className="text-gray-900 font-medium text-sm text-right">{auction.volume}</div>
+                  <div className="text-gray-600 text-sm">Available Quantity</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{formatVolume(auction.volume, auction.unit_of_measurement_display)}</div>
                 </div>
+                {auction.minimumOrderQuantity && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Minimum Order</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.minimumOrderQuantity} {formatUnit(auction.unit_of_measurement_display || auction.unit_of_measurement || '')}</div>
+                  </div>
+                )}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
-                  <div className="text-gray-600 text-sm">Base Price</div>
-                  <div className="text-gray-900 font-medium text-sm text-right">{formatPrice(auction.basePrice)}</div>
+                  <div className="text-gray-600 text-sm">Starting Price</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{formatPrice(auction.basePrice, auction.currency)}</div>
                 </div>
+                {auction.reservePrice && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Reserve Price</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{formatPrice(auction.reservePrice, auction.currency)}</div>
+                  </div>
+                )}
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <div className="text-gray-600 text-sm">Currency</div>
+                  <div className="text-gray-900 font-medium text-sm text-right">{auction.currency_display || auction.currency}</div>
+                </div>
+
+                {/* Material Properties */}
+                {auction.packaging && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Packaging</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.packaging}</div>
+                  </div>
+                )}
+                {auction.materialFrequency && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Material Frequency</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.materialFrequency}</div>
+                  </div>
+                )}
+                {auction.origin && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Origin</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.origin}</div>
+                  </div>
+                )}
+                {auction.contamination && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Contamination</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.contamination}</div>
+                  </div>
+                )}
+                {auction.additives && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Additives</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.additives}</div>
+                  </div>
+                )}
+                {auction.storageConditions && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Storage Conditions</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.storageConditions}</div>
+                  </div>
+                )}
+                {auction.processingMethods && auction.processingMethods.length > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Processing Methods</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.processingMethods.join(', ')}</div>
+                  </div>
+                )}
+
+                {/* Location and Delivery */}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Location</div>
                   <div className="text-gray-900 font-medium text-sm text-right">{auction.location || auction.countryOfOrigin}</div>
                 </div>
+                {auction.pickupAvailable !== undefined && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Pickup Available</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.pickupAvailable ? 'Yes' : 'No'}</div>
+                  </div>
+                )}
+                {auction.deliveryOptions && auction.deliveryOptions.length > 0 && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Delivery Options</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.deliveryOptions.join(', ')}</div>
+                  </div>
+                )}
+
+                {/* Auction Information */}
+                {auction.auctionDuration && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Auction Duration</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.auctionDuration}</div>
+                  </div>
+                )}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Status</div>
                   <div className="text-gray-900 font-medium text-sm text-right">{auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}</div>
                 </div>
+                {auction.auctionStatus && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Auction Status</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.auctionStatus}</div>
+                  </div>
+                )}
+
+                {/* System Information */}
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <div className="text-gray-600 text-sm">Created Date</div>
                   <div className="text-gray-900 font-medium text-sm text-right">{formatDate(auction.createdAt)}</div>
                 </div>
+                {auction.auctionEndDate && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Auction End Date</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{formatDate(auction.auctionEndDate)}</div>
+                  </div>
+                )}
                 {auction.endDate && (
                   <div className="flex justify-between items-center py-2 border-b border-gray-100">
                     <div className="text-gray-600 text-sm">End Date</div>
                     <div className="text-gray-900 font-medium text-sm text-right">{formatDate(auction.endDate)}</div>
                   </div>
                 )}
+
+                {/* Completion Status */}
+                {auction.isComplete !== undefined && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Completion Status</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">
+                      {auction.isComplete ? 'Complete' : `Step ${auction.currentStep || 'Unknown'} of 8`}
+                    </div>
+                  </div>
+                )}
+
+                {/* Keywords */}
+                {auction.keywords && (
+                  <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                    <div className="text-gray-600 text-sm">Keywords</div>
+                    <div className="text-gray-900 font-medium text-sm text-right">{auction.keywords}</div>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Bid History */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-sm font-medium text-gray-900 mb-4">Bid History</h2>
+            {/* Current Bids Summary */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Current Bids Summary</h2>
               {bidLoading ? (
                 <div className="flex items-center justify-center p-6">
                   <RefreshCw className="h-5 w-5 animate-spin text-gray-400 mr-2" />
@@ -469,8 +815,9 @@ export default function AuctionDetailPage() {
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Bidder</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
-                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Current Amount</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Volume</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Value</th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
                         <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">Actions</th>
                       </tr>
@@ -493,7 +840,12 @@ export default function AuctionDetailPage() {
                             <div className="text-sm font-medium text-[#FF8A00]">{formatPrice(bid.bid_price_per_unit)}</div>
                             {index === 0 && <div className="text-xs text-green-500">Highest bid</div>}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{formatDate(bid.created_at)}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-700">
+                            {bid.volume_requested} kg
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-green-600">
+                            {formatPrice(bid.total_bid_value)}
+                          </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               index === 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
@@ -511,6 +863,80 @@ export default function AuctionDetailPage() {
                           </td>
                         </tr>
                       ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Complete Bid History */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h2 className="text-sm font-medium text-gray-900 mb-4">Complete Bid History</h2>
+              <p className="text-xs text-gray-500 mb-4">Shows all bid changes including updates and modifications</p>
+              {bidLoading ? (
+                <div className="flex items-center justify-center p-6">
+                  <RefreshCw className="h-5 w-5 animate-spin text-gray-400 mr-2" />
+                  <span className="text-gray-500">Loading bid history...</span>
+                </div>
+              ) : bidHistory.length === 0 ? (
+                <div className="text-center py-8 border border-gray-200 rounded-md bg-gray-50">
+                  <Package size={40} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-500 text-sm">No bid history available</p>
+                </div>
+              ) : (
+                <div className="overflow-hidden border border-gray-200 rounded-md">
+                  <table className="min-w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Bidder</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Action</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Price per Unit</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Volume</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Value</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {bidHistory.map((historyEntry: any, index: number) => {
+                        const isUpdate = historyEntry.changeReason === 'bid_updated';
+                        const isInitial = historyEntry.changeReason === 'bid_placed';
+
+                        return (
+                          <tr key={`${historyEntry.bidId}-${historyEntry.historyIndex}-${index}`} className={`hover:bg-gray-50 ${
+                            historyEntry.isLatest ? 'bg-green-50' : ''
+                          }`}>
+                            <td className="px-4 py-3 text-sm text-gray-900">
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 h-6 w-6 bg-gray-100 rounded-full flex items-center justify-center mr-2">
+                                  <User size={12} className="text-gray-600" />
+                                </div>
+                                <div>
+                                  <div className="font-medium">{historyEntry.bidder}</div>
+                                  <div className="text-xs text-gray-500">{historyEntry.bidderEmail}</div>
+                                  {historyEntry.isLatest && (
+                                    <div className="text-xs text-green-600 font-medium">Current Bid</div>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                isInitial
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : isUpdate
+                                    ? 'bg-orange-100 text-orange-800'
+                                    : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {isInitial ? 'Initial Bid' : isUpdate ? 'Updated Bid' : 'Bid'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-[#FF8A00]">{historyEntry.amount}</td>
+                            <td className="px-4 py-3 text-sm text-gray-700">{historyEntry.volume}</td>
+                            <td className="px-4 py-3 text-sm font-medium text-green-600">{historyEntry.totalValue}</td>
+                            <td className="px-4 py-3 text-sm text-gray-500">{formatDate(historyEntry.date)}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -588,9 +1014,135 @@ export default function AuctionDetailPage() {
                 Save Notes
               </button>
             </div>
+
+            {/* Admin Communication */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Admin Communication</h3>
+              <p className="text-sm text-gray-600 mb-4">Send notifications to auction creator and bidders</p>
+              <button
+                onClick={() => setShowNotificationModal(true)}
+                className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] border border-[#FF8A00] rounded-md hover:bg-[#e67700] transition-colors"
+              >
+                <Bell size={16} className="mr-2" />
+                Send Notification
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    {/* Notification Modal */}
+    <Modal
+      isOpen={showNotificationModal}
+      onClose={() => setShowNotificationModal(false)}
+      title="Send Notification"
+      maxWidth="md"
+    >
+            <form onSubmit={handleSendNotification}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Target
+                  </label>
+                  <input
+                    type="text"
+                    value={`Auction: ${auction?.name} (Creator & Bidders)`}
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={notificationForm.title}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, title: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    required
+                    placeholder="Notification title"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Message
+                  </label>
+                  <textarea
+                    value={notificationForm.message}
+                    onChange={(e) => setNotificationForm({ ...notificationForm, message: e.target.value })}
+                    rows={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    required
+                    placeholder="Enter your notification message"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Type
+                    </label>
+                    <select
+                      value={notificationForm.type}
+                      onChange={(e) => setNotificationForm({ ...notificationForm, type: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    >
+                      <option value="auction">Auction</option>
+                      <option value="system">System</option>
+                      <option value="alert">Alert</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Priority
+                    </label>
+                    <select
+                      value={notificationForm.priority}
+                      onChange={(e) => setNotificationForm({ ...notificationForm, priority: e.target.value as 'low' | 'normal' | 'high' | 'urgent' })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#FF8A00] focus:border-transparent"
+                    >
+                      <option value="low">Low</option>
+                      <option value="normal">Normal</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowNotificationModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={sendingNotification}
+                  className="px-4 py-2 text-sm font-medium text-white bg-[#FF8A00] rounded-md hover:bg-[#e67700] disabled:opacity-50 flex items-center"
+                >
+                  {sendingNotification ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Bell size={16} className="mr-2" />
+                      Send Notification
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+    </Modal>
+    </>
   );
-} 
+}

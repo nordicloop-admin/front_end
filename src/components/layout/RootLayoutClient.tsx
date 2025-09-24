@@ -10,6 +10,7 @@ export default function RootLayoutClient({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+
   const isAuthPage = pathname === '/login' ||
                     pathname === '/register' ||
                     pathname === '/register/success' ||

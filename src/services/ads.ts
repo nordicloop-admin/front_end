@@ -53,6 +53,7 @@ export interface Step7Data {
   auction_duration: number;
   reserve_price?: number;
   custom_auction_duration?: number;
+  allow_broker_bids?: boolean;
 }
 
 export interface Step8Data {
@@ -498,7 +499,19 @@ export const UNIT_OF_MEASUREMENT_OPTIONS = [
   { value: 'kg', label: 'Kilogram' },
   { value: 'g', label: 'Gram' },
   { value: 'lb', label: 'Pound' },
-  { value: 'tons', label: 'Tons' }
+  { value: 'tons', label: 'Tons' },
+  { value: 'tonnes', label: 'Tonnes' },
+  { value: 'lbs', label: 'Pounds' },
+  { value: 'pounds', label: 'Pounds' },
+  { value: 'pieces', label: 'Pieces' },
+  { value: 'units', label: 'Units' },
+  { value: 'bales', label: 'Bales' },
+  { value: 'containers', label: 'Containers' },
+  { value: 'm³', label: 'Cubic Meters' },
+  { value: 'cubic_meters', label: 'Cubic Meters' },
+  { value: 'liters', label: 'Liters' },
+  { value: 'gallons', label: 'Gallons' },
+  { value: 'meters', label: 'Meters' }
 ];
 
 export const CURRENCY_OPTIONS = [
@@ -585,7 +598,19 @@ export const AD_CHOICES = {
     KG: 'kg',
     G: 'g',
     LB: 'lb',
-    TONS: 'tons'
+    TONS: 'tons',
+    TONNES: 'tonnes',
+    LBS: 'lbs',
+    POUNDS: 'pounds',
+    PIECES: 'pieces',
+    UNITS: 'units',
+    BALES: 'bales',
+    CONTAINERS: 'containers',
+    CUBIC_METERS_SYMBOL: 'm³',
+    CUBIC_METERS: 'cubic_meters',
+    LITERS: 'liters',
+    GALLONS: 'gallons',
+    METERS: 'meters'
   },
   
   CURRENCY: {
@@ -693,6 +718,7 @@ export class AdUpdateService {
         data: response.data as AdCreationResponse
       };
     } catch (error) {
+
       return {
         success: false,
         error: error instanceof Error ? error.message : `Failed to update step ${step}`,

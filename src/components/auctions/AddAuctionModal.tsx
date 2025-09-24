@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { X, Upload, Calendar, Clock, AlertCircle } from 'lucide-react';
 import { getCategories, Category, Subcategory } from '@/services/auction';
+import Modal from '@/components/ui/modal';
 
 interface AddAuctionModalProps {
   isOpen: boolean;
@@ -28,11 +29,22 @@ export interface AuctionFormData {
 }
 
 // Unit choices from backend
+// Use all units supported by backend - matching Ad.UNIT_CHOICES
 const units = [
   { value: 'kg', label: 'Kilogram' },
-  { value: 'g', label: 'Gram' },
-  { value: 'lb', label: 'Pound' },
-  { value: 'ton', label: 'Ton' }
+  { value: 'tons', label: 'Tons' },
+  { value: 'tonnes', label: 'Tonnes' },
+  { value: 'lbs', label: 'Pounds' },
+  { value: 'pounds', label: 'Pounds' },
+  { value: 'pieces', label: 'Pieces' },
+  { value: 'units', label: 'Units' },
+  { value: 'bales', label: 'Bales' },
+  { value: 'containers', label: 'Containers' },
+  { value: 'm³', label: 'Cubic Meters' },
+  { value: 'cubic_meters', label: 'Cubic Meters' },
+  { value: 'liters', label: 'Liters' },
+  { value: 'gallons', label: 'Gallons' },
+  { value: 'meters', label: 'Meters' }
 ];
 
 // Selling type choices from backend
@@ -93,8 +105,8 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
           } else {
             setError('No categories available. Please try again later.');
           }
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch categories');
+        } catch (_err) {
+          setError(_err instanceof Error ? _err.message : 'Failed to fetch categories');
         } finally {
           setIsLoading(false);
         }
@@ -160,19 +172,13 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-md max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-5 border-b border-gray-100">
-          <h2 className="text-lg font-medium">Add New Auction</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-5">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Add New Auction"
+      maxWidth="2xl"
+    >
+        <form onSubmit={handleSubmit}>
           <div className="space-y-4">
             {/* Basic Information */}
             <div className="space-y-4">
@@ -491,7 +497,6 @@ export default function AddAuctionModal({ isOpen, onClose, onSubmit }: AddAuctio
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

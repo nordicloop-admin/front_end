@@ -2,19 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { Package, Filter, Search, Plus, Loader2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
+
+import { AuctionData } from '@/components/auctions/EditAuctionModal';
 import MyAuctionCard from '@/components/auctions/MyAuctionCard';
-import { getUserAuctions, PaginatedAuctionResult, getAdDetails } from '@/services/auction';
+import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
 import Pagination from '@/components/ui/Pagination';
 import Link from 'next/link';
+import { calculateTimeRemaining, formatTimeRemaining } from '@/utils/timeUtils';
 
 
 
 export default function MyAuctions() {
   const [auctions, setAuctions] = useState<AuctionData[]>([]);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [selectedAuction, setSelectedAuction] = useState<AuctionData | null>(null);
+
 
   // State for API auctions and pagination
   const [isLoading, setIsLoading] = useState(true);
@@ -68,20 +68,16 @@ export default function MyAuctions() {
 
         // Convert API auctions to the format expected by the UI
         const convertedAuctions = result.auctions.map(auction => {
-          // Determine the status based on API response
-          let status = 'inactive';
-          let auctionStatus = 'Inactive';
+          // Use the actual status from backend instead of transforming
+          const backendStatus = auction.status || (auction.is_active ? 'active' : 'draft');
           
-          if (auction.status === 'suspended') {
-            status = 'suspended';
-            auctionStatus = 'Suspended';
-          } else if (auction.is_active) {
-            status = 'active';
-            auctionStatus = 'Active';
-          } else if (!auction.is_active) {
-            auctionStatus = 'Draft';
-          }
+          // Capitalize first letter for display
+          const displayStatus = backendStatus.charAt(0).toUpperCase() + backendStatus.slice(1);
           
+          // Calculate time remaining from auction end date or use API provided time_remaining
+          const timeRemaining = auction.time_remaining || calculateTimeRemaining(auction.auction_end_date || null);
+          const displayTimeLeft = formatTimeRemaining(timeRemaining);
+
           return {
             id: auction.id.toString(),
             name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
@@ -89,9 +85,9 @@ export default function MyAuctions() {
             subcategory: auction.subcategory_name,
             basePrice: auction.starting_bid_price || auction.total_starting_value,
             currentBid: '',
-            status: status,
-            auctionStatus: auctionStatus,
-            timeLeft: 'Available',
+            status: backendStatus,
+            auctionStatus: displayStatus,
+            timeLeft: displayTimeLeft,
             volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
             image: auction.material_image || '/images/marketplace/categories/plastics.jpg',
             description: auction.title || '',
@@ -147,72 +143,15 @@ export default function MyAuctions() {
   };
 
   // Handle page size change
-  const handlePageSizeChange = (size: number) => {
+  const _handlePageSizeChange = (size: number) => {
     setPageSize(size);
     setCurrentPage(1); // Reset to first page when changing page size
   };
 
-  // Handle opening the edit modal
-  const handleEditClick = async (auction: AuctionData) => {
-    try {
-      // Fetch detailed auction data to get accurate step completion status
-      const detailedResponse = await getAdDetails(auction.id);
-      
-      if (!detailedResponse.error && detailedResponse.data) {
-        const adData = detailedResponse.data.data;
-        
-        // Create enhanced auction data with proper step completion status
-        const enhancedAuction: AuctionData = {
-          ...auction,
-          stepCompletionStatus: adData.step_completion_status || auction.stepCompletionStatus,
-          isComplete: adData.is_complete,
-          currentStep: adData.current_step,
-          specifications: [
-            { name: 'Material Type', value: adData.category_name },
-            { name: 'Subcategory', value: adData.subcategory_name },
-            { name: 'Specific Material', value: adData.specific_material },
-            { name: 'Packaging', value: adData.packaging_display },
-            { name: 'Material Frequency', value: adData.material_frequency_display },
-            ...(adData.origin_display ? [{ name: 'Origin', value: adData.origin_display }] : []),
-            ...(adData.contamination_display ? [{ name: 'Contamination', value: adData.contamination_display }] : []),
-            ...(adData.additives_display ? [{ name: 'Additives', value: adData.additives_display }] : []),
-            ...(adData.storage_conditions_display ? [{ name: 'Storage Conditions', value: adData.storage_conditions_display }] : []),
-            ...(adData.processing_methods_display.length > 0 ? [{ name: 'Processing Methods', value: adData.processing_methods_display.join(', ') }] : []),
-            { name: 'Additional Specifications', value: adData.additional_specifications || '' }
-          ]
-        };
-        
-        setSelectedAuction(enhancedAuction);
-      } else {
-        // Fallback to original auction data if detailed fetch fails
-        setSelectedAuction(auction);
-      }
-    } catch (_error) {
-      // Fallback to original auction data on error
-      setSelectedAuction(auction);
-    }
-    
-    setIsEditModalOpen(true);
-  };
-
-  // Handle edit auction submission
-  const handleEditAuction = async (updatedAuction: AuctionData) => {
-    // In a real app, you would send the updated data to an API
-    // For now, we'll just update our local state
-    const updatedAuctions = auctions.map(auction =>
-      auction.id === updatedAuction.id ? updatedAuction : auction
-    );
-
-    setAuctions(updatedAuctions);
-
-    // Close the modal
-    setIsEditModalOpen(false);
-
-    // Show success message
-    toast.success('Auction updated successfully', {
-      description: 'Your changes have been saved.',
-      duration: 3000,
-    });
+  // Handle edit click - redirect to details page for editing
+  const handleEditClick = (auction: AuctionData) => {
+    // Redirect to the details page where the proper edit modal exists
+    window.location.href = `/dashboard/my-auctions/${auction.id}`;
   };
 
   // Filter auctions based on search term
@@ -312,10 +251,9 @@ export default function MyAuctions() {
                 <Pagination
                   currentPage={paginationData.currentPage}
                   totalPages={paginationData.totalPages}
-                  totalCount={paginationData.count}
-                  pageSize={paginationData.pageSize}
+                  totalItems={paginationData.count}
+                  itemsPerPage={paginationData.pageSize}
                   onPageChange={handlePageChange}
-                  onPageSizeChange={handlePageSizeChange}
                 />
               )}
             </>
@@ -336,15 +274,7 @@ export default function MyAuctions() {
         </div>
       )}
 
-      {/* Edit Auction Modal */}
-      {selectedAuction && (
-        <EditAuctionModal
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onSubmit={handleEditAuction}
-          auction={selectedAuction}
-        />
-      )}
+
     </div>
   );
 }

@@ -2,7 +2,7 @@
  * Bid service for handling bid creation and management
  * Based on Nordic Loop Bidding System API
  */
-import { apiPost, apiGet, apiPut, apiDelete } from './api';
+import { apiPost, apiGet, apiPut, apiDelete, ApiResponse } from './api';
 
 /**
  * Interface for bid creation data
@@ -14,6 +14,7 @@ export interface BidCreateData {
   volume_type?: 'partial' | 'full';    // Volume type (optional, defaults to "partial")
   notes?: string;                      // Optional notes
   max_auto_bid_price?: string;         // Auto-bidding max price (optional)
+  payment_method_id: string;           // Stripe payment method ID (required for pre-authorization)
 }
 
 /**
@@ -52,22 +53,29 @@ export interface BidSearchParams extends BidPaginationParams {
  */
 export interface BidItem {
   id: number;
-  bidder_name: string;
+  ad_id: number;
   ad_title: string;
+  bidder_name: string;
+  company_name?: string;
   bid_price_per_unit: string;
   volume_requested: string;
-  total_bid_value: string | null;
-  currency: string;
-  unit: string;
+  total_bid_value: string;
   status: string;
-  is_winning: boolean;
-  rank: number;
+  created_at: string;
+  updated_at: string;
+  // Optional fields that may be present in some responses
+  currency?: string;
+  unit?: string;
+  is_winning?: boolean;
+  rank?: number;
   volume_type?: string;
   is_auto_bid?: boolean;
   max_auto_bid_price?: string | null;
   notes?: string | null;
-  created_at: string;
-  updated_at: string;
+  // Additional fields for winning bids
+  ad_user_email?: string;
+  ad_category?: string;
+  ad_location?: string;
 }
 
 /**
@@ -186,9 +194,22 @@ export interface BidErrorResponse {
  * Interface for user bids response
  */
 export interface UserBidsResponse {
-  user_id: number;
-  total_bids: number;
+  user_id?: number;
+  total_bids?: number;
   bids: UserBidItem[];
+  pagination?: {
+    count: number;
+    next: string | null;
+    previous: string | null;
+    page_size: number;
+    total_pages: number;
+    current_page: number;
+  };
+  statistics?: {
+    total_bids: number;
+    active_bids: number;
+    total_bidders: number;
+  };
 }
 
 /**
@@ -240,23 +261,48 @@ export async function createBid(bidData: BidCreateData) {
     if (response.error || (response.status && response.status >= 400)) {
       // Extract clean error message from API response
       let errorMessage = response.error || 'Failed to create bid';
-      
+
       // Handle specific error format: "Failed to place bid: ['You cannot bid on your own ad.']"
       if (typeof response.data === 'object' && response.data !== null) {
         if ('error' in response.data) {
           const apiError = response.data.error;
           if (typeof apiError === 'string') {
-            // Extract message from "Failed to place bid: ['Error message']" format
-            const match = apiError.match(/\['(.+?)'\]/);
-            if (match && match[1]) {
-              errorMessage = match[1];
+            // Handle Django ValidationError format: "Failed to place bid: {'field': ErrorDetail(string='message', code='...')}"
+            const validationErrorMatch = apiError.match(/ErrorDetail\(string='([^']+)'/);
+            if (validationErrorMatch && validationErrorMatch[1]) {
+              errorMessage = validationErrorMatch[1];
             } else {
-              errorMessage = apiError;
+              // Extract message from "Failed to place bid: ['Error message']" format
+              const listMatch = apiError.match(/\['(.+?)'\]/);
+              if (listMatch && listMatch[1]) {
+                errorMessage = listMatch[1];
+              } else {
+                // Handle simple field validation errors like "{'bid_price_per_unit': 'Error message'}"
+                const fieldErrorMatch = apiError.match(/'([^']+)'/g);
+                if (fieldErrorMatch && fieldErrorMatch.length >= 2) {
+                  // Take the second match which should be the error message
+                  errorMessage = fieldErrorMatch[1].replace(/'/g, '');
+                } else {
+                  errorMessage = apiError;
+                }
+              }
+            }
+          }
+        }
+
+        // Handle validation errors in 'details' field
+        if ('details' in response.data && typeof response.data.details === 'object') {
+          const details = response.data.details;
+          // Extract first error message from validation details
+          for (const field in details) {
+            if (Array.isArray(details[field]) && details[field].length > 0) {
+              errorMessage = details[field][0];
+              break;
             }
           }
         }
       }
-      
+
       return {
         data: null,
         error: errorMessage,
@@ -341,11 +387,11 @@ export async function getAdBids(adId: number, params?: BidPaginationParams) {
     const queryParams = new URLSearchParams();
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
-    
+
     const endpoint = `/bids/ad/${adId}/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-    
-    // Get bids requires authentication
-    const response = await apiGet<PaginatedBidResponse>(endpoint, true);
+
+    // Get bids does not require authentication (AllowAny permission)
+    const response = await apiGet<any>(endpoint, false);
 
     if (response.error) {
       return {
@@ -355,19 +401,24 @@ export async function getAdBids(adId: number, params?: BidPaginationParams) {
       };
     }
 
-    // Return bids with ad info and bid statistics
-    const result: PaginatedBidResult = {
-      bids: response.data?.results || [],
+    // The backend returns: { ad_id, ad_title, total_bids, bids }
+    // Transform to expected format for compatibility
+    const result = {
+      bids: response.data?.bids || [],
+      total_bids: response.data?.total_bids || 0,
+      ad_id: response.data?.ad_id,
+      ad_title: response.data?.ad_title,
+      // For backward compatibility with paginated format
+      results: response.data?.bids || [],
+      count: response.data?.total_bids || 0,
       pagination: {
-        count: response.data?.count || 0,
-        next: response.data?.next || null,
-        previous: response.data?.previous || null,
-        page_size: response.data?.page_size || 10,
-        total_pages: response.data?.total_pages || 1,
-        current_page: response.data?.current_page || 1
-      },
-      bidStatistics: response.data?.bid_statistics,
-      adInfo: response.data?.ad_info
+        count: response.data?.total_bids || 0,
+        next: null,
+        previous: null,
+        page_size: response.data?.bids?.length || 0,
+        total_pages: 1,
+        current_page: 1
+      }
     };
 
     return {
@@ -396,9 +447,9 @@ export async function getUserBids(params?: BidPaginationParams) {
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
     if (params?.status) queryParams.set('status', params.status);
-    
-    const endpoint = `/bids/my/`;
-    
+
+    const endpoint = `/bids/my/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
     // Get user bids requires authentication
     const response = await apiGet<UserBidsResponse>(endpoint, true);
 
@@ -413,6 +464,7 @@ export async function getUserBids(params?: BidPaginationParams) {
     // Map UserBidItem to BidItem format
     const mappedBids: BidItem[] = (response.data?.bids || []).map(bid => ({
       id: bid.id,
+      ad_id: bid.ad_id, // Include the ad_id field
       bidder_name: bid.bidder_name,
       ad_title: bid.ad_title,
       bid_price_per_unit: bid.bid_price_per_unit,
@@ -431,13 +483,18 @@ export async function getUserBids(params?: BidPaginationParams) {
     // Transform response to match expected format with pagination
     const result: PaginatedBidResult = {
       bids: mappedBids,
-      pagination: {
-        count: response.data?.total_bids || 0,
+      pagination: response.data?.pagination || {
+        count: mappedBids.length,
         next: null,
         previous: null,
         page_size: params?.page_size || 10,
-        total_pages: Math.ceil((response.data?.total_bids || 0) / (params?.page_size || 10)),
+        total_pages: Math.ceil(mappedBids.length / (params?.page_size || 10)),
         current_page: params?.page || 1
+      },
+      statistics: response.data?.statistics || {
+        total_bids: mappedBids.length,
+        active_bids: mappedBids.filter(bid => bid.status === 'active').length,
+        total_bidders: 1
       }
     };
 
@@ -467,7 +524,7 @@ export async function getUserWinningBids(params?: BidPaginationParams) {
     if (params?.page) queryParams.set('page', params.page.toString());
     if (params?.page_size) queryParams.set('page_size', params.page_size.toString());
     
-    const endpoint = `/bids/user/winning/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const endpoint = `/bids/winning/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     
     // Get user winning bids requires authentication
     const response = await apiGet<PaginatedBidResponse>(endpoint, true);
@@ -697,5 +754,48 @@ export async function closeAuction(adId: number) {
 
 // Legacy function for backwards compatibility
 export const getAuctionBids = getAdBids;
+
+/**
+ * Get detailed bid history for a specific auction with company information
+ */
+export const getAuctionBidHistory = async (auctionId: number): Promise<ApiResponse<any>> => {
+  try {
+    const response = await apiGet<any>(`/bids/ad/${auctionId}/history/`, false);
+    return response;
+  } catch (error) {
+
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to fetch auction bid history',
+      status: 500
+    };
+  }
+};
+
+/**
+ * Interface for ad bid statistics response
+ */
+export interface AdBidStatsResponse {
+  ad_id: number;
+  statistics: BidStatistics;
+}
+
+/**
+ * Get bid statistics for a specific ad
+ * @param adId The ad ID
+ * @returns The API response with bid statistics
+ */
+export async function getAdBidStats(adId: number): Promise<ApiResponse<AdBidStatsResponse>> {
+  try {
+    const response = await apiGet<AdBidStatsResponse>(`/bids/ad/${adId}/stats/`, false);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to fetch bid statistics',
+      status: 500
+    };
+  }
+}
 
 

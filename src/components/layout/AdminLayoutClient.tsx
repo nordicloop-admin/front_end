@@ -59,7 +59,7 @@ export default function AdminLayoutClient({
       {/* Mobile Sidebar Overlay */}
       {isMobile && sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40"
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 z-40"
           onClick={toggleSidebar}
         />
       )}
@@ -189,6 +189,19 @@ export default function AdminLayoutClient({
           >
             <Bell size={18} className="mr-3" />
             <span>Notifications</span>
+          </Link>
+
+          <Link
+            href="/admin/payments"
+            className={`flex items-center px-4 py-2.5 ${pathname === '/admin/payments' || pathname.startsWith('/admin/payments') ? 'text-[#FF8A00] font-medium' : 'text-gray-700 hover:text-[#FF8A00]'}`}
+            onClick={isMobile ? toggleSidebar : undefined}
+          >
+            <svg className="h-[18px] w-[18px] mr-3" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="2" y="4" width="20" height="16" rx="2" stroke={pathname === '/admin/payments' || pathname.startsWith('/admin/payments') ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
+              <path d="M2 8H22" stroke={pathname === '/admin/payments' || pathname.startsWith('/admin/payments') ? "#FF8A00" : "currentColor"} strokeWidth="1.5" />
+              <circle cx="7" cy="14" r="1" fill={pathname === '/admin/payments' || pathname.startsWith('/admin/payments') ? "#FF8A00" : "currentColor"} />
+            </svg>
+            <span>Payments</span>
           </Link>
 
           <Link

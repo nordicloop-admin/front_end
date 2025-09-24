@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { Bell, Check, Settings, ExternalLink, X } from 'lucide-react';
 import { 
@@ -40,31 +40,39 @@ export default function NotificationDropdown({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
   
-  // Fetch notifications when dropdown opens
-  useEffect(() => {
-    if (isOpen && notifications.length === 0) {
-      fetchNotifications();
-    }
-  }, [isOpen, notifications.length]);
-  
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async (retryCount: number = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await getUnreadNotifications();
+      const response = await getUnreadNotifications(); // Get unread notifications
       
       if (response.error) {
+        // If it's a connection issue and we haven't retried, try again
+        if (response.error.includes('Connection issue') && retryCount < 1) {
+          setTimeout(() => {
+            fetchNotifications(retryCount + 1);
+          }, 1500);
+          return;
+        }
         setError(response.error);
       } else if (response.data) {
+        // getUnreadNotifications now returns Notification[] from the paginated API
         const sortedNotifications = sortNotificationsByPriority(response.data);
-        setNotifications(sortedNotifications.slice(0, 10)); // Show only first 10
+        setNotifications(sortedNotifications); // Already limited to 10 by the API call
       }
     } catch (_err) {
       setError('Failed to load notifications');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+  
+  // Fetch notifications when dropdown opens
+  useEffect(() => {
+    if (isOpen && notifications.length === 0) {
+      fetchNotifications();
+    }
+  }, [isOpen, notifications.length, fetchNotifications]);
   
   const handleMarkAsRead = async (id: number) => {
     try {

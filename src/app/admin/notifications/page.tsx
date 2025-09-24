@@ -24,6 +24,9 @@ import {
   CreateNotificationRequest
 } from '@/services/notifications';
 import { searchUsers } from '@/services/users';
+import Modal from '@/components/ui/modal';
+import Pagination from '@/components/ui/Pagination';
+import { PaginationInfo } from '@/components/shared/Pagination';
 import {
   getNotificationIconComponent,
   getNotificationTypeConfig,
@@ -59,10 +62,15 @@ interface User {
 export default function AdminNotificationsPage() {
   // State for notifications list with pagination
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
+  const [paginationInfo, setPaginationInfo] = useState<PaginationInfo>({
+    count: 0,
+    next: null,
+    previous: null,
+  });
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasNext, setHasNext] = useState(false);
-  const [hasPrevious, setHasPrevious] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,13 +110,20 @@ export default function AdminNotificationsPage() {
   // Get notification categories
   const notificationCategories = getNotificationCategories();
 
+  // Pagination handlers
+  const _handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
+  };
+
   // Fetch notifications with pagination and filters
   const fetchNotifications = useCallback(async (page = 1) => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getAllNotifications({
         page,
-        page_size: 20,
+        page_size: pageSize,
         type: selectedTypeFilter || undefined,
         priority: selectedPriorityFilter || undefined,
         search: searchQuery || undefined,
@@ -116,19 +131,22 @@ export default function AdminNotificationsPage() {
 
       if (response.error) {
         setError(response.error);
+        setNotifications([]);
+        setPaginationInfo({ count: 0, next: null, previous: null });
       } else if (response.data) {
         setNotifications(response.data.results);
         setTotalCount(response.data.count);
-        setHasNext(!!response.data.next);
-        setHasPrevious(!!response.data.previous);
+        setTotalPages(Math.ceil(response.data.count / pageSize));
         setCurrentPage(page);
       }
     } catch (_err) {
       setError('Failed to load notifications');
+      setNotifications([]);
+      setPaginationInfo({ count: 0, next: null, previous: null });
     } finally {
       setLoading(false);
     }
-  }, [selectedTypeFilter, selectedPriorityFilter, searchQuery]);
+  }, [selectedTypeFilter, selectedPriorityFilter, searchQuery, pageSize]);
 
   // Initial fetch
   useEffect(() => {
@@ -147,6 +165,12 @@ export default function AdminNotificationsPage() {
 
     return () => clearTimeout(handler);
   }, [searchQuery, selectedTypeFilter, selectedPriorityFilter, currentPage, fetchNotifications]);
+
+  // Handle page changes
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchNotifications(page);
+  };
   
   // Search users from API
   const searchUsersFromAPI = useCallback(async (query: string) => {
@@ -301,7 +325,7 @@ export default function AdminNotificationsPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <div className="text-center">
-            <div className="text-2xl font-semibold text-gray-900 mb-1">{totalCount}</div>
+            <div className="text-2xl font-semibold text-gray-900 mb-1">{paginationInfo.count}</div>
             <div className="text-sm text-gray-600">Total Notifications</div>
           </div>
         </div>
@@ -397,7 +421,7 @@ export default function AdminNotificationsPage() {
 
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-600">
-                Showing {notifications.length} of {totalCount} notifications
+                Showing {notifications.length} of {paginationInfo.count} notifications
               </span>
             </div>
           </div>
@@ -513,49 +537,15 @@ export default function AdminNotificationsPage() {
             </div>
 
             {/* Pagination */}
-            {(hasNext || hasPrevious) && (
-              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                <div className="flex-1 flex justify-between sm:hidden">
-                  <button
-                    onClick={() => fetchNotifications(currentPage - 1)}
-                    disabled={!hasPrevious || loading}
-                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => fetchNotifications(currentPage + 1)}
-                    disabled={!hasNext || loading}
-                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
-                </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700">
-                      Page <span className="font-medium">{currentPage}</span> of notifications
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                      <button
-                        onClick={() => fetchNotifications(currentPage - 1)}
-                        disabled={!hasPrevious || loading}
-                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => fetchNotifications(currentPage + 1)}
-                        disabled={!hasNext || loading}
-                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        Next
-                      </button>
-                    </nav>
-                  </div>
-                </div>
+            {totalPages > 1 && (
+              <div className="px-4 py-4 border-t border-gray-200">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalCount}
+                  itemsPerPage={pageSize}
+                  onPageChange={handlePageChange}
+                />
               </div>
             )}
           </>
@@ -580,22 +570,12 @@ export default function AdminNotificationsPage() {
       </div>
 
       {/* Create Notification Modal */}
-      {showCreateForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-gray-200 rounded-md max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-medium text-gray-900">Create New Notification</h2>
-                <button
-                  onClick={() => setShowCreateForm(false)}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6">
+      <Modal
+        isOpen={showCreateForm}
+        onClose={() => setShowCreateForm(false)}
+        title="Create New Notification"
+        maxWidth="2xl"
+      >
               {submitSuccess && (
                 <div className="bg-green-50 text-green-700 p-3 rounded-md mb-4 flex items-center">
                   <Check size={16} className="mr-2" />
@@ -863,10 +843,7 @@ export default function AdminNotificationsPage() {
                   </button>
                 </div>
               </form>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

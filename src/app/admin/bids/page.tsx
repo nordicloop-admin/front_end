@@ -123,13 +123,19 @@ export default function BidsPage() {
     setSortConfig({ key, direction });
     
     const sortedBids = [...bids].sort((a, b) => {
-      const aValue = a[key as keyof AdminBid];
-      const bValue = b[key as keyof AdminBid];
+      let aValue: any = a[key as keyof AdminBid];
+      let bValue: any = b[key as keyof AdminBid];
       
       // Handle undefined values
       if (aValue === undefined && bValue === undefined) return 0;
       if (aValue === undefined) return direction === 'ascending' ? 1 : -1;
       if (bValue === undefined) return direction === 'ascending' ? -1 : 1;
+      
+      // Special handling for numeric string fields (bidAmount, volume)
+      if (key === 'bidAmount' || key === 'volume') {
+        aValue = parseFloat(aValue as string) || 0;
+        bValue = parseFloat(bValue as string) || 0;
+      }
       
       if (aValue < bValue) {
         return direction === 'ascending' ? -1 : 1;
@@ -153,12 +159,14 @@ export default function BidsPage() {
   };
 
   // Format bid amount
-  const formatBidAmount = (amount: number) => {
+  const formatBidAmount = (amount: string | number) => {
+    // Convert string to number, then format as integer
+    const numericAmount = typeof amount === 'string' ? parseInt(amount, 10) : amount;
     return new Intl.NumberFormat('en-US', {
       style: 'decimal',
-      minimumFractionDigits: 3,
-      maximumFractionDigits: 3
-    }).format(amount);
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(numericAmount);
   };
 
   // Format date

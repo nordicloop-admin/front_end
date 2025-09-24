@@ -6,6 +6,12 @@ import { getAccessToken } from '@/services/auth';
 // Base URL for the API
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
 
+// Validate API URL on client side
+if (typeof window !== 'undefined' && !API_BASE_URL && process.env.NODE_ENV === 'development') {
+  // eslint-disable-next-line no-console
+  console.error('NEXT_PUBLIC_API_URL environment variable is not set');
+}
+
 /**
  * Interface for API response
  */
@@ -58,6 +64,8 @@ export async function apiGet<T>(
     const response = await fetch(url, {
       method: 'GET',
       headers,
+      // Add timeout and error handling
+      signal: AbortSignal.timeout(60000), // 60 second timeout (increased for better reliability)
     });
 
     // Handle different content types
@@ -68,7 +76,6 @@ export async function apiGet<T>(
       data = await response.json();
     } else {
       const text = await response.text();
-      // Non-JSON response handling (removed console.log for production)
 
       try {
         // Try to parse it anyway in case the content-type header is wrong
@@ -102,11 +109,29 @@ export async function apiGet<T>(
       status: response.status,
     };
   } catch (error) {
-    // Error handling (removed console.error for production)
+    // Handle different types of errors
+    let errorMessage = 'An error occurred';
+    let status = 500;
+
+    if (error instanceof Error) {
+      if (error.name === 'AbortError' || error.message.includes('signal')) {
+        errorMessage = 'Connection timeout - the server is taking too long to respond';
+        status = 408;
+      } else if (error.message.includes('fetch') || error.message.includes('NetworkError')) {
+        errorMessage = 'Network error - please check your internet connection';
+        status = 0;
+      } else if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Unable to connect to server - please try again later';
+        status = 503;
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'An error occurred',
-      status: 500,
+      error: errorMessage,
+      status,
     };
   }
 }
@@ -130,7 +155,6 @@ export async function apiPost<T>(
     const url = `${API_BASE_URL}${endpoint}`;
 
     // Log the request for debugging (remove in production)
-    // console.log(`API POST Request to ${url}:`, { headers, body });
 
     const response = await fetch(url, {
       method: 'POST',
@@ -139,7 +163,6 @@ export async function apiPost<T>(
     });
 
     // Log the raw response for debugging (remove in production)
-    // console.log(`API Response from ${url}:`, { status: response.status, statusText: response.statusText });
 
     let data;
     const contentType = response.headers.get('content-type');
@@ -149,7 +172,6 @@ export async function apiPost<T>(
     } else {
       const text = await response.text();
       // Log non-JSON response for debugging (remove in production)
-      // console.log(`Non-JSON response from ${url}:`, text);
 
       try {
         // Try to parse it anyway in case the content-type header is wrong
@@ -165,7 +187,6 @@ export async function apiPost<T>(
     }
 
     // Log the parsed data for debugging (remove in production)
-    // console.log(`Parsed data from ${url}:`, data);
 
     if (!response.ok) {
       // For error responses, preserve the full error structure
@@ -187,7 +208,6 @@ export async function apiPost<T>(
     };
   } catch (error) {
     // Log the error for debugging (remove in production)
-    // console.error('API error:', error);
 
     return {
       data: null,
@@ -214,6 +234,8 @@ export async function apiPut<T>(
   try {
     const headers = getHeaders(requiresAuth, token);
     const url = `${API_BASE_URL}${endpoint}`;
+
+
 
     const response = await fetch(url, {
       method: 'PUT',
@@ -361,14 +383,7 @@ export async function apiPutFormData<T>(
     const url = `${API_BASE_URL}${endpoint}`;
 
     // Debug: Log FormData contents properly (FormData can't be JSON.stringified)
-    // eslint-disable-next-line no-console
-    console.log('apiPutFormData - Endpoint:', endpoint);
-    // eslint-disable-next-line no-console
-    console.log('apiPutFormData - FormData contents:');
-    for (const [key, value] of formData.entries()) {
-      // eslint-disable-next-line no-console
-      console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size}b)` : value);
-    }
+
 
     const response = await fetch(url, {
       method: 'PUT',

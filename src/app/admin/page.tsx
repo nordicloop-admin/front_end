@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Building, Users, Clock, Plus, PackageCheck, Tag, ShoppingBag } from 'lucide-react';
 import { getPlatformStatistics, PlatformStatistics } from '@/services/statistics';
+import NotificationWidget from '@/components/notifications/NotificationWidget';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<PlatformStatistics | null>(null);
@@ -211,7 +212,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Bottom Sections */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Quick Actions */}
         <div className="bg-white border border-gray-100 rounded-md p-5">
           <h2 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h2>
@@ -260,6 +261,14 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+        {/* Recent Notifications */}
+        <NotificationWidget
+          className="lg:col-span-1"
+          maxItems={5}
+          showViewAllLink={true}
+          isAdmin={true}
+        />
       </div>
     </div>
   );

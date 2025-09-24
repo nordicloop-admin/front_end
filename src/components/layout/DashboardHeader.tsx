@@ -5,12 +5,9 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { cn } from '@/lib/utils';
 import {
-  Bell,
   User,
   LogOut,
-  Search,
   Plus,
   Menu,
   ChevronDown,
@@ -91,7 +88,7 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
         )}
 
         {/* Search */}
-        <div className={cn(
+        {/* <div className={cn(
           "relative",
           isMobile ? "w-[160px]" : "w-[300px]"
         )}>
@@ -103,13 +100,13 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
             placeholder={isMobile ? "Search" : "Search something"}
             className="block w-full pl-10 pr-3 py-2 border border-gray-100 rounded-md bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[#FF8A00] focus:border-[#FF8A00] text-sm"
           />
-        </div>
+        </div> */}
       </div>
 
       {/* Right Side Actions */}
       <div className="flex items-center space-x-3 md:space-x-4 ml-auto">
-        {/* Add Auctions Button - Show text only on larger screens */}
-        {showAddAuctionsButton && (
+        {/* Add Auctions Button - Hidden as requested */}
+        {showAddAuctionsButton && false && (
           <Link
             href="/dashboard/auctions/create-alternative"
             className="bg-[#FF8A00] text-white py-2 px-3 md:px-4 rounded-md flex items-center text-sm hover:bg-[#e67e00] transition-colors shadow-sm"
@@ -219,17 +216,6 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
                   >
                     <User size={16} className="mr-3" />
                     Profile Settings
-                  </Link>
-                  
-
-                  
-                  <Link
-                    href="/dashboard/subscriptions"
-                    onClick={() => setUserDropdownOpen(false)}
-                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <Bell size={16} className="mr-3" />
-                    Subscriptions
                   </Link>
                 </div>
                 
