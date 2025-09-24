@@ -17,97 +17,7 @@ import { getFullImageUrl } from '@/utils/imageUtils';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { formatTimeRemaining } from '@/utils/timeUtils';
 
-// Mock data for marketplace items
-const _marketplaceItems = [
-  {
-    id: 1,
-    category: 'Plastics',
-    name: 'PPA Thermocomp UFW49RSC (Black)',
-    basePrice: '5 013 008',
-    highestBid: '5 250 000',
-    timeLeft: '2d 4h',
-    volume: '500 kg',
-    countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/plastics.jpg'
-  },
-  {
-    id: 2,
-    category: 'Plastics',
-    name: 'PPA Thermocomp UFW49RSC (White)',
-    basePrice: '4 850 000',
-    highestBid: null,
-    timeLeft: '5d 12h',
-    volume: '750 kg',
-    countryOfOrigin: 'Norway',
-    image: '/images/marketplace/categories/plastics-alt.jpg'
-  },
-  {
-    id: 3,
-    category: 'Plastics',
-    name: 'PPA Thermocomp UFW49RSC (Clear)',
-    basePrice: '4 975 500',
-    highestBid: '5 100 000',
-    timeLeft: '1d 8h',
-    volume: '600 kg',
-    countryOfOrigin: 'Denmark',
-    image: '/images/marketplace/categories/plastics.jpg'
-  },
-  {
-    id: 4,
-    category: 'Metals',
-    name: 'Aluminum Scrap 6061',
-    basePrice: '7 250 000',
-    highestBid: '7 500 000',
-    timeLeft: '3d 6h',
-    volume: '1200 kg',
-    countryOfOrigin: 'Finland',
-    image: '/images/marketplace/categories/metals.jpg'
-  },
-  {
-    id: 5,
-    category: 'Paper',
-    name: 'Recycled Cardboard Sheets',
-    basePrice: '2 500 000',
-    highestBid: null,
-    timeLeft: '6d 18h',
-    volume: '850 kg',
-    countryOfOrigin: 'Sweden',
-    image: '/images/marketplace/categories/paper.jpg'
-  },
-  {
-    id: 6,
-    category: 'Glass',
-    name: 'Clear Glass Cullet',
-    basePrice: '3 750 000',
-    highestBid: '3 900 000',
-    timeLeft: '4d 2h',
-    volume: '1500 kg',
-    countryOfOrigin: 'Norway',
-    image: '/images/marketplace/categories/glass.jpg'
-  },
-  {
-    id: 7,
-    category: 'Wood',
-    name: 'Reclaimed Pine Lumber',
-    basePrice: '4 125 000',
-    highestBid: '4 250 000',
-    timeLeft: '2d 22h',
-    volume: '950 kg',
-    countryOfOrigin: 'Denmark',
-    image: '/images/marketplace/categories/wood.jpg'
-  },
-  {
-    id: 8,
-    category: 'Textiles',
-    name: 'Recycled Cotton Fabric',
-    basePrice: '3 900 000',
-    highestBid: null,
-    timeLeft: '7d 14h',
-    volume: '350 kg',
-    countryOfOrigin: 'Finland',
-    image: '/images/marketplace/categories/textiles.jpg'
-  },
-];
+// No mock data - marketplace shows only real data from the database
 
 // Product Card Component
 const ProductCard = ({ item }: { item: any }) => {
@@ -615,23 +525,39 @@ const MarketplacePage = () => {
                 <ProductCard key={item.id} item={item} />
               ))
             ) : (
-              <div className="col-span-full text-center py-10">
-                <p className="text-gray-500">No auctions match your filters.</p>
-                <button
-                  onClick={() => {
-                    setSelectedCategory('All materials');
-                    setSelectedLocation('All Locations');
-                    setSelectedBrokerFilter('all');
-                    setSelectedOrigin('');
-                    setSelectedContamination('');
-                    setCategoryId(null);
-                    setSubcategoryIds([]);
-                    setSelectedCountries([]);
-                  }}
-                  className="mt-2 text-[#FF8A00] hover:underline"
-                >
-                  Clear filters
-                </button>
+              <div className="col-span-full text-center py-16">
+                <div className="flex justify-center mb-6">
+                  <svg className="w-20 h-20 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2M4 13h2m13-8l-4 4-4-4m0 4l4 4 4-4" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-gray-900 mb-3">No Active Auctions Found</h3>
+                <p className="text-gray-500 mb-6 max-w-md mx-auto">
+                  {apiAuctions.length === 0 ? 
+                    "There are currently no active auctions in the marketplace. Check back later or create your own auction to get started!" :
+                    "No auctions match your current filter selection. Try adjusting your filters to see more results."
+                  }
+                </p>
+                <div className="flex justify-center gap-4">
+                  {apiAuctions.length > 0 && (
+                    <button
+                      onClick={clearAllFilters}
+                      className="px-6 py-3 bg-[#FF8A00] text-white rounded-lg font-medium hover:bg-[#e67e00] transition-colors"
+                    >
+                      Clear All Filters
+                    </button>
+                  )}
+                  <button
+                    onClick={() => window.location.href = '/dashboard/auctions/create-alternative'}
+                    className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                      apiAuctions.length === 0 
+                        ? 'bg-[#FF8A00] text-white hover:bg-[#e67e00]' 
+                        : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    Create Auction
+                  </button>
+                </div>
               </div>
             )}
           </div>
