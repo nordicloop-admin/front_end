@@ -119,21 +119,60 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* Header with Greeting */}
-      <div className="mb-5">
-        <div className="text-gray-500 text-sm">Hello</div>
-        <h1 className="text-xl font-medium text-gray-900">
-          {stats?.username || user?.firstName || user?.username?.split(' ')[0] || 'User'}
-          {stats?.company_name && (
-            <span className="text-sm font-normal text-gray-500 ml-2">
-              ({stats.company_name})
-            </span>
-          )}
-        </h1>
+      {/* Header with Greeting and Subscription Indicator */}
+      <div className="mb-5 flex justify-between items-start">
+        <div>
+          <div className="text-gray-500 text-sm">Hello</div>
+          <h1 className="text-xl font-medium text-gray-900">
+            {stats?.username || user?.firstName || user?.username?.split(' ')[0] || 'User'}
+            {stats?.company_name && (
+              <span className="text-sm font-normal text-gray-500 ml-2">
+                ({stats.company_name})
+              </span>
+            )}
+          </h1>
+        </div>
+        
+        {/* Compact subscription indicator */}
+        {!isLoading && stats?.subscription && (
+          <div className="flex items-center gap-2 text-sm">
+            {stats.subscription.includes('Premium') ? (
+              <div className="flex items-center bg-green-50 text-green-700 px-2 py-1 rounded-md">
+                <Check size={14} className="mr-1" />
+                <span className="font-medium">Premium</span>
+              </div>
+            ) : stats.subscription.includes('Standard') ? (
+              <>
+                <div className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-md">
+                  <Check size={14} className="mr-1" />
+                  <span className="font-medium">Standard</span>
+                </div>
+                <Link 
+                  href="/dashboard/subscriptions" 
+                  className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium hover:underline"
+                >
+                  Upgrade
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="bg-gray-50 text-gray-700 px-2 py-1 rounded-md">
+                  <span className="font-medium">{stats.subscription}</span>
+                </div>
+                <Link 
+                  href="/dashboard/subscriptions" 
+                  className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium hover:underline"
+                >
+                  Upgrade
+                </Link>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="bg-white border border-gray-100 rounded-md p-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-sm font-medium text-gray-700">Active Bids</h2>
@@ -182,23 +221,31 @@ const DashboardPage = () => {
           </Link>
         </div>
 
-        <div className="bg-white border border-gray-100 rounded-md p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-medium text-gray-700">Subscription</h2>
-            <div className="text-indigo-500">
-              <Check size={18} />
+        {/* Contextual Subscription Display - Only show upgrade prompt for Free Plan users */}
+        {(!isLoading && stats?.subscription && 
+          !stats.subscription.includes('Premium') && 
+          !stats.subscription.includes('Standard') && 
+          stats.subscription.includes('Free')) && (
+          <div className="bg-gradient-to-r from-orange-50 to-yellow-50 border border-orange-100 rounded-md p-3">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <div className="text-orange-500 mr-2">
+                  <Check size={16} />
+                </div>
+                <h2 className="text-sm font-medium text-gray-700">Current Plan</h2>
+              </div>
             </div>
+            <div className="text-sm font-medium mb-2 text-gray-800">
+              {stats?.subscription || 'Free Plan'}
+            </div>
+            <Link
+              href="/dashboard/subscriptions"
+              className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium flex items-center"
+            >
+              Upgrade for more features <ArrowRight size={12} className="ml-1" />
+            </Link>
           </div>
-          <div className="text-md font-medium mb-1">
-            {isLoading ? 'Loading...' : (stats?.subscription || 'Free Plan')}
-          </div>
-          <Link
-            href="/dashboard/subscriptions"
-            className="text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium flex items-center"
-          >
-            Upgrade plan <ArrowRight size={12} className="ml-1" />
-          </Link>
-        </div>
+        )}
       </div>
 
       {/* Verification Status Alert */}
