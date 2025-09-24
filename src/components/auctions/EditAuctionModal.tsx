@@ -457,7 +457,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [imageLoadError, setImageLoadError] = useState<boolean>(false);
-  const [_error, setError] = useState<string | null>(null);
   const [completeAdData, setCompleteAdData] = useState<any>(null);
   const [adDataLoaded, setAdDataLoaded] = useState(false);
   // Initialize steps based on provided materialType or auction category
@@ -540,10 +539,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         if (response.data && response.data.length > 0) {
           setCategories(response.data);
         } else {
-          setError('No categories available. Please try again later.');
+          // Categories not available - silently handle
         }
       } catch (_error) {
-        setError('Failed to load categories. Please check your connection and try again.');
+        // Failed to load categories - silently handle
       } finally {
         setCategoriesLoaded(true);
       }
@@ -816,7 +815,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           // eslint-disable-next-line no-console
           console.error('Error initializing auction edit data:', error);
         }
-        setError('Failed to load auction data. Some fields may not display correctly.');
+        // Failed to load auction data - silently handle
 
         // Set minimal default data to prevent crashes
         setStepData({
@@ -879,7 +878,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       setShowValidationErrors(false);
       setUploadError(null);
       setImageLoadError(false);
-      setError(null);
       setCompleteAdData(null);
       setAdDataLoaded(false);
     }
@@ -1100,12 +1098,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
   // Submit changes to backend
   const handleSubmit = async () => {
-    // Skip submission for step 1 - UI only mode
-    if (activeStep === 1) {
-      toast.success('Step 1 changes saved locally');
-      setHasChanges(false);
-      return;
-    }
 
     // Clear previous validation errors
     setValidationErrors({});
@@ -1178,8 +1170,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         const updatedAuction: AuctionData = {
           ...auction,
           name: backendData.title || auction.name,
-          category: backendData.category || auction.category,
-          subcategory: backendData.subcategory || auction.subcategory,
+          // Handle step 1 response format (category_name, subcategory_name) vs other steps (category, subcategory)
+          category: backendData.category_name || backendData.category || auction.category,
+          subcategory: backendData.subcategory_name || backendData.subcategory || auction.subcategory,
           description: backendData.description || auction.description,
           basePrice: backendData.starting_bid_price ? `${backendData.starting_bid_price} ${backendData.currency || 'SEK'}` : auction.basePrice,
           volume: backendData.available_quantity && backendData.unit_of_measurement ? `${backendData.available_quantity} ${backendData.unit_of_measurement}` : auction.volume,
@@ -1283,7 +1276,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       setIsSubmitting(false);
     } catch (error) {
       setIsSubmitting(false);
-      setError(error instanceof Error ? error.message : 'Failed to save changes');
+      // Error already handled by toast notification
       toast.error('Failed to save changes', {
         description: error instanceof Error ? error.message : 'An unexpected error occurred'
       });
@@ -1294,8 +1287,41 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const getCurrentStepData = () => {
     switch (activeStep) {
       case 1:
-        // Step 1 data submission disabled - UI only mode
-        return null;
+        // Step 1: Material Type - backend integration
+        if (!selectedCategoryId || !stepData.subcategory) {
+          return null;
+        }
+
+        // Find subcategory ID from the selected subcategory name
+        const selectedCategory = categories.find(cat => cat.id === selectedCategoryId);
+        if (!selectedCategory || !selectedCategory.subcategories) {
+          return null;
+        }
+
+        const subcategory = selectedCategory.subcategories.find(sub => sub.name === stepData.subcategory);
+        if (!subcategory) {
+          return null;
+        }
+
+        const step1Data: any = {
+          category_id: selectedCategoryId,
+          subcategory_id: subcategory.id
+        };
+
+        // Add optional fields if they exist
+        if (stepData.specificMaterial && stepData.specificMaterial.length > 0) {
+          step1Data.specific_material = stepData.specificMaterial.join(', ');
+        }
+
+        if (stepData.packaging) {
+          step1Data.packaging = stepData.packaging;
+        }
+
+        if (stepData.materialFrequency) {
+          step1Data.material_frequency = stepData.materialFrequency;
+        }
+
+        return step1Data;
         
       case 2:
         // Specifications step - match NEW backend API format
@@ -3139,7 +3165,17 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
     switch (activeStep) {
       case 1:
-        // Step 1 validation disabled - UI only mode
+        // Step 1 validation - require category and subcategory
+        if (!selectedCategoryId) {
+          const error = 'Material category is required';
+          errors.push(error);
+          fieldErrors.category = [error];
+        }
+        if (!stepData.subcategory) {
+          const error = 'Material subcategory is required';
+          errors.push(error);
+          fieldErrors.subcategory = [error];
+        }
         break;
 
       case 2:
@@ -3240,8 +3276,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const validateStep = (stepId: number): boolean => {
     switch (stepId) {
       case 1:
-        // Step 1 validation disabled - always return true for UI only mode
-        return true;
+        // Step 1 validation - require category and subcategory
+        return !!(selectedCategoryId && stepData.subcategory);
       case 2:
         // Specifications are optional
         return true;
@@ -3271,43 +3307,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   };
 
   if (!isOpen) return null;
-
-  // Add error boundary for the entire modal
-  if (_error) {
-    return (
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        maxWidth="md"
-        showCloseButton={true}
-        className="p-6"
-      >
-        <div className="text-center">
-          <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error Loading Auction</h3>
-          <p className="text-sm text-gray-600 mb-4">{_error}</p>
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={() => {
-                setError(null);
-                // Close and reopen the modal to trigger data reload
-                onClose();
-              }}
-              className="px-4 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] transition-colors"
-            >
-              Try Again
-            </button>
-            <button
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </Modal>
-    );
-  }
 
   return (
     <Modal
@@ -3480,7 +3479,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               </div>
 
               <div className="flex space-x-3">
-                {hasChanges && activeStep !== 1 && (
+                {hasChanges && (
                   <div className="flex items-center space-x-2 text-sm text-amber-600">
                     <AlertCircle className="w-4 h-4" />
                     <span>Unsaved changes</span>
@@ -3494,50 +3493,44 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   Cancel
                 </button>
                 
-                {/* Hide save button for step 1 - UI only mode */}
-                {activeStep !== 1 && (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="px-6 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] disabled:opacity-50 flex items-center space-x-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-4 h-4" />
-                        <span>Save Changes</span>
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span>Save Changes</span>
+                    </>
+                  )}
+                </Button>
 
-                {/* Hide save & close button for step 1 - UI only mode */}
-                {activeStep !== 1 && (
-                  <Button
-                    onClick={() => {
-                      setShouldCloseAfterSave(true);
-                      handleSubmit();
-                    }}
-                    disabled={isSubmitting}
-                    className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Saving...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>Save & Close</span>
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button
+                  onClick={() => {
+                    setShouldCloseAfterSave(true);
+                    handleSubmit();
+                  }}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Save & Close</span>
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           </div>
