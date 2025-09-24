@@ -218,13 +218,36 @@ export function AlternativeAuctionForm({
     loadCategories();
   }, []);
 
+  /**
+   * Maps frontend step IDs to backend API step IDs based on material type
+   * For plastics, the mapping is 1:1 (frontend step = backend step)
+   * For other materials, we need to map the 4 frontend steps to the correct backend steps
+   */
+  const mapFrontendStepToBackendStep = useCallback((frontendStepId: number, materialType?: string): number => {
+    const type = materialType || formData.materialType;
+    // Step 1 is always the same for all material types
+    if (frontendStepId === 1) return 1;
+    
+    // For plastics, the mapping is 1:1
+    const isPlasticMaterial = type?.toLowerCase().includes('plastic');
+    if (isPlasticMaterial) return frontendStepId;
+    
+    // For other materials, map frontend steps 2, 3, 4 to backend steps 6, 7, 8
+    switch (frontendStepId) {
+      case 2: return 6; // Location & Logistics (frontend step 2) maps to backend step 6
+      case 3: return 7; // Quantity & Price (frontend step 3) maps to backend step 7
+      case 4: return 8; // Image & Description (frontend step 4) maps to backend step 8
+      default: return frontendStepId; // Fallback (should not happen)
+    }
+  }, [formData.materialType]);
+
   // Effect to load and populate form data in edit mode
   useEffect(() => {
     if (isEditMode && auctionId && categoriesLoaded) {
       const fetchAndSetAuctionData = async () => {
         const response = await getAdDetails(auctionId);
-        if (response.success && response.data) {
-          const adData = response.data;
+        if (!response.error && response.data) {
+          const adData = response.data.data;
           
           // Transform API data to frontend format
           const transformedData: Partial<FormData> = {
@@ -239,12 +262,12 @@ export function AlternativeAuctionForm({
               additionalSpecs: adData.additional_specifications?.split(',').map(s => s.trim()) || [],
             },
             origin: {
-              source: convertValueToLabel('origin', adData.origin),
+              source: adData.origin ? convertValueToLabel('origin', adData.origin) : '',
             },
             contamination: {
-              level: convertValueToLabel('contamination', adData.contamination),
+              level: adData.contamination ? convertValueToLabel('contamination', adData.contamination) : '',
               additives: adData.additives ? [convertValueToLabel('additives', adData.additives)] : [],
-              storage: convertValueToLabel('storage_conditions', adData.storage_conditions),
+              storage: adData.storage_conditions ? convertValueToLabel('storage_conditions', adData.storage_conditions) : '',
             },
             processing: {
               methods: adData.processing_methods?.map(m => convertValueToLabel('processing_methods', m)) || [],
@@ -258,23 +281,23 @@ export function AlternativeAuctionForm({
               fullAddress: adData.location?.address_line || '',
             },
             quantity: {
-              available: adData.available_quantity,
+              available: adData.available_quantity || 0,
               unit: convertValueToLabel('unit_of_measurement', adData.unit_of_measurement),
-              minimumOrder: adData.minimum_order_quantity,
+              minimumOrder: parseInt(adData.minimum_order_quantity) || 0,
               packaging: convertValueToLabel('packaging', adData.packaging),
             },
             price: {
-              basePrice: adData.starting_bid_price,
+              basePrice: adData.starting_bid_price || 0,
               currency: adData.currency,
               priceType: 'auction',
-              reservePrice: adData.reserve_price,
+              reservePrice: adData.reserve_price || undefined,
               auctionDuration: adData.auction_duration?.toString(),
-              customAuctionDuration: adData.custom_auction_duration,
+              customAuctionDuration: adData.auction_duration,
               allowBrokerBids: adData.allow_broker_bids,
             },
             images: [], // Images are handled separately and not re-downloaded
-            title: adData.title,
-            description: adData.description,
+            title: adData.title || undefined,
+            description: adData.description || undefined,
             keywords: adData.keywords?.split(',').map(k => k.trim()) || [],
           };
 
@@ -312,7 +335,7 @@ export function AlternativeAuctionForm({
 
       fetchAndSetAuctionData();
     }
-  }, [isEditMode, auctionId, categoriesLoaded, onClose]);
+  }, [isEditMode, auctionId, categoriesLoaded, onClose, mapFrontendStepToBackendStep]);
 
   const findCategoryId = useCallback((categoryName: string): number => {
     const category = categories.find(cat => cat.name.toLowerCase() === categoryName.toLowerCase());
@@ -429,28 +452,7 @@ export function AlternativeAuctionForm({
     }
   }, [findCategoryId, findSubcategoryId]);
 
-  /**
-   * Maps frontend step IDs to backend API step IDs based on material type
-   * For plastics, the mapping is 1:1 (frontend step = backend step)
-   * For other materials, we need to map the 4 frontend steps to the correct backend steps
-   */
-  const mapFrontendStepToBackendStep = useCallback((frontendStepId: number, materialType?: string): number => {
-    const type = materialType || formData.materialType;
-    // Step 1 is always the same for all material types
-    if (frontendStepId === 1) return 1;
-    
-    // For plastics, the mapping is 1:1
-    const isPlasticMaterial = type?.toLowerCase().includes('plastic');
-    if (isPlasticMaterial) return frontendStepId;
-    
-    // For other materials, map frontend steps 2, 3, 4 to backend steps 6, 7, 8
-    switch (frontendStepId) {
-      case 2: return 6; // Location & Logistics (frontend step 2) maps to backend step 6
-      case 3: return 7; // Quantity & Price (frontend step 3) maps to backend step 7
-      case 4: return 8; // Image & Description (frontend step 4) maps to backend step 8
-      default: return frontendStepId; // Fallback (should not happen)
-    }
-  }, [formData.materialType]);
+
 
   const handleAutoSave = useCallback(async () => {
     if (!adId || !hasUnsavedChanges || !categoriesLoaded) return;
