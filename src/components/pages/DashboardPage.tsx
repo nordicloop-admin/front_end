@@ -249,8 +249,14 @@ const DashboardPage = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center py-8">
-              <Box className="text-gray-300 mb-2" size={32} />
-              <p className="text-sm text-gray-500">You haven&apos;t placed any bids yet</p>
+              <Box className="text-gray-300 mb-3" size={32} />
+              <p className="text-sm text-gray-500 mb-3">You haven&apos;t placed any bids yet</p>
+              <Link 
+                href="/marketplace"
+                className="inline-flex items-center px-4 py-2 bg-[#FF8A00] text-white text-sm font-medium rounded-md hover:bg-[#e67e00] transition-colors"
+              >
+                Browse Marketplace
+              </Link>
             </div>
           )}
           <div className="mt-4 pt-3 border-t border-gray-100">
@@ -294,11 +300,11 @@ const DashboardPage = () => {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center text-center py-8">
-              <Package className="text-gray-300 mb-2" size={32} />
-              <p className="text-sm text-gray-500">You haven&apos;t created any auctions yet</p>
+              <Package className="text-gray-300 mb-3" size={32} />
+              <p className="text-sm text-gray-500 mb-3">You haven&apos;t created any auctions yet</p>
               <Link 
-                href="/dashboard/my-auctions/create"
-                className="mt-2 text-[#FF8A00] hover:text-[#e67e00] text-xs font-medium"
+                href="/dashboard/auctions/create-alternative"
+                className="inline-flex items-center px-4 py-2 bg-[#FF8A00] text-white text-sm font-medium rounded-md hover:bg-[#e67e00] transition-colors"
               >
                 Create your first auction
               </Link>
