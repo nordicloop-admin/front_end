@@ -9,7 +9,7 @@ interface Auction {
   category: string;
   basePrice: string;
   highestBid: string | null;
-  timeLeft: string;
+  timeLeft: string | null;
   volume: string;
   countryOfOrigin: string;
   currency?: string; // Add currency field

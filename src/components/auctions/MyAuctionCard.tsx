@@ -11,7 +11,7 @@ interface MyAuctionCardProps {
   category: string;
   volume: string;
   basePrice: string;
-  timeLeft: string | undefined;
+  timeLeft: string | null | undefined;
   image: string;
   status?: string;
   auctionStatus?: string;
@@ -80,7 +80,7 @@ export default function MyAuctionCard({
           <div className="flex flex-col items-end justify-between">
             {/* Time Left */}
             <div className="text-xs text-gray-500 whitespace-nowrap mb-3">
-              {timeLeft ? `${timeLeft} left` : 'Time pending'}
+              {timeLeft ? `${timeLeft} left` : 'Not started yet'}
             </div>
 
             {/* Actions */}

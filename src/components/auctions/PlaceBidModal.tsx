@@ -22,7 +22,7 @@ interface PlaceBidModalProps {
     category: string;
     basePrice: string;
     highestBid: string | null;
-    timeLeft: string;
+    timeLeft: string | null;
     volume: string;
     countryOfOrigin: string;
     currency?: string; // Add currency field
@@ -176,6 +176,12 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
 
     let hasError = false;
 
+    // Check if auction has started
+    if (!auction.timeLeft) {
+      setError('This auction has not started yet. Bidding is not available.');
+      hasError = true;
+    }
+
     // Validate bid amount
     const minBid = calculateMinimumBid();
     const currentBid = formatPrice(bidAmount);
@@ -282,7 +288,8 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
     (isAutoBidEnabled && !maxAutoBidPrice) ||
     !bidAmount ||
     !bidVolume ||
-    !paymentMethodId
+    !paymentMethodId ||
+    !auction.timeLeft  // Disable if auction hasn't started
   );
 
   return (
@@ -312,9 +319,26 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
             </div>
             <div>
               <div className="text-xs text-gray-500">Time left</div>
-              <div className="text-base font-medium">{auction.timeLeft}</div>
+              <div className={`text-base font-medium ${!auction.timeLeft ? 'text-red-500' : ''}`}>
+                {auction.timeLeft || "Not started yet"}
+              </div>
             </div>
           </div>
+
+          {!auction.timeLeft && (
+            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <AlertCircle size={16} className="text-yellow-600" />
+                </div>
+                <div className="ml-3">
+                  <div className="text-sm text-yellow-800">
+                    This auction has not started yet. Bidding will be available when the auction begins.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             {/* Bid Amount */}

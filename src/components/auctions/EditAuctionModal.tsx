@@ -340,7 +340,7 @@ export interface AuctionData {
   pricePerPartition?: string;
   currentBid?: string;
   status?: string;
-  timeLeft?: string;
+  timeLeft?: string | null;
   volume: string;
   unit?: string;
   sellingType?: 'partition' | 'whole' | 'both';
