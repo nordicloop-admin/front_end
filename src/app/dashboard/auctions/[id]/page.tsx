@@ -133,7 +133,7 @@ export default function AuctionDetail() {
               // Additional metadata
               createdAt: adData.created_at,
               updatedAt: adData.updated_at,
-              isActive: adData.is_active,
+              isActive: adData.status === 'active',
               auctionStatus: adData.status,
               stepCompletionStatus: adData.step_completion_status,
               keywords: adData.keywords
@@ -143,7 +143,7 @@ export default function AuctionDetail() {
 
             // Fetch bid history for this auction
             // Fetch bid history for active auctions (regardless of completion status)
-            if (adData.is_active) {
+            if (adData.status === 'active') {
               getAuctionBidHistory(adData.id)
                 .then(bidHistoryResponse => {
                   if (!bidHistoryResponse.error && bidHistoryResponse.data) {
@@ -200,7 +200,7 @@ export default function AuctionDetail() {
                 { name: 'Quantity', value: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A' },
                 { name: 'Location', value: apiAuction.location_summary || 'Unknown' },
                 { name: 'Currency', value: apiAuction.currency },
-                { name: 'Status', value: apiAuction.is_active ? 'Active' : 'Inactive' }
+                { name: 'Status', value: apiAuction.status === 'active' ? 'Active' : 'Inactive' }
               ]
             };
             setAuction(formattedAuction);
