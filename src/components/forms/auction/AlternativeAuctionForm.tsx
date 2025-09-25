@@ -59,7 +59,6 @@ export interface FormData {
     country: string;
     region: string;
     city: string;
-    pickupAvailable: boolean;
     deliveryOptions: string[];
     fullAddress?: string;
   };
@@ -122,7 +121,6 @@ const initialFormData: FormData = {
     country: '',
     region: '',
     city: '',
-    pickupAvailable: false,
     deliveryOptions: []
   },
   quantity: {
@@ -276,7 +274,6 @@ export function AlternativeAuctionForm({
               country: adData.location?.country || '',
               region: adData.location?.state_province || '',
               city: adData.location?.city || '',
-              pickupAvailable: adData.pickup_available,
               deliveryOptions: adData.delivery_options?.map(o => convertValueToLabel('delivery_options', o)) || [],
               fullAddress: adData.location?.address_line || '',
             },
@@ -413,7 +410,6 @@ export function AlternativeAuctionForm({
             address_line: data.location.fullAddress || undefined,
             postal_code: ''
           },
-          pickup_available: Boolean(data.location.pickupAvailable),
           delivery_options: Array.isArray(data.location.deliveryOptions) 
             ? data.location.deliveryOptions.map(option => convertLabelToValue('delivery_options', option))
             : (data.location.deliveryOptions ? [convertLabelToValue('delivery_options', data.location.deliveryOptions)] : [])

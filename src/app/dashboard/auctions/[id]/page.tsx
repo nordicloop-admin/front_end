@@ -124,7 +124,6 @@ export default function AuctionDetail() {
                 { name: 'Currency', value: adData.currency_display },
                 { name: 'Auction Duration', value: adData.auction_duration_display },
                 ...(adData.reserve_price ? [{ name: 'Reserve Price', value: `${adData.reserve_price} ${adData.currency}` }] : []),
-                { name: 'Pickup Available', value: adData.pickup_available ? 'Yes' : 'No' },
                 ...(adData.delivery_options_display.length > 0 ? [{ name: 'Delivery Options', value: adData.delivery_options_display.join(', ') }] : []),
                 { name: 'Status', value: adData.status },
                 { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of 8` }
