@@ -395,13 +395,24 @@ export default function Auctions() {
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => openBidModal(auction)}
-                      className="px-3 py-1.5 bg-[#FF8A00] text-white rounded-md text-xs hover:bg-[#e67e00] transition-colors flex items-center"
-                    >
-                      Place Bid
-                      <ArrowUpRight size={12} className="ml-1" />
-                    </button>
+                    {auction.timeLeft ? (
+                      <button
+                        onClick={() => openBidModal(auction)}
+                        className="px-3 py-1.5 bg-[#FF8A00] text-white rounded-md text-xs hover:bg-[#e67e00] transition-colors flex items-center"
+                      >
+                        Place Bid
+                        <ArrowUpRight size={12} className="ml-1" />
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        className="px-3 py-1.5 bg-gray-300 text-gray-500 rounded-md text-xs cursor-not-allowed flex items-center"
+                        title="Auction has not started yet"
+                      >
+                        Not Available
+                        <Clock size={12} className="ml-1" />
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
