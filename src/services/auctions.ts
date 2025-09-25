@@ -154,7 +154,7 @@ export async function getAdminAuction(auctionId: string) {
         subcategory: backendData.subcategory_name,
         basePrice: parseFloat(backendData.starting_bid_price || '0'),
         highestBid: 0, // Will be updated if we fetch bids
-        status: backendData.suspended_by_admin ? 'suspended' : (backendData.is_active ? 'active' : 'pending'),
+        status: backendData.status,
         volume: backendData.available_quantity || '0',
         seller: backendData.posted_by,
         countryOfOrigin: backendData.location_summary || 'Unknown',
@@ -193,7 +193,7 @@ export async function getAdminAuction(auctionId: string) {
 
         // Auction information
         auctionDuration: backendData.auction_duration_display,
-        auctionStatus: backendData.auction_status,
+        auctionStatus: backendData.status,
 
         // System information
         isComplete: backendData.is_complete,
