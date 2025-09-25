@@ -188,7 +188,6 @@ export async function getAdminAuction(auctionId: string) {
         processingMethods: backendData.processing_methods_display || [],
 
         // Location and delivery
-        pickupAvailable: backendData.pickup_available,
         deliveryOptions: backendData.delivery_options_display || [],
 
         // Auction information

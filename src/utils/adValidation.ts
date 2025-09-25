@@ -424,9 +424,6 @@ export const validateStepData = (step: number, data: any): { isValid: boolean; e
       break;
 
     case 6:
-      if (typeof data.pickup_available !== 'boolean') {
-        errors.push('pickup_available must be a boolean');
-      }
       if (!Array.isArray(data.delivery_options)) {
         errors.push('delivery_options must be an array');
       } else {

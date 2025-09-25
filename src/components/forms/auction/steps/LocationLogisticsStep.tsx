@@ -257,21 +257,7 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
-      {/* Pickup Available */}
-      <div>
-        <label className="flex items-center space-x-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={formData.location.pickupAvailable}
-            onChange={(e) => handleLocationUpdate('pickupAvailable', e.target.checked)}
-            className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
-          />
-          <div>
-            <span className="text-sm font-medium text-gray-700">Pickup Available</span>
-            <p className="text-xs text-gray-500">Buyers can collect material from your location</p>
-          </div>
-        </label>
-      </div>
+
 
       {/* Delivery Options */}
       <div>

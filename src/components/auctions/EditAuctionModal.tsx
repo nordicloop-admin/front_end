@@ -397,7 +397,6 @@ interface StepData {
     country?: string;
     region?: string;
     city?: string;
-    pickupAvailable?: boolean;
     deliveryOptions?: string[];
     fullAddress?: string;
     postalCode?: string;
@@ -767,7 +766,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           city: completeAdData.location.city || '',
           fullAddress: completeAdData.location.address_line || '',
           postalCode: completeAdData.location.postal_code || '',
-          pickupAvailable: completeAdData.pickup_available || false,
           deliveryOptions: completeAdData.delivery_options || []
         } : {
           country: '',
@@ -775,7 +773,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           city: '',
           fullAddress: '',
           postalCode: '',
-          pickupAvailable: false,
           deliveryOptions: []
         },
 
@@ -841,7 +838,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             city: '',
             fullAddress: '',
             postalCode: '',
-            pickupAvailable: false,
             deliveryOptions: []
           },
           availableQuantity: 0,
@@ -1247,7 +1243,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               city: freshData.location.city || '',
               fullAddress: freshData.location.address_line || '',
               postalCode: freshData.location.postal_code || '',
-              pickupAvailable: freshData.pickup_available || false,
               deliveryOptions: freshData.delivery_options || []
             } : {
               country: '',
@@ -1255,7 +1250,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               city: '',
               fullAddress: '',
               postalCode: '',
-              pickupAvailable: false,
               deliveryOptions: []
             },
 
@@ -1447,7 +1441,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             address_line: stepData.location.fullAddress || undefined,
             postal_code: stepData.location.postalCode || undefined
           },
-          pickup_available: Boolean(stepData.location.pickupAvailable),
           delivery_options: deliveryOptions
         };
 
@@ -2409,22 +2402,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             </div>
 
             {/* Pickup Available */}
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={stepData.location?.pickupAvailable || false}
-                  onChange={(e) => handleStepDataChange({
-                    location: { ...stepData.location, pickupAvailable: e.target.checked }
-                  })}
-                  className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
-                />
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Pickup Available</span>
-                  <p className="text-xs text-gray-500">Buyers can collect material from your location</p>
-                </div>
-              </label>
-            </div>
+
 
             {/* Delivery Options */}
             <div>

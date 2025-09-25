@@ -502,7 +502,6 @@ export async function getAdDetails(adId: string | number) {
         processing_methods_display: string[];
         location: any;
         location_summary: string | null;
-        pickup_available: boolean;
         delivery_options: string[];
         delivery_options_display: string[];
         available_quantity: number | null;

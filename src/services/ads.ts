@@ -40,7 +40,6 @@ export interface Step6Data {
     address_line?: string;
     postal_code?: string;
   };
-  pickup_available: boolean;
   delivery_options: string[];
 }
 
@@ -827,10 +826,9 @@ export class AdUpdateService {
    * @param pickupAvailable Whether pickup is available
    * @returns The API response
    */
-  async updateDeliveryOptions(adId: number, deliveryOptions: string[], pickupAvailable: boolean) {
+  async updateDeliveryOptions(adId: number, deliveryOptions: string[]) {
     return this.updatePartialAd(adId, { 
-      delivery_options: deliveryOptions,
-      pickup_available: pickupAvailable
+      delivery_options: deliveryOptions
     });
   }
 }
