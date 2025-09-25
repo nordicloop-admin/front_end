@@ -75,7 +75,7 @@ export default function MyAuctions() {
           const displayStatus = backendStatus.charAt(0).toUpperCase() + backendStatus.slice(1);
           
           // Calculate time remaining from auction end date or use API provided time_remaining
-          const timeRemaining = auction.time_remaining ||  null;
+          const timeRemaining = auction.time_remaining || formatTimeRemaining(timeRemaining: string || null);
           const displayTimeLeft = formatTimeRemaining(timeRemaining);
 
           return {
