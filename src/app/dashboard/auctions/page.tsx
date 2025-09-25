@@ -18,7 +18,7 @@ interface AuctionDisplayData {
   category: string;
   basePrice: string;
   highestBid: string | null;
-  timeLeft: string;
+  timeLeft: string | null;
   volume: string;
   seller: string;
   countryOfOrigin: string;
