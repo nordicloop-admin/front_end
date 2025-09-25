@@ -2,6 +2,7 @@
 
 const nextConfig = {
   images: {
+    domains: ['nordic-loop-platform.onrender.com'],
     remotePatterns: [
       {
         protocol: 'https',
