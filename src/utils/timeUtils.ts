@@ -48,7 +48,7 @@ export function formatTimeRemaining(timeRemaining: string | null): string {
   if (!timeRemaining) {
     // This shouldn't happen in marketplace since expired auctions are filtered out
     // But good to handle defensively
-    return 'Ending soon';
+    return null;
   }
 
   // If it's already formatted from the API, use it
