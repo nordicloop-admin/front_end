@@ -18,7 +18,7 @@ interface AuctionDisplayData {
   category: string;
   basePrice: string;
   highestBid: string | null;
-  timeLeft: string;
+  timeLeft: string | null;
   volume: string;
   seller: string;
   countryOfOrigin: string;
@@ -373,7 +373,7 @@ export default function Auctions() {
 
                   <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white flex items-center">
                     <Clock size={12} className="mr-1" />
-                    {auction.timeLeft}
+                    {auction.timeLeft || "Not started yet"}
                   </div>
                 </div>
 
