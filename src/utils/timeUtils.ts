@@ -44,7 +44,7 @@ export function calculateTimeRemaining(endDate: string | null): string | null {
  * @param timeRemaining Time remaining string from API or calculated
  * @returns Formatted string for display
  */
-export function formatTimeRemaining(timeRemaining: string | null): string {
+export function formatTimeRemaining(timeRemaining: string | null): string | null {
   if (!timeRemaining) {
     // This shouldn't happen in marketplace since expired auctions are filtered out
     // But good to handle defensively
