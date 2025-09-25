@@ -214,7 +214,7 @@ export default function AuctionDetail() {
           subcategory: adData.subcategory_name,
           basePrice: adData.starting_bid_price ? `${adData.starting_bid_price} ${adData.currency}` : adData.total_starting_value,
           currentBid: '', // Will be updated if we fetch bids
-          status: (adData as any).status || (adData.is_active ? 'active' : 'draft'),
+          status: adData.status || 'draft',
           timeLeft: adData.time_remaining || adData.auction_duration_display,
           volume: adData.available_quantity ? `${adData.available_quantity} ${adData.unit_of_measurement_display}` : 'N/A',
           image: adData.material_image ? getFullImageUrl(adData.material_image) : getCategoryImage(adData.category_name),
@@ -276,7 +276,7 @@ export default function AuctionDetail() {
             subcategory: apiAuction.subcategory_name,
             basePrice: apiAuction.starting_bid_price || apiAuction.total_starting_value,
             currentBid: '',
-            status: apiAuction.status || (apiAuction.is_active ? 'active' : 'draft'),
+            status: apiAuction.status || 'draft',
             timeLeft: 'Available',
             volume: apiAuction.available_quantity ? `${apiAuction.available_quantity} ${apiAuction.unit_of_measurement}` : 'N/A',
             image: apiAuction.material_image ? getFullImageUrl(apiAuction.material_image) : getCategoryImage(apiAuction.category_name),

@@ -87,7 +87,7 @@ export default function MyActivity() {
 
         const convertedAuctions = result.auctions.map(auction => {
           // Use the actual status from backend instead of transforming
-          const backendStatus = auction.status || (auction.is_active ? 'active' : 'draft');
+          const backendStatus = auction.status || 'draft';
           
           // Capitalize first letter for display
           const displayStatus = backendStatus.charAt(0).toUpperCase() + backendStatus.slice(1);
