@@ -175,11 +175,8 @@ export interface AuctionItem {
   total_starting_value: string;
   material_image: string | null;
   created_at: string;
-  is_active: boolean;
   is_complete: boolean;
-  status?: string;
-  suspended_by_admin?: boolean;
-  auction_status?: string;
+  status: string;
   allow_broker_bids?: boolean;
   auction_start_date?: string | null;
   auction_end_date?: string | null;
@@ -524,15 +521,14 @@ export async function getAdDetails(adId: string | number) {
         allow_broker_bids: boolean;
         keywords: string | null;
         material_image: string | null;
-        is_active: boolean;
         current_step: number;
         is_complete: boolean;
+        status: string;
         created_at: string;
         updated_at: string;
         auction_start_date: string | null;
         auction_end_date: string | null;
         step_completion_status: Record<string, boolean>;
-        auction_status: string;
         time_remaining: string | null;
       };
     }>(`/ads/${adId}/`, true);
@@ -560,7 +556,7 @@ export async function activateAd(adId: string | number) {
       ad: {
         id: number;
         title: string;
-        is_active: boolean;
+        status: string;
         is_complete: boolean;
         auction_start_date: string;
         auction_end_date: string;
@@ -604,7 +600,7 @@ export async function deactivateAd(adId: string | number) {
       ad: {
         id: number;
         title: string;
-        is_active: boolean;
+        status: string;
         is_complete: boolean;
       };
     }>(`/ads/${adId}/deactivate/`, {}, true);

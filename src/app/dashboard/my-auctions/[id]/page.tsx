@@ -225,7 +225,7 @@ export default function AuctionDetail() {
           // Enhanced data
           company: adData.company_name,
           seller: adData.posted_by,
-          auctionStatus: adData.auction_status,
+          auctionStatus: adData.status,
           stepCompletionStatus: adData.step_completion_status,
           isComplete: adData.is_complete,
           currentStep: adData.current_step,
@@ -248,7 +248,7 @@ export default function AuctionDetail() {
             ...(adData.reserve_price ? [{ name: 'Reserve Price', value: `${adData.reserve_price} ${adData.currency}` }] : []),
             { name: 'Pickup Available', value: adData.pickup_available ? 'Yes' : 'No' },
             ...(adData.delivery_options_display.length > 0 ? [{ name: 'Delivery Options', value: adData.delivery_options_display.join(', ') }] : []),
-            { name: 'Status', value: adData.auction_status },
+            { name: 'Status', value: adData.status },
             { name: 'Completion Status', value: adData.is_complete ? 'Complete' : `Step ${adData.current_step} of ${calculateStepCompletion(adData.step_completion_status, adData.category_name).total}` }
           ]
         };
