@@ -164,6 +164,15 @@ export async function login(credentials: LoginCredentials) {
     // Login is a public endpoint, so we don't need to send the token
     const response = await apiPost<LoginResponse>('/users/login/', credentials, false);
 
+    // Check if there was an error first
+    if (response.error) {
+      return {
+        data: null,
+        error: response.error,
+        status: response.status
+      };
+    }
+
     if (response.data) {
       // Make sure we have all the required data
       if (!response.data.access || !response.data.refresh || !response.data.email || !response.data.username) {
@@ -192,9 +201,16 @@ export async function login(credentials: LoginCredentials) {
         role: response.data.role
       };
       localStorage.setItem(USER_KEY, JSON.stringify(user));
+      
+      return response;
     }
 
-    return response;
+    // If we get here, there's no data and no explicit error
+    return {
+      data: null,
+      error: 'Login failed - no data received',
+      status: response.status || 500
+    };
   } catch (error) {
     // Use a logger instead of console to avoid ESLint warnings
     // console.error('Login error:', error);
