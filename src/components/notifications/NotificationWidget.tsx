@@ -4,11 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Bell, ChevronRight, Clock, AlertCircle } from 'lucide-react';
 import { getUserNotificationsPaginated, Notification } from '@/services/notifications';
-import {
-  getNotificationTypeConfig,
-  formatNotificationDate,
-  getNotificationIconComponent
-} from '@/utils/notificationUtils';
+import { formatNotificationDate } from '@/utils/notificationUtils';
 import { cn } from '@/lib/utils';
 
 interface NotificationWidgetProps {
@@ -129,24 +125,14 @@ export default function NotificationWidget({
       {notifications.length > 0 ? (
         <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
           {notifications.map((notification) => {
-            const typeConfig = getNotificationTypeConfig(notification.type);
-            const NotificationIcon = getNotificationIconComponent(notification.type);
-            
             return (
               <div
                 key={notification.id}
                 className={cn(
-                  "flex items-start gap-3 p-3 md:p-3.5 transition-colors",
+                  "flex items-start p-3 md:p-3.5 transition-colors",
                   !notification.is_read ? "bg-gray-50" : "bg-white"
                 )}
               >
-                <div className={cn(
-                  "flex-shrink-0 rounded-full p-2",
-                  typeConfig.bgColor
-                )}>
-                  <NotificationIcon className={cn("w-4 h-4", typeConfig.color)} />
-                </div>
-                
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

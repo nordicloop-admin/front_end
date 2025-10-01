@@ -245,18 +245,17 @@ export default function NotificationsPage() {
         )}
         
         {/* Notifications List */}
-        <div className="divide-y divide-gray-100">
+        <div className="px-5 py-2">
           {!loading && notifications.length > 0 ? (
-            <div className="space-y-0">
+            <div className="flex flex-col gap-3">
               {notifications.map((notification) => (
-                <div key={notification.id} className="px-5">
-                  <NotificationCard
-                    notification={notification}
-                    onMarkAsRead={markAsRead}
-                    onDelete={handleDeleteNotification}
-                    className="border-0 rounded-none"
-                  />
-                </div>
+                <NotificationCard
+                  key={notification.id}
+                  notification={notification}
+                  onMarkAsRead={markAsRead}
+                  onDelete={handleDeleteNotification}
+                  className="border border-gray-200"
+                />
               ))}
             </div>
           ) : (
