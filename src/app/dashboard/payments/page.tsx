@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CreditCard, History } from 'lucide-react';
 import PaymentAccountSetup from '@/components/payment/PaymentAccountSetup';
 import TransactionHistory from '@/components/payments/TransactionHistory';
@@ -10,6 +10,16 @@ type TabType = 'transactions' | 'payouts' | 'account';
 
 export default function PaymentsPage() {
   const [activeTab, setActiveTab] = useState<TabType>('transactions');
+  // On mount, check if banner requested direct account tab
+  useEffect(() => {
+    try {
+      const flag = window.localStorage.getItem('payments_force_account_tab');
+      if (flag === '1') {
+        setActiveTab('account');
+        window.localStorage.removeItem('payments_force_account_tab');
+      }
+    } catch (_) {}
+  }, []);
 
   const tabs = [
     { key: 'transactions' as TabType, label: 'Transaction History', icon: History },

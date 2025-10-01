@@ -19,7 +19,7 @@ const stateConfig: Record<string, {
   not_started: {
     title: 'Start receiving payouts',
     description: 'Set up your payout account to receive funds from winning bids and auctions.',
-  action: { label: 'Start setup', href: '/dashboard/payments?tab=account' },
+  action: { label: 'Start setup', href: '/dashboard/payments' },
     tone: 'warn',
     icon: Wallet,
     steps: [
@@ -31,7 +31,7 @@ const stateConfig: Record<string, {
   in_progress: {
     title: 'Continue payout setup',
     description: 'You started onboarding but still have required steps to finish.',
-  action: { label: 'Continue', href: '/dashboard/payments?tab=account' },
+  action: { label: 'Continue', href: '/dashboard/payments' },
     tone: 'progress',
     icon: Clock,
     steps: [
@@ -130,6 +130,9 @@ const PayoutSetupBanner: React.FC<Props> = ({ stats }) => {
           {cfg.action && paymentState !== 'ready' && (
             <Link
               href={cfg.action.href}
+              onClick={() => {
+                try { window.localStorage.setItem('payments_force_account_tab', '1'); } catch(_) {}
+              }}
               className="inline-flex items-center px-3 py-1.5 rounded-md bg-[#FF8A00] text-white text-xs font-medium hover:bg-[#e67e00] focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-[#FF8A00]"
             >
               {cfg.action.label}
