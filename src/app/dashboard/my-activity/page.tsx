@@ -7,7 +7,7 @@ import Link from 'next/link';
 // Import components from existing pages
 import { AuctionData } from '@/components/auctions/EditAuctionModal';
 import MyAuctionCard from '@/components/auctions/MyAuctionCard';
-import { getUserAuctions, PaginatedAuctionResult } from '@/services/auction';
+import { getUserAuctions, PaginatedAuctionResult, activateAd, deactivateAd } from '@/services/auction';
 import { getUserBids, getUserWinningBids, cancelBid, BidItem, PaginatedBidResult, BidPaginationParams } from '@/services/bid';
 import Pagination from '@/components/ui/Pagination';
 import { toast } from 'sonner';
@@ -216,6 +216,92 @@ export default function MyActivity() {
   // Handle auction edit click
   const handleEditClick = (auction: AuctionData) => {
     window.location.href = `/dashboard/my-auctions/${auction.id}`;
+  };
+
+  // Handle publish auction
+  const handlePublishAuction = async (auctionId: string) => {
+    const loadingToast = toast.loading('Publishing auction...');
+
+    try {
+      const response = await activateAd(auctionId);
+
+      toast.dismiss(loadingToast);
+
+      if (!response.error && response.data) {
+        // Update local auction state
+        setAuctions(prevAuctions => 
+          prevAuctions.map(auction => 
+            auction.id === auctionId 
+              ? {
+                  ...auction,
+                  status: 'active',
+                  auctionStatus: 'Active',
+                  timeLeft: response.data!.ad.auction_duration_display
+                }
+              : auction
+          )
+        );
+
+        toast.success(response.data.message || 'Auction published successfully', {
+          description: 'Your auction is now live and visible to buyers.',
+          duration: 3000,
+        });
+      } else {
+        toast.error('Failed to publish auction', {
+          description: response.error || 'An unexpected error occurred',
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Failed to publish auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
+  };
+
+  // Handle unpublish auction
+  const handleUnpublishAuction = async (auctionId: string) => {
+    const loadingToast = toast.loading('Unpublishing auction...');
+
+    try {
+      const response = await deactivateAd(auctionId);
+
+      toast.dismiss(loadingToast);
+
+      if (!response.error && response.data) {
+        // Update local auction state
+        setAuctions(prevAuctions => 
+          prevAuctions.map(auction => 
+            auction.id === auctionId 
+              ? {
+                  ...auction,
+                  status: 'inactive',
+                  auctionStatus: 'Draft',
+                  timeLeft: 'Not Started'
+                }
+              : auction
+          )
+        );
+
+        toast.success(response.data.message || 'Auction unpublished successfully', {
+          description: 'Your auction is no longer visible to buyers.',
+          duration: 3000,
+        });
+      } else {
+        toast.error('Failed to unpublish auction', {
+          description: response.error || 'An unexpected error occurred',
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Failed to unpublish auction', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
   };
 
   // Handle bid cancellation
@@ -464,7 +550,10 @@ export default function MyActivity() {
                         image={auction.image}
                         status={auction.status}
                         auctionStatus={auction.auctionStatus}
+                        isComplete={auction.isComplete}
                         onEditClick={() => handleEditClick(auction)}
+                        onPublishClick={handlePublishAuction}
+                        onUnpublishClick={handleUnpublishAuction}
                       />
                     ))}
                   </div>
