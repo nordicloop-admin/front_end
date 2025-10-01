@@ -181,7 +181,7 @@ export default function NotificationsPage() {
         <p className="text-gray-500 text-sm mt-1">Stay updated with the latest news and activity</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+  <div className="bg-white rounded-lg border border-gray-200">
         {/* Filters */}
         <div className="px-5 py-4">
           <NotificationFilters
