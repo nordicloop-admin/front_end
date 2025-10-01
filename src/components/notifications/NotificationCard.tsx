@@ -1,14 +1,12 @@
 "use client";
 
 import React from 'react';
-import Link from 'next/link';
-import { Check, Trash2, ExternalLink, Clock } from 'lucide-react';
+import { Check, Trash2, Clock } from 'lucide-react';
 import { Notification } from '@/services/notifications';
 import {
   getNotificationTypeConfig,
   getNotificationPriorityConfig,
   formatNotificationDate,
-  getNotificationIconComponent,
   getPriorityIconComponent
 } from '@/utils/notificationUtils';
 import { cn } from '@/lib/utils';
@@ -32,7 +30,6 @@ export default function NotificationCard({
 }: NotificationCardProps) {
   const typeConfig = getNotificationTypeConfig(notification.type);
   const priorityConfig = getNotificationPriorityConfig(notification.priority || 'normal');
-  const NotificationIcon = getNotificationIconComponent(notification.type);
   const PriorityIcon = getPriorityIconComponent(notification.priority || 'normal');
   
   const handleMarkAsRead = (e: React.MouseEvent) => {
@@ -51,7 +48,7 @@ export default function NotificationCard({
     }
   };
   
-  const CardContent = ({ isWrappedInLink = false }: { isWrappedInLink?: boolean }) => (
+  const CardContent = () => (
     <div className={cn(
       "relative transition-colors duration-150",
       !notification.is_read ? "bg-gray-50" : "bg-white",
@@ -60,16 +57,8 @@ export default function NotificationCard({
       className
     )}>
       
-      <div className="flex items-start space-x-3">
-        {/* Icon */}
-        <div className={cn(
-          "flex-shrink-0 rounded-full p-2 mt-0.5",
-          typeConfig.bgColor
-        )}>
-          <NotificationIcon className={cn("w-4 h-4", typeConfig.color)} />
-        </div>
-        
-        {/* Content */}
+      <div className="flex items-start">
+        {/* Content (icon removed for minimal style) */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
@@ -126,17 +115,6 @@ export default function NotificationCard({
             {/* Actions */}
             {showActions && (
               <div className="flex items-center space-x-2 ml-4">
-                {/* Only show action URL link if the whole card is NOT wrapped in a link AND not compact */}
-                {notification.action_url && !compact && !isWrappedInLink && (
-                  <Link
-                    href={notification.action_url}
-                    className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
-                    title="View details"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Link>
-                )}
-
                 {!notification.is_read && onMarkAsRead && (
                   <button
                     onClick={handleMarkAsRead}
@@ -168,45 +146,14 @@ export default function NotificationCard({
   if (compact) {
     return (
       <div className="border border-gray-200 rounded-md">
-        <CardContent isWrappedInLink={false} />
-      </div>
-    );
-  }
-
-  // For full cards, make the whole card clickable if there's an action URL
-  if (notification.action_url) {
-    const handleCardClick = (e: React.MouseEvent) => {
-      // Don't navigate if clicking on action buttons
-      const target = e.target as HTMLElement;
-      if (target.closest('button')) {
-        return;
-      }
-      // Use router or window.location for navigation to avoid nested links
-      if (typeof window !== 'undefined') {
-        window.location.href = notification.action_url!;
-      }
-    };
-
-    return (
-      <div 
-        className="border border-gray-200 rounded-md hover:border-gray-300 transition-colors cursor-pointer"
-        onClick={handleCardClick}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            handleCardClick(e as any);
-          }
-        }}
-      >
-        <CardContent isWrappedInLink={true} />
+  <CardContent />
       </div>
     );
   }
 
   return (
     <div className="border border-gray-200 rounded-md">
-      <CardContent isWrappedInLink={false} />
+      <CardContent />
     </div>
   );
 }
