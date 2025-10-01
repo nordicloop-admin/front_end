@@ -513,7 +513,7 @@ export default function AuctionDetail() {
           <h2 className="text-lg font-medium text-gray-900">Auction not found</h2>
           <p className="text-gray-500 mt-1">The auction you&apos;re looking for doesn&apos;t exist or has been removed.</p>
           <button
-            onClick={() => router.push('/dashboard/my-auctions')}
+            onClick={() => router.push('/dashboard/my-activity')}
             className="mt-4 px-4 py-2 bg-[#FF8A00] text-white rounded-md text-sm hover:bg-[#e67e00] transition-colors"
           >
             Back to My Auctions
@@ -530,7 +530,7 @@ export default function AuctionDetail() {
         <div className="max-w-full mx-auto px-6 lg:px-12 py-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => router.push('/dashboard/my-auctions')}
+              onClick={() => router.push('/dashboard/my-activity')}
               className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
             >
               <ArrowLeft size={20} className="mr-2" />

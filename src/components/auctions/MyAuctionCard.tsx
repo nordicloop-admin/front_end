@@ -11,6 +11,7 @@ interface MyAuctionCardProps {
   category: string;
   volume: string;
   basePrice: string;
+  currency?: string;
   timeLeft: string | null | undefined;
   image: string;
   status?: string;            // raw status (maybe from parent)
@@ -30,6 +31,7 @@ export default function MyAuctionCard(props: MyAuctionCardProps) {
     category,
     volume,
     basePrice,
+  currency,
     timeLeft,
     image,
     status,
@@ -179,7 +181,7 @@ export default function MyAuctionCard(props: MyAuctionCardProps) {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-gray-400 uppercase tracking-wide">Price</span>
-                  <span className="font-semibold text-[#d26f00] truncate">{basePrice}</span>
+                  <span className="font-semibold text-[#d26f00] truncate">{basePrice}{currency ? ` ${currency}` : ''}</span>
                 </div>
               </div>
             </div>
@@ -232,7 +234,7 @@ export default function MyAuctionCard(props: MyAuctionCardProps) {
         {MetaGrid}
         <div>
           <span className="text-[11px] uppercase tracking-wide text-gray-400">Starting price</span>
-          <div className="text-lg font-semibold text-[#d26f00] leading-tight mt-0.5">{basePrice}</div>
+          <div className="text-lg font-semibold text-[#d26f00] leading-tight mt-0.5">{basePrice}{currency ? ` ${currency}` : ''}</div>
         </div>
       </div>
       <div className="border-t border-gray-100 bg-white px-3 py-2 flex items-center gap-2">

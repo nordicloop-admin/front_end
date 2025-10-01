@@ -102,6 +102,7 @@ export default function MyActivity() {
             category: auction.category_name,
             subcategory: auction.subcategory_name,
             basePrice: auction.starting_bid_price || auction.total_starting_value,
+            currency: auction.currency || 'SEK',
             currentBid: '',
             status: backendStatus,
             auctionStatus: displayStatus,
@@ -546,6 +547,7 @@ export default function MyActivity() {
                         category={auction.category}
                         volume={auction.volume}
                         basePrice={auction.basePrice}
+                        currency={auction.currency}
                         timeLeft={auction.timeLeft}
                         image={auction.image}
                         status={auction.status}
