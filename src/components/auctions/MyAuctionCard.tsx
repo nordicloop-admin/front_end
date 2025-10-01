@@ -36,7 +36,6 @@ export default function MyAuctionCard(props: MyAuctionCardProps) {
     auctionStatus,
     isComplete,
     variant = 'default',
-    onEditClick,
     onPublishClick,
     onUnpublishClick,
   } = props;
@@ -88,45 +87,30 @@ export default function MyAuctionCard(props: MyAuctionCardProps) {
       {canToggle && !isLive && (
         <button
           onClick={() => onPublishClick && onPublishClick(id)}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-emerald-300 bg-white px-3 py-2 text-xs font-medium text-emerald-700 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-300/40 active:scale-[0.98] transition"
+          className="publish-attract flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-[#FF8A00] bg-[#FF8A00] px-4 py-2 text-sm font-medium text-white shadow-[0_0_0_1px_rgba(0,0,0,0.04)] hover:bg-[#e67800] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8A00]/50 active:scale-[0.985] transition-all"
           aria-label="Publish auction"
         >
-          <Play className="h-3.5 w-3.5" /> Publish
+          <Play className="h-4 w-4 transition-transform duration-300" />
+          <span className="tracking-wide">Publish</span>
         </button>
       )}
       {canToggle && isLive && (
         <button
           onClick={() => onUnpublishClick && onUnpublishClick(id)}
           className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300/40 active:scale-[0.98] transition"
-          aria-label="Hide auction"
+          aria-label="Unpublish auction"
         >
-          <Pause className="h-3.5 w-3.5" /> Hide
+          <Pause className="h-3.5 w-3.5" /> Unpublish
         </button>
       )}
-      {!canToggle && (
-        <Link
-          href={`/dashboard/my-auctions/${id}`}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300/40 active:scale-[0.98] transition"
-          aria-label="View auction"
-        >
-          View <ArrowUpRight className="h-3.5 w-3.5" />
-        </Link>
-      )}
-      <button
-        onClick={onEditClick}
-        className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2.5 py-2 text-[11px] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300/40 transition"
-        aria-label="Edit auction"
+      {/* View button with label */}
+      <Link
+        href={`/dashboard/my-auctions/${id}`}
+        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300/40 transition"
+        aria-label="View auction"
       >
-        Edit
-      </button>
-      {canToggle && (
-        <Link
-          href={`/dashboard/my-auctions/${id}`}
-          className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-2.5 py-2 text-[11px] font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300/40 transition"
-        >
-          View
-        </Link>
-      )}
+        View <ArrowUpRight className="h-3.5 w-3.5" />
+      </Link>
     </>
   );
 
@@ -204,6 +188,13 @@ export default function MyAuctionCard(props: MyAuctionCardProps) {
             {ActionButtons}
           </div>
         </div>
+        <style jsx>{`
+          @keyframes attractPulse { 0% { box-shadow:0 0 0 0 rgba(255,138,0,.42);} 70% { box-shadow:0 0 0 11px rgba(255,138,0,0);} 100% { box-shadow:0 0 0 0 rgba(255,138,0,0);} }
+          .publish-attract { position:relative; }
+          .publish-attract:not(:hover):not(:active){ animation:attractPulse 3.6s ease-in-out infinite; }
+          .publish-attract:hover svg { transform:translateX(3px); }
+          @media (prefers-reduced-motion: reduce){ .publish-attract:not(:hover):not(:active){ animation:none; } }
+        `}</style>
       </div>
     );
   }
@@ -239,6 +230,13 @@ export default function MyAuctionCard(props: MyAuctionCardProps) {
       <div className="border-t border-gray-100 bg-white px-3 py-2 flex items-center gap-2">
         {ActionButtons}
       </div>
+      <style jsx>{`
+        @keyframes attractPulse { 0% { box-shadow:0 0 0 0 rgba(255,138,0,.42);} 70% { box-shadow:0 0 0 11px rgba(255,138,0,0);} 100% { box-shadow:0 0 0 0 rgba(255,138,0,0);} }
+        .publish-attract { position:relative; }
+        .publish-attract:not(:hover):not(:active){ animation:attractPulse 3.6s ease-in-out infinite; }
+        .publish-attract:hover svg { transform:translateX(3px); }
+        @media (prefers-reduced-motion: reduce){ .publish-attract:not(:hover):not(:active){ animation:none; } }
+      `}</style>
     </div>
   );
 }
