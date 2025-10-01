@@ -103,13 +103,21 @@ export default function MyAuctionCard(props: MyAuctionCardProps) {
           <Pause className="h-3.5 w-3.5" /> Unpublish
         </button>
       )}
-      {/* View button with label */}
+      {/** View button adjusts style if it's the ONLY action (no publish/unpublish) */}
       <Link
         href={`/dashboard/my-auctions/${id}`}
-        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-300/40 transition"
+        className={`group relative inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-gray-300/40 transition
+          ${canToggle
+            ? 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-100 hover:text-gray-800'
+            : 'flex-1 justify-center border border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-100 hover:border-gray-300 hover:text-gray-900'}
+        `}
         aria-label="View auction"
       >
-        View <ArrowUpRight className="h-3.5 w-3.5" />
+        <span className="tracking-wide">View</span>
+        <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+        {!canToggle && (
+          <span className="pointer-events-none absolute inset-0 rounded-md border border-transparent group-hover:border-[#FF8A00]/40" />
+        )}
       </Link>
     </>
   );

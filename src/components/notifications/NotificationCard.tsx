@@ -53,20 +53,12 @@ export default function NotificationCard({
   
   const CardContent = ({ isWrappedInLink = false }: { isWrappedInLink?: boolean }) => (
     <div className={cn(
-      "relative transition-all duration-200 hover:shadow-sm",
-      !notification.is_read && "bg-gray-50/50",
+      "relative transition-colors duration-150",
+      !notification.is_read ? "bg-gray-50" : "bg-white",
       compact ? "p-3" : "p-4",
+      "rounded-md",
       className
     )}>
-      {/* Priority indicator */}
-      {notification.priority && notification.priority !== 'normal' && (
-        <div className={cn(
-          "absolute top-0 left-0 w-1 h-full rounded-l-lg",
-          notification.priority === 'urgent' && "bg-red-500",
-          notification.priority === 'high' && "bg-amber-500",
-          notification.priority === 'low' && "bg-gray-400"
-        )} />
-      )}
       
       <div className="flex items-start space-x-3">
         {/* Icon */}
@@ -104,7 +96,7 @@ export default function NotificationCard({
               
               {/* Message */}
               <p className={cn(
-                "text-sm text-gray-600 mb-2",
+                "text-sm text-gray-600 mb-2 leading-snug",
                 compact ? "line-clamp-1" : "line-clamp-2"
               )}>
                 {notification.message}
@@ -175,7 +167,7 @@ export default function NotificationCard({
   // For compact mode (used in dropdowns), don't make the whole card clickable to avoid nested links
   if (compact) {
     return (
-      <div className="border border-gray-200 rounded-lg">
+      <div className="border border-gray-200 rounded-md">
         <CardContent isWrappedInLink={false} />
       </div>
     );
@@ -197,7 +189,7 @@ export default function NotificationCard({
 
     return (
       <div 
-        className="border border-gray-200 rounded-lg hover:border-gray-300 transition-colors cursor-pointer"
+        className="border border-gray-200 rounded-md hover:border-gray-300 transition-colors cursor-pointer"
         onClick={handleCardClick}
         role="button"
         tabIndex={0}
@@ -213,7 +205,7 @@ export default function NotificationCard({
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg">
+    <div className="border border-gray-200 rounded-md">
       <CardContent isWrappedInLink={false} />
     </div>
   );

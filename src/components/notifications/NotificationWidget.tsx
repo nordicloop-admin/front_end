@@ -127,7 +127,7 @@ export default function NotificationWidget({
       </div>
 
       {notifications.length > 0 ? (
-        <div className="space-y-3">
+        <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
           {notifications.map((notification) => {
             const typeConfig = getNotificationTypeConfig(notification.type);
             const NotificationIcon = getNotificationIconComponent(notification.type);
@@ -136,8 +136,8 @@ export default function NotificationWidget({
               <div
                 key={notification.id}
                 className={cn(
-                  "flex items-start space-x-3 p-3 rounded-lg transition-colors hover:bg-gray-50 active:bg-gray-100 cursor-pointer",
-                  !notification.is_read && "bg-blue-50/50"
+                  "flex items-start gap-3 p-3 md:p-3.5 transition-colors",
+                  !notification.is_read ? "bg-gray-50" : "bg-white"
                 )}
               >
                 <div className={cn(
