@@ -337,6 +337,8 @@ export interface AuctionData {
   subcategory: string;
   description?: string;
   basePrice: string;
+  /** Optional currency code (e.g., SEK, EUR) */
+  currency?: string;
   pricePerPartition?: string;
   currentBid?: string;
   status?: string;
