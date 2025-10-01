@@ -81,7 +81,7 @@ const DashboardPage = () => {
     } else if (stats.pending_verification) {
       return {
         status: 'Pending',
-        message: stats.verification_message || 'Your business is under verification',
+        message: stats.verification_message || 'Your business is under verification. This process typically takes 1–2 business days.',
         icon: Clock,
         colorClass: 'text-blue-500'
       };
