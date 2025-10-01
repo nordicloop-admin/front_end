@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Package, Filter, Search, Plus, Loader2, AlertCircle, Trophy, Clock, TrendingUp, RefreshCw } from 'lucide-react';
+import PayoutSetupBanner from '@/components/payments/PayoutSetupBanner';
+import { getUserDashboardStatistics, UserDashboardStatistics } from '@/services/statistics';
 import Link from 'next/link';
 
 // Import components from existing pages
@@ -54,6 +56,10 @@ export default function MyActivity() {
     active_bids: 0,
     total_bidders: 0
   });
+
+  // Cached dashboard stats (to avoid duplicate fetches elsewhere)
+  const [dashboardStats, setDashboardStats] = useState<UserDashboardStatistics | null>(null);
+  const [statsFetched, setStatsFetched] = useState(false);
   
   const { selectedAuction, isModalOpen, openBidModal, closeBidModal, submitBid } = useBidding();
 
@@ -208,11 +214,21 @@ export default function MyActivity() {
   useEffect(() => {
     if (activeTab === 'auctions') {
       fetchUserAuctions(auctionCurrentPage, auctionPageSize);
+      // Lazy-load dashboard stats only once when auctions tab first viewed
+      if (!statsFetched) {
+        (async () => {
+          const resp = await getUserDashboardStatistics();
+            if (!resp.error && resp.data) {
+              setDashboardStats(resp.data);
+            }
+            setStatsFetched(true);
+        })();
+      }
     } else if (activeTab === 'bids') {
       const status = activeBidTab === 'all' ? undefined : activeBidTab;
       fetchUserBids(bidCurrentPage, bidPageSize, status);
     }
-  }, [activeTab, auctionCurrentPage, auctionPageSize, activeBidTab, bidCurrentPage, bidPageSize]);
+  }, [activeTab, auctionCurrentPage, auctionPageSize, activeBidTab, bidCurrentPage, bidPageSize, statsFetched]);
 
   // Handle auction edit click
   const handleEditClick = (auction: AuctionData) => {
@@ -486,6 +502,9 @@ export default function MyActivity() {
       {/* Content for Auctions Tab */}
       {activeTab === 'auctions' && (
         <>
+          {/* Payment onboarding banner (shown only on My Auctions tab) */}
+          <PayoutSetupBanner stats={dashboardStats} />
+
           {/* Filters for Auctions */}
           <div className="flex flex-col md:flex-row gap-3 mb-5">
             <div className="relative flex-grow">

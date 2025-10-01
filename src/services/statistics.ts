@@ -63,6 +63,15 @@ export interface UserDashboardStatistics {
   is_verified: boolean;
   pending_verification: boolean;
   verification_message: string;
+  // Payment related additions
+  payment?: {
+    account_id: string | null;
+    onboarding_complete: boolean;
+    capabilities_complete: boolean;
+    payment_ready: boolean;
+    last_payment_check: string | null;
+  };
+  payment_state?: 'not_started' | 'in_progress' | 'capabilities_pending' | 'finalizing' | 'ready';
 }
 
 /**
