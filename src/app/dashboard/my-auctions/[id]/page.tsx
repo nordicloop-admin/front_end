@@ -7,7 +7,7 @@ import { ArrowLeft, Clock, Package, User, Calendar, AlertCircle, Edit, Trash2, P
 import { toast } from 'sonner';
 import EditAuctionModal, { AuctionData } from '@/components/auctions/EditAuctionModal';
 import { getAuctionById, deleteAuction, getAdDetails, activateAd, deactivateAd } from '@/services/auction';
-import { getAuctionBids } from '@/services/bid';
+import { getAuctionBids, ownerMarkBidAsWon } from '@/services/bid';
 import { getCategoryImage } from '@/utils/categoryImages';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import Modal from '@/components/ui/modal';
@@ -61,6 +61,9 @@ export default function AuctionDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isMarkingWinner, setIsMarkingWinner] = useState(false);
+  const [winnerMarked, setWinnerMarked] = useState(false);
+  const [winningBidId, setWinningBidId] = useState<number | null>(null);
 
   // Format date to readable string
   const formatDate = (dateString: string) => {
@@ -497,6 +500,45 @@ export default function AuctionDetail() {
     }
   };
 
+  // Determine latest/highest bid (first in bidHistory which is sorted newest/highest already)
+  const getLatestBidId = () => {
+    if (!auction?.bidHistory || auction.bidHistory.length === 0) return null;
+    const latest = auction.bidHistory.find((b: any) => b.isLatest) || auction.bidHistory[0];
+    return latest.bidId;
+  };
+
+  const handleMarkBidAsWon = async (specificBidId?: number) => {
+    const bidId = specificBidId ?? getLatestBidId();
+    if (!bidId) {
+      toast.error('No bid available to mark as winner');
+      return;
+    }
+    setIsMarkingWinner(true);
+    try {
+      const response = await ownerMarkBidAsWon(bidId);
+      if (response.error) {
+        toast.error('Failed to finalize auction', { description: response.error });
+      } else {
+        toast.success(response.data?.message || 'Winner selected');
+        setWinnerMarked(true);
+        setWinningBidId(bidId as number);
+        // Refresh auction data to reflect completed state
+        await fetchAuctionData();
+      }
+    } catch (e:any) {
+      toast.error('Failed to finalize auction', { description: e?.message });
+    } finally {
+      setIsMarkingWinner(false);
+    }
+  };
+
+  const canMarkWinner = auction &&
+    (auction.status === 'active' || auction.auctionStatus === 'Active') &&
+    auction.bidHistory?.length > 0 &&
+    !winnerMarked &&
+    !['completed','won','closed','ended','Completed','Won','Closed','Ended'].includes(auction.status) &&
+    !['completed','won','closed','ended','Completed','Won','Closed','Ended'].includes(auction.auctionStatus);
+
   if (isLoading) {
     return (
       <div className="p-5 flex justify-center items-center h-64">
@@ -618,6 +660,7 @@ export default function AuctionDetail() {
                         <span>Continue Setup</span>
                       </button>
                     )}
+                    {/* Removed standalone Mark Winner button here to keep it only within Bid History section for clarity */}
                   </div>
                 </div>
 
@@ -813,7 +856,12 @@ export default function AuctionDetail() {
 
             {/* Bid History */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Bid History</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">Bid History</h2>
+                {winnerMarked && (
+                  <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-md">Winner Selected</span>
+                )}
+              </div>
               {auction.bidHistory && auction.bidHistory.length > 0 ? (
                 <div className="overflow-hidden border border-gray-200 rounded-md">
                   <table className="min-w-full">
@@ -825,12 +873,15 @@ export default function AuctionDetail() {
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Volume</th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Total Value</th>
                         <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
+                        <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Select Winner</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {auction.bidHistory.map((bid: any, index: number) => {
                         const isUpdate = bid.changeReason === 'bid_updated';
                         const isInitial = bid.changeReason === 'bid_placed';
+                        const isEligible = bid.isLatest && canMarkWinner && !winnerMarked;
+                        const isWinning = winnerMarked && winningBidId === bid.bidId;
 
                         return (
                           <tr key={`${bid.bidId}-${bid.historyIndex}-${index}`} className={`hover:bg-gray-50 ${
@@ -862,6 +913,20 @@ export default function AuctionDetail() {
                             <td className="px-4 py-3 text-sm text-gray-700">{bid.volume}</td>
                             <td className="px-4 py-3 text-sm font-medium text-green-600">{bid.totalValue}</td>
                             <td className="px-4 py-3 text-sm text-gray-500">{formatDate(bid.date)}</td>
+                            <td className="px-4 py-3 text-sm">
+                              {isWinning && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">Winner</span>
+                              )}
+                              {isEligible && (
+                                <button
+                                  onClick={() => handleMarkBidAsWon(bid.bidId)}
+                                  disabled={isMarkingWinner}
+                                  className="inline-flex items-center px-3 py-1.5 bg-[#FF8A00] hover:bg-[#e67e00] disabled:opacity-50 text-white text-xs font-medium rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF8A00]"
+                                >
+                                  {isMarkingWinner ? '...' : 'Mark'}
+                                </button>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}
