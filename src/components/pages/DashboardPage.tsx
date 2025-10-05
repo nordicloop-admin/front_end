@@ -67,32 +67,63 @@ const DashboardPage = () => {
     }
   };
 
-  // Helper function to get verification status info
+  // Helper function to get verification status info (now includes rejected state)
   const getVerificationInfo = () => {
-    if (!stats) return { status: 'Unknown', message: 'Loading verification status', icon: Clock, colorClass: 'text-gray-500' };
-    
-    if (stats.is_verified) {
+    if (!stats) return { status: 'Unknown', message: 'Loading verification status', icon: Clock, colorClass: 'text-gray-500', bgClass: 'bg-gray-50', borderClass: 'border-gray-200', headerText: 'text-gray-700', bodyText: 'text-gray-600' };
+
+    // Approved
+    if (stats.is_verified || stats.verification_status === 'approved') {
       return {
         status: 'Verified',
-        message: 'Your business is verified',
+        message: stats.verification_message || 'Your business is verified',
         icon: CheckCircle,
-        colorClass: 'text-green-500'
+        colorClass: 'text-green-500',
+        bgClass: 'bg-green-50',
+        borderClass: 'border-green-100',
+        headerText: 'text-green-700',
+        bodyText: 'text-green-600'
       };
-    } else if (stats.pending_verification) {
+    }
+
+    // Pending
+    if (stats.pending_verification || stats.verification_status === 'pending') {
       return {
         status: 'Pending',
         message: stats.verification_message || 'Your business is under verification. This process typically takes 1–2 business days.',
         icon: Clock,
-        colorClass: 'text-blue-500'
-      };
-    } else {
-      return {
-        status: 'Not Verified',
-        message: 'Please complete the verification process',
-        icon: XCircle,
-        colorClass: 'text-red-500'
+        colorClass: 'text-blue-500',
+        bgClass: 'bg-blue-50',
+        borderClass: 'border-blue-100',
+        headerText: 'text-blue-700',
+        bodyText: 'text-blue-600'
       };
     }
+
+    // Rejected
+    if (stats.verification_status === 'rejected') {
+      return {
+        status: 'Rejected',
+        message: stats.verification_message || 'Business verification was rejected. Please contact support or resubmit required documents.',
+        icon: XCircle,
+        colorClass: 'text-red-500',
+        bgClass: 'bg-red-50',
+        borderClass: 'border-red-100',
+        headerText: 'text-red-700',
+        bodyText: 'text-red-600'
+      };
+    }
+
+    // Not started / not verified default
+    return {
+      status: 'Not Verified',
+      message: stats.verification_message || 'Please complete the verification process to unlock all features.',
+      icon: XCircle,
+      colorClass: 'text-amber-500',
+      bgClass: 'bg-amber-50',
+      borderClass: 'border-amber-100',
+      headerText: 'text-amber-700',
+      bodyText: 'text-amber-600'
+    };
   };
 
   if (isLoading) {
@@ -249,16 +280,17 @@ const DashboardPage = () => {
       </div>
 
       {/* Verification Status Alert */}
-      {!stats?.is_verified && (
-        <div className="mb-6 bg-blue-50 border border-blue-100 p-4 rounded-md">
+      {(!stats?.is_verified) && (
+        <div className={`mb-6 ${verificationInfo.bgClass} border ${verificationInfo.borderClass} p-4 rounded-md`}> 
           <div className="flex">
             <div className="flex-shrink-0">
               <VerificationIcon size={16} className={verificationInfo.colorClass} />
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-blue-700">{verificationInfo.status}</h3>
-              <div className="mt-1 text-xs text-blue-600">
+              <h3 className={`text-sm font-medium ${verificationInfo.headerText}`}>{verificationInfo.status}</h3>
+              <div className={`mt-1 text-xs ${verificationInfo.bodyText}`}>
                 <p>{verificationInfo.message}</p>
+                {/* Link removed per requirement: no detailed requirements page available */}
               </div>
             </div>
           </div>
