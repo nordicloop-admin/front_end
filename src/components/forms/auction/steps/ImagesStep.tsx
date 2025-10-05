@@ -79,11 +79,12 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
 
   // Validation helpers
   const isTitleValid = () => {
-    return formData.title.trim().length >= 10 && formData.title.length <= 255;
+    return formData.title.trim().length >= 3 && formData.title.length <= 255;
   };
 
+  // Description now optional – always valid (could add max length in future)
   const isDescriptionValid = () => {
-    return formData.description.trim().length >= 30;
+    return true;
   };
 
   const areKeywordsValid = () => {
@@ -121,21 +122,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
         </p>
       </div>
 
-      {/* Validation Requirements Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start">
-          <Info className="w-5 h-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
-          <div>
-            <h4 className="font-medium text-blue-900 mb-2">Step 8 Requirements</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
-              <li>• <strong>Title:</strong> Minimum 10 characters, maximum 255 characters</li>
-              <li>• <strong>Description:</strong> Minimum 30 characters (no maximum limit)</li>
-              <li>• <strong>Keywords:</strong> Optional, maximum 500 characters total</li>
-              <li>• <strong>Image:</strong> Required - JPEG, PNG, WebP</li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      {/* Requirements banner removed per request */}
 
       {/* Validation Errors Summary */}
       {showValidationErrors && validationErrors && Object.keys(validationErrors).length > 0 && (
@@ -159,7 +146,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
         <label className="block text-sm font-medium text-gray-700 mb-3">
           <Type className="inline w-4 h-4 mr-2" />
           Listing Title *
-          <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 10 characters)</span>
+          <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 3 characters)</span>
         </label>
         <input
           type="text"
@@ -187,8 +174,8 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
               : 'text-gray-500'
           }`}>
             {formData.title.trim().length}/255 characters 
-            {formData.title.length > 0 && formData.title.trim().length < 10 && 
-              ` - Need at least ${10 - formData.title.trim().length} more characters`
+            {formData.title.length > 0 && formData.title.trim().length < 3 && 
+              ` - Need at least ${3 - formData.title.trim().length} more characters`
             }
           </p>
           {isTitleValid() && !validationErrors?.title && (
@@ -200,11 +187,10 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
       {/* Description */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">
-          Description *
-          <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 30 characters)</span>
+          Description (Optional)
         </label>
         <textarea
-          placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 30 characters)"
+          placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (optional)"
           className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] resize-vertical min-h-[120px] ${
             (formData.description.length > 0 && !isDescriptionValid()) || (showValidationErrors && validationErrors?.description)
               ? 'border-red-300 bg-red-50' 
@@ -227,10 +213,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
               ? 'text-red-600 font-medium' 
               : 'text-gray-500'
           }`}>
-            {formData.description.trim().length} characters 
-            {formData.description.length > 0 && formData.description.trim().length < 30 && 
-              ` - Need at least ${30 - formData.description.trim().length} more characters`
-            }
+            {formData.description.trim().length} characters
           </p>
           {isDescriptionValid() && !validationErrors?.description && (
             <span className="text-xs text-green-600">✓ Valid length</span>
@@ -400,10 +383,10 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
       </div>
 
       {/* Validation */}
-      {(!formData.title || !formData.description) && (
+      {(!formData.title || formData.title.trim().length < 3) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
-            Please provide a title and description for your listing. Image is optional but recommended.
+            Please provide a title (minimum 3 characters). Description is optional.
           </p>
         </div>
       )}

@@ -460,20 +460,16 @@ export const validateStepData = (step: number, data: any): { isValid: boolean; e
       break;
 
     case 8:
-      // Step 8 validation according to STEP_8_VALIDATION_GUIDE.md
+      // Step 8 validation updated: Title min 3 chars; Description optional
       if (!data.title || typeof data.title !== 'string') {
         errors.push('Title is required');
-      } else if (data.title.trim().length < 10) {
-        errors.push('Title must be at least 10 characters long');
+      } else if (data.title.trim().length < 3) {
+        errors.push('Title must be at least 3 characters long');
       } else if (data.title.length > 255) {
         errors.push('Title must not exceed 255 characters');
       }
 
-      if (!data.description || typeof data.description !== 'string') {
-        errors.push('Description is required');
-      } else if (data.description.trim().length < 50) {
-        errors.push('Description must be at least 50 characters long');
-      }
+      // Description optional – no validation errors if missing or short
 
       // Keywords validation - optional but if provided, check total length
       if (data.keywords) {

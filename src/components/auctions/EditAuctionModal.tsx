@@ -2858,13 +2858,13 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 <Type className="inline w-4 h-4 mr-2" />
                 Listing Title *
-                <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 10 characters)</span>
+                <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 3 characters)</span>
               </label>
               <input
                 type="text"
                 placeholder="e.g., High-Quality HDPE Post-Industrial Pellets - Food Grade"
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] text-lg ${
-                  (stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 10) || (showValidationErrors && validationErrors?.title)
+                  (stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 3) || (showValidationErrors && validationErrors?.title)
                     ? 'border-red-300 bg-red-50'
                     : 'border-gray-300'
                 }`}
@@ -2881,59 +2881,37 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
               )}
               <div className="flex justify-between items-center mt-1">
                 <p className={`text-xs ${
-                  (stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 10) || (showValidationErrors && validationErrors?.title)
+                  (stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 3) || (showValidationErrors && validationErrors?.title)
                     ? 'text-red-600 font-medium' 
                     : 'text-gray-500'
                 }`}>
                   {(stepData.title || '').trim().length}/255 characters
-                  {stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 10 && 
-                    ` - Need at least ${10 - stepData.title.trim().length} more characters`
+                  {stepData.title && stepData.title.length > 0 && stepData.title.trim().length < 3 && 
+                    ` - Need at least ${3 - stepData.title.trim().length} more characters`
                   }
                 </p>
-                {stepData.title && stepData.title.trim().length >= 10 && stepData.title.length <= 255 && !validationErrors?.title && (
+                {stepData.title && stepData.title.trim().length >= 3 && stepData.title.length <= 255 && !validationErrors?.title && (
                   <span className="text-xs text-green-600">✓ Valid length</span>
                 )}
               </div>
             </div>
             
-            {/* Description - Matching creation form */}
+            {/* Description - now optional */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                Description *
-                <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 30 characters)</span>
+                Description (Optional)
               </label>
               <textarea
-                placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (minimum 30 characters)"
+                placeholder="Describe your material in detail - quality, source, condition, processing history, etc. (optional)"
                 className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] resize-vertical min-h-[120px] ${
-                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30) || (showValidationErrors && validationErrors?.description)
-                    ? 'border-red-300 bg-red-50'
-                    : 'border-gray-300'
+                  'border-gray-300'
                 }`}
                 value={stepData.description || ''}
                 onChange={(e) => handleStepDataChange({ description: e.target.value })}
                 rows={4}
               />
-              {/* Validation Error Message */}
-              {showValidationErrors && validationErrors?.description && (
-                <div className="flex items-center mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
-                  <AlertCircle className="w-4 h-4 mr-2 text-red-500" />
-                  <span className="text-sm font-medium text-red-700">{validationErrors.description[0]}</span>
-                </div>
-              )}
               <div className="flex justify-between items-center mt-1">
-                <p className={`text-xs ${
-                  (stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30) || (showValidationErrors && validationErrors?.description)
-                    ? 'text-red-600 font-medium'
-                    : 'text-gray-500'
-                }`}>
-                  {(stepData.description || '').trim().length} characters
-                  {stepData.description && stepData.description.length > 0 && stepData.description.trim().length < 30 &&
-                    ` - Need at least ${30 - stepData.description.trim().length} more characters`
-                  }
-                </p>
-                {stepData.description && stepData.description.trim().length >= 30 && !validationErrors?.description && (
-                  <span className="text-xs text-green-600">✓ Valid length</span>
-                )}
+                <p className="text-xs text-gray-500">{(stepData.description || '').trim().length} characters</p>
               </div>
             </div>
             
@@ -3119,9 +3097,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     const errors: string[] = [];
     const fieldErrors: Record<string, string[]> = {};
     
-    // Title validation (minimum 10 characters)
-    if (!stepData.title || stepData.title.trim().length < 10) {
-      const titleError = 'Title must be at least 10 characters long';
+    // Title validation (minimum 3 characters)
+    if (!stepData.title || stepData.title.trim().length < 3) {
+      const titleError = 'Title must be at least 3 characters long';
       errors.push(titleError);
       fieldErrors.title = [titleError];
     } else if (stepData.title.length > 255) {
@@ -3129,13 +3107,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       errors.push(titleError);
       fieldErrors.title = [titleError];
     }
-    
-    // Description validation (minimum 30 characters - matching create form)
-    if (!stepData.description || stepData.description.trim().length < 30) {
-      const descError = 'Description must be at least 30 characters long';
-      errors.push(descError);
-      fieldErrors.description = [descError];
-    }
+    // Description optional – no validation
 
     // Keywords validation (optional, but if provided, max 500 chars total)
     const keywordsText = stepData.keywords?.join(', ') || '';
@@ -3303,10 +3275,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         return !!(stepData.availableQuantity && stepData.availableQuantity > 0 && stepData.unit && stepData.startingPrice && stepData.startingPrice > 0 && hasValidAuctionDuration);
       case 8:
         // Step 8 validation (matching create form requirements)
-        const titleValid = stepData.title && stepData.title.trim().length >= 10;
-        const descriptionValid = stepData.description && stepData.description.trim().length >= 30;
-        const imageValid = (stepData.images && stepData.images.length > 0) || stepData.currentImageUrl;
-        return !!(titleValid && descriptionValid && imageValid);
+  const titleValid = stepData.title && stepData.title.trim().length >= 3;
+  const imageValid = (stepData.images && stepData.images.length > 0) || stepData.currentImageUrl;
+  return !!(titleValid && imageValid);
       default:
         return true;
     }
