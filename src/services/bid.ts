@@ -752,6 +752,23 @@ export async function closeAuction(adId: number) {
   }
 }
 
+/**
+ * Seller marks a specific bid as won (finalizes auction)
+ * @param bidId The bid ID selected as winner
+ */
+export async function ownerMarkBidAsWon(bidId: number) {
+  try {
+    const response = await apiPost<{ message: string }>(`/bids/${bidId}/mark-as-won/`, {}, true);
+    return response;
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while marking bid as won',
+      status: 500
+    };
+  }
+}
+
 // Legacy function for backwards compatibility
 export const getAuctionBids = getAdBids;
 
