@@ -511,9 +511,9 @@ export function AlternativeAuctionForm({
     const errors: string[] = [];
     const fieldErrors: Record<string, string[]> = {};
     
-    // Title validation (minimum 10 characters)
-    if (!formData.title || formData.title.trim().length < 10) {
-      const titleError = 'Title must be at least 10 characters long';
+    // Title validation (minimum 3 characters)
+    if (!formData.title || formData.title.trim().length < 3) {
+      const titleError = 'Title must be at least 3 characters long';
       errors.push(titleError);
       fieldErrors.title = [titleError];
     } else if (formData.title.length > 255) {
@@ -522,12 +522,7 @@ export function AlternativeAuctionForm({
       fieldErrors.title = [titleError];
     }
     
-    // Description validation (minimum 30 characters)
-    if (!formData.description || formData.description.trim().length < 30) {
-      const descError = 'Description must be at least 30 characters long';
-      errors.push(descError);
-      fieldErrors.description = [descError];
-    }
+    // Description now optional – no validation required
     
     // Keywords validation (optional, but if provided, max 500 chars total)
     const keywordsText = formData.keywords.join(', ');
@@ -715,9 +710,7 @@ export function AlternativeAuctionForm({
       
       case 'Image & Description':
         return !!formData.title && 
-               formData.title.length >= 10 && 
-               !!formData.description && 
-               formData.description.length >= 30 &&
+               formData.title.trim().length >= 3 && 
                !!formData.images &&
                formData.images.length > 0;
       
@@ -791,21 +784,14 @@ export function AlternativeAuctionForm({
         // Handle final step with file uploads separately
         if (currentStepTitle === 'Image & Description') {
           // Validate image data before sending
-          if (!formData.title || formData.title.length < 10) {
+          if (!formData.title || formData.title.trim().length < 3) {
             toast.error('Title validation failed', {
-              description: 'Title must be at least 10 characters long'
+              description: 'Title must be at least 3 characters long'
             });
             setIsSubmitting(false);
             return;
           }
-          
-          if (!formData.description || formData.description.length < 30) {
-            toast.error('Description validation failed', {
-              description: 'Description must be at least 30 characters long'
-            });
-            setIsSubmitting(false);
-            return;
-          }
+          // Description optional – no check
           
           // Check if at least one image is provided
           if (!formData.images || formData.images.length === 0) {
@@ -903,15 +889,11 @@ export function AlternativeAuctionForm({
     setShowValidationErrors(false);
 
     // Check if we have all required data for step 8
-    if (!formData.title || formData.title.length < 10) {
-      toast.error('Please enter a title with at least 10 characters');
+    if (!formData.title || formData.title.trim().length < 3) {
+      toast.error('Please enter a title with at least 3 characters');
       return;
     }
-
-    if (!formData.description || formData.description.length < 30) {
-      toast.error('Please enter a description with at least 30 characters');
-      return;
-    }
+    // Description optional – no validation
 
     if (!formData.images || formData.images.length === 0) {
       // In edit mode, images might already exist, so this check is not always required.
