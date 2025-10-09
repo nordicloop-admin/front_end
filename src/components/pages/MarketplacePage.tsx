@@ -72,13 +72,21 @@ const ProductCard = ({ item }: { item: any }) => {
         </div>
 
         {/* Price information */}
-        <div className="mt-3 flex items-center justify-between">
-          <span className="text-xs text-gray-500">
-            {item.highestBid ? 'Highest Bid' : 'Base Price'}
-          </span>
-          <span className="font-semibold text-blue-600">
-            {item.highestBid || item.basePrice}
-          </span>
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-gray-500">{item.priceLabel}</span>
+            <span className="font-semibold text-blue-600" title={item.pricePerUnitDisplay}>
+              {item.pricePerUnitDisplay}
+            </span>
+          </div>
+          {item.totalValueDisplay && (
+            <div className="mt-1 flex items-center justify-between text-xs">
+              <span className="text-gray-500">Total Value</span>
+              <span className="font-medium text-gray-700" title="Estimated total starting value">
+                {item.totalValueDisplay}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Bid button */}
@@ -333,35 +341,43 @@ const MarketplacePage = () => {
 
   // Convert API auctions to the format expected by the UI
   const convertedAuctions = apiAuctions.map(auction => {
-    // Use backend-calculated time remaining (backend filters out expired auctions)
     const displayTimeLeft = formatTimeRemaining(auction.time_remaining || null);
-    
-    // Determine current price based on highest bid or base price
-    let currentPrice = '';
-    if (auction.highest_bid_price) {
-      // Format highest bid price with currency
-      const formattedPrice = auction.highest_bid_price.toLocaleString('sv-SE');
-      currentPrice = `${formattedPrice} ${auction.currency}`;
-    } else if (auction.base_price) {
-      // Format base price with currency
-      const formattedPrice = auction.base_price.toLocaleString('sv-SE');
-      currentPrice = `${formattedPrice} ${auction.currency}`;
-    } else {
-      // Fallback to starting bid price
-      const price = auction.starting_bid_price || '0';
-      currentPrice = `${price} ${auction.currency}`;
-    }
-    
+
+    const currency = auction.currency || 'EUR';
+
+    const parseNum = (val: any) => {
+      if (val === null || val === undefined || val === '') return null;
+      const n = typeof val === 'number' ? val : parseFloat(val);
+      return isNaN(n) ? null : n;
+    };
+
+    const highestBidNum = parseNum(auction.highest_bid_price);
+    const basePriceNum = parseNum(auction.base_price) ?? parseNum(auction.starting_bid_price);
+    const totalValueNum = parseNum(auction.total_starting_value);
+
+    const formatMoney = (value: number | null, withCurrency: boolean = true) => {
+      if (value === null) return '—';
+      return `${value.toLocaleString('sv-SE')} ${withCurrency ? currency : ''}`.trim();
+    };
+
+    const priceLabel = highestBidNum !== null ? 'Highest Bid' : 'Base Price';
+    const pricePerUnit = highestBidNum !== null ? highestBidNum : basePriceNum;
+    const unit = auction.unit_of_measurement || '';
+    const pricePerUnitDisplay = `${formatMoney(pricePerUnit)}${unit ? ` / ${unit}` : ''}`;
+    const totalValueDisplay = totalValueNum ? formatMoney(totalValueNum) : null;
+
     return {
       id: auction.id.toString(),
       name: auction.title || `${auction.category_name} - ${auction.subcategory_name}`,
       category: auction.category_name,
-      basePrice: auction.starting_bid_price || auction.total_starting_value,
-      currentBid: currentPrice,
       timeLeft: displayTimeLeft,
-      volume: auction.available_quantity ? `${auction.available_quantity} ${auction.unit_of_measurement}` : 'N/A',
+      volume: auction.available_quantity ? `${auction.available_quantity} ${unit}` : 'N/A',
       countryOfOrigin: auction.location_summary || 'Unknown',
-      image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name)
+      image: auction.material_image ? getFullImageUrl(auction.material_image) : getCategoryImage(auction.category_name),
+      priceLabel,
+      pricePerUnitDisplay,
+      totalValueDisplay,
+      currency
     };
   });
 
