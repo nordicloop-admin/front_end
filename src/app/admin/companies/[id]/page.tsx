@@ -145,6 +145,33 @@ export default function CompanyDetailPage() {
           status: newStatus
         });
 
+        // If rejected, automatically send a notification with a support link
+        if (newStatus === 'rejected') {
+          try {
+            await createNotification({
+              title: 'Action Needed: Verification Update',
+              message: 'We reviewed your company verification and need a few clarifications before approval. Most accounts are verified after a quick resubmission. Click to contact support or review your details.',
+              type: 'account',
+              priority: 'high',
+              action_url: '/contact',
+              metadata: {
+                company_id: company.id,
+                company_name: company.companyName,
+                reason: 'verification_rejected',
+                action: 'contact_support',
+                suggested_next: ['contact_support','review_submission','resubmit_documents']
+              }
+            });
+            toast.error('Company rejected', {
+              description: 'Rejection recorded and notification sent (includes contact link).'
+            });
+          } catch (_e) {
+            toast.error('Company rejected', { description: 'Failed to send notification automatically.' });
+          }
+        } else {
+          toast.success('Company approved', { description: 'Status updated successfully.' });
+        }
+
         // Show success message or redirect if needed
         // For now, just update the state
       }

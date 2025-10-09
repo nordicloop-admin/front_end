@@ -6,12 +6,14 @@ import { Package, ArrowRight, Check, AlertCircle, Clock, Award, Bookmark, Box, C
 import Link from 'next/link';
 import { getUserDashboardStatistics, UserDashboardStatistics } from '@/services/statistics';
 import NotificationWidget from '@/components/notifications/NotificationWidget';
+import { toast } from 'sonner';
 
 const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<UserDashboardStatistics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const [shownRejectionToast, setShownRejectionToast] = useState(false);
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -33,6 +35,24 @@ const DashboardPage = () => {
 
     fetchDashboardStats();
   }, []);
+
+  // Show a toast with quick access to contact page if verification was rejected
+  useEffect(() => {
+    if (stats?.verification_status === 'rejected' && !shownRejectionToast) {
+      toast.error('Business verification rejected', {
+        description: (
+          <div className="text-sm">
+            Your verification was not approved. Please review requirements and reach out if you need help.
+            <div className="mt-2">
+              <Link href="/contact" className="inline-flex items-center px-3 py-1 rounded-md bg-[#FF8A00] text-white text-xs font-medium hover:bg-[#e67700] transition-colors">Contact Support</Link>
+            </div>
+          </div>
+        ),
+        duration: 8000
+      });
+      setShownRejectionToast(true);
+    }
+  }, [stats, shownRejectionToast]);
 
   // Helper function to format the date
   const formatBidDate = (dateString: string) => {
@@ -101,9 +121,10 @@ const DashboardPage = () => {
 
     // Rejected
     if (stats.verification_status === 'rejected') {
+      const defaultMsg = `We carefully reviewed your submission but need a few adjustments before we can verify your business. This isn’t a final “no” – it’s a checkpoint. Most companies are approved after clarifying missing or unclear details (e.g. legal name consistency, VAT docs, or ownership evidence).`;
       return {
         status: 'Rejected',
-        message: stats.verification_message || 'Business verification was rejected. Please contact support or resubmit required documents.',
+        message: stats.verification_message || defaultMsg,
         icon: XCircle,
         colorClass: 'text-red-500',
         bgClass: 'bg-red-50',
@@ -289,8 +310,34 @@ const DashboardPage = () => {
             <div className="ml-3">
               <h3 className={`text-sm font-medium ${verificationInfo.headerText}`}>{verificationInfo.status}</h3>
               <div className={`mt-1 text-xs ${verificationInfo.bodyText}`}>
-                <p>{verificationInfo.message}</p>
-                {/* Link removed per requirement: no detailed requirements page available */}
+                {verificationInfo.status === 'Rejected' ? (
+                  <div className="space-y-2">
+                    <p className="leading-relaxed">{verificationInfo.message}</p>
+                    <ul className="list-disc ml-5 mt-1 text-[11px] space-y-1">
+                      <li>Double‑check that company legal name matches uploaded documents.</li>
+                      <li>Ensure VAT / registration numbers are clear and readable.</li>
+                      <li>Provide ownership / authorization proof if not the primary signatory.</li>
+                    </ul>
+                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                      <Link
+                        href="/contact"
+                        className="inline-flex items-center px-3 py-1.5 rounded-md bg-[#FF8A00] text-white text-xs font-medium hover:bg-[#e67700] transition-colors shadow-sm"
+                      >
+                        Contact Support
+                        <ArrowRight size={12} className="ml-1" />
+                      </Link>
+                      <Link
+                        href="/dashboard/company/profile"
+                        className="text-xs font-medium text-red-600 hover:text-red-700 underline"
+                      >
+                        Review Submission
+                      </Link>
+                    </div>
+                    <p className="text-[11px] mt-1 italic">We&apos;re here to help you get verified quickly—most follow‑ups are resolved within one business day.</p>
+                  </div>
+                ) : (
+                  <p>{verificationInfo.message}</p>
+                )}
               </div>
             </div>
           </div>

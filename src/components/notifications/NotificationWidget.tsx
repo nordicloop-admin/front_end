@@ -125,6 +125,14 @@ export default function NotificationWidget({
       {notifications.length > 0 ? (
         <div className="divide-y divide-gray-100 border-t border-b border-gray-100">
           {notifications.map((notification) => {
+            // Normalize metadata to plain object
+            const meta: any = notification.metadata || {};
+            const supportUrl = notification.action_url || meta.support_url || meta.contact_url;
+            const isRejection = (
+              meta.action_type === 'company_rejected' ||
+              /verification update needed/i.test(notification.title || '') ||
+              (/rejected/i.test(notification.message || '') && meta.company_id)
+            );
             return (
               <div
                 key={notification.id}
@@ -145,6 +153,17 @@ export default function NotificationWidget({
                       <p className="text-sm text-gray-600 line-clamp-2 mt-1">
                         {notification.message}
                       </p>
+                      {isRejection && supportUrl && (
+                        <div className="mt-2">
+                          <Link
+                            href={supportUrl}
+                            className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#FF8A00] text-white text-[11px] font-medium hover:bg-[#e67700] transition-colors"
+                          >
+                            Contact Support
+                            <ChevronRight className="w-3 h-3 ml-1" />
+                          </Link>
+                        </div>
+                      )}
                       <div className="flex items-center mt-2 text-xs text-gray-500">
                         <Clock className="w-3 h-3 mr-1" />
                         <span>{formatNotificationDate(notification.date)}</span>

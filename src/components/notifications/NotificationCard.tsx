@@ -90,6 +90,24 @@ export default function NotificationCard({
               )}>
                 {notification.message}
               </p>
+              {(() => {
+                const meta: any = notification.metadata || {};
+                const isRejection = meta.action_type === 'company_rejected' || /verification update needed/i.test(notification.title || '');
+                const supportUrl = notification.action_url || meta.support_url;
+                if (isRejection && supportUrl) {
+                  return (
+                    <div className="mb-2 text-xs">
+                      <a
+                        href={supportUrl}
+                        className="text-[#FF8A00] hover:text-[#e67700] font-medium underline underline-offset-2"
+                      >
+                        Contact support to resolve this →
+                      </a>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
               
               {/* Metadata */}
               <div className="flex items-center space-x-4 text-xs text-gray-500">
