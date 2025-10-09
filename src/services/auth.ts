@@ -105,6 +105,8 @@ interface LoginResponse {
   email: string;
   access: string;
   refresh: string;
+  firstname?: string; // backend sometimes returns this format
+  lastname?: string;
   first_name?: string;
   id?: string;
   firstName?: string;
@@ -194,8 +196,9 @@ export async function login(credentials: LoginCredentials) {
         id: response.data.id,
         email: response.data.email,
         username: response.data.username,
-        firstName: response.data.first_name || response.data.firstName || (response.data.username ? response.data.username.split(' ')[0] : 'User'),
-        lastName: response.data.last_name || response.data.lastName,
+        // Precedence: explicit 'firstname' -> snake 'first_name' -> camel 'firstName' -> fallback from username
+        firstName: response.data.firstname || response.data.first_name || response.data.firstName || (response.data.username ? response.data.username.split('@')[0] : 'User'),
+        lastName: response.data.lastname || response.data.last_name || response.data.lastName,
         position: response.data.position,
         companyId: response.data.company_id || response.data.companyId,
         role: response.data.role

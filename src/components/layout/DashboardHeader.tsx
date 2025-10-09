@@ -180,7 +180,7 @@ export default function DashboardHeader({ onMobileMenuToggle, showAddAuctionsBut
           >
             {/* Only show name on larger screens */}
             <span className="hidden md:inline text-sm font-medium mr-2">
-              {user?.firstName || user?.username?.split(' ')[0] || 'User'}
+              {user?.firstName ? user.firstName : 'User'}
             </span>
             <ChevronDown size={16} className={`transition-transform ${userDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
