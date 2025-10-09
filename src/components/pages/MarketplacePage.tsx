@@ -32,7 +32,7 @@ const ProductCard = ({ item }: { item: any }) => {
 
   return (
     <div
-      className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
+      className="bg-white rounded-lg overflow-hidden border border-gray-200 transition-colors duration-200 hover:border-gray-300 cursor-pointer"
       onClick={handleItemClick}
     >
       <div className="relative h-48 w-full">
@@ -386,7 +386,7 @@ const MarketplacePage = () => {
   const filteredAuctions = convertedAuctions;
 
   return (
-    <div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
+  <div className="py-8 mx-7">
 
       {/* Marketplace Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
