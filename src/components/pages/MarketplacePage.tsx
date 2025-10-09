@@ -75,8 +75,13 @@ const ProductCard = ({ item }: { item: any }) => {
         <div className="mt-3">
           <div className="flex items-center justify-between">
             <span className="text-xs text-gray-500">{item.priceLabel}</span>
-            <span className="font-semibold text-blue-600" title={item.pricePerUnitDisplay}>
+            <span className="flex items-baseline font-semibold text-[#FF8A00]" title={item.pricePerUnitDisplay + (item.unit ? ` per ${item.unit}` : '')}>
               {item.pricePerUnitDisplay}
+              {item.unit && (
+                <span className="ml-1 text-[11px] font-medium text-gray-500 lowercase">
+                  per {item.unit.replace('_', ' ')}
+                </span>
+              )}
             </span>
           </div>
           {item.totalValueDisplay && (
@@ -363,7 +368,8 @@ const MarketplacePage = () => {
     const priceLabel = highestBidNum !== null ? 'Highest Bid' : 'Base Price';
     const pricePerUnit = highestBidNum !== null ? highestBidNum : basePriceNum;
     const unit = auction.unit_of_measurement || '';
-    const pricePerUnitDisplay = `${formatMoney(pricePerUnit)}${unit ? ` / ${unit}` : ''}`;
+  // Display only currency amount (no unit suffix) per request
+  const pricePerUnitDisplay = formatMoney(pricePerUnit);
     const totalValueDisplay = totalValueNum ? formatMoney(totalValueNum) : null;
 
     return {
@@ -377,7 +383,8 @@ const MarketplacePage = () => {
       priceLabel,
       pricePerUnitDisplay,
       totalValueDisplay,
-      currency
+      currency,
+      unit
     };
   });
 
