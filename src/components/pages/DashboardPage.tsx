@@ -44,7 +44,7 @@ const DashboardPage = () => {
           <div className="text-sm">
             Your verification was not approved. Please review requirements and reach out if you need help.
             <div className="mt-2">
-              <Link href="/contact" className="inline-flex items-center px-3 py-1 rounded-md bg-[#FF8A00] text-white text-xs font-medium hover:bg-[#e67700] transition-colors">Contact Support</Link>
+              <Link href="/contact" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 rounded-md bg-[#FF8A00] text-white text-xs font-medium hover:bg-[#e67700] transition-colors">Contact Support</Link>
             </div>
           </div>
         ),
@@ -176,7 +176,7 @@ const DashboardPage = () => {
         <div>
           <div className="text-gray-500 text-sm">Hello</div>
           <h1 className="text-xl font-medium text-gray-900">
-            {stats?.username || user?.firstName || user?.username?.split(' ')[0] || 'User'}
+            {stats?.first_name || user?.firstName || stats?.username || user?.username?.split(' ')[0] || 'User'}
             {stats?.company_name && (
               <span className="text-sm font-normal text-gray-500 ml-2">
                 ({stats.company_name})
@@ -311,29 +311,19 @@ const DashboardPage = () => {
               <h3 className={`text-sm font-medium ${verificationInfo.headerText}`}>{verificationInfo.status}</h3>
               <div className={`mt-1 text-xs ${verificationInfo.bodyText}`}>
                 {verificationInfo.status === 'Rejected' ? (
-                  <div className="space-y-2">
-                    <p className="leading-relaxed">{verificationInfo.message}</p>
-                    <ul className="list-disc ml-5 mt-1 text-[11px] space-y-1">
-                      <li>Double‑check that company legal name matches uploaded documents.</li>
-                      <li>Ensure VAT / registration numbers are clear and readable.</li>
-                      <li>Provide ownership / authorization proof if not the primary signatory.</li>
-                    </ul>
-                    <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <div className="space-y-3">
+                    <p className="text-sm leading-relaxed">Business verification was rejected. Please contact support to resolve any outstanding requirements.</p>
+                    <div>
                       <Link
                         href="/contact"
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="inline-flex items-center px-3 py-1.5 rounded-md bg-[#FF8A00] text-white text-xs font-medium hover:bg-[#e67700] transition-colors shadow-sm"
                       >
                         Contact Support
                         <ArrowRight size={12} className="ml-1" />
                       </Link>
-                      <Link
-                        href="/dashboard/company/profile"
-                        className="text-xs font-medium text-red-600 hover:text-red-700 underline"
-                      >
-                        Review Submission
-                      </Link>
                     </div>
-                    <p className="text-[11px] mt-1 italic">We&apos;re here to help you get verified quickly—most follow‑ups are resolved within one business day.</p>
                   </div>
                 ) : (
                   <p>{verificationInfo.message}</p>

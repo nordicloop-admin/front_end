@@ -50,6 +50,7 @@ export interface RecentAd {
 export interface UserDashboardStatistics {
   user_id: number;
   username: string;
+  first_name?: string;
   active_bids: number;
   winning_bids: number;
   total_bids: number;
