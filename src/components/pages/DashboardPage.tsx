@@ -6,14 +6,14 @@ import { Package, ArrowRight, Check, AlertCircle, Clock, Award, Bookmark, Box, C
 import Link from 'next/link';
 import { getUserDashboardStatistics, UserDashboardStatistics } from '@/services/statistics';
 import NotificationWidget from '@/components/notifications/NotificationWidget';
-import { toast } from 'sonner';
+// Removed toast import – rejection toast considered too aggressive
 
 const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState<UserDashboardStatistics | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
-  const [shownRejectionToast, setShownRejectionToast] = useState(false);
+  // Removed rejection toast state – no longer showing auto toast on rejection
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -36,23 +36,7 @@ const DashboardPage = () => {
     fetchDashboardStats();
   }, []);
 
-  // Show a toast with quick access to contact page if verification was rejected
-  useEffect(() => {
-    if (stats?.verification_status === 'rejected' && !shownRejectionToast) {
-      toast.error('Business verification rejected', {
-        description: (
-          <div className="text-sm">
-            Your verification was not approved. Please review requirements and reach out if you need help.
-            <div className="mt-2">
-              <Link href="/contact" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1 rounded-md bg-[#FF8A00] text-white text-xs font-medium hover:bg-[#e67700] transition-colors">Contact Support</Link>
-            </div>
-          </div>
-        ),
-        duration: 8000
-      });
-      setShownRejectionToast(true);
-    }
-  }, [stats, shownRejectionToast]);
+  // Removed automatic rejection toast for a less intrusive UX
 
   // Helper function to format the date
   const formatBidDate = (dateString: string) => {
