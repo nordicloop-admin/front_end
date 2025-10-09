@@ -157,6 +157,8 @@ export default function NotificationWidget({
                         <div className="mt-2">
                           <Link
                             href={supportUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#FF8A00] text-white text-[11px] font-medium hover:bg-[#e67700] transition-colors"
                           >
                             Contact Support

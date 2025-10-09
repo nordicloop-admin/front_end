@@ -5,9 +5,7 @@ import { Check, Trash2, Clock } from 'lucide-react';
 import { Notification } from '@/services/notifications';
 import {
   getNotificationTypeConfig,
-  getNotificationPriorityConfig,
   formatNotificationDate,
-  getPriorityIconComponent
 } from '@/utils/notificationUtils';
 import { cn } from '@/lib/utils';
 
@@ -29,8 +27,7 @@ export default function NotificationCard({
   className
 }: NotificationCardProps) {
   const typeConfig = getNotificationTypeConfig(notification.type);
-  const priorityConfig = getNotificationPriorityConfig(notification.priority || 'normal');
-  const PriorityIcon = getPriorityIconComponent(notification.priority || 'normal');
+  // Priority visuals removed per design update (badge/icon hidden)
   
   const handleMarkAsRead = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -71,16 +68,7 @@ export default function NotificationCard({
                   {notification.title}
                 </h3>
                 
-                {notification.priority && notification.priority !== 'normal' && (
-                  <div className={cn(
-                    "flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium",
-                    priorityConfig.bgColor,
-                    priorityConfig.color
-                  )}>
-                    <PriorityIcon className="w-3 h-3" />
-                    <span>{priorityConfig.label}</span>
-                  </div>
-                )}
+                {/* Priority badge intentionally removed */}
               </div>
               
               {/* Message */}
@@ -99,6 +87,8 @@ export default function NotificationCard({
                     <div className="mb-2 text-xs">
                       <a
                         href={supportUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-[#FF8A00] hover:text-[#e67700] font-medium underline underline-offset-2"
                       >
                         Contact support to resolve this →
