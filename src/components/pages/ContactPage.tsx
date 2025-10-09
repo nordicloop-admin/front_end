@@ -171,7 +171,7 @@ const ContactPage = () => {
 
           {/* Right Column - Contact Form */}
           <div className="order-1 lg:order-2">
-            <div className="bg-gray-50 p-8 rounded-xl shadow-sm">
+            <div className="bg-gray-50 p-8 rounded-xl border border-gray-100">
               <h2 className="text-2xl font-semibold text-[#FF8A00] mb-6">Send Us a Message</h2>
 
               {/* Status message */}
