@@ -111,6 +111,18 @@ export default function PrivacyPolicy() {
             We may update this Privacy Policy from time to time. When we do, we will notify you via
             email and post the updated version on our website.
           </p>
+
+          <h2 className="text-xl font-medium mt-8 mb-4">9. Email Communications and Tracking</h2>
+          <p className="mb-6">
+           
+
+When we contact business representatives by email, we may use basic tracking technology (such as a small pixel) to understand whether our messages have been delivered or opened. This helps us measure communication effectiveness and improve follow-up with relevant business contacts.
+
+The lawful basis for this processing is our legitimate interest in managing B2B relationships and assessing outreach performance (GDPR Art. 6(1)(f)). We do not collect or store IP addresses or location data, and tracking information is automatically deleted after 60 days.
+
+If you prefer not to be tracked, you can disable image loading in your email client or contact us at info@nordicloop.se to opt out of such tracking.
+          </p>
+
           
           <div className="border-t border-gray-200 my-12"></div>
           
