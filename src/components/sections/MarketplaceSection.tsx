@@ -28,7 +28,7 @@ const MarketplaceSection = () => {
             </Link>
           </div>
           <div className="order-2 md:order-2 relative h-[300px] md:h-[400px] mt-8 md:mt-0">
-            <Image
+            {/* <Image
               src="/images/landing page/sol-tZw3fcjUIpM-unsplash.jpg"
               alt="Recycling materials"
               fill
@@ -36,7 +36,21 @@ const MarketplaceSection = () => {
               className="object-cover rounded-lg"
               priority
               loading="eager"
-            />
+            /> */}
+            <video
+              className="absolute inset-0 w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-label="Tutorial showing Nordic Loop circular materials workflow"
+              poster="/hero-image.jpg"
+            >
+              <source src="https://pub-7515a715eee34bd9ab26b28cbe2f7fa1.r2.dev/General%20Resources/Nordic%20Loop%20Tutorial%20.mp4" type="video/mp4" />
+              {/* Fallback text */}
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
       </div>

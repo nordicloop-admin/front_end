@@ -3,6 +3,11 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import WasteValueSection from "../../components/sections/WasteValueSection";
+import FeaturesSection from "../../components/sections/FeaturesSection";
+import AnalyticsSection from "../../components/sections/AnalyticsSection";
+import StatsSection from "../../components/sections/StatsSection";
+
 
 // Define interfaces for data structures
 interface TeamMember {
@@ -144,75 +149,62 @@ const AboutPage = () => {
         </div>
 
         {/* Main hero content */}
-        <div className="min-h-[90vh] flex flex-col md:flex-row">
-          {/* Left content area - Takes full width on mobile, 45% on desktop */}
-          <div className="w-full md:w-[45%] px-7 md:px-7 lg:px-7 py-20 md:py-0 flex flex-col justify-center text-left">
-            {/* Refined typography for main heading */}
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-[#1E2A36] mb-8 leading-tight text-left">
-              Transforming waste into valuable resources<span className="text-[#FF8A00] font-normal">.</span>
-            </h1>
-
-            {/* Description */}
-            <p className="text-lg text-[#1E2A36]/80 leading-relaxed mb-12 max-w-xl text-left">
-              Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability through our innovative marketplace.
+        
+        {/* Team Section - Interactive cards */}
+      <section className="py-16 bg-[#F5F5F5]">
+        <div className="max-w-7xl mx-auto px-7">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Team</h2>
+            <p className="text-gray-600 max-w-3xl mx-auto">
+              Meet the passionate individuals behind Nordic Loop who are dedicated to transforming waste management and promoting sustainability.
             </p>
-
-            {/* Key stats with minimal styling - Horizontal layout */}
-            <div className="grid grid-cols-3 gap-6 mb-12 border-t border-[#1E2A36]/10 pt-8 text-left">
-              <div>
-                <div className="text-3xl font-light text-[#FF8A00]">5,000+</div>
-                <div className="text-xs uppercase tracking-widest text-[#1E2A36]/70 font-light mt-1">Tons Diverted</div>
-              </div>
-
-              <div>
-                <div className="text-3xl font-light text-[#FF8A00]">200+</div>
-                <div className="text-xs uppercase tracking-widest text-[#1E2A36]/70 font-light mt-1">Businesses</div>
-              </div>
-
-              <div>
-                <div className="text-3xl font-light text-[#FF8A00]">3,500+</div>
-                <div className="text-xs uppercase tracking-widest text-[#1E2A36]/70 font-light mt-1">CO₂ Saved</div>
-              </div>
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md justify-start">
-              <Link
-                href="/register"
-                className="bg-[#FF8A00] text-white px-6 py-3 rounded-lg hover:bg-[#e67e00] transition-colors text-center w-full flex items-center justify-center font-medium"
-              >
-                Join Us Now
-              </Link>
-              <Link
-                href="/market-place"
-                className="bg-[#F5F5F5] text-[#FF8A00] px-6 py-3 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center w-full flex items-center justify-center font-medium"
-              >
-                Our Market Place
-              </Link>
-            </div>
           </div>
 
-          {/* Right image area - Takes full width on mobile, 55% on desktop */}
-          <div className="w-full md:w-[55%] relative min-h-[50vh] md:min-h-full">
-            {/* Main image */}
-            <div className="absolute inset-0">
-              <Image
-                src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80"
-                alt="Sustainable Business"
-                fill
-                priority
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#1E2A36]/30 to-transparent"></div>
-            </div>
-
-
-
-            {/* Decorative elements */}
-            <div className="absolute top-12 right-12 w-16 h-16 border border-white/30 rounded-full"></div>
-            <div className="absolute top-20 right-20 w-8 h-8 bg-[#FF8A00]/20 rounded-full"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {teamMembers.map((member, index) => (
+              <div
+                key={index}
+                className="bg-white rounded-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-2 border border-gray-100"
+                onMouseEnter={() => setHoveredTeamMember(index)}
+                onMouseLeave={() => setHoveredTeamMember(null)}
+              >
+                <div className="relative h-[300px] my-6 md:my-8">
+                  <Image
+                    src={member.image}
+                    alt={member.name}
+                    fill
+                    className="object-cover transition-all duration-500"
+                    style={{
+                      transform: hoveredTeamMember === index ? 'scale(1.05)' : 'scale(1)',
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 bg-gradient-to-t from-[#1E2A36] to-transparent opacity-0 transition-opacity duration-300"
+                    style={{
+                      opacity: hoveredTeamMember === index ? 0.7 : 0,
+                    }}
+                  ></div>
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-semibold text-[#1E2A36] mb-1">{member.name}</h3>
+                  <p className="text-[#FF8A00] font-medium mb-2">{member.role}</p>
+                  {member.email && (
+                    <p className="text-gray-600 text-sm mb-1">
+                      <span className="font-medium">Email:</span> {member.email}
+                    </p>
+                  )}
+                  {member.phone && (
+                    <p className="text-gray-600 text-sm mb-4">
+                      <span className="font-medium">Phone:</span> {member.phone}
+                    </p>
+                  )}
+                  <p className="text-gray-600">{member.bio}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
+      </section>
 
         {/* Minimal scroll indicator */}
         {/* <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-[#1E2A36]/30 z-20 flex flex-col items-center">
@@ -226,39 +218,16 @@ const AboutPage = () => {
       {/* Main content anchor */}
       <div id="main-content" className="mb-6 md:mb-8"></div>
 
-      {/* Mission & Vision Section - Asymmetrical layout */}
-      <section id="mission-section" className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-7">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
-            {/* Image - Takes 5 columns on desktop */}
-            <div className="md:col-span-5 relative h-[400px] rounded-lg overflow-hidden my-6 md:my-8 border border-gray-100">
-              <Image
-                src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80"
-                alt="Nordic Loop Mission"
-                fill
-                className="object-cover"
-              />
-            </div>
+      <WasteValueSection />
+      <FeaturesSection />
+      <AnalyticsSection />
+      <StatsSection />
 
-            {/* Text content - Takes 7 columns on desktop */}
-            <div className="md:col-span-7">
-              <h2 className="text-3xl font-bold text-[#1E2A36] mb-6">Our Mission & Vision</h2>
-              <p className="text-gray-600 mb-6">
-                <span className="font-semibold">Our Mission:</span> At Nordic Loop, we want to revolutionize waste management by creating a seamless marketplace where businesses can trade surplus materials with maximum profitability, reducing their disposal costs and environmental impact simultaneously. and help companies reach the SDGs 12 and 13 goals.
-              </p>
-              <p className="text-gray-600 mb-6">
-                <span className="font-semibold">Our Vision:</span> We envision a future where waste is no longer seen as a burden but as a valuable resource in a circular economy. By connecting businesses and facilitating the exchange of materials that would otherwise be discarded, we&apos;re building a more sustainable future for generations to come.
-              </p>
-              <p className="text-gray-600">
-                Our platform is designed to make this vision a reality by providing businesses with the tools they need to participate in the circular economy efficiently and profitably.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Mission & Vision Section - Asymmetrical layout */}
+      
 
       {/* Values Section - Horizontal cards with icons */}
-      <section id="values-section" className="py-16 bg-[#F5F5F5]">
+      {/* <section id="values-section" className="py-16 bg-[#F5F5F5]">
         <div className="max-w-7xl mx-auto px-7">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Values</h2>
@@ -279,7 +248,7 @@ const AboutPage = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Timeline Section - New section not in original */}
       <section className="py-16 md:py-24">
@@ -359,61 +328,7 @@ const AboutPage = () => {
         </div>
       </section>
 
-      {/* Team Section - Interactive cards */}
-      <section className="py-16 bg-[#F5F5F5]">
-        <div className="max-w-7xl mx-auto px-7">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Team</h2>
-            <p className="text-gray-600 max-w-3xl mx-auto">
-              Meet the passionate individuals behind Nordic Loop who are dedicated to transforming waste management and promoting sustainability.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {teamMembers.map((member, index) => (
-              <div
-                key={index}
-                className="bg-white rounded-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-2 border border-gray-100"
-                onMouseEnter={() => setHoveredTeamMember(index)}
-                onMouseLeave={() => setHoveredTeamMember(null)}
-              >
-                <div className="relative h-[300px] my-6 md:my-8">
-                  <Image
-                    src={member.image}
-                    alt={member.name}
-                    fill
-                    className="object-cover transition-all duration-500"
-                    style={{
-                      transform: hoveredTeamMember === index ? 'scale(1.05)' : 'scale(1)',
-                    }}
-                  />
-                  <div
-                    className="absolute inset-0 bg-gradient-to-t from-[#1E2A36] to-transparent opacity-0 transition-opacity duration-300"
-                    style={{
-                      opacity: hoveredTeamMember === index ? 0.7 : 0,
-                    }}
-                  ></div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-[#1E2A36] mb-1">{member.name}</h3>
-                  <p className="text-[#FF8A00] font-medium mb-2">{member.role}</p>
-                  {member.email && (
-                    <p className="text-gray-600 text-sm mb-1">
-                      <span className="font-medium">Email:</span> {member.email}
-                    </p>
-                  )}
-                  {member.phone && (
-                    <p className="text-gray-600 text-sm mb-4">
-                      <span className="font-medium">Phone:</span> {member.phone}
-                    </p>
-                  )}
-                  <p className="text-gray-600">{member.bio}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      
 
       {/* Impact Section - Circular progress indicators */}
       <section className="py-16 md:py-24">
@@ -449,7 +364,7 @@ const AboutPage = () => {
       </section>
 
       {/* Testimonials Section - New section not in original */}
-      <section className="py-16 bg-[#F5F5F5]">
+      {/* <section className="py-16 bg-[#F5F5F5]">
         <div className="max-w-7xl mx-auto px-7">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">What Our Partners Say</h2>
@@ -480,7 +395,7 @@ const AboutPage = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Section - Different style */}
       <section className="py-16 bg-[#1E2A36] text-white mb-16">
@@ -523,3 +438,5 @@ const AboutPage = () => {
 };
 
 export default AboutPage;
+
+

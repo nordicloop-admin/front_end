@@ -1,5 +1,5 @@
 import HeroSection from "../components/sections/HeroSection";
-import WasteValueSection from "../components/sections/WasteValueSection";
+// import WasteValueSection from "../components/sections/WasteValueSection";
 import MarketplaceSection from "../components/sections/MarketplaceSection";
 import FeaturesSection from "../components/sections/FeaturesSection";
 import AnalyticsSection from "../components/sections/AnalyticsSection";
@@ -11,11 +11,11 @@ export default function Home() {
   return (
     <>
       <HeroSection />
-      <WasteValueSection />
+      {/* <WasteValueSection /> */}
       <MarketplaceSection />
-      <FeaturesSection />
+      {/* <FeaturesSection />
       <AnalyticsSection />
-      <StatsSection />
+      <StatsSection /> */}
       <FAQSection />
       <ContactFormSection />
     </>
