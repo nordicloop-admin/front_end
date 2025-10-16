@@ -27,10 +27,10 @@ const StatsSection = () => {
 
         <div className="flex justify-center">
           <Link
-            href="/coming-soon"
+            href="/contact"
             className="bg-[#FF8A00] text-white px-8 py-4 rounded-md hover:bg-[#e67e00] transition-colors inline-block text-center font-medium"
           >
-            Calculate your savings
+            Contact Us
           </Link>
         </div>
       </div>

@@ -29,7 +29,7 @@ const FeaturesSection = () => {
                 Preview material quality with our unique sample request feature, ensuring perfect matches before committing to a trade.
               </p>
               <Link
-                href="/coming-soon"
+                href="/market-place"
                 className="bg-[#FF8A00] text-white px-8 py-4 w-[200px] rounded-md hover:bg-[#e67e00] transition-colors inline-block text-center text-sm font-medium"
               >
                 Market Place →
@@ -49,7 +49,7 @@ const FeaturesSection = () => {
                 Using advanced tools designed to ensure secure, reliable, and seamless exchanges, fostering trust and efficiency in every transaction.
               </p>
               <Link
-                href="/coming-soon"
+                href="/register"
                 className="bg-[#FF8A00] text-white px-8 py-4 w-[200px] rounded-md hover:bg-[#e67e00] transition-colors inline-block text-center text-sm font-medium"
               >
                 Get Started →

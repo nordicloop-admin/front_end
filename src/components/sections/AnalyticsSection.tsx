@@ -29,7 +29,7 @@ const AnalyticsSection = () => {
               metrics on waste diverged from landfills, and actionable insights for enhanced sustainability efforts.
             </p>
             <Link
-              href="/coming-soon"
+              href="/market-place"
               className="bg-[#FF8A00] text-white px-8 py-4 w-[200px] rounded-md hover:bg-[#e67e00] transition-colors inline-block text-center text-sm font-medium"
             >
               Learn more →
