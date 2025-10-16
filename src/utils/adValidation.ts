@@ -222,41 +222,47 @@ export const convertLabelToValue = (field: string, label: string): string => {
       'freight forwarding': 'freight_forwarding'
     },
     unit_of_measurement: {
+      // Display label -> backend value (singular codes)
       'Kilogram': 'kg',
-      'Gram': 'g',
-      'Pound': 'lb',
-      'Tons': 'tons',
-      'Tonnes': 'tonnes',
-      'Pounds': 'lbs',
-      'Pieces': 'pieces',
-      'Units': 'units',
-      'Bales': 'bales',
-      'Containers': 'containers',
-      'Cubic Meters': 'm³',
-      'Liters': 'liters',
-      'Gallons': 'gallons',
-      'Meters': 'meters',
-      // Add variations and direct mappings
+      'Tons': 'ton',
+      'Tonnes': 'tonne',
+      'Pounds': 'lb', // Prefer 'lb' but backend also accepts 'pound'
+      'Pieces': 'piece',
+      'Units': 'unit',
+      'Bales': 'bale',
+      'Containers': 'container',
+      'Cubic Meters': 'm³', // Symbol form
+      'Liters': 'liter',
+      'Gallons': 'gallon',
+      'Meters': 'meter',
+      // Variations & legacy plural values -> singular codes
       'kg': 'kg',
-      'g': 'g',
+      'ton': 'ton',
+      'tonne': 'tonne',
       'lb': 'lb',
-      'tons': 'tons',
-      'tonnes': 'tonnes',
-      'lbs': 'lbs',
-      'pounds': 'pounds',
-      'pieces': 'pieces',
-      'units': 'units',
-      'bales': 'bales',
-      'containers': 'containers',
+      'pound': 'pound',
+      'piece': 'piece',
+      'unit': 'unit',
+      'bale': 'bale',
+      'container': 'container',
       'm³': 'm³',
-      'cubic_meters': 'cubic_meters',
-      'liters': 'liters',
-      'gallons': 'gallons',
-      'meters': 'meters',
-      'kilogram': 'kg',
-      'gram': 'g',
-      'pound': 'lb',
-      'cubic meters': 'cubic_meters'
+      'cubic meter': 'cubic meter',
+      'liter': 'liter',
+      'gallon': 'gallon',
+      'meter': 'meter',
+      // Legacy plural submissions (map to singular)
+      'tons': 'ton',
+      'tonnes': 'tonne',
+      'lbs': 'lb',
+      'pounds': 'lb',
+      'pieces': 'piece',
+      'units': 'unit',
+      'bales': 'bale',
+      'containers': 'container',
+      'cubic meters': 'm³',
+      'liters': 'liter',
+      'gallons': 'gallon',
+      'meters': 'meter'
     }
   };
 
@@ -351,21 +357,34 @@ export const convertValueToLabel = (field: string, value: string): string => {
       'freight_forwarding': 'Freight Forwarding',
     },
     unit_of_measurement: {
+      // Singular canonical backend codes
       'kg': 'Kilogram',
-      'g': 'Gram',
-      'lb': 'Pound',
+      'ton': 'Tons',
+      'tonne': 'Tonnes',
+      'lb': 'Pounds', // Display plural for consistency with UI wording
+      'pound': 'Pounds',
+      'piece': 'Pieces',
+      'unit': 'Units',
+      'bale': 'Bales',
+      'container': 'Containers',
+      'm³': 'Cubic Meters',
+      'cubic meter': 'Cubic Meters',
+      'liter': 'Liters',
+      'gallon': 'Gallons',
+      'meter': 'Meters',
+      // Legacy plural codes still mapped for backwards compatibility
       'tons': 'Tons',
       'tonnes': 'Tonnes',
       'lbs': 'Pounds',
+      'pounds': 'Pounds',
       'pieces': 'Pieces',
       'units': 'Units',
       'bales': 'Bales',
       'containers': 'Containers',
-      'm³': 'Cubic Meters',
       'cubic_meters': 'Cubic Meters',
       'liters': 'Liters',
       'gallons': 'Gallons',
-      'meters': 'Meters',
+      'meters': 'Meters'
     }
   };
 

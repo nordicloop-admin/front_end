@@ -135,7 +135,7 @@ export default function WinningBidPayment({
               {winningBid.total_bid_value} {winningBid.currency || 'SEK'}
             </div>
             <div className="text-sm text-gray-600">
-              {winningBid.bid_price_per_unit} {winningBid.currency || 'SEK'}/{winningBid.unit || 'unit'} × {winningBid.volume_requested} {winningBid.unit || 'units'}
+              {winningBid.bid_price_per_unit} {winningBid.currency || 'SEK'}/{winningBid.unit || 'unit'} × {winningBid.volume_requested} {winningBid.unit || 'unit'}
             </div>
           </div>
         </div>

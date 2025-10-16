@@ -30,21 +30,25 @@ export interface AuctionFormData {
 
 // Unit choices from backend
 // Use all units supported by backend - matching Ad.UNIT_CHOICES
+// IMPORTANT: values must use backend (singular) codes; labels remain plural where appropriate.
+// Backend choices: ('kg','Kilogram'), ('ton','Tons'), ('tonne','Tonnes'), ('lb','Pounds'), ('pound','Pounds'),
+// ('piece','Pieces'), ('unit','Units'), ('bale','Bales'), ('container','Containers'), ('m³','Cubic Meters'),
+// ('cubic meter','Cubic Meters'), ('liter','Liters'), ('gallon','Gallons'), ('meter','Meters')
 const units = [
   { value: 'kg', label: 'Kilogram' },
-  { value: 'tons', label: 'Tons' },
-  { value: 'tonnes', label: 'Tonnes' },
-  { value: 'lbs', label: 'Pounds' },
-  { value: 'pounds', label: 'Pounds' },
-  { value: 'pieces', label: 'Pieces' },
-  { value: 'units', label: 'Units' },
-  { value: 'bales', label: 'Bales' },
-  { value: 'containers', label: 'Containers' },
+  { value: 'ton', label: 'Tons' },
+  { value: 'tonne', label: 'Tonnes' },
+  { value: 'lb', label: 'Pounds' },
+  { value: 'pound', label: 'Pounds' },
+  { value: 'piece', label: 'Pieces' },
+  { value: 'unit', label: 'Units' },
+  { value: 'bale', label: 'Bales' },
+  { value: 'container', label: 'Containers' },
   { value: 'm³', label: 'Cubic Meters' },
-  { value: 'cubic_meters', label: 'Cubic Meters' },
-  { value: 'liters', label: 'Liters' },
-  { value: 'gallons', label: 'Gallons' },
-  { value: 'meters', label: 'Meters' }
+  { value: 'cubic meter', label: 'Cubic Meters' },
+  { value: 'liter', label: 'Liters' },
+  { value: 'gallon', label: 'Gallons' },
+  { value: 'meter', label: 'Meters' }
 ];
 
 // Selling type choices from backend

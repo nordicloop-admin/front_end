@@ -10,11 +10,11 @@ interface Props {
 
 const currencies = ['SEK'];
 
-// Use all units supported by backend - matching Ad.UNIT_CHOICES
+// Use all units supported by backend - matching Ad.UNIT_CHOICES (singular codes)
 const units = [
-  'kg', 'tons', 'tonnes', 'lbs', 'pounds',
-  'pieces', 'units', 'bales', 'containers',
-  'm³', 'cubic_meters', 'liters', 'gallons', 'meters'
+  'kg', 'ton', 'tonne', 'lb', 'pound',
+  'piece', 'unit', 'bale', 'container',
+  'm³', 'cubic meter', 'liter', 'gallon', 'meter'
 ];
 
 const bidDurationOptions = [
@@ -305,7 +305,7 @@ export function PriceStep({ formData, updateFormData, onValidationChange }: Prop
               handleQuantityUpdate('minimumOrder', filteredValue);
             }}
           />
-          <span className="text-gray-500">{formData.quantity.unit || 'units'}</span>
+          <span className="text-gray-500">{formData.quantity.unit || 'unit'}</span>
         </div>
         {quantityErrors.minimumOrder && (
           <p className="text-red-500 text-xs mt-1">{quantityErrors.minimumOrder}</p>

@@ -7,11 +7,11 @@ interface Props {
   updateFormData: (updates: Partial<FormData>) => void;
 }
 
-// Use all units supported by backend - matching Ad.UNIT_CHOICES
+// Use all units supported by backend - matching Ad.UNIT_CHOICES (singular codes)
 const units = [
-  'kg', 'tons', 'tonnes', 'lbs', 'pounds',
-  'pieces', 'units', 'bales', 'containers',
-  'm³', 'cubic_meters', 'liters', 'gallons', 'meters'
+  'kg', 'ton', 'tonne', 'lb', 'pound',
+  'piece', 'unit', 'bale', 'container',
+  'm³', 'cubic meter', 'liter', 'gallon', 'meter'
 ];
 
 const packagingOptions = [
@@ -103,7 +103,7 @@ export function QuantityStep({ formData, updateFormData }: Props) {
             value={formData.quantity.minimumOrder || ''}
             onChange={(e) => handleQuantityUpdate('minimumOrder', parseFloat(e.target.value) || 0)}
           />
-          <span className="text-gray-500">{formData.quantity.unit || 'units'}</span>
+          <span className="text-gray-500">{formData.quantity.unit || 'unit'}</span>
         </div>
         <p className="text-xs text-gray-500 mt-1">
           Minimum quantity buyers must purchase (leave 0 for no minimum)
