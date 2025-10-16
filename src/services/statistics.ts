@@ -31,6 +31,7 @@ export interface RecentBid {
   price: number;
   created_at: string;
   ad_id: number;
+  currency?: string; // Added currency returned from backend (e.g. EUR, USD, SEK)
 }
 
 /**
