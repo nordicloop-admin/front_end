@@ -343,7 +343,7 @@ const DashboardPage = () => {
                       </div>
                     </div>
                     <div className="text-sm font-semibold text-[#FF8A00]">
-                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'EUR' }).format(bid.price)}
+                      {new Intl.NumberFormat('en-US', { style: 'currency', currency: bid.currency || 'EUR' }).format(bid.price)}
                     </div>
                   </div>
                 </div>
