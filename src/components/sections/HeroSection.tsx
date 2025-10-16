@@ -53,7 +53,7 @@ const HeroSection = () => {
               aria-label="Tutorial showing Nordic Loop circular materials workflow"
               poster="/hero-image.jpg"
             >
-              <source src="https://pub-7515a715eee34bd9ab26b28cbe2f7fa1.r2.dev/General%20Resources/Nordic%20Loop%20Tutorial.mp4" type="video/mp4" />
+              <source src="https://pub-7515a715eee34bd9ab26b28cbe2f7fa1.r2.dev/General%20Resources/Nordic%20Loop%20Tutorial%20.mp4" type="video/mp4" />
               {/* Fallback text */}
               Your browser does not support the video tag.
             </video>
