@@ -57,7 +57,7 @@ const AboutPage = () => {
       name: 'Nicola Valenti',
       role: 'COO & Co-founder',
       bio: 'Nicola leads the operations, communications, and customer Success team, focusing on client onboarding, user satisfaction, and support services. He ensures that clients derive maximum value from the Nordic Loop platform. He also brings extensive experience in digital marketing and brand strategy.',
-      image: '/images/About/nick.jpeg',
+      image: '/images/About/Nicola Valenti Coo & Co-founder.jpeg',
       email: 'nicola.valenti@nordicloop.se',
       phone: '+46 737553358',
     },
@@ -65,7 +65,7 @@ const AboutPage = () => {
       name: 'Raissa Uwase',
       role: 'Technical Lead',
       bio: 'With extensive experience across multiple tech companies, Raissa brings deep expertise in developing complex, enterprise-scale systems. Her background in leading challenging technical projects makes her an ideal leader for Nordic Loop\'s technology development.',
-      image: '/images/About/Raissa Uwase.png',
+      image: '/images/About/Raissa Uwase Technical Lead.jpeg',
     },
     {
       name: 'Olivier Karera',
