@@ -11,10 +11,12 @@ export default function RootLayoutClient({
 }) {
   const pathname = usePathname();
 
+  // Pages that should NOT display the global Header/Footer (auth-like isolated layout)
   const isAuthPage = pathname === '/login' ||
                     pathname === '/register' ||
                     pathname === '/register/success' ||
-                    pathname === '/signup';
+                    pathname === '/signup' ||
+                    pathname.startsWith('/activate'); // account activation flow (verify & set-password)
 
   const isDashboardPage = pathname === '/dashboard' ||
                          pathname.startsWith('/dashboard/');

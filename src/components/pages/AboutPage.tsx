@@ -57,7 +57,7 @@ const AboutPage = () => {
       name: 'Nicola Valenti',
       role: 'COO & Co-founder',
       bio: 'Nicola leads the operations, communications, and customer Success team, focusing on client onboarding, user satisfaction, and support services. He ensures that clients derive maximum value from the Nordic Loop platform. He also brings extensive experience in digital marketing and brand strategy.',
-      image: '/images/About/nick.jpeg',
+      image: '/images/About/Nicola Valenti Coo & Co-founder.jpeg',
       email: 'nicola.valenti@nordicloop.se',
       phone: '+46 737553358',
     },
@@ -65,7 +65,7 @@ const AboutPage = () => {
       name: 'Raissa Uwase',
       role: 'Technical Lead',
       bio: 'With extensive experience across multiple tech companies, Raissa brings deep expertise in developing complex, enterprise-scale systems. Her background in leading challenging technical projects makes her an ideal leader for Nordic Loop\'s technology development.',
-      image: '/images/About/raissa uwase.jpeg',
+      image: '/images/About/Raissa Uwase Technical Lead.jpeg',
     },
     {
       name: 'Olivier Karera',
@@ -231,7 +231,7 @@ const AboutPage = () => {
         <div className="max-w-7xl mx-auto px-7">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
             {/* Image - Takes 5 columns on desktop */}
-            <div className="md:col-span-5 relative h-[400px] rounded-lg overflow-hidden shadow-lg my-6 md:my-8">
+            <div className="md:col-span-5 relative h-[400px] rounded-lg overflow-hidden my-6 md:my-8 border border-gray-100">
               <Image
                 src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80"
                 alt="Nordic Loop Mission"
@@ -269,7 +269,7 @@ const AboutPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {values.map((value, index) => (
-              <div key={index} className="bg-white p-8 rounded-lg shadow-sm flex flex-col items-center text-center h-full">
+              <div key={index} className="bg-white p-8 rounded-lg flex flex-col items-center text-center h-full border border-gray-100">
                 <div className="w-16 h-16 bg-[#FF8A00]/10 rounded-full flex items-center justify-center mb-6">
                   {value.icon}
                 </div>
@@ -373,7 +373,7 @@ const AboutPage = () => {
             {teamMembers.map((member, index) => (
               <div
                 key={index}
-                className="bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-300 transform hover:-translate-y-2"
+                className="bg-white rounded-lg overflow-hidden transition-all duration-300 transform hover:-translate-y-2 border border-gray-100"
                 onMouseEnter={() => setHoveredTeamMember(index)}
                 onMouseLeave={() => setHoveredTeamMember(null)}
               >
@@ -460,7 +460,7 @@ const AboutPage = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white p-8 rounded-lg shadow-sm">
+              <div key={index} className="bg-white p-8 rounded-lg border border-gray-100">
                 <div className="flex items-start mb-6">
                   <div className="relative w-16 h-16 rounded-full overflow-hidden mr-4 flex-shrink-0 my-2">
                     <Image

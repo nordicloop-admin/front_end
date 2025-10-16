@@ -467,7 +467,7 @@ export default function AuctionDetail() {
                             {bid.bid_amount} {bid.currency}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600">
-                            {bid.volume_requested} {auction.unitOfMeasurement || 'units'}
+                            {bid.volume_requested} {auction.unitOfMeasurement || 'unit'}
                           </td>
                           <td className="px-4 py-3 text-sm font-medium text-gray-900">
                             {bid.total_value} {bid.currency}

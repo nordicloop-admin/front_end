@@ -135,7 +135,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
   // Extract unit from auction.volume (e.g., "100 kg" -> "kg")
   const extractVolumeUnit = useCallback((volumeString: string): string => {
     const parts = volumeString.split(' ');
-    return parts.length > 1 ? parts[1] : 'units';
+  return parts.length > 1 ? parts[1] : 'unit';
   }, []);
 
   // Set initial bid amount and volume when modal opens

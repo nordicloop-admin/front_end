@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 
 const HeroSection = () => {
@@ -42,17 +41,41 @@ const HeroSection = () => {
     return (
       <section className="w-full section-margin mt-6">
         <div className="relative">
-          {/* Hero image with overlay */}
+          {/* Hero video with overlay */}
           <div className="relative h-[60vh] rounded-lg overflow-hidden">
-            <Image
-              src="/hero-image.jpg"
-              alt="Recycling materials"
-              fill
-              sizes="100vw"
-              className="object-cover"
-              priority
-              loading="eager"
-            />
+            <video
+              className="absolute inset-0 w-full h-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-label="Tutorial showing Nordic Loop circular materials workflow"
+              poster="/hero-image.jpg"
+            >
+              <source src="https://pub-7515a715eee34bd9ab26b28cbe2f7fa1.r2.dev/General%20Resources/Nordic%20Loop%20Tutorial.mp4" type="video/mp4" />
+              {/* Fallback text */}
+              Your browser does not support the video tag.
+            </video>
+            
+            {/* Subtle video control hint */}
+            <div className="absolute bottom-4 right-4">
+              <button 
+                className="bg-black/30 backdrop-blur-sm rounded-full p-2 text-white/80 hover:text-white transition-colors"
+                onClick={(e) => {
+                  const video = e.currentTarget.closest('.relative')?.querySelector('video');
+                  if (video) {
+                    if (video.paused) video.play();
+                    else video.pause();
+                  }
+                }}
+                aria-label="Toggle video playback"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </button>
+            </div>
             <div className="absolute inset-0 bg-gradient-to-b from-[#1E2A36]/90 to-[#1E2A36]/60 flex flex-col justify-center">
               <div className="p-6 pt-8">
                 <h1 className="text-white text-3xl font-bold mb-3 leading-tight">
@@ -132,31 +155,32 @@ const HeroSection = () => {
               </div>
             </div>
 
-            {/* Image Container */}
-            <div className="relative">
-              <div className="relative w-full h-[400px] rounded-lg overflow-hidden">
-                <Image
-                  src="/hero-image.jpg"
-                  alt="Recycling materials"
-                  fill
-                  sizes="(max-width: 1023px) 50vw, 33vw"
-                  className="object-cover rounded-lg"
-                  priority
-                  loading="eager"
-                />
+            {/* Video Container */}
+            <div className="relative flex items-center justify-center">
+              <div className="relative w-full max-w-lg">
+                {/* Video with proper 16:9 aspect ratio */}
+                <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+                  <video
+                    className="w-full h-full rounded-xl shadow-xl object-contain bg-black"
+                    controls
+                    muted
+                    playsInline
+                    preload="metadata"
+                    aria-label="Tutorial showing Nordic Loop circular materials workflow"
+                    poster="/hero-image.jpg"
+                  >
+                    <source src="https://pub-7515a715eee34bd9ab26b28cbe2f7fa1.r2.dev/General%20Resources/Nordic%20Loop%20Tutorial.mp4" type="video/mp4" />
+                    <div className="flex items-center justify-center h-full bg-gray-100 rounded-xl">
+                      <p className="text-gray-600 text-center text-sm">Video not supported</p>
+                    </div>
+                  </video>
+                </div>
+                
+                {/* Video caption for tablet */}
+                <div className="mt-3 text-center">
+                  <p className="text-xs text-gray-600 font-medium">Nordic Loop Platform Demo</p>
+                </div>
               </div>
-              {/* Small image - positioned more subtly */}
-              {/* <div className="absolute bottom-4 right-4 w-[100px] h-[120px] bg-white p-1.5 rounded-lg shadow-md border-4 border-white">
-                <Image
-                  src="/Nordic Garbage.jpeg"
-                  alt="Recycling icon"
-                  fill
-                  sizes="100px"
-                  className="object-fill rounded-md"
-                  priority
-                  loading="eager"
-                />
-              </div> */}
             </div>
           </div>
 
@@ -185,7 +209,7 @@ const HeroSection = () => {
   // Desktop Hero Section (original layout with minor improvements)
   return (
     <section
-      className="w-full section-margin"
+      className="w-full section-margin flex items-center"
       style={{ minHeight: heroHeight }}
     >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-32 w-full py-10">
@@ -212,29 +236,47 @@ const HeroSection = () => {
             </Link>
           </div>
         </div>
-        <div className="order-1 lg:order-2 relative">
-          <div className="relative w-full" style={{ height: 'calc(100vh - 30vh)' }}>
-            <Image
-              src="/images/landing page/jeriden-villegas-VLPUm5wP5Z0-unsplash.jpg"
-              alt="Recycling materials"
-              fill
-              sizes="(max-width: 1023px) 100vw, 50vw"
-              className="object-cover rounded-lg"
-              priority
-              loading="eager"
-            />
+        <div className="order-1 lg:order-2 relative flex items-center justify-center">
+          {/* Video Container with Cinematic Design */}
+          <div className="relative w-full max-w-2xl">
+            {/* Video Frame with 16:9 Aspect Ratio */}
+            <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
+              <video
+                className="w-full h-full rounded-2xl shadow-2xl object-contain bg-black"
+                controls
+                muted
+                playsInline
+                preload="metadata"
+                aria-label="Tutorial showing Nordic Loop circular materials workflow"
+                poster="/images/landing page/jeriden-villegas-VLPUm5wP5Z0-unsplash.jpg"
+                style={{
+                  filter: 'drop-shadow(0 25px 50px rgba(0, 0, 0, 0.25))'
+                }}
+              >
+                <source src="https://pub-7515a715eee34bd9ab26b28cbe2f7fa1.r2.dev/General%20Resources/Nordic%20Loop%20Tutorial.mp4" type="video/mp4" />
+                <div className="flex items-center justify-center h-full bg-gray-100 rounded-2xl">
+                  <p className="text-gray-600 text-center px-4">
+                    Your browser does not support video playback.<br/>
+                    <a href="https://pub-7515a715eee34bd9ab26b28cbe2f7fa1.r2.dev/General%20Resources/Nordic%20Loop%20Tutorial.mp4" 
+                       className="text-[#FF8A00] underline">Watch on external player</a>
+                  </p>
+                </div>
+              </video>
+              
+              {/* Subtle Play Button Overlay (appears on hover when paused) */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-2xl">
+                <div className="bg-black/20 rounded-full p-4 backdrop-blur-sm">
+                  <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            {/* Decorative Elements */}
+            <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-[#FF8A00]/10 to-[#FF8A00]/5 rounded-full blur-xl"></div>
+            <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-tr from-[#1E2A36]/5 to-transparent rounded-full blur-2xl"></div>
           </div>
-          {/* <div className="absolute bottom-4 right-4 w-[140px] h-[170px] bg-white p-2 rounded-lg shadow-md border-6 border-white">
-            <Image
-              src="/Nordic Garbage.jpeg"
-              alt="Recycling icon"
-              fill
-              sizes="120px"
-              className="object-fill rounded-md"
-              priority
-              loading="eager"
-            />
-          </div> */}
         </div>
       </div>
     </section>

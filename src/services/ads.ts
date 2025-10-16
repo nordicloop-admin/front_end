@@ -496,21 +496,19 @@ export const DELIVERY_OPTIONS = [
 
 export const UNIT_OF_MEASUREMENT_OPTIONS = [
   { value: 'kg', label: 'Kilogram' },
-  { value: 'g', label: 'Gram' },
-  { value: 'lb', label: 'Pound' },
-  { value: 'tons', label: 'Tons' },
-  { value: 'tonnes', label: 'Tonnes' },
-  { value: 'lbs', label: 'Pounds' },
-  { value: 'pounds', label: 'Pounds' },
-  { value: 'pieces', label: 'Pieces' },
-  { value: 'units', label: 'Units' },
-  { value: 'bales', label: 'Bales' },
-  { value: 'containers', label: 'Containers' },
+  { value: 'ton', label: 'Tons' },
+  { value: 'tonne', label: 'Tonnes' },
+  { value: 'lb', label: 'Pounds' },
+  { value: 'pound', label: 'Pounds' },
+  { value: 'piece', label: 'Pieces' },
+  { value: 'unit', label: 'Units' },
+  { value: 'bale', label: 'Bales' },
+  { value: 'container', label: 'Containers' },
   { value: 'm³', label: 'Cubic Meters' },
-  { value: 'cubic_meters', label: 'Cubic Meters' },
-  { value: 'liters', label: 'Liters' },
-  { value: 'gallons', label: 'Gallons' },
-  { value: 'meters', label: 'Meters' }
+  { value: 'cubic meter', label: 'Cubic Meters' },
+  { value: 'liter', label: 'Liters' },
+  { value: 'gallon', label: 'Gallons' },
+  { value: 'meter', label: 'Meters' }
 ];
 
 export const CURRENCY_OPTIONS = [
@@ -595,21 +593,19 @@ export const AD_CHOICES = {
   
   UNIT_OF_MEASUREMENT: {
     KG: 'kg',
-    G: 'g',
+    TON: 'ton',
+    TONNE: 'tonne',
     LB: 'lb',
-    TONS: 'tons',
-    TONNES: 'tonnes',
-    LBS: 'lbs',
-    POUNDS: 'pounds',
-    PIECES: 'pieces',
-    UNITS: 'units',
-    BALES: 'bales',
-    CONTAINERS: 'containers',
+    POUND: 'pound',
+    PIECE: 'piece',
+    UNIT: 'unit',
+    BALE: 'bale',
+    CONTAINER: 'container',
     CUBIC_METERS_SYMBOL: 'm³',
-    CUBIC_METERS: 'cubic_meters',
-    LITERS: 'liters',
-    GALLONS: 'gallons',
-    METERS: 'meters'
+    CUBIC_METER: 'cubic meter',
+    LITER: 'liter',
+    GALLON: 'gallon',
+    METER: 'meter'
   },
   
   CURRENCY: {

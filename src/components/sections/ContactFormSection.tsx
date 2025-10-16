@@ -95,8 +95,8 @@ const ContactFormSection = () => {
             </div>
           </div>
 
-          {/* Right side - Contact form */}
-          <div className="md:w-1/2 bg-white p-6 rounded-lg shadow-md self-stretch">
+          {/* Right side - Contact form (shadow removed for flatter design) */}
+          <div className="md:w-1/2 bg-white p-6 rounded-lg self-stretch border border-gray-100">
             <h3 className="text-lg font-medium text-[#FF8A00] mb-4">Send Us Your Question</h3>
 
             {/* Status message */}

@@ -314,11 +314,11 @@ const deliveryOptions = [
 
 const currencies = ['SEK'];
 
-// Use all units supported by backend - matching Ad.UNIT_CHOICES
+// Use all units supported by backend - matching Ad.UNIT_CHOICES (singular backend codes)
 const units = [
-  'kg', 'tons', 'tonnes', 'lbs', 'pounds',
-  'pieces', 'units', 'bales', 'containers',
-  'm³', 'cubic_meters', 'liters', 'gallons', 'meters'
+  'kg', 'ton', 'tonne', 'lb', 'pound',
+  'piece', 'unit', 'bale', 'container',
+  'm³', 'cubic meter', 'liter', 'gallon', 'meter'
 ];
 
 const bidDurationOptions = [
@@ -2591,7 +2591,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     handleIntegerFieldChange('minimumOrder', filteredValue);
                   }}
                 />
-                <span className="text-gray-500">{stepData.unit || 'units'}</span>
+                <span className="text-gray-500">{stepData.unit || 'unit'}</span>
               </div>
               {quantityErrors.minimumOrder && (
                 <p className="text-red-500 text-xs mt-1">{quantityErrors.minimumOrder}</p>
@@ -2779,7 +2779,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       {stepData.availableQuantity.toLocaleString('sv-SE', {
                         minimumFractionDigits: 0,
                         maximumFractionDigits: 2
-                      })} {stepData.unit || 'units'}
+                      })} {stepData.unit || 'unit'}
                     </span>
                   </div>
 

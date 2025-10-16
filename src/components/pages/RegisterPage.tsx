@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SECTOR_CHOICES, COUNTRY_CHOICES, CompanyRegistration } from '@/types/auth';
-import { registerCompany, generateSignupToken } from '@/services/company';
+import { registerCompany } from '@/services/company';
 // Imports removed to fix ESLint errors
 // import { motion, AnimatePresence } from 'framer-motion';
 
@@ -233,17 +233,12 @@ const RegisterPage = () => {
         throw new Error('Failed to register company. Please try again.');
       }
 
-      // Set success message
-      setSuccessMessage('Company registered successfully! Redirecting to signup page...');
+      // Backend now sends OTP to primary contact; move to activation verify step
+      setSuccessMessage('Company registered. Verification code sent to primary contact email...');
 
-      // Generate a signup token using the primary contact email
-      const token = generateSignupToken(formData.contactEmail);
-
-      // Wait a moment to show the success message
       setTimeout(() => {
-        // Redirect to signup page with the token
-        router.push(`/signup?token=${token}`);
-      }, 1500);
+        router.push(`/activate/verify?email=${encodeURIComponent(formData.contactEmail)}`);
+      }, 1200);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed. Please check your information and try again.');
     } finally {
