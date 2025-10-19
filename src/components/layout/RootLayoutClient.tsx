@@ -24,17 +24,19 @@ export default function RootLayoutClient({
   const isAdminPage = pathname === '/admin' ||
                      pathname.startsWith('/admin/');
 
+  const isHomePage = pathname === '/';
+
   return (
     <>
-      {!isAuthPage && !isDashboardPage && !isAdminPage && (
+      {!isAuthPage && !isDashboardPage && !isAdminPage && !isHomePage && (
         <div className="max-w-[86%] mx-auto">
           <Header />
         </div>
       )}
-      <main className={`flex-1 ${!isAuthPage && !isDashboardPage && !isAdminPage ? 'max-w-[86%] mx-auto w-full' : 'w-full'}`}>
+      <main className={`flex-1 ${!isAuthPage && !isDashboardPage && !isAdminPage && !isHomePage ? 'max-w-[86%] mx-auto w-full' : 'w-full'}`}>
         {children}
       </main>
-      {!isAuthPage && !isDashboardPage && !isAdminPage && <Footer />}
+      {!isAuthPage && !isDashboardPage && !isAdminPage && !isHomePage && <Footer />}
     </>
   );
 }
