@@ -186,10 +186,11 @@ p {
   @apply p-10 md:p-16;
 }
 
-/* .section-margin{
-  @apply mx-16;
-  @apply my-16;
-} */
+/* Unified horizontal layout wrapper for major landing sections */
+.section-margin {
+  /* Center content and constrain width consistently */
+  @apply mx-auto w-full max-w-[86%];
+}
 
 /* .container {
   max-width: 1200px;
