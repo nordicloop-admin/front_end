@@ -87,7 +87,7 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
 
   return (
   <div ref={containerRef} className="group relative w-full">
-      <div className="relative rounded-2xl bg-white shadow-[0_30px_70px_-20px_rgba(0,0,0,0.35)] ring-1 ring-gray-200/60 overflow-hidden">
+      <div className="relative rounded-2xl bg-white  ring-1 ring-gray-200/60 overflow-hidden">
         <div className="relative w-full aspect-[16/9]">
           <video
             ref={videoRef}
@@ -104,7 +104,7 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
           />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-black/30 via-transparent to-transparent opacity-0 group-hover:opacity-40 transition-opacity" />
           <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-medium bg-black/60 text-white backdrop-blur-sm">
-            Tutorial
+            Demo
           </div>
           {/* Unified bottom control bar */}
           <div className="absolute bottom-0 left-0 w-full px-4 py-3 flex items-center gap-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent backdrop-blur-sm">
