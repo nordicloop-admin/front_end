@@ -312,6 +312,29 @@ export async function getAuctions(params?: PaginationParams) {
 }
 
 /**
+ * Fetch top 8 most recent ads (auctions) for home page
+ * Public endpoint: /ads/recent/
+ */
+export async function getRecentAuctions() {
+  try {
+    const response = await apiGet<PaginatedAuctionResponse | { results: AuctionItem[]; count: number }>(`/ads/recent/`, false);
+    if (response.error) {
+      return { data: null, error: response.error, status: response.status };
+    }
+    // Normalize to AuctionItem[]
+    const raw = response.data as any;
+    const auctions: AuctionItem[] = raw?.results || [];
+    return { data: auctions, error: null, status: response.status };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'An error occurred while fetching recent auctions',
+      status: 500
+    };
+  }
+}
+
+/**
  * Fetch auctions created by the current user with pagination
  * @param params Pagination parameters
  * @returns The API response with the user's auctions and pagination info
