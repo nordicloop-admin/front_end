@@ -1,21 +1,63 @@
 "use client";
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 
 // Showcase video with custom controls & seek bar
 const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }> = ({ src, poster, title }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
+  const [autoPaused, setAutoPaused] = useState(false); // paused because out of view
+  const [userPaused, setUserPaused] = useState(false); // user explicitly paused
 
   const togglePlay = () => {
     const v = videoRef.current;
     if (!v) return;
-    if (v.paused) { v.play(); setIsPlaying(true); } else { v.pause(); setIsPlaying(false); }
+    if (v.paused) {
+      v.play();
+      setIsPlaying(true);
+      setUserPaused(false);
+      setAutoPaused(false);
+    } else {
+      v.pause();
+      setIsPlaying(false);
+      setUserPaused(true);
+    }
   };
+  // Pause when scrolled away, resume when back (if not user-paused)
+  useEffect(() => {
+    const target = containerRef.current;
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        const v = videoRef.current;
+        if (!v) return;
+        // When sufficiently visible
+        if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+          if (autoPaused && !userPaused) {
+            v.play();
+            setIsPlaying(true);
+            setAutoPaused(false);
+          }
+        } else {
+          // Out of view: auto pause (only if playing & not user-paused)
+          if (!v.paused && !userPaused) {
+            v.pause();
+            setIsPlaying(false);
+            setAutoPaused(true);
+          }
+        }
+      },
+      { threshold: [0, 0.25, 0.5, 0.75, 1] }
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [autoPaused, userPaused]);
 
   const toggleMute = () => {
     const v = videoRef.current; if (!v) return; v.muted = !v.muted; setIsMuted(v.muted);
@@ -44,7 +86,7 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   };
 
   return (
-    <div className="group relative w-full">
+  <div ref={containerRef} className="group relative w-full">
       <div className="relative rounded-2xl bg-white shadow-[0_30px_70px_-20px_rgba(0,0,0,0.35)] ring-1 ring-gray-200/60 overflow-hidden">
         <div className="relative w-full aspect-[16/9]">
           <video
