@@ -122,12 +122,12 @@ const LoginPage = () => {
         <div className="flex-grow flex flex-col justify-center items-center max-w-md mx-auto w-full px-4 sm:px-0">
           {/* Logo and Brand */}
           <div className="flex flex-col items-center mb-8">
-            <div className="relative w-20 h-20 mb-3">
+            <div className="relative w-24 h-24 mb-4">
               <Image
-                src="/nordic-infinity-logo.svg"
+                src="/favicon_io/logo.png"
                 alt="Nordic Loop Logo"
-                width={80}
-                height={80}
+                width={96}
+                height={96}
                 priority
                 className="object-contain"
               />
