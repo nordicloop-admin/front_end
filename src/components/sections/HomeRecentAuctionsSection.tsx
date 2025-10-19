@@ -80,7 +80,7 @@ const HomeRecentAuctionsSection: React.FC = () => {
   }, []);
 
   return (
-    <section className="section-margin py-10">
+    <section className="py-10 mx-7">
       <div className="w-full">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl md:text-3xl font-bold text-[#1E2A36]">Recently Added Auctions<span className="text-[#FF8A00]">.</span></h2>
