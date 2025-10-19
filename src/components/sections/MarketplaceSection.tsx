@@ -4,8 +4,8 @@ import Link from 'next/link';
 const MarketplaceSection = () => {
   return (
     // Match hero width: use section-margin + full-width grid similar spacing
-    <section className="py-12 lg:py-16 section-margin">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-32 w-full">
+    <section className="py-12 lg:py-16 mx-7">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24 w-full">
         <div className="order-2 lg:order-1 flex flex-col justify-center items-start w-full">
             <h3 className="text-md md:text-md font-semibold mb-3 text-[#1E2A36]">Waste Marketplace</h3>
             <h2 className="text-2xl md:text-3xl font-bold mb-3 text-[#1E2A36]">
@@ -26,8 +26,8 @@ const MarketplaceSection = () => {
               Market place
             </Link>
         </div>
-        <div className="order-1 lg:order-2 relative flex items-center justify-center">
-          <div className="relative w-full max-w-2xl">
+        <div className="order-1 lg:order-2 relative flex items-center justify-center w-full">
+          <div className="relative w-full">
             <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
               <video
                 className="w-full h-full rounded-2xl shadow-2xl object-cover bg-black"
@@ -42,8 +42,8 @@ const MarketplaceSection = () => {
                 <source src="https://pub-7515a715eee34bd9ab26b28cbe2f7fa1.r2.dev/General%20Resources/Nordic%20Loop%20Tutorial%20.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
-              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-[#FF8A00]/10 to-[#FF8A00]/5 rounded-full blur-xl"></div>
-              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-tr from-[#1E2A36]/5 to-transparent rounded-full blur-2xl"></div>
+              <div className="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-[#FF8A00]/10 to-[#FF8A00]/5 rounded-full blur-xl pointer-events-none"></div>
+              <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-gradient-to-tr from-[#1E2A36]/5 to-transparent rounded-full blur-2xl pointer-events-none"></div>
             </div>
           </div>
             {/* <Image
