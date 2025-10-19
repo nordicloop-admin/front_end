@@ -309,8 +309,20 @@ const RegisterPage = () => {
 
         {/* Registration Form Container */}
         <div className="flex-grow flex flex-col justify-center items-center w-full px-4 sm:px-6">
-          {/* Welcome Text */}
+          {/* Logo and Welcome Text */}
           <div className="text-center mb-8 w-full max-w-3xl">
+            <div className="flex justify-center mb-4">
+              <div className="relative w-24 h-24">
+                <Image
+                  src="/favicon_io/logo.png"
+                  alt="Nordic Loop Logo"
+                  width={96}
+                  height={96}
+                  priority
+                  className="object-contain"
+                />
+              </div>
+            </div>
             <h2 className="text-3xl font-semibold text-gray-900 mb-2">Register Your Company</h2>
             <p className="text-gray-500">Please enter your company details</p>
           </div>
