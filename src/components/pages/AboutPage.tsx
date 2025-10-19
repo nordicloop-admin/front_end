@@ -81,7 +81,7 @@ const AboutPage = () => {
   ];
 
   // Values data
-  const values = [
+  const _values = [
     {
       title: 'Sustainability',
       description: 'We are committed to environmental stewardship and promoting sustainable business practices toward SDGs 12 and 13.',
@@ -119,7 +119,7 @@ const AboutPage = () => {
   ];
 
   // Testimonials data
-  const testimonials = [
+  const _testimonials = [
     {
       quote: "Nordic Loop has transformed how we handle our waste materials. What was once a cost center is now generating revenue for our business.",
       author: "Maria Svensson",
