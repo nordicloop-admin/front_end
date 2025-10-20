@@ -2,12 +2,19 @@
 
 const nextConfig = {
   images: {
-    domains: ['nordic-loop-platform.onrender.com'],
+    // domains: ['369d0b822225eb6c7d933f34f4085730.r2.cloudflarestorage.com'],
     remotePatterns: [
+      
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
         pathname: '/**',
+      },
+      // Cloudflare R2 bucket direct URL
+      {
+        protocol: 'https',
+        hostname: 'nordicloop.foundela.com',
+        pathname: '/material_images/**',
       },
       // Backend API domains for material images
       {
