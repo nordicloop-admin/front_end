@@ -179,7 +179,7 @@ const MarketplaceSection = () => {
               href="/market-place"
               className="bg-[#FF8A00] text-white px-8 py-4 w-[200px] rounded-md hover:bg-[#e67e00] transition-colors inline-block text-center text-sm font-medium"
             >
-              Market place
+              Marketplace
             </Link>
         </div>
         <div className="order-1 lg:order-2 relative flex items-center justify-center w-full">
