@@ -20,7 +20,7 @@ const HeroSection = () => {
       const width = window.innerWidth;
       if (width < 768) {
         setDeviceType('mobile');
-      } else if (width >= 768 && width < 1024) {
+      } else if (width >= 768 && width < 1400) {
         setDeviceType('tablet');
       } else {
         setDeviceType('desktop');
@@ -99,31 +99,33 @@ const HeroSection = () => {
     );
   }
 
-  // Tablet Hero Section (new optimized layout for iPad/tablet)
+  // Tablet Hero Section (optimized layout for iPad/tablet and medium screens)
   if (deviceType === 'tablet') {
     return (
-      <section className="w-full section-margin mt-8">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 gap-8 items-center">
+      <section className="w-full section-margin mt-6">
+        <div className="container mx-auto px-6 py-8">
+          <div className="grid grid-cols-2 gap-16 items-center min-h-[70vh]">
             {/* Text Content */}
-            <div className="flex flex-col justify-center">
-              <h1 className="text-[32px] font-bold text-[#1E2A36] mb-4 leading-tight">
+            <div className="flex flex-col justify-center space-y-6 pr-4">
+              <h1 className="text-[28px] md:text-[32px] lg:text-[36px] font-bold text-[#1E2A36] mb-4 leading-[1.1]">
                 The Marketplace<br/>
-                <span className="whitespace-nowrap">Where Waste Becomes</span>
+                Where Waste<br/>
+                Becomes<br/>
+                A Resource
               </h1>
-              <p className="text-[#666666] mb-6 text-base">
+              <p className="text-[#666666] mb-8 text-base md:text-lg leading-relaxed max-w-md">
                 Nordic Loop connects businesses to trade surplus materials, reducing costs, cutting CO₂ emissions, and driving sustainability.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row gap-4 max-w-md">
                 <Link
                   href="/register"
-                  className="bg-[#FF8A00] text-white px-5 py-2.5 rounded-lg hover:bg-[#e67e00] transition-colors text-center flex-1 flex items-center justify-center font-medium"
+                  className="bg-[#FF8A00] text-white px-6 py-3 md:px-8 md:py-4 rounded-lg hover:bg-[#e67e00] transition-colors text-center flex items-center justify-center font-medium text-base md:text-lg flex-1"
                 >
                   Join Us Now
                 </Link>
                 <Link
                   href="/market-place"
-                  className="bg-[#F5F5F5] text-[#FF8A00] px-5 py-2.5 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center flex-1 flex items-center justify-center font-medium"
+                  className="bg-[#F5F5F5] text-[#FF8A00] px-6 py-3 md:px-8 md:py-4 rounded-lg hover:bg-[#EBEBEB] transition-colors text-center flex items-center justify-center font-medium text-base md:text-lg flex-1"
                 >
                   Our Marketplace
                 </Link>
@@ -131,41 +133,22 @@ const HeroSection = () => {
             </div>
 
             {/* Image Container */}
-            <div className="relative flex items-center justify-center">
-              <div className="relative w-full">
-                {/* Image with a bit taller 4:3.7 aspect ratio */}
-                <div className="relative w-full" style={{ aspectRatio: '4/3.7' }}>
+            <div className="relative flex items-center justify-center pl-4">
+              <div className="relative w-full max-w-md lg:max-w-lg">
+                {/* Image with optimized aspect ratio for tablet */}
+                <div className="relative w-full" style={{ aspectRatio: '4/4.5' }}>
                   <Image
                     src="/images/landing page/jeriden-villegas-VLPUm5wP5Z0-unsplash.jpg"
                     alt="Nordic Loop circular materials workflow"
                     fill
-                    className="rounded-xl shadow-xl object-cover"
+                    className="rounded-2xl shadow-2xl object-cover"
                     priority
                   />
                 </div>
                 
-                {/* Image caption for tablet */}
-                <div className="mt-3 text-center">
-                  <p className="text-xs text-gray-600 font-medium">Nordic Loop Platform</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Key benefits section */}
-          <div className="bg-white py-6 px-6 rounded-lg mt-6 shadow-sm">
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-[#1E2A36] font-semibold text-sm mb-1">Reduce Costs</div>
-                <p className="text-[#666666] text-xs">Save on material expenses</p>
-              </div>
-              <div>
-                <div className="text-[#1E2A36] font-semibold text-sm mb-1">Cut CO₂</div>
-                <p className="text-[#666666] text-xs">Lower emissions</p>
-              </div>
-              <div>
-                <div className="text-[#1E2A36] font-semibold text-sm mb-1">Sustainable</div>
-                <p className="text-[#666666] text-xs">Circular economy</p>
+                {/* Decorative elements for visual appeal */}
+                <div className="absolute -top-3 -right-3 w-20 h-20 bg-gradient-to-br from-[#FF8A00]/10 to-[#FF8A00]/5 rounded-full blur-xl"></div>
+                <div className="absolute -bottom-4 -left-4 w-24 h-24 bg-gradient-to-tr from-[#1E2A36]/5 to-transparent rounded-full blur-2xl"></div>
               </div>
             </div>
           </div>
