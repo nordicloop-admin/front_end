@@ -80,8 +80,8 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-screen bg-white mt-3">
-      {/* Hero Section - Full width with overlay */}
-      <div className="relative h-[40vh] md:h-[50vh] w-full overflow-hidden">
+      {/* Hero Section - Responsive width */}
+      <div className="relative h-[40vh] md:h-[50vh] w-full md:max-w-[86%] md:mx-auto overflow-hidden md:rounded-lg">
         <Image
           src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80"
           alt="Nordic Loop Sustainability"
