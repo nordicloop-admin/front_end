@@ -152,7 +152,7 @@ const AboutPage = () => {
         
         {/* Team Section - Interactive cards */}
       <section className="py-16 bg-[#F5F5F5] mx-7 md:max-w-[86%] md:mx-auto">
-        <div className="px-24">
+        <div className="px-4 md:px-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Team</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
