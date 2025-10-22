@@ -58,11 +58,11 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
     const check = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      // First mount: show then fade after shorter delay (desktop 2500ms, mobile 3000ms)
+      // First mount: show then fade after longer delay (desktop 5000ms, mobile 4000ms)
       if (!initialShownRef.current) {
         initialShownRef.current = true;
         revealControls(true);
-        scheduleHide(mobile ? 3000 : 2500);
+        scheduleHide(mobile ? 4000 : 5000);
       }
     };
     check();
