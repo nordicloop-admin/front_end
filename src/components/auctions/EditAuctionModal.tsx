@@ -1192,95 +1192,151 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       toast.success('Changes saved successfully!', {
         description: `Step ${activeStep} has been updated.`
       });
-      // Force refresh of the auction detail page so latest data shows up immediately
-      try {
-        if (onRefresh) {
-          await onRefresh(); // Call parent's refresh function if available
-        } else {
-          router.refresh(); // Fallback to Next.js refresh if no parent callback
+      if (closeAfter) {
+        // Only perform heavy refresh/re-fetch when closing the modal
+        try {
+          if (onRefresh) {
+            await onRefresh();
+          } else {
+            router.refresh();
+          }
+        } catch (_e) {
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
         }
-      } catch (_e) {
-        // Fallback hard reload if refresh fails or errors
-        if (typeof window !== 'undefined') {
-          window.location.reload();
+
+        // Reload complete ad data to refresh step completion status
+        try {
+          const refreshedData = await adCreationService.getAdDetails(parseInt(auction.id));
+          if (refreshedData.success && refreshedData.data) {
+            setCompleteAdData(refreshedData.data);
+
+            // Re-initialize step data with fresh backend data (only needed when closing)
+            const freshData = refreshedData.data;
+            setStepData({
+              materialType: freshData.category_name || '',
+              category: freshData.category_name || '',
+              subcategory: freshData.subcategory_name || '',
+              specificMaterial: freshData.specific_material ? (
+                typeof freshData.specific_material === 'string'
+                  ? freshData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean)
+                  : []
+              ) : [],
+              packaging: freshData.packaging || '',
+              materialFrequency: freshData.material_frequency || '',
+              grade: freshData.specification?.material_grade_display || '',
+              color: freshData.specification?.color || '',
+              form: freshData.specification?.material_form_display || '',
+              additionalSpecs: freshData.additional_specifications ? [freshData.additional_specifications] : [],
+              origin: freshData.origin_display || '',
+              contaminationLevel: freshData.contamination_display || '',
+              additives: freshData.additives_display ? [freshData.additives_display] : [],
+              storageConditions: freshData.storage_conditions_display || '',
+              processingMethods: freshData.processing_methods || [],
+              location: freshData.location ? {
+                country: freshData.location.country || '',
+                region: freshData.location.state_province || '',
+                city: freshData.location.city || '',
+                fullAddress: freshData.location.address_line || '',
+                postalCode: freshData.location.postal_code || '',
+                deliveryOptions: freshData.delivery_options || []
+              } : {
+                country: '',
+                region: '',
+                city: '',
+                fullAddress: '',
+                postalCode: '',
+                deliveryOptions: []
+              },
+              availableQuantity: freshData.available_quantity || 0,
+              unit: freshData.unit_of_measurement || '',
+              minimumOrder: freshData.minimum_order_quantity || 0,
+              startingPrice: freshData.starting_bid_price || 0,
+              currency: freshData.currency || 'SEK',
+              auctionDuration: freshData.auction_duration ? String(freshData.auction_duration) : '',
+              reservePrice: freshData.reserve_price || 0,
+              customAuctionDuration: freshData.custom_auction_duration || 0,
+              title: freshData.title || '',
+              description: freshData.description || '',
+              keywords: freshData.keywords ? freshData.keywords.split(', ') : [],
+              images: [],
+              currentImageUrl: freshData.material_image || ''
+            });
+          }
+        } catch (_reloadError) {
+          // Ignore re-fetch errors; save already succeeded
         }
-      }
-
-      // Reload complete ad data to refresh step completion status
-      try {
-        const refreshedData = await adCreationService.getAdDetails(parseInt(auction.id));
-        if (refreshedData.success && refreshedData.data) {
-          setCompleteAdData(refreshedData.data);
-
-          // Re-initialize step data with fresh backend data
-          const freshData = refreshedData.data;
-          setStepData({
-            // Step 1: Material Type
-            materialType: freshData.category_name || '',
-            category: freshData.category_name || '',
-            subcategory: freshData.subcategory_name || '',
-            specificMaterial: freshData.specific_material ? 
-              (typeof freshData.specific_material === 'string' ? 
-                freshData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean) : 
-                []) : [],
-            packaging: freshData.packaging || '',
-            materialFrequency: freshData.material_frequency || '',
-
-            // Step 2: Specifications
-            grade: freshData.specification?.material_grade_display || '',
-            color: freshData.specification?.color || '',
-            form: freshData.specification?.material_form_display || '',
-            additionalSpecs: freshData.additional_specifications ? [freshData.additional_specifications] : [],
-
-            // Step 3: Origin
-            origin: freshData.origin_display || '',
-
-            // Step 4: Contamination
-            contaminationLevel: freshData.contamination_display || '',
-            additives: freshData.additives_display ? [freshData.additives_display] : [],
-            storageConditions: freshData.storage_conditions_display || '',
-
-            // Step 5: Processing Methods
-            processingMethods: freshData.processing_methods || [],
-
-            // Step 6: Location & Logistics
-            location: freshData.location ? {
-              country: freshData.location.country || '',
-              region: freshData.location.state_province || '',
-              city: freshData.location.city || '',
-              fullAddress: freshData.location.address_line || '',
-              postalCode: freshData.location.postal_code || '',
-              deliveryOptions: freshData.delivery_options || []
-            } : {
-              country: '',
-              region: '',
-              city: '',
-              fullAddress: '',
-              postalCode: '',
-              deliveryOptions: []
-            },
-
-            // Step 7: Quantity & Price
-            availableQuantity: freshData.available_quantity || 0,
-            unit: freshData.unit_of_measurement || '',
-            minimumOrder: freshData.minimum_order_quantity || 0,
-            startingPrice: freshData.starting_bid_price || 0,
-            currency: freshData.currency || 'SEK',
-            auctionDuration: freshData.auction_duration ? String(freshData.auction_duration) : '',
-            reservePrice: freshData.reserve_price || 0,
-            customAuctionDuration: freshData.custom_auction_duration || 0,
-
-            // Step 8: Details with image handling
-            title: freshData.title || '',
-            description: freshData.description || '',
-            keywords: freshData.keywords ? freshData.keywords.split(', ') : [],
-            images: [],
-            currentImageUrl: freshData.material_image || ''
-          });
-
-        }
-      } catch (_reloadError) {
-        // Don't throw error here, save was successful
+      } else {
+        // Inline save: keep UI responsive without forcing page refresh.
+        // Optionally patch local completion data for the current step.
+  setCompleteAdData((prev: any) => {
+          if (!prev) return prev; // Nothing to patch
+          try {
+            const draft: any = { ...prev };
+            switch (activeStep) {
+              case 1:
+                draft.category_name = stepData.category;
+                draft.subcategory_name = stepData.subcategory;
+                draft.specific_material = stepData.specificMaterial?.join(', ');
+                draft.packaging = stepData.packaging;
+                draft.material_frequency = stepData.materialFrequency;
+                break;
+              case 2:
+                draft.specification = {
+                  ...(draft.specification || {}),
+                  material_grade_display: stepData.grade,
+                  color: stepData.color,
+                  material_form_display: stepData.form
+                };
+                draft.additional_specifications = stepData.additionalSpecs?.join(', ');
+                break;
+              case 3:
+                draft.origin_display = stepData.origin;
+                break;
+              case 4:
+                draft.contamination_display = stepData.contaminationLevel;
+                draft.additives_display = stepData.additives?.join(', ');
+                draft.storage_conditions_display = stepData.storageConditions;
+                break;
+              case 5:
+                draft.processing_methods = stepData.processingMethods;
+                break;
+              case 6:
+                draft.location = {
+                  ...(draft.location || {}),
+                  country: stepData.location?.country,
+                  state_province: stepData.location?.region,
+                  city: stepData.location?.city,
+                  address_line: stepData.location?.fullAddress,
+                  postal_code: stepData.location?.postalCode
+                };
+                draft.delivery_options = stepData.location?.deliveryOptions;
+                break;
+              case 7:
+                draft.available_quantity = stepData.availableQuantity;
+                draft.unit_of_measurement = stepData.unit;
+                draft.minimum_order_quantity = stepData.minimumOrder;
+                draft.starting_bid_price = stepData.startingPrice;
+                draft.currency = stepData.currency;
+                draft.auction_duration = stepData.auctionDuration ? parseInt(stepData.auctionDuration) : draft.auction_duration;
+                draft.reserve_price = stepData.reservePrice;
+                draft.custom_auction_duration = stepData.customAuctionDuration;
+                break;
+              case 8:
+                draft.title = stepData.title;
+                draft.description = stepData.description;
+                draft.keywords = stepData.keywords?.join(', ');
+                // Image handled separately; keep existing material_image unless changed
+                break;
+              default:
+                break;
+            }
+            return draft;
+          } catch {
+            return prev; // Fallback to previous state on any patch error
+          }
+        });
       }
 
       // Close modal if requested
