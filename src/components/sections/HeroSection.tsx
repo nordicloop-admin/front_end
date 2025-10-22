@@ -76,24 +76,6 @@ const HeroSection = () => {
               </div>
             </div>
           </div>
-
-          {/* Key benefits section */}
-          <div className="bg-white py-8 px-4 mt-4">
-            <div className="grid grid-cols-3 gap-3 text-center">
-              <div>
-                <div className="text-[#1E2A36] font-semibold text-sm mb-1">Reduce Costs</div>
-                <p className="text-[#666666] text-xs">Save on material expenses</p>
-              </div>
-              <div>
-                <div className="text-[#1E2A36] font-semibold text-sm mb-1">Cut CO₂</div>
-                <p className="text-[#666666] text-xs">Lower emissions</p>
-              </div>
-              <div>
-                <div className="text-[#1E2A36] font-semibold text-sm mb-1">Sustainable</div>
-                <p className="text-[#666666] text-xs">Circular economy</p>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
     );
