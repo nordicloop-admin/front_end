@@ -67,6 +67,12 @@ const AboutPage = () => {
       phone: '+46 737553358',
     },
     {
+      name: 'Elin Bergman',
+      role: 'Board member and industry expert',
+      bio: 'Elin Bergman is known for being the "Circular Economy Queen of Sweden", is named LinkedIn Top Green Voice and is a recognized international TEDx and keynote speaker. She works as a Circular Impact Officer, Vice Chair and spokesperson of the Swedish circular economy business network Cradlenet, and is also one of the co-founders of the international circular economy initiatives Nordic Circular Hotspot and the Circular Economy Coalition. She has recently started the Circular Handshake initiative to make the retail sector circular. For many years she worked as circular economy expert at WWF Sweden, where she developed the international circular economy network Baltic Stewardship Initiative, to enable the recirculation of nutrients in the Baltic Sea region in the agri-food sector.',
+      image: '/images/About/Elin Bergman.webp',
+    },
+    {
       name: 'Raissa Uwase',
       role: 'Technical Lead',
       bio: 'With extensive experience across multiple tech companies, Raissa brings deep expertise in developing complex, enterprise-scale systems. Her background in leading challenging technical projects makes her an ideal leader for Nordic Loop\'s technology development.',
@@ -160,7 +166,7 @@ const AboutPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {teamMembers.map((member, index) => (
               <div
                 key={index}
@@ -168,12 +174,14 @@ const AboutPage = () => {
                 onMouseEnter={() => setHoveredTeamMember(index)}
                 onMouseLeave={() => setHoveredTeamMember(null)}
               >
-                <div className="relative h-[300px] my-6 md:my-8">
+                
+                <div className="px-6 pb-10">
+                  <div className="relative h-[300px] my-6 md:my-8">
                   <Image
                     src={member.image}
                     alt={member.name}
                     fill
-                    className="object-cover transition-all duration-500"
+                    className="object-cover object-top transition-all duration-500"
                     style={{
                       transform: hoveredTeamMember === index ? 'scale(1.05)' : 'scale(1)',
                     }}
@@ -185,7 +193,6 @@ const AboutPage = () => {
                     }}
                   ></div>
                 </div>
-                <div className="p-6">
                   <h3 className="text-xl font-semibold text-[#1E2A36] mb-1">{member.name}</h3>
                   <p className="text-[#FF8A00] font-medium mb-2">{member.role}</p>
                   {member.email && (
