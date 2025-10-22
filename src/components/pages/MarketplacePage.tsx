@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Loader2, AlertCircle } from 'lucide-react';
-// import { SlidersHorizontal } from '@/components/ui/Icons';
 import { CategoryFilter } from '@/components/marketplace/CategoryFilter';
 import { LocationFilter } from '@/components/marketplace/LocationFilter';
 
