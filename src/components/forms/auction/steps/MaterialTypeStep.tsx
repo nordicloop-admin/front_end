@@ -298,13 +298,13 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
       </div>
 
       {/* Validation Message */}
-      {(!formData.category || !formData.subcategory || !formData.quantity.packaging || !formData.sellFrequency) && (
+      {/* {(!formData.category || !formData.subcategory || !formData.quantity.packaging || !formData.sellFrequency) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
             Please complete all required fields marked with an asterisk (*) to continue.
           </p>
         </div>
-      )}
+      )} */}
     </div>
   );
 } 

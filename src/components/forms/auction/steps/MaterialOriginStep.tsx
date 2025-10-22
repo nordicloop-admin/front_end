@@ -1,5 +1,6 @@
 import React from 'react';
 import { Factory, Home, Shuffle } from 'lucide-react';
+import InfoCallout from '@/components/ui/InfoCallout';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -103,28 +104,22 @@ export function MaterialOriginStep({ formData, updateFormData }: Props) {
       )}
 
       {/* Information Note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex items-start space-x-3">
-          <Factory className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">Material Origin Impact</h4>
-            <div className="text-sm text-blue-700 mt-1 space-y-1">
-              <p>• Post-industrial materials typically have higher quality and value</p>
-              <p>• Post-consumer materials support circular economy goals</p>
-              <p>• Mixed materials may require additional sorting and processing</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <InfoCallout title="Material Origin Impact" variant="orange" className="mt-2">
+        <ul className="list-disc pl-4 space-y-1">
+          <li>Post-industrial materials often have higher consistent quality</li>
+          <li>Post-consumer materials strengthen circular economy outcomes</li>
+          <li>Mixed streams may need extra sorting/processing</li>
+        </ul>
+      </InfoCallout>
 
       {/* Validation Message */}
-      {!formData.origin.source && (
+      {/* {!formData.origin.source && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
             Please select the material origin to continue.
           </p>
         </div>
-      )}
+      )} */}
     </div>
   );
 } 

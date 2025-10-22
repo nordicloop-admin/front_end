@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, X, Info } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
+import InfoCallout from '@/components/ui/InfoCallout';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -253,20 +254,12 @@ export function MaterialSpecificationStep({ formData, updateFormData }: Props) {
       </div>
 
       {/* Information Note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0">
-            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">Specification Guidelines</h4>
-            <p className="text-sm text-blue-700 mt-1">
-              Detailed specifications help buyers understand the exact quality and properties of your material. 
-              Include technical data like density, melt flow index, tensile strength, or purity levels when available.
-            </p>
-          </div>
-        </div>
-      </div>
+      <InfoCallout title="Specification Guidelines" variant="orange" className="mt-2">
+        <p>
+          Detailed specifications help buyers understand the exact quality and properties of your material. Include
+          technical data like density, melt flow index, tensile strength, moisture content, or purity levels when available.
+        </p>
+      </InfoCallout>
 
       {/* Specification Summary */}
       {(formData.specifications.grade || formData.specifications.color || formData.specifications.form) && (

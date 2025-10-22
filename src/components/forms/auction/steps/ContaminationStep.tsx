@@ -244,13 +244,13 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
       )}
 
       {/* Validation Message */}
-      {!formData.contamination.level && (
+      {/* {!formData.contamination.level && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
             Please select a contamination level to continue.
           </p>
         </div>
-      )}
+      )} */}
     </div>
   );
 } 

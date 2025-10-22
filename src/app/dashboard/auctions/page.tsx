@@ -242,7 +242,7 @@ export default function Auctions() {
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-xl font-medium">All Active Auctions</h1>
-            <p className="text-sm text-gray-600 mt-1">Browse all active auctions in the marketplace. Your auctions and bids are highlighted with colored borders and badges.</p>
+            <p className="text-sm text-gray-600 mt-1 hidden xl:block">Browse all active auctions in the marketplace. Your auctions and bids are highlighted with colored borders and badges.</p>
           </div>
           {!isLoading && (
             <div className="flex gap-4 text-sm">

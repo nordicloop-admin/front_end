@@ -1,5 +1,6 @@
 import React from 'react';
 import { Settings, CheckCircle } from 'lucide-react';
+import InfoCallout from '@/components/ui/InfoCallout';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -135,19 +136,13 @@ export function ProcessingMethodStep({ formData, updateFormData }: Props) {
       )}
 
       {/* Information Note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex items-start space-x-3">
-          <Settings className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">Processing Guidelines</h4>
-            <div className="text-sm text-blue-700 mt-1 space-y-1">
-              <p>• Select all applicable processing methods for your material</p>
-              <p>• Multiple methods can be selected if applicable</p>
-              <p>• This helps buyers understand material compatibility</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <InfoCallout title="Processing Guidelines" variant="orange" className="mt-2">
+        <ul className="list-disc pl-4 space-y-1">
+          <li>Select all applicable processing methods</li>
+          <li>Multiple methods are allowed</li>
+          <li>Helps buyers assess production compatibility</li>
+        </ul>
+      </InfoCallout>
     </div>
   );
 } 
