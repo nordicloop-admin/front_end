@@ -81,7 +81,7 @@ const AboutPage = () => {
     {
       name: 'Olivier Karera',
       role: 'Software Engineer',
-      bio: 'Olivier brings technical expertise to Nordic Loop, developing innovative solutions and architectural designs that power the platform. He focuses on creating scalable systems that deliver exceptional user experiences for our customers.',
+      bio: 'Olivier is a software engineer at Nordic Loop, focusing on the development and maintenance of the platform. He is responsible for building the features that enable businesses to participate in the circular economy, ensuring the system is both robust and user-friendly.',
       image: '/images/About/Olivier Karera software engineer.png',
     },
   ];
