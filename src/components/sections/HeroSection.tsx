@@ -43,7 +43,7 @@ const HeroSection = () => {
       <section className="w-full mt-6">
         <div className="relative">
           {/* Hero image with overlay */}
-          <div className="relative h-[60vh] rounded-lg overflow-hidden">
+          <div className="relative h-[60vh] overflow-hidden">
             <Image
               src="/images/landing page/jeriden-villegas-VLPUm5wP5Z0-unsplash.jpg"
               alt="Nordic Loop circular materials workflow"
@@ -78,7 +78,7 @@ const HeroSection = () => {
           </div>
 
           {/* Key benefits section */}
-          <div className="bg-white py-8 px-4 rounded-lg mt-4">
+          <div className="bg-white py-8 px-4 mt-4">
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
                 <div className="text-[#1E2A36] font-semibold text-sm mb-1">Reduce Costs</div>
