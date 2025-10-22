@@ -10,8 +10,9 @@ export default function Home() {
     <>
       <HeroSection />
       {/* <WasteValueSection /> */}
+      <HomeRecentAuctionsSection />
       <MarketplaceSection />
-  <HomeRecentAuctionsSection />
+  
       {/* <FeaturesSection />
       <AnalyticsSection />
       <StatsSection /> */}
