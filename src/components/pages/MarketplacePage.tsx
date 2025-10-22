@@ -393,7 +393,7 @@ const MarketplacePage = () => {
   const filteredAuctions = convertedAuctions;
 
   return (
-  <div className="py-8 mx-7">
+  <div className="py-8 mx-7 md:max-w-[86%] md:mx-auto">
 
       {/* Marketplace Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">

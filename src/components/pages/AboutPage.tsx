@@ -151,8 +151,8 @@ const AboutPage = () => {
         {/* Main hero content */}
         
         {/* Team Section - Interactive cards */}
-      <section className="py-16 bg-[#F5F5F5]">
-        <div className="max-w-7xl mx-auto px-7">
+      <section className="py-16 bg-[#F5F5F5] mx-7 md:max-w-[86%] md:mx-auto">
+        <div className="px-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Team</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -251,8 +251,8 @@ const AboutPage = () => {
       </section> */}
 
       {/* Timeline Section - New section not in original */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-7">
+      <section className="py-16 md:py-24 mx-7 md:max-w-[86%] md:mx-auto">
+        <div>
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Journey</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -331,8 +331,8 @@ const AboutPage = () => {
       
 
       {/* Impact Section - Circular progress indicators */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-7">
+      <section className="py-16 md:py-24 mx-7 md:max-w-[86%] md:mx-auto">
+        <div>
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Goals</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -398,8 +398,8 @@ const AboutPage = () => {
       </section> */}
 
       {/* CTA Section - Different style */}
-      <section className="py-16 bg-[#1E2A36] text-white mb-16">
-        <div className="max-w-7xl mx-auto px-7">
+      <section className="py-16 bg-[#1E2A36] text-white mb-16 mx-7 md:max-w-[86%] md:mx-auto">
+        <div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold mb-6">Ready to Join the Circular Economy?</h2>

@@ -103,7 +103,7 @@ const ContactPage = () => {
       </div>
 
       {/* Main Content - Split Screen */}
-      <div className="w-full max-w-7xl mx-auto px-4 py-16 md:py-24">
+      <div className="mx-7 md:max-w-[86%] md:mx-auto px-4 py-16 md:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
           {/* Left Column - Contact Information */}
           <div className="order-2 lg:order-1">
