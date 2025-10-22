@@ -13,9 +13,24 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   const [isSeeking, setIsSeeking] = useState(false);
   const [autoPaused, setAutoPaused] = useState(false); // paused because out of view
   const [userPaused, setUserPaused] = useState(false); // user explicitly paused
-  const [showControls, setShowControls] = useState(true); // for mobile control visibility
+  const [showControls, setShowControls] = useState(true); // controls visibility (both mobile & desktop)
   const [isMobile, setIsMobile] = useState(false);
-  const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null); // inactivity / auto-hide timer
+  const initialShownRef = useRef(false); // track first reveal cycle
+
+  // Unified timer reset logic for both mobile & desktop
+  const scheduleHide = (delay = 3000) => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      // Only auto-hide if not seeking and not user-paused overlay interactions
+      setShowControls(false);
+    }, delay);
+  };
+
+  const revealControls = (autoSchedule = true) => {
+    setShowControls(true);
+    if (autoSchedule) scheduleHide();
+  };
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -30,67 +45,29 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
       setIsPlaying(false);
       setUserPaused(true);
     }
-    
-    // Show controls briefly when toggling play on mobile
-    if (isMobile) {
-      setShowControls(true);
-      resetHideControlsTimer();
-    }
+    // Briefly ensure controls visible after play toggle
+    revealControls(true);
   };
 
-  const resetHideControlsTimer = () => {
-    if (hideControlsTimeoutRef.current) {
-      clearTimeout(hideControlsTimeoutRef.current);
-    }
-    if (isMobile) {
-      hideControlsTimeoutRef.current = setTimeout(() => {
-        setShowControls(false);
-      }, 3000); // Hide controls after 3 seconds on mobile
-    }
+  const handleUserInteract = () => {
+    // Called on hover (desktop) or touch (mobile)
+    revealControls(true);
   };
-
-  const handleMobileInteraction = () => {
-    if (isMobile) {
-      setShowControls(true);
-      resetHideControlsTimer();
-    }
-  };
-  // Detect mobile device
+  // Detect mobile device + initial auto-hide cycle
   useEffect(() => {
-    const resetTimer = () => {
-      if (hideControlsTimeoutRef.current) {
-        clearTimeout(hideControlsTimeoutRef.current);
-      }
+    const check = () => {
       const mobile = window.innerWidth < 768;
-      if (mobile) {
-        hideControlsTimeoutRef.current = setTimeout(() => {
-          setShowControls(false);
-        }, 3000);
-      }
-    };
-
-    const checkMobile = () => {
-      const mobile = window.innerWidth < 768; // md breakpoint
       setIsMobile(mobile);
-      if (!mobile) {
-        setShowControls(true); // Always show controls on desktop
-        if (hideControlsTimeoutRef.current) {
-          clearTimeout(hideControlsTimeoutRef.current);
-        }
-      } else {
-        // On mobile, show controls initially then hide after 3 seconds
-        resetTimer();
+      // First mount: show then fade after shorter delay (desktop 2500ms, mobile 3000ms)
+      if (!initialShownRef.current) {
+        initialShownRef.current = true;
+        revealControls(true);
+        scheduleHide(mobile ? 3000 : 2500);
       }
     };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-      if (hideControlsTimeoutRef.current) {
-        clearTimeout(hideControlsTimeoutRef.current);
-      }
-    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
   }, []);
 
   // Pause when scrolled away, resume when back (if not user-paused)
@@ -125,15 +102,23 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   }, [autoPaused, userPaused]);
 
   const toggleMute = () => {
-    const v = videoRef.current; if (!v) return; v.muted = !v.muted; setIsMuted(v.muted);
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setIsMuted(v.muted);
+    revealControls(true);
   };
 
   const handleLoaded = () => {
-    const v = videoRef.current; if (!v) return; setDuration(v.duration || 0);
+    const v = videoRef.current;
+    if (!v) return;
+    setDuration(v.duration || 0);
   };
   const handleTime = () => {
     if (isSeeking) return; // avoid UI jitter while dragging
-    const v = videoRef.current; if (!v) return; setCurrent(v.currentTime);
+    const v = videoRef.current;
+    if (!v) return;
+    setCurrent(v.currentTime);
   };
 
   const formatTime = (t: number) => {
@@ -153,13 +138,13 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   return (
   <div ref={containerRef} className="group relative w-full">
       <div className="relative rounded-2xl bg-white  ring-1 ring-gray-200/60 overflow-hidden">
-        <div 
+        <div
           className="relative w-full aspect-[16/9]"
-          onTouchStart={handleMobileInteraction}
+          onTouchStart={handleUserInteract}
+          onMouseMove={isMobile ? undefined : handleUserInteract}
           onClick={(e) => {
-            // Only handle click if it's on the video area, not the controls
             if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'VIDEO') {
-              handleMobileInteraction();
+              handleUserInteract();
             }
           }}
         >
@@ -181,12 +166,13 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
             Demo
           </div>
           {/* Unified bottom control bar */}
-          <div 
+          <div
             className={`absolute bottom-0 left-0 w-full px-4 py-3 flex items-center gap-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent backdrop-blur-sm transition-opacity duration-300 ${
-              isMobile && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
-            onTouchStart={handleMobileInteraction}
-            onClick={handleMobileInteraction}
+            onTouchStart={handleUserInteract}
+            onMouseEnter={() => !isMobile && revealControls(false)}
+            onMouseLeave={() => !isMobile && scheduleHide()}
           >
             <button
               onClick={togglePlay}
@@ -214,10 +200,10 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
             <div className="flex-grow flex items-center select-none" aria-label="Video progress">
               <div
                 className="relative w-full h-2 cursor-pointer"
-                onMouseDown={(e) => { setIsSeeking(true); seekTo(e.clientX, e.currentTarget as HTMLDivElement); }}
-                onMouseMove={(e) => { if (isSeeking) seekTo(e.clientX, e.currentTarget as HTMLDivElement); }}
-                onMouseUp={() => setIsSeeking(false)}
-                onMouseLeave={() => isSeeking && setIsSeeking(false)}
+                onMouseDown={(e) => { setIsSeeking(true); seekTo(e.clientX, e.currentTarget as HTMLDivElement); revealControls(false); }}
+                onMouseMove={(e) => { if (isSeeking) { seekTo(e.clientX, e.currentTarget as HTMLDivElement); } }}
+                onMouseUp={() => { setIsSeeking(false); scheduleHide(); }}
+                onMouseLeave={() => { if (isSeeking) setIsSeeking(false); scheduleHide(); }}
               >
                 <div className="absolute inset-0 rounded-full bg-white/25" />
                 <div className="absolute inset-y-0 left-0 rounded-full bg-[#FF8A00]" style={{ width: `${percent}%` }} />
