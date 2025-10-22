@@ -154,7 +154,15 @@ const Header = () => {
           <div className="flex flex-col h-full menu-content">
             {/* Menu Header with Close Button */}
             <div className="flex justify-between items-center p-6 border-b border-gray-700">
-              <h2 className="text-white text-lg font-medium">Menu</h2>
+              <div className="relative w-[120px] h-[32px]">
+                <Image
+                  src="/nordic logo.png"
+                  alt="Nordic Loop Logo"
+                  fill
+                  sizes="120px"
+                  className="object-contain"
+                />
+              </div>
               <button
                 onClick={() => setIsMenuOpen(false)}
                 className="text-gray-400 hover:text-white focus:outline-none"
