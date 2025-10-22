@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
+import { X, Check, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
@@ -3426,37 +3426,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    const currentIndex = steps.findIndex(step => step.id === activeStep);
-                    if (currentIndex > 0) {
-                      setActiveStep(steps[currentIndex - 1].id);
-                    }
-                  }}
-                  disabled={steps.findIndex(step => step.id === activeStep) === 0}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Previous</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    const currentIndex = steps.findIndex(step => step.id === activeStep);
-                    if (currentIndex < steps.length - 1) {
-                      setActiveStep(steps[currentIndex + 1].id);
-                    }
-                  }}
-                  disabled={steps.findIndex(step => step.id === activeStep) === steps.length - 1}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <span>Next</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end bg-gray-50 flex-shrink-0">
               <div className="flex space-x-3">
                 {hasChanges && (
                   <div className="flex items-center space-x-2 text-sm text-amber-600">
