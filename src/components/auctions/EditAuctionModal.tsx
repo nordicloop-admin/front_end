@@ -456,7 +456,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const router = useRouter();
   const [stepData, setStepData] = useState<StepData>({});
   const [hasChanges, setHasChanges] = useState(false);
-  const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
+  // Remove ambiguous state flag; we'll pass intent directly to submit handler
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -1098,7 +1098,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   };
 
   // Submit changes to backend
-  const handleSubmit = async () => {
+  const handleSubmit = async (closeAfter: boolean) => {
 
     // Clear previous validation errors
     setValidationErrors({});
@@ -1180,7 +1180,12 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           keywords: backendData.keywords || auction.keywords
         };
 
-        await onSubmit(updatedAuction);
+        // Only notify parent if we intend to close (parent handler currently closes modal)
+        if (closeAfter) {
+          await onSubmit(updatedAuction);
+        } else {
+          // For inline save without close, rely on internal refresh logic below
+        }
       }
 
       setHasChanges(false);
@@ -1279,9 +1284,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       }
 
       // Close modal if requested
-      if (shouldCloseAfterSave) {
+      if (closeAfter) {
         onClose();
-        setShouldCloseAfterSave(false);
       }
 
       // Reset loading state on success
@@ -3433,7 +3437,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 </button>
                 
                 <Button
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit(false)}
                   disabled={isSubmitting}
                   className="px-6 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] disabled:opacity-50 flex items-center space-x-2"
                 >
@@ -3451,10 +3455,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 </Button>
 
                 <Button
-                  onClick={() => {
-                    setShouldCloseAfterSave(true);
-                    handleSubmit();
-                  }}
+                  onClick={() => handleSubmit(true)}
                   disabled={isSubmitting}
                   className="px-6 py-2 bg-green-400 text-white rounded-md hover:bg-green-500 disabled:opacity-50 flex items-center space-x-2"
                 >
