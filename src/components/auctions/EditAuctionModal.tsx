@@ -1672,7 +1672,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         key={category.id}
                         onClick={() => handleCategorySelect(category)}
                         className={`
-                          p-4 rounded-lg border-2 text-left transition-all hover:scale-105 relative
+                          p-4 rounded-lg border text-left transition-all hover:scale-105 relative
                           ${selectedCategoryId === category.id
                             ? 'border-[#FF8A00] bg-orange-50'
                             : 'border-gray-200 hover:border-gray-300'
@@ -1706,7 +1706,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                             key={subcategory.id}
                             onClick={() => handleSubcategorySelect(subcategory)}
                             className={`
-                              p-3 rounded-lg border-2 text-sm text-left transition-all hover:scale-105 relative
+                              p-3 rounded-lg border text-sm text-left transition-all hover:scale-105 relative
                               ${stepData.subcategory === subcategory.name
                                 ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                                 : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -1723,18 +1723,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         <p className="text-gray-500 text-sm">No subcategories available for {selectedCategory.name}</p>
                       </div>
                     ) : null}
-                  </div>
-                )}
-
-                {/* Verify Category Button */}
-                {selectedCategory && (
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
-                    >
-                      Verify Category
-                    </button>
                   </div>
                 )}
 
@@ -1791,7 +1779,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                           key={type.id}
                           onClick={() => handleStepDataChange({ packaging: type.id })}
                           className={`
-                            p-4 rounded-lg border-2 transition-all text-left hover:scale-105
+                            p-4 rounded-lg border transition-all text-left hover:scale-105
                             ${stepData.packaging === type.id
                               ? 'border-[#FF8A00] bg-orange-50'
                               : 'border-gray-200 hover:border-gray-300'
@@ -1829,7 +1817,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         key={frequency.id}
                         onClick={() => handleStepDataChange({ materialFrequency: frequency.id })}
                         className={`
-                          p-3 rounded-lg border-2 text-sm text-center transition-all hover:scale-105
+                          p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
                           ${stepData.materialFrequency === frequency.id
                             ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                             : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -2240,12 +2228,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             )}
 
             {/* Information Note */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-4">
               <div className="flex items-start space-x-3">
-                <Settings className="w-5 h-5 text-blue-600 mt-0.5" />
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FF8A00] text-white text-xs font-semibold flex-shrink-0">
+                  <Settings className="h-4 w-4" />
+                </span>
                 <div>
-                  <h4 className="text-sm font-medium text-blue-900">Processing Guidelines</h4>
-                  <div className="text-sm text-blue-700 mt-1 space-y-1">
+                  <h4 className="text-sm font-medium text-orange-900">Processing Guidelines</h4>
+                  <div className="text-sm text-orange-700 mt-1 space-y-1">
                     <p>• Select all applicable processing methods for your material</p>
                     <p>• Multiple methods can be selected if applicable</p>
                     <p>• This helps buyers understand material compatibility</p>
@@ -2440,7 +2430,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         }
                       }}
                       className={`
-                        p-4 rounded-lg border-2 text-left transition-all
+                        p-4 rounded-lg border text-left transition-all
                         ${isSelected
                           ? 'border-[#FF8A00] bg-orange-50'
                           : 'border-gray-200 hover:border-gray-300'
@@ -2473,14 +2463,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             </div>
 
             {/* Information Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-4">
               <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0">
-                  <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-                </div>
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FF8A00] text-white text-xs font-semibold flex-shrink-0">
+                  <Info className="h-4 w-4" />
+                </span>
                 <div>
-                  <h4 className="text-sm font-medium text-blue-900">Why location matters</h4>
-                  <div className="text-sm text-blue-700 mt-1">
+                  <h4 className="text-sm font-medium text-orange-900">Why location?</h4>
+                  <div className="text-sm text-orange-700 mt-1">
                     <p className="mb-1">• Accurate location helps buyers calculate logistics costs</p>
                     <p className="mb-1">• Currently, the Nordic Loop Marketplace only serves locations within Sweden</p>
                     <p className="mb-1">• Specify delivery options to make your listing more attractive</p>
@@ -3322,32 +3312,32 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       isActive
                         ? 'bg-[#FF8A00] text-white border-[#FF8A00]'
                         : status === 'completed'
-                        ? 'bg-white text-gray-700 border-emerald-300 hover:bg-gray-50'
+                        ? 'bg-white text-gray-700 border-green-200 hover:bg-gray-50'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                      <div className={`flex items-center justify-center w-6 h-6 text-xs font-medium ${
                         isActive
-                          ? 'bg-white text-[#FF8A00]'
+                          ? 'text-white'
                           : status === 'completed'
-                          ? 'bg-emerald-400 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          ? 'text-green-400'
+                          : 'text-gray-600'
                       }`}>
                         {status === 'completed' ? (
-                          <Check className="w-4 h-4" />
+                          <CheckCircle className="w-4 h-4" />
                         ) : (
                           step.id
                         )}
                       </div>
                       <div className="flex-1">
                         <div className={`text-sm font-medium ${
-                          isActive ? 'text-white' : status === 'completed' ? 'text-gray-900' : 'text-gray-900'
+                          isActive ? 'text-white' : 'text-gray-600'
                         }`}>
                           {step.title}
                         </div>
                         <div className={`text-xs ${
-                          isActive ? 'text-orange-100' : status === 'completed' ? 'text-green-600' : 'text-gray-500'
+                          isActive ? 'text-orange-100' : 'text-gray-500'
                         }`}>
                           {step.description}
                         </div>
