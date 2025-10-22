@@ -13,6 +13,9 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   const [isSeeking, setIsSeeking] = useState(false);
   const [autoPaused, setAutoPaused] = useState(false); // paused because out of view
   const [userPaused, setUserPaused] = useState(false); // user explicitly paused
+  const [showControls, setShowControls] = useState(true); // for mobile control visibility
+  const [isMobile, setIsMobile] = useState(false);
+  const hideControlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -27,7 +30,69 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
       setIsPlaying(false);
       setUserPaused(true);
     }
+    
+    // Show controls briefly when toggling play on mobile
+    if (isMobile) {
+      setShowControls(true);
+      resetHideControlsTimer();
+    }
   };
+
+  const resetHideControlsTimer = () => {
+    if (hideControlsTimeoutRef.current) {
+      clearTimeout(hideControlsTimeoutRef.current);
+    }
+    if (isMobile) {
+      hideControlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000); // Hide controls after 3 seconds on mobile
+    }
+  };
+
+  const handleMobileInteraction = () => {
+    if (isMobile) {
+      setShowControls(true);
+      resetHideControlsTimer();
+    }
+  };
+  // Detect mobile device
+  useEffect(() => {
+    const resetTimer = () => {
+      if (hideControlsTimeoutRef.current) {
+        clearTimeout(hideControlsTimeoutRef.current);
+      }
+      const mobile = window.innerWidth < 768;
+      if (mobile) {
+        hideControlsTimeoutRef.current = setTimeout(() => {
+          setShowControls(false);
+        }, 3000);
+      }
+    };
+
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768; // md breakpoint
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowControls(true); // Always show controls on desktop
+        if (hideControlsTimeoutRef.current) {
+          clearTimeout(hideControlsTimeoutRef.current);
+        }
+      } else {
+        // On mobile, show controls initially then hide after 3 seconds
+        resetTimer();
+      }
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      if (hideControlsTimeoutRef.current) {
+        clearTimeout(hideControlsTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Pause when scrolled away, resume when back (if not user-paused)
   useEffect(() => {
     const target = containerRef.current;
@@ -88,7 +153,16 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   return (
   <div ref={containerRef} className="group relative w-full">
       <div className="relative rounded-2xl bg-white  ring-1 ring-gray-200/60 overflow-hidden">
-        <div className="relative w-full aspect-[16/9]">
+        <div 
+          className="relative w-full aspect-[16/9]"
+          onTouchStart={handleMobileInteraction}
+          onClick={(e) => {
+            // Only handle click if it's on the video area, not the controls
+            if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'VIDEO') {
+              handleMobileInteraction();
+            }
+          }}
+        >
           <video
             ref={videoRef}
             className="absolute inset-0 w-full h-full object-cover"
@@ -107,7 +181,13 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
             Demo
           </div>
           {/* Unified bottom control bar */}
-          <div className="absolute bottom-0 left-0 w-full px-4 py-3 flex items-center gap-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent backdrop-blur-sm">
+          <div 
+            className={`absolute bottom-0 left-0 w-full px-4 py-3 flex items-center gap-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent backdrop-blur-sm transition-opacity duration-300 ${
+              isMobile && !showControls ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+            onTouchStart={handleMobileInteraction}
+            onClick={handleMobileInteraction}
+          >
             <button
               onClick={togglePlay}
               aria-label={isPlaying ? 'Pause video' : 'Play video'}
