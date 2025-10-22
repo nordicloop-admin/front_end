@@ -245,7 +245,7 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
                 key={type.id}
                 onClick={() => handlePackagingSelect(type.name)}
                 className={`
-                  p-4 rounded-lg border-2 transition-all text-left hover:scale-105
+                  p-4 rounded-lg border transition-all text-left hover:scale-105
                   ${formData.quantity.packaging === type.name
                     ? 'border-[#FF8A00] bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'

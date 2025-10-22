@@ -108,7 +108,7 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
               key={level.id}
               onClick={() => handleLevelSelect(level.id)}
               className={`
-                w-full p-4 rounded-lg border-2 text-left transition-all
+                w-full p-4 rounded-lg border text-left transition-all
                 ${formData.contamination.level === level.id
                   ? level.color === 'green'
                     ? 'border-green-500 bg-green-50'

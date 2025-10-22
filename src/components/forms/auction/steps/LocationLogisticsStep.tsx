@@ -278,7 +278,7 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
                 key={option.id}
                 onClick={() => toggleDeliveryOption(option.id)}
                 className={`
-                  p-4 rounded-lg border-2 text-left transition-all
+                  p-4 rounded-lg border text-left transition-all
                   ${isSelected
                     ? 'border-[#FF8A00] bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'

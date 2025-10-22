@@ -64,7 +64,7 @@ export function MaterialOriginStep({ formData, updateFormData }: Props) {
                 key={origin.id}
                 onClick={() => handleOriginSelect(origin.id)}
                 className={`
-                  w-full p-6 rounded-lg border-2 text-left transition-all
+                  w-full p-6 rounded-lg border text-left transition-all
                   ${formData.origin.source === origin.id
                     ? 'border-[#FF8A00] bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
