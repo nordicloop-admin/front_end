@@ -80,7 +80,8 @@ const HomeRecentAuctionsSection: React.FC = () => {
   }, []);
 
   return (
-    <section className="py-10 mx-7">
+    <section className="py-10">
+      <div className="mx-7 md:max-w-[86%] md:mx-auto">
       <div className="w-full">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl md:text-3xl font-bold text-[#1E2A36]">Recently Added Auctions<span className="text-[#FF8A00]">.</span></h2>
@@ -103,6 +104,7 @@ const HomeRecentAuctionsSection: React.FC = () => {
         <div className="mt-8 flex justify-center">
           <Link href="/market-place" className="bg-[#FF8A00] text-white px-8 py-3 rounded-md hover:bg-[#e67e00] transition-colors text-sm font-medium">View Marketplace</Link>
         </div>
+      </div>
       </div>
     </section>
   );

@@ -160,7 +160,8 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
 const MarketplaceSection = () => {
   return (
     // Match hero width: use section-margin + full-width grid similar spacing
-    <section className="py-12 lg:py-16 mx-7">
+    <section className="py-12 lg:py-16">
+      <div className="mx-7 md:max-w-[86%] md:mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24 w-full">
         <div className="order-2 lg:order-1 flex flex-col justify-center items-start w-full">
             <h3 className="text-md md:text-md font-semibold mb-3 text-[#1E2A36]">Waste Marketplace</h3>
@@ -189,6 +190,7 @@ const MarketplaceSection = () => {
             title="Nordic Loop Material Listing Flow"
           />
         </div>
+      </div>
       </div>
     </section>
   );
