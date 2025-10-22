@@ -2,7 +2,7 @@
 
 const nextConfig = {
   images: {
-    // domains: ['369d0b822225eb6c7d933f34f4085730.r2.cloudflarestorage.com'],
+    domains: ['nordic-loop-platform.onrender.com'],
     remotePatterns: [
       
       {
