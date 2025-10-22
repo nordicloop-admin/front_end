@@ -170,6 +170,13 @@ const Header = () => {
             <div className="flex-1 overflow-y-auto py-6 px-6">
               <nav className="flex flex-col space-y-4">
                 <Link
+                  href="/"
+                  className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Home
+                </Link>
+                <Link
                   href="/market-place"
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
                   onClick={() => setIsMenuOpen(false)}
