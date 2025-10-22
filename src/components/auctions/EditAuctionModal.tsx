@@ -3298,7 +3298,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
 
         <div className="flex flex-1 min-h-0">
           {/* Steps Sidebar */}
-          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto flex-shrink-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 flex-shrink-0 sticky top-0 self-start max-h-[calc(90vh-0px)] overflow-hidden">
             <div className="space-y-3">
               {steps.map((step, _index) => {
                 const status = getStepStatus(step.id);
@@ -3381,7 +3381,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Step Content */}
             <div className="flex-1 p-6 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               <div className="max-w-2xl">
