@@ -82,7 +82,7 @@ const AboutPage = () => {
       name: 'Olivier Karera',
       role: 'Software Engineer',
       bio: 'Olivier brings technical expertise to Nordic Loop, developing innovative solutions and architectural designs that power the platform. He focuses on creating scalable systems that deliver exceptional user experiences for our customers.',
-      image: '/images/About/Olivier Karera.png',
+      image: '/images/About/Olivier Karera software engineer.png',
     },
   ];
 
@@ -181,7 +181,7 @@ const AboutPage = () => {
                     src={member.image}
                     alt={member.name}
                     fill
-                    className={`object-cover transition-all duration-500 ${member.name === 'Nicola Valenti' ? 'object-center' : 'object-[center_20%]'}`}
+                    className={`object-cover transition-all duration-500 ${member.name === 'Nicola Valenti' || member.name === 'Olivier Karera'   ? 'object-center' : 'object-[center_20%]'}`}
                     style={{
                       transform: hoveredTeamMember === index ? 'scale(1.05)' : 'scale(1)',
                     }}
