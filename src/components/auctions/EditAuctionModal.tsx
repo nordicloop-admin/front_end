@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Check, ChevronLeft, ChevronRight, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
+import { X, Check, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
@@ -456,7 +456,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const router = useRouter();
   const [stepData, setStepData] = useState<StepData>({});
   const [hasChanges, setHasChanges] = useState(false);
-  const [shouldCloseAfterSave, setShouldCloseAfterSave] = useState(false);
+  // Remove ambiguous state flag; we'll pass intent directly to submit handler
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoaded, setCategoriesLoaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -1098,7 +1098,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   };
 
   // Submit changes to backend
-  const handleSubmit = async () => {
+  const handleSubmit = async (closeAfter: boolean) => {
 
     // Clear previous validation errors
     setValidationErrors({});
@@ -1180,108 +1180,168 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           keywords: backendData.keywords || auction.keywords
         };
 
-        await onSubmit(updatedAuction);
+        // Only notify parent if we intend to close (parent handler currently closes modal)
+        if (closeAfter) {
+          await onSubmit(updatedAuction);
+        } else {
+          // For inline save without close, rely on internal refresh logic below
+        }
       }
 
       setHasChanges(false);
       toast.success('Changes saved successfully!', {
         description: `Step ${activeStep} has been updated.`
       });
-      // Force refresh of the auction detail page so latest data shows up immediately
-      try {
-        if (onRefresh) {
-          await onRefresh(); // Call parent's refresh function if available
-        } else {
-          router.refresh(); // Fallback to Next.js refresh if no parent callback
+      if (closeAfter) {
+        // Only perform heavy refresh/re-fetch when closing the modal
+        try {
+          if (onRefresh) {
+            await onRefresh();
+          } else {
+            router.refresh();
+          }
+        } catch (_e) {
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
         }
-      } catch (_e) {
-        // Fallback hard reload if refresh fails or errors
-        if (typeof window !== 'undefined') {
-          window.location.reload();
+
+        // Reload complete ad data to refresh step completion status
+        try {
+          const refreshedData = await adCreationService.getAdDetails(parseInt(auction.id));
+          if (refreshedData.success && refreshedData.data) {
+            setCompleteAdData(refreshedData.data);
+
+            // Re-initialize step data with fresh backend data (only needed when closing)
+            const freshData = refreshedData.data;
+            setStepData({
+              materialType: freshData.category_name || '',
+              category: freshData.category_name || '',
+              subcategory: freshData.subcategory_name || '',
+              specificMaterial: freshData.specific_material ? (
+                typeof freshData.specific_material === 'string'
+                  ? freshData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean)
+                  : []
+              ) : [],
+              packaging: freshData.packaging || '',
+              materialFrequency: freshData.material_frequency || '',
+              grade: freshData.specification?.material_grade_display || '',
+              color: freshData.specification?.color || '',
+              form: freshData.specification?.material_form_display || '',
+              additionalSpecs: freshData.additional_specifications ? [freshData.additional_specifications] : [],
+              origin: freshData.origin_display || '',
+              contaminationLevel: freshData.contamination_display || '',
+              additives: freshData.additives_display ? [freshData.additives_display] : [],
+              storageConditions: freshData.storage_conditions_display || '',
+              processingMethods: freshData.processing_methods || [],
+              location: freshData.location ? {
+                country: freshData.location.country || '',
+                region: freshData.location.state_province || '',
+                city: freshData.location.city || '',
+                fullAddress: freshData.location.address_line || '',
+                postalCode: freshData.location.postal_code || '',
+                deliveryOptions: freshData.delivery_options || []
+              } : {
+                country: '',
+                region: '',
+                city: '',
+                fullAddress: '',
+                postalCode: '',
+                deliveryOptions: []
+              },
+              availableQuantity: freshData.available_quantity || 0,
+              unit: freshData.unit_of_measurement || '',
+              minimumOrder: freshData.minimum_order_quantity || 0,
+              startingPrice: freshData.starting_bid_price || 0,
+              currency: freshData.currency || 'SEK',
+              auctionDuration: freshData.auction_duration ? String(freshData.auction_duration) : '',
+              reservePrice: freshData.reserve_price || 0,
+              customAuctionDuration: freshData.custom_auction_duration || 0,
+              title: freshData.title || '',
+              description: freshData.description || '',
+              keywords: freshData.keywords ? freshData.keywords.split(', ') : [],
+              images: [],
+              currentImageUrl: freshData.material_image || ''
+            });
+          }
+        } catch (_reloadError) {
+          // Ignore re-fetch errors; save already succeeded
         }
-      }
-
-      // Reload complete ad data to refresh step completion status
-      try {
-        const refreshedData = await adCreationService.getAdDetails(parseInt(auction.id));
-        if (refreshedData.success && refreshedData.data) {
-          setCompleteAdData(refreshedData.data);
-
-          // Re-initialize step data with fresh backend data
-          const freshData = refreshedData.data;
-          setStepData({
-            // Step 1: Material Type
-            materialType: freshData.category_name || '',
-            category: freshData.category_name || '',
-            subcategory: freshData.subcategory_name || '',
-            specificMaterial: freshData.specific_material ? 
-              (typeof freshData.specific_material === 'string' ? 
-                freshData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean) : 
-                []) : [],
-            packaging: freshData.packaging || '',
-            materialFrequency: freshData.material_frequency || '',
-
-            // Step 2: Specifications
-            grade: freshData.specification?.material_grade_display || '',
-            color: freshData.specification?.color || '',
-            form: freshData.specification?.material_form_display || '',
-            additionalSpecs: freshData.additional_specifications ? [freshData.additional_specifications] : [],
-
-            // Step 3: Origin
-            origin: freshData.origin_display || '',
-
-            // Step 4: Contamination
-            contaminationLevel: freshData.contamination_display || '',
-            additives: freshData.additives_display ? [freshData.additives_display] : [],
-            storageConditions: freshData.storage_conditions_display || '',
-
-            // Step 5: Processing Methods
-            processingMethods: freshData.processing_methods || [],
-
-            // Step 6: Location & Logistics
-            location: freshData.location ? {
-              country: freshData.location.country || '',
-              region: freshData.location.state_province || '',
-              city: freshData.location.city || '',
-              fullAddress: freshData.location.address_line || '',
-              postalCode: freshData.location.postal_code || '',
-              deliveryOptions: freshData.delivery_options || []
-            } : {
-              country: '',
-              region: '',
-              city: '',
-              fullAddress: '',
-              postalCode: '',
-              deliveryOptions: []
-            },
-
-            // Step 7: Quantity & Price
-            availableQuantity: freshData.available_quantity || 0,
-            unit: freshData.unit_of_measurement || '',
-            minimumOrder: freshData.minimum_order_quantity || 0,
-            startingPrice: freshData.starting_bid_price || 0,
-            currency: freshData.currency || 'SEK',
-            auctionDuration: freshData.auction_duration ? String(freshData.auction_duration) : '',
-            reservePrice: freshData.reserve_price || 0,
-            customAuctionDuration: freshData.custom_auction_duration || 0,
-
-            // Step 8: Details with image handling
-            title: freshData.title || '',
-            description: freshData.description || '',
-            keywords: freshData.keywords ? freshData.keywords.split(', ') : [],
-            images: [],
-            currentImageUrl: freshData.material_image || ''
-          });
-
-        }
-      } catch (_reloadError) {
-        // Don't throw error here, save was successful
+      } else {
+        // Inline save: keep UI responsive without forcing page refresh.
+        // Optionally patch local completion data for the current step.
+  setCompleteAdData((prev: any) => {
+          if (!prev) return prev; // Nothing to patch
+          try {
+            const draft: any = { ...prev };
+            switch (activeStep) {
+              case 1:
+                draft.category_name = stepData.category;
+                draft.subcategory_name = stepData.subcategory;
+                draft.specific_material = stepData.specificMaterial?.join(', ');
+                draft.packaging = stepData.packaging;
+                draft.material_frequency = stepData.materialFrequency;
+                break;
+              case 2:
+                draft.specification = {
+                  ...(draft.specification || {}),
+                  material_grade_display: stepData.grade,
+                  color: stepData.color,
+                  material_form_display: stepData.form
+                };
+                draft.additional_specifications = stepData.additionalSpecs?.join(', ');
+                break;
+              case 3:
+                draft.origin_display = stepData.origin;
+                break;
+              case 4:
+                draft.contamination_display = stepData.contaminationLevel;
+                draft.additives_display = stepData.additives?.join(', ');
+                draft.storage_conditions_display = stepData.storageConditions;
+                break;
+              case 5:
+                draft.processing_methods = stepData.processingMethods;
+                break;
+              case 6:
+                draft.location = {
+                  ...(draft.location || {}),
+                  country: stepData.location?.country,
+                  state_province: stepData.location?.region,
+                  city: stepData.location?.city,
+                  address_line: stepData.location?.fullAddress,
+                  postal_code: stepData.location?.postalCode
+                };
+                draft.delivery_options = stepData.location?.deliveryOptions;
+                break;
+              case 7:
+                draft.available_quantity = stepData.availableQuantity;
+                draft.unit_of_measurement = stepData.unit;
+                draft.minimum_order_quantity = stepData.minimumOrder;
+                draft.starting_bid_price = stepData.startingPrice;
+                draft.currency = stepData.currency;
+                draft.auction_duration = stepData.auctionDuration ? parseInt(stepData.auctionDuration) : draft.auction_duration;
+                draft.reserve_price = stepData.reservePrice;
+                draft.custom_auction_duration = stepData.customAuctionDuration;
+                break;
+              case 8:
+                draft.title = stepData.title;
+                draft.description = stepData.description;
+                draft.keywords = stepData.keywords?.join(', ');
+                // Image handled separately; keep existing material_image unless changed
+                break;
+              default:
+                break;
+            }
+            return draft;
+          } catch {
+            return prev; // Fallback to previous state on any patch error
+          }
+        });
       }
 
       // Close modal if requested
-      if (shouldCloseAfterSave) {
+      if (closeAfter) {
         onClose();
-        setShouldCloseAfterSave(false);
       }
 
       // Reset loading state on success
@@ -1672,7 +1732,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         key={category.id}
                         onClick={() => handleCategorySelect(category)}
                         className={`
-                          p-4 rounded-lg border-2 text-left transition-all hover:scale-105 relative
+                          p-4 rounded-lg border text-left transition-all hover:scale-105 relative
                           ${selectedCategoryId === category.id
                             ? 'border-[#FF8A00] bg-orange-50'
                             : 'border-gray-200 hover:border-gray-300'
@@ -1706,7 +1766,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                             key={subcategory.id}
                             onClick={() => handleSubcategorySelect(subcategory)}
                             className={`
-                              p-3 rounded-lg border-2 text-sm text-left transition-all hover:scale-105 relative
+                              p-3 rounded-lg border text-sm text-left transition-all hover:scale-105 relative
                               ${stepData.subcategory === subcategory.name
                                 ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                                 : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -1723,18 +1783,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         <p className="text-gray-500 text-sm">No subcategories available for {selectedCategory.name}</p>
                       </div>
                     ) : null}
-                  </div>
-                )}
-
-                {/* Verify Category Button */}
-                {selectedCategory && (
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
-                    >
-                      Verify Category
-                    </button>
                   </div>
                 )}
 
@@ -1791,22 +1839,21 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                           key={type.id}
                           onClick={() => handleStepDataChange({ packaging: type.id })}
                           className={`
-                            p-4 rounded-lg border-2 transition-all text-left hover:scale-105
+                            p-4 rounded-lg border transition-all text-left hover:scale-105
                             ${stepData.packaging === type.id
                               ? 'border-[#FF8A00] bg-orange-50'
                               : 'border-gray-200 hover:border-gray-300'
                             }
                           `}
                         >
-                          <div className="flex items-start space-x-3">
+                          <div className="flex items-center space-x-3">
                             <div className={`
-                              p-2 rounded-md
                               ${stepData.packaging === type.id
-                                ? 'bg-[#FF8A00] text-white'
-                                : 'bg-gray-100 text-gray-600'
+                                ? 'text-[#FF8A00]'
+                                : 'text-gray-400'
                               }
                             `}>
-                              <Icon className="w-5 h-5" />
+                              <Icon className="w-6 h-6" />
                             </div>
                             <div className="flex-1">
                               <h4 className="font-medium text-gray-900">{type.name}</h4>
@@ -1830,7 +1877,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         key={frequency.id}
                         onClick={() => handleStepDataChange({ materialFrequency: frequency.id })}
                         className={`
-                          p-3 rounded-lg border-2 text-sm text-center transition-all hover:scale-105
+                          p-3 rounded-lg border text-sm text-center transition-all hover:scale-105
                           ${stepData.materialFrequency === frequency.id
                             ? 'border-[#FF8A00] bg-orange-50 text-[#FF8A00] font-medium'
                             : 'border-gray-200 hover:border-gray-300 text-gray-700'
@@ -2016,15 +2063,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       }
                     `}
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-center space-x-3">
                       <div className={`
-                        p-2 rounded-md
                         ${stepData.origin === option.id
-                          ? 'bg-[#FF8A00] text-white'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'text-[#FF8A00]'
+                          : 'text-gray-400'
                         }
                       `}>
-                        <Factory className="w-5 h-5" />
+                        <Factory className="w-7 h-7" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{option.name}</h4>
@@ -2058,18 +2104,19 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       }
                     `}
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-center space-x-3">
                       <div className={`
-                        p-2 rounded-md
                         ${stepData.contaminationLevel === level.id
-                          ? 'bg-[#FF8A00] text-white'
-                          : 'bg-gray-100 text-gray-600'
+                          ? level.color === 'green'
+                            ? 'text-green-500'
+                            : 'text-red-500'
+                          : 'text-gray-400'
                         }
                       `}>
                         {level.color === 'green' ? (
-                          <Check className="w-5 h-5" />
+                          <Check className="w-6 h-6" />
                         ) : (
-                          <AlertCircle className="w-5 h-5" />
+                          <AlertCircle className="w-6 h-6" />
                         )}
                       </div>
                       <div className="flex-1">
@@ -2137,15 +2184,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         }
                       `}
                     >
-                      <div className="flex items-start space-x-3">
+                      <div className="flex items-center space-x-3">
                         <div className={`
-                          p-2 rounded-md
                           ${stepData.storageConditions === condition.id
-                            ? 'bg-[#FF8A00] text-white'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'text-[#FF8A00]'
+                            : 'text-gray-400'
                           }
                         `}>
-                          <Icon className="w-5 h-5" />
+                          <Icon className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{condition.name}</h4>
@@ -2200,15 +2246,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       }
                     `}
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-center space-x-3">
                       <div className={`
-                        p-2 rounded-md
                         ${stepData.processingMethods?.includes(method.id)
-                          ? 'bg-[#FF8A00] text-white'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'text-[#FF8A00]'
+                          : 'text-gray-400'
                         }
                       `}>
-                        <Settings className="w-4 h-4" />
+                        <Settings className="w-6 h-6" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
@@ -2243,12 +2288,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             )}
 
             {/* Information Note */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-4">
               <div className="flex items-start space-x-3">
-                <Settings className="w-5 h-5 text-blue-600 mt-0.5" />
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FF8A00] text-white text-xs font-semibold flex-shrink-0">
+                  <Settings className="h-4 w-4" />
+                </span>
                 <div>
-                  <h4 className="text-sm font-medium text-blue-900">Processing Guidelines</h4>
-                  <div className="text-sm text-blue-700 mt-1 space-y-1">
+                  <h4 className="text-sm font-medium text-orange-900">Processing Guidelines</h4>
+                  <div className="text-sm text-orange-700 mt-1 space-y-1">
                     <p>• Select all applicable processing methods for your material</p>
                     <p>• Multiple methods can be selected if applicable</p>
                     <p>• This helps buyers understand material compatibility</p>
@@ -2443,22 +2490,21 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         }
                       }}
                       className={`
-                        p-4 rounded-lg border-2 text-left transition-all
+                        p-4 rounded-lg border text-left transition-all
                         ${isSelected
                           ? 'border-[#FF8A00] bg-orange-50'
                           : 'border-gray-200 hover:border-gray-300'
                         }
                       `}
                     >
-                      <div className="flex items-start space-x-3">
+                      <div className="flex items-center space-x-3">
                         <div className={`
-                          p-2 rounded-full
                           ${isSelected
-                            ? 'bg-[#FF8A00] text-white'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'text-[#FF8A00]'
+                            : 'text-gray-400'
                           }
                         `}>
-                          <Icon className="w-5 h-5" />
+                          <Icon className="w-6 h-6" />
                         </div>
                         <div>
                           <div className="flex items-center">
@@ -2477,14 +2523,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             </div>
 
             {/* Information Box */}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-md p-4">
               <div className="flex items-start space-x-3">
-                <div className="flex-shrink-0">
-                  <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-                </div>
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#FF8A00] text-white text-xs font-semibold flex-shrink-0">
+                  <Info className="h-4 w-4" />
+                </span>
                 <div>
-                  <h4 className="text-sm font-medium text-blue-900">Why location matters</h4>
-                  <div className="text-sm text-blue-700 mt-1">
+                  <h4 className="text-sm font-medium text-orange-900">Why location?</h4>
+                  <div className="text-sm text-orange-700 mt-1">
                     <p className="mb-1">• Accurate location helps buyers calculate logistics costs</p>
                     <p className="mb-1">• Currently, the Nordic Loop Marketplace only serves locations within Sweden</p>
                     <p className="mb-1">• Specify delivery options to make your listing more attractive</p>
@@ -3294,8 +3340,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
       className="h-[90vh] max-h-[90vh] flex flex-col p-0"
     >
       <div className="flex flex-col h-full">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+  {/* Header */}
+  <div className="px-6 py-4 h-[11vh] border-b border-gray-200 flex items-center justify-between flex-shrink-0 sticky top-0 bg-white z-20">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Edit Auction</h2>
             <p className="text-sm text-gray-600">
@@ -3310,9 +3356,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           </button>
         </div>
 
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-1 max-h-[79vh]">
           {/* Steps Sidebar */}
-          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 overflow-y-auto flex-shrink-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 flex-shrink-0 sticky top-[64px] self-start h-[79vh]  overflow-hidden">
             <div className="space-y-3">
               {steps.map((step, _index) => {
                 const status = getStepStatus(step.id);
@@ -3326,32 +3372,32 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       isActive
                         ? 'bg-[#FF8A00] text-white border-[#FF8A00]'
                         : status === 'completed'
-                        ? 'bg-white text-gray-700 border-emerald-300 hover:bg-gray-50'
+                        ? 'bg-white text-gray-700 border-green-200 hover:bg-gray-50'
                         : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-center space-x-3">
-                      <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
+                      <div className={`flex items-center justify-center w-6 h-6 text-xs font-medium ${
                         isActive
-                          ? 'bg-white text-[#FF8A00]'
+                          ? 'text-white'
                           : status === 'completed'
-                          ? 'bg-emerald-400 text-white'
-                          : 'bg-gray-200 text-gray-600'
+                          ? 'text-green-400'
+                          : 'text-gray-600'
                       }`}>
                         {status === 'completed' ? (
-                          <Check className="w-4 h-4" />
+                          <CheckCircle className="w-4 h-4" />
                         ) : (
                           step.id
                         )}
                       </div>
                       <div className="flex-1">
                         <div className={`text-sm font-medium ${
-                          isActive ? 'text-white' : status === 'completed' ? 'text-gray-900' : 'text-gray-900'
+                          isActive ? 'text-white' : 'text-gray-600'
                         }`}>
                           {step.title}
                         </div>
                         <div className={`text-xs ${
-                          isActive ? 'text-orange-100' : status === 'completed' ? 'text-green-600' : 'text-gray-500'
+                          isActive ? 'text-orange-100' : 'text-gray-500'
                         }`}>
                           {step.description}
                         </div>
@@ -3395,7 +3441,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           </div>
 
           {/* Content Area */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
             {/* Step Content */}
             <div className="flex-1 p-6 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
               <div className="max-w-2xl">
@@ -3430,37 +3476,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             </div>
 
             {/* Footer */}
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50 flex-shrink-0">
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => {
-                    const currentIndex = steps.findIndex(step => step.id === activeStep);
-                    if (currentIndex > 0) {
-                      setActiveStep(steps[currentIndex - 1].id);
-                    }
-                  }}
-                  disabled={steps.findIndex(step => step.id === activeStep) === 0}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>Previous</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    const currentIndex = steps.findIndex(step => step.id === activeStep);
-                    if (currentIndex < steps.length - 1) {
-                      setActiveStep(steps[currentIndex + 1].id);
-                    }
-                  }}
-                  disabled={steps.findIndex(step => step.id === activeStep) === steps.length - 1}
-                  className="flex items-center space-x-2 px-4 py-2 text-gray-600 border border-gray-200 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <span>Next</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end bg-gray-50 flex-shrink-0">
               <div className="flex space-x-3">
                 {hasChanges && (
                   <div className="flex items-center space-x-2 text-sm text-amber-600">
@@ -3477,7 +3493,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 </button>
                 
                 <Button
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit(false)}
                   disabled={isSubmitting}
                   className="px-6 py-2 bg-[#FF8A00] text-white rounded-md hover:bg-[#e67e00] disabled:opacity-50 flex items-center space-x-2"
                 >
@@ -3495,12 +3511,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                 </Button>
 
                 <Button
-                  onClick={() => {
-                    setShouldCloseAfterSave(true);
-                    handleSubmit();
-                  }}
+                  onClick={() => handleSubmit(true)}
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+                  className="px-6 py-2 bg-green-400 text-white rounded-md hover:bg-green-500 disabled:opacity-50 flex items-center space-x-2"
                 >
                   {isSubmitting ? (
                     <>

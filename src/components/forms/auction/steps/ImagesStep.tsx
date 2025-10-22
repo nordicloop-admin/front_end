@@ -1,13 +1,14 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Type, Tag, Info, AlertCircle } from 'lucide-react';
+import InfoCallout from '../../../ui/InfoCallout';
 import Image from 'next/image';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
-  formData: FormData;
-  updateFormData: (updates: Partial<FormData>) => void;
-  validationErrors?: Record<string, string[]>;
-  showValidationErrors?: boolean;
+  readonly formData: FormData;
+  readonly updateFormData: (updates: Partial<FormData>) => void;
+  readonly validationErrors?: Record<string, string[]>;
+  readonly showValidationErrors?: boolean;
 }
 
 export function ImagesStep({ formData, updateFormData, validationErrors, showValidationErrors }: Props) {
@@ -126,7 +127,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
 
       {/* Validation Errors Summary */}
       {showValidationErrors && validationErrors && Object.keys(validationErrors).length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+  <div className="bg-red-50 border border-red-200 rounded-lg p-4" role="alert">
           <div className="flex items-start">
             <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
             <div>
@@ -143,7 +144,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
 
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label htmlFor="listing-title" className="block text-sm font-medium text-gray-700 mb-3">
           <Type className="inline w-4 h-4 mr-2" />
           Listing Title *
           <span className="text-xs text-gray-500 font-normal ml-2">(Minimum 3 characters)</span>
@@ -159,6 +160,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
           value={formData.title}
           onChange={(e) => updateFormData({ title: e.target.value })}
           maxLength={255}
+          id="listing-title"
         />
         {/* Validation Error Message */}
         {showValidationErrors && validationErrors?.title && (
@@ -186,7 +188,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label htmlFor="listing-description" className="block text-sm font-medium text-gray-700 mb-3">
           Description (Optional)
         </label>
         <textarea
@@ -199,6 +201,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
           value={formData.description}
           onChange={(e) => updateFormData({ description: e.target.value })}
           rows={4}
+          id="listing-description"
         />
         {/* Validation Error Message */}
         {showValidationErrors && validationErrors?.description && (
@@ -223,17 +226,17 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
 
       {/* Keywords */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label htmlFor="keywords-input" className="block text-sm font-medium text-gray-700 mb-3">
           <Tag className="inline w-4 h-4 mr-2" />
           Keywords (Optional)
           <span className="text-xs text-gray-500 font-normal ml-2">(Maximum 500 characters total)</span>
         </label>
         <div className="flex flex-wrap gap-2 mb-3">
-          {formData.keywords.map((keyword, index) => (
-            <span key={index} className="inline-flex items-center px-3 py-1 bg-[#FF8A00] text-white text-sm rounded-full">
+          {formData.keywords.map((keyword) => (
+            <span key={`${keyword}`} className="inline-flex items-center px-3 py-1 bg-[#FF8A00] text-white text-sm rounded-full">
               {keyword}
               <button
-                onClick={() => handleKeywordRemove(index)}
+                onClick={() => handleKeywordRemove(formData.keywords.indexOf(keyword))}
                 className="ml-2 text-white hover:text-gray-200"
               >
                 ×
@@ -248,7 +251,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
             !areKeywordsValid() || (showValidationErrors && validationErrors?.keywords) ? 'border-red-300 bg-red-50' : 'border-gray-300'
           }`}
           disabled={!areKeywordsValid()}
-          onKeyPress={(e) => {
+          onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ',') {
               e.preventDefault();
               const input = e.currentTarget;
@@ -258,6 +261,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
               }
             }
           }}
+          id="keywords-input"
         />
         {/* Validation Error Message */}
         {showValidationErrors && validationErrors?.keywords && (
@@ -283,7 +287,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
 
       {/* Upload Area */}
       <div className="pt-4 border-t border-gray-200">
-        <label className="block text-sm font-medium text-gray-700 mb-3">
+        <label htmlFor="material-image-input" className="block text-sm font-medium text-gray-700 mb-3">
           Material Image *
         </label>
         {formData.images && formData.images.length > 0 ? (
@@ -309,7 +313,9 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
             </p>
           </div>
         ) : (
-          <div
+          <label
+            aria-label="Upload material image by clicking or dragging a file"
+            htmlFor="material-image-input"
             className={`
               relative border-2 border-dashed rounded-lg p-8 text-center transition-all
               ${dragActive 
@@ -328,6 +334,7 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
               accept="image/jpeg,image/jpg,image/png,image/webp"
               onChange={handleFileInput}
               className="hidden"
+              id="material-image-input"
             />
             
             <div className="space-y-4">
@@ -346,14 +353,16 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
                 </p>
                 
                 <button
-                  onClick={() => fileInputRef.current?.click()}
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); fileInputRef.current?.click(); }}
                   className="inline-flex items-center px-4 py-2 bg-[#FF8A00] text-white rounded-lg hover:bg-[#e67700] transition-colors"
+                  aria-controls="material-image-input"
                 >
                   Choose Image
                 </button>
               </div>
             </div>
-          </div>
+          </label>
         )}
       </div>
 
@@ -367,27 +376,21 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
       )}
 
       {/* Information Note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex items-start space-x-3">
-          <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">Listing Tips</h4>
-            <div className="text-sm text-blue-700 mt-1 space-y-1">
-              <p>• Use a clear, high-quality image showing the material</p>
-              <p>• Create a descriptive title that includes material type and grade</p>
-              <p>• Mention key selling points in your description</p>
-              <p>• Include relevant keywords for better search visibility</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <InfoCallout title="Listing Tips" variant="orange" icon={<Info className="h-4 w-4" />}>
+        <ul className="space-y-1 list-disc pl-4">
+          <li>Use a clear, high-quality image showing the material</li>
+          <li>Create a descriptive title including material type and grade</li>
+          <li>Mention key selling points in your description</li>
+          <li>Include relevant keywords for better search visibility</li>
+        </ul>
+      </InfoCallout>
 
-      {/* Validation */}
-      {(!formData.title || formData.title.trim().length < 3) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-          <p className="text-sm text-yellow-600">
-            Please provide a title (minimum 3 characters). Description is optional.
-          </p>
+      {/* Inline quick guidance when title too short and not yet showing full validation errors */}
+      {(!showValidationErrors && formData.title.length > 0 && formData.title.trim().length < 3) && (
+        <div className="mt-2">
+          <InfoCallout variant="warning" small>
+            <p className="text-xs">Title needs at least 3 characters. Description is optional.</p>
+          </InfoCallout>
         </div>
       )}
     </div>

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { MapPin, Truck, Package, Search, CheckCircle, Globe, MapPinned, Info } from 'lucide-react';
+import { MapPin, Truck, Package, Search, CheckCircle, Globe, MapPinned } from 'lucide-react';
+import InfoCallout from '@/components/ui/InfoCallout';
 import { FormData } from '../AlternativeAuctionForm';
 import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
 
@@ -277,22 +278,21 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
                 key={option.id}
                 onClick={() => toggleDeliveryOption(option.id)}
                 className={`
-                  p-4 rounded-lg border-2 text-left transition-all
+                  p-4 rounded-lg border text-left transition-all
                   ${isSelected
                     ? 'border-[#FF8A00] bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
                   }
                 `}
               >
-                <div className="flex items-start space-x-3">
+                <div className="flex items-center space-x-3">
                   <div className={`
-                    p-2 rounded-full
                     ${isSelected
-                      ? 'bg-[#FF8A00] text-white'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'text-[#FF8A00]'
+                      : 'text-gray-400'
                     }
                   `}>
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-6 h-6" />
                   </div>
                   <div>
                     <div className="flex items-center">
@@ -310,32 +310,17 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
-      {/* Information Box */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0">
-            <Info className="w-5 h-5 text-blue-600 mt-0.5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">Why location matters</h4>
-            <div className="text-sm text-blue-700 mt-1">
-              <p className="mb-1">• Accurate location helps buyers calculate logistics costs</p>
-              <p className="mb-1">• Currently, the Nordic Loop Marketplace only serves locations within Sweden</p>
-              <p className="mb-1">• Specify delivery options to make your listing more attractive</p>
-              <p>• For sensitive materials, you can choose to reveal exact location only to serious buyers</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Information Callout */}
+      <InfoCallout title="Why location?" className="mt-2" variant="orange">
+        <ul className="list-disc pl-4 space-y-1">
+          <li>Accurate location helps buyers calculate logistics costs</li>
+          <li>Currently we only serve locations within Sweden</li>
+          <li>Delivery options make your listing more attractive</li>
+          <li>You can reveal exact address later for sensitive materials</li>
+        </ul>
+      </InfoCallout>
 
-      {/* Validation Message */}
-      {(!formData.location.country || !formData.location.city) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-          <p className="text-sm text-yellow-600">
-            Please specify the location (country and city) where the material is available.
-          </p>
-        </div>
-      )}
+
     </div>
   );
 } 

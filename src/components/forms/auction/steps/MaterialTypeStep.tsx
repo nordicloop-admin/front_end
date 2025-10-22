@@ -245,22 +245,21 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
                 key={type.id}
                 onClick={() => handlePackagingSelect(type.name)}
                 className={`
-                  p-4 rounded-lg border-2 transition-all text-left hover:scale-105
+                  p-4 rounded-lg border transition-all text-left hover:scale-105
                   ${formData.quantity.packaging === type.name
                     ? 'border-[#FF8A00] bg-orange-50'
                     : 'border-gray-200 hover:border-gray-300'
                   }
                 `}
               >
-                <div className="flex items-start space-x-3">
+                <div className="flex items-center space-x-3">
                   <div className={`
-                    p-2 rounded-md
                     ${formData.quantity.packaging === type.name
-                      ? 'bg-[#FF8A00] text-white'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'text-[#FF8A00]'
+                      : 'text-gray-400'
                     }
                   `}>
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{type.name}</h4>
@@ -297,14 +296,7 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
-      {/* Validation Message */}
-      {(!formData.category || !formData.subcategory || !formData.quantity.packaging || !formData.sellFrequency) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-          <p className="text-sm text-yellow-600">
-            Please complete all required fields marked with an asterisk (*) to continue.
-          </p>
-        </div>
-      )}
+
     </div>
   );
 } 

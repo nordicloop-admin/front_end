@@ -108,7 +108,7 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
               key={level.id}
               onClick={() => handleLevelSelect(level.id)}
               className={`
-                w-full p-4 rounded-lg border-2 text-left transition-all
+                w-full p-4 rounded-lg border text-left transition-all
                 ${formData.contamination.level === level.id
                   ? level.color === 'green'
                     ? 'border-green-500 bg-green-50'
@@ -119,22 +119,21 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
                 }
               `}
             >
-              <div className="flex items-start space-x-3">
+              <div className="flex items-center space-x-3">
                 <div className={`
-                  p-2 rounded-md
                   ${formData.contamination.level === level.id
                     ? level.color === 'green'
-                      ? 'bg-green-500 text-white'
+                      ? 'text-green-500'
                       : level.color === 'yellow'
-                      ? 'bg-yellow-500 text-white'
-                      : 'bg-red-500 text-white'
-                    : 'bg-gray-100 text-gray-600'
+                      ? 'text-yellow-500'
+                      : 'text-red-500'
+                    : 'text-gray-400'
                   }
                 `}>
                   {level.color === 'green' ? (
-                    <CheckCircle className="w-5 h-5" />
+                    <CheckCircle className="w-6 h-6" />
                   ) : (
-                    <AlertTriangle className="w-5 h-5" />
+                    <AlertTriangle className="w-6 h-6" />
                   )}
                 </div>
                 <div className="flex-1">
@@ -197,15 +196,14 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
                   }
                 `}
               >
-                <div className="flex items-start space-x-3">
+                <div className="flex items-center space-x-3">
                   <div className={`
-                    p-2 rounded-md
                     ${formData.contamination.storage === condition.id
-                      ? 'bg-[#FF8A00] text-white'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'text-[#FF8A00]'
+                      : 'text-gray-400'
                     }
                   `}>
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-medium text-gray-900">{condition.name}</h4>
@@ -243,14 +241,7 @@ export function ContaminationStep({ formData, updateFormData }: Props) {
         </div>
       )}
 
-      {/* Validation Message */}
-      {!formData.contamination.level && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-          <p className="text-sm text-yellow-600">
-            Please select a contamination level to continue.
-          </p>
-        </div>
-      )}
+
     </div>
   );
 } 

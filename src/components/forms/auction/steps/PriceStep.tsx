@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, Scale, Package, Clock, Calendar } from 'lucide-react';
+import { Scale, Package, Clock, Calendar } from 'lucide-react';
+import InfoCallout from '@/components/ui/InfoCallout';
 import { FormData } from '../AlternativeAuctionForm';
 
 interface Props {
@@ -543,31 +544,23 @@ export function PriceStep({ formData, updateFormData, onValidationChange }: Prop
       )}
 
       {/* Pricing Guidelines */}
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0">
-            <DollarSign className="w-5 h-5 text-blue-600 mt-0.5" />
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-blue-900">Pricing Guidelines</h4>
-            <div className="text-sm text-blue-700 mt-1 space-y-1">
-              <p>• Research market prices for similar materials</p>
-              <p>• Consider material quality, quantity, and location</p>
-              <p>• Factor in logistics and processing costs for buyers</p>
-              <p>• Set reserve prices 10-20% below expected market value</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <InfoCallout title="Pricing Guidelines" variant="orange" className="mt-2">
+        <ul className="list-disc pl-4 space-y-1">
+          <li>Research market prices for similar materials</li>
+          <li>Consider material quality, quantity, and location</li>
+          <li>Factor in logistics and processing costs for buyers</li>
+          <li>Set reserve prices 10–20% below expected market value</li>
+        </ul>
+      </InfoCallout>
 
       {/* Validation Message */}
-      {(!formData.price.basePrice || !formData.quantity.available || !formData.quantity.unit || !formData.price.auctionDuration) && (
+      {/* {(!formData.price.basePrice || !formData.quantity.available || !formData.quantity.unit || !formData.price.auctionDuration) && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
           <p className="text-sm text-yellow-600">
             Please set a starting price, available quantity, unit of measurement, and auction duration to continue.
           </p>
         </div>
-      )}
+      )} */}
     </div>
   );
 } 
