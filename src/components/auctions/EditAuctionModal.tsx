@@ -1798,15 +1798,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                             }
                           `}
                         >
-                          <div className="flex items-start space-x-3">
+                          <div className="flex items-center space-x-3">
                             <div className={`
-                              p-2 rounded-md
                               ${stepData.packaging === type.id
-                                ? 'bg-[#FF8A00] text-white'
-                                : 'bg-gray-100 text-gray-600'
+                                ? 'text-[#FF8A00]'
+                                : 'text-gray-400'
                               }
                             `}>
-                              <Icon className="w-5 h-5" />
+                              <Icon className="w-6 h-6" />
                             </div>
                             <div className="flex-1">
                               <h4 className="font-medium text-gray-900">{type.name}</h4>
@@ -2016,15 +2015,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       }
                     `}
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-center space-x-3">
                       <div className={`
-                        p-2 rounded-md
                         ${stepData.origin === option.id
-                          ? 'bg-[#FF8A00] text-white'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'text-[#FF8A00]'
+                          : 'text-gray-400'
                         }
                       `}>
-                        <Factory className="w-5 h-5" />
+                        <Factory className="w-7 h-7" />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900">{option.name}</h4>
@@ -2058,18 +2056,19 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       }
                     `}
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-center space-x-3">
                       <div className={`
-                        p-2 rounded-md
                         ${stepData.contaminationLevel === level.id
-                          ? 'bg-[#FF8A00] text-white'
-                          : 'bg-gray-100 text-gray-600'
+                          ? level.color === 'green'
+                            ? 'text-green-500'
+                            : 'text-red-500'
+                          : 'text-gray-400'
                         }
                       `}>
                         {level.color === 'green' ? (
-                          <Check className="w-5 h-5" />
+                          <Check className="w-6 h-6" />
                         ) : (
-                          <AlertCircle className="w-5 h-5" />
+                          <AlertCircle className="w-6 h-6" />
                         )}
                       </div>
                       <div className="flex-1">
@@ -2137,15 +2136,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         }
                       `}
                     >
-                      <div className="flex items-start space-x-3">
+                      <div className="flex items-center space-x-3">
                         <div className={`
-                          p-2 rounded-md
                           ${stepData.storageConditions === condition.id
-                            ? 'bg-[#FF8A00] text-white'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'text-[#FF8A00]'
+                            : 'text-gray-400'
                           }
                         `}>
-                          <Icon className="w-5 h-5" />
+                          <Icon className="w-6 h-6" />
                         </div>
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900">{condition.name}</h4>
@@ -2200,15 +2198,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       }
                     `}
                   >
-                    <div className="flex items-start space-x-3">
+                    <div className="flex items-center space-x-3">
                       <div className={`
-                        p-2 rounded-md
                         ${stepData.processingMethods?.includes(method.id)
-                          ? 'bg-[#FF8A00] text-white'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'text-[#FF8A00]'
+                          : 'text-gray-400'
                         }
                       `}>
-                        <Settings className="w-4 h-4" />
+                        <Settings className="w-6 h-6" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">
@@ -2450,15 +2447,14 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                         }
                       `}
                     >
-                      <div className="flex items-start space-x-3">
+                      <div className="flex items-center space-x-3">
                         <div className={`
-                          p-2 rounded-full
                           ${isSelected
-                            ? 'bg-[#FF8A00] text-white'
-                            : 'bg-gray-100 text-gray-600'
+                            ? 'text-[#FF8A00]'
+                            : 'text-gray-400'
                           }
                         `}>
-                          <Icon className="w-5 h-5" />
+                          <Icon className="w-6 h-6" />
                         </div>
                         <div>
                           <div className="flex items-center">
