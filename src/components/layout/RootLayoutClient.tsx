@@ -24,6 +24,9 @@ export default function RootLayoutClient({
   const isAdminPage = pathname === '/admin' ||
                      pathname.startsWith('/admin/');
 
+  // Homepage should have full-width content
+  const isHomepage = pathname === '/';
+
   return (
     <>
       {!isAuthPage && !isDashboardPage && !isAdminPage && (
@@ -31,7 +34,7 @@ export default function RootLayoutClient({
           <Header />
         </div>
       )}
-      <main className={`flex-1 ${!isAuthPage && !isDashboardPage && !isAdminPage ? 'max-w-[86%] mx-auto w-full' : 'w-full'}`}>
+      <main className={`flex-1 ${!isAuthPage && !isDashboardPage && !isAdminPage && !isHomepage ? 'max-w-[86%] mx-auto w-full' : 'w-full'}`}>
         {children}
       </main>
       {!isAuthPage && !isDashboardPage && !isAdminPage && <Footer />}

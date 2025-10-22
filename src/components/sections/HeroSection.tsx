@@ -40,7 +40,7 @@ const HeroSection = () => {
   // Mobile Hero Section with Text Overlay
   if (deviceType === 'mobile') {
     return (
-      <section className="w-full section-margin mt-6">
+      <section className="w-full mt-6">
         <div className="relative">
           {/* Hero image with overlay */}
           <div className="relative h-[60vh] rounded-lg overflow-hidden">
@@ -102,8 +102,8 @@ const HeroSection = () => {
   // Tablet Hero Section (optimized layout for iPad/tablet and medium screens)
   if (deviceType === 'tablet') {
     return (
-      <section className="w-full section-margin mt-6">
-        <div className="container mx-auto px-6 py-8">
+      <section className="w-full mt-6">
+        <div className="container mx-auto max-w-[86%] px-6 py-8">
           <div className="grid grid-cols-2 gap-16 items-center min-h-[70vh]">
             {/* Text Content */}
             <div className="flex flex-col justify-center space-y-6 pr-4">
@@ -160,10 +160,10 @@ const HeroSection = () => {
   // Desktop Hero Section (original layout with minor improvements)
   return (
     <section
-      className="w-full section-margin flex items-center"
+      className="w-full flex items-center"
       style={{ minHeight: heroHeight }}
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-32 w-full py-10">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-32 w-full max-w-[86%] mx-auto py-10">
         <div className="order-2 lg:order-1 flex flex-col justify-center items-start w-full">
           <h1 className="text-[36px] lg:text-[56px] leading-[1.2] font-bold text-[#1E2A36] mb-6 tracking-[-0.5px]">
             The Marketplace <br/>
