@@ -3456,7 +3456,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                     handleSubmit();
                   }}
                   disabled={isSubmitting}
-                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+                  className="px-6 py-2 bg-green-400 text-white rounded-md hover:bg-green-500 disabled:opacity-50 flex items-center space-x-2"
                 >
                   {isSubmitting ? (
                     <>
