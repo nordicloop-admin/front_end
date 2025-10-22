@@ -3281,7 +3281,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     >
       <div className="flex flex-col h-full">
   {/* Header */}
-  <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0 sticky top-0 bg-white z-20">
+  <div className="px-6 py-4 h-[11vh] border-b border-gray-200 flex items-center justify-between flex-shrink-0 sticky top-0 bg-white z-20">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">Edit Auction</h2>
             <p className="text-sm text-gray-600">
@@ -3296,9 +3296,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
           </button>
         </div>
 
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-1 max-h-[79vh]">
           {/* Steps Sidebar */}
-          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 flex-shrink-0 sticky top-[64px] self-start max-h-[calc(90vh-64px)] overflow-hidden">
+          <div className="w-80 bg-gray-50 border-r border-gray-200 p-6 flex-shrink-0 sticky top-[64px] self-start h-[79vh]  overflow-hidden">
             <div className="space-y-3">
               {steps.map((step, _index) => {
                 const status = getStepStatus(step.id);
