@@ -285,15 +285,14 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
                   }
                 `}
               >
-                <div className="flex items-start space-x-3">
+                <div className="flex items-center space-x-3">
                   <div className={`
-                    p-2 rounded-full
                     ${isSelected
-                      ? 'bg-[#FF8A00] text-white'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'text-[#FF8A00]'
+                      : 'text-gray-400'
                     }
                   `}>
-                    <Icon className="w-5 h-5" />
+                    <Icon className="w-6 h-6" />
                   </div>
                   <div>
                     <div className="flex items-center">
@@ -321,14 +320,7 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
         </ul>
       </InfoCallout>
 
-      {/* Validation Message */}
-      {/* {(!formData.location.country || !formData.location.city) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-          <p className="text-sm text-yellow-600">
-            Please specify the location (country and city) where the material is available.
-          </p>
-        </div>
-      )} */}
+
     </div>
   );
 } 

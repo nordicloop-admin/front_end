@@ -93,15 +93,14 @@ export function ProcessingMethodStep({ formData, updateFormData }: Props) {
                 }
               `}
             >
-              <div className="flex items-start space-x-3">
+              <div className="flex items-center space-x-3">
                 <div className={`
-                  p-2 rounded-md
                   ${formData.processing.methods?.includes(method.id)
-                    ? 'bg-[#FF8A00] text-white'
-                    : 'bg-gray-100 text-gray-600'
+                    ? 'text-[#FF8A00]'
+                    : 'text-gray-400'
                   }
                 `}>
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-6 h-6" />
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center space-x-2">
