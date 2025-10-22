@@ -71,15 +71,14 @@ export function MaterialOriginStep({ formData, updateFormData }: Props) {
                   }
                 `}
               >
-                <div className="flex items-start space-x-4">
+                <div className="flex items-center space-x-4">
                   <div className={`
-                    p-3 rounded-md
                     ${formData.origin.source === origin.id
-                      ? 'bg-[#FF8A00] text-white'
-                      : 'bg-gray-100 text-gray-600'
+                      ? 'text-[#FF8A00]'
+                      : 'text-gray-400'
                     }
                   `}>
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-7 h-7" />
                   </div>
                   <div className="flex-1">
                     <h4 className="text-lg font-medium text-gray-900">{origin.name}</h4>
@@ -112,14 +111,7 @@ export function MaterialOriginStep({ formData, updateFormData }: Props) {
         </ul>
       </InfoCallout>
 
-      {/* Validation Message */}
-      {/* {!formData.origin.source && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-          <p className="text-sm text-yellow-600">
-            Please select the material origin to continue.
-          </p>
-        </div>
-      )} */}
+
     </div>
   );
 } 
