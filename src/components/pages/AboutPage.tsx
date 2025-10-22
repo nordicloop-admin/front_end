@@ -67,6 +67,12 @@ const AboutPage = () => {
       phone: '+46 737553358',
     },
     {
+      name: 'Elin Bergman',
+      role: 'Board member and industry expert',
+      bio: 'Elin Bergman is known for being the "Circular Economy Queen of Sweden", is named LinkedIn Top Green Voice and is a recognized international TEDx and keynote speaker. She works as a Circular Impact Officer, Vice Chair and spokesperson of the Swedish circular economy business network Cradlenet, and is also one of the co-founders of the international circular economy initiatives Nordic Circular Hotspot and the Circular Economy Coalition. She has recently started the Circular Handshake initiative to make the retail sector circular. For many years she worked as circular economy expert at WWF Sweden, where she developed the international circular economy network Baltic Stewardship Initiative, to enable the recirculation of nutrients in the Baltic Sea region in the agri-food sector.',
+      image: '/images/About/Elin Bergman.webp',
+    },
+    {
       name: 'Raissa Uwase',
       role: 'Technical Lead',
       bio: 'With extensive experience across multiple tech companies, Raissa brings deep expertise in developing complex, enterprise-scale systems. Her background in leading challenging technical projects makes her an ideal leader for Nordic Loop\'s technology development.',
@@ -74,9 +80,9 @@ const AboutPage = () => {
     },
     {
       name: 'Olivier Karera',
-      role: 'Principal Engineer',
-      bio: 'Olivier brings technical expertise to Nordic Loop, developing innovative solutions and architectural designs that power the platform. He focuses on creating scalable systems that deliver exceptional user experiences for our customers.',
-      image: '/images/About/Olivier Karera.png',
+      role: 'Software Engineer',
+      bio: 'Olivier is a software engineer at Nordic Loop, focusing on the development and maintenance of the platform. He is responsible for building the features that enable businesses to participate in the circular economy, ensuring the system is both robust and user-friendly.',
+      image: '/images/About/Olivier Karera software engineer.png',
     },
   ];
 
@@ -151,8 +157,8 @@ const AboutPage = () => {
         {/* Main hero content */}
         
         {/* Team Section - Interactive cards */}
-      <section className="py-16 bg-[#F5F5F5]">
-        <div className="max-w-7xl mx-auto px-7">
+      <section className="py-16 bg-[#F5F5F5] mx-7 md:max-w-[86%] md:mx-auto">
+        <div className="px-4 md:px-24">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Team</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -160,7 +166,7 @@ const AboutPage = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {teamMembers.map((member, index) => (
               <div
                 key={index}
@@ -168,12 +174,14 @@ const AboutPage = () => {
                 onMouseEnter={() => setHoveredTeamMember(index)}
                 onMouseLeave={() => setHoveredTeamMember(null)}
               >
-                <div className="relative h-[300px] my-6 md:my-8">
+                
+                <div className="px-6 pb-10">
+                  <div className="relative h-[300px] my-6 md:my-8">
                   <Image
                     src={member.image}
                     alt={member.name}
                     fill
-                    className="object-cover transition-all duration-500"
+                    className={`object-cover transition-all duration-500 ${member.name === 'Nicola Valenti' || member.name === 'Olivier Karera'   ? 'object-center' : 'object-[center_20%]'}`}
                     style={{
                       transform: hoveredTeamMember === index ? 'scale(1.05)' : 'scale(1)',
                     }}
@@ -185,7 +193,6 @@ const AboutPage = () => {
                     }}
                   ></div>
                 </div>
-                <div className="p-6">
                   <h3 className="text-xl font-semibold text-[#1E2A36] mb-1">{member.name}</h3>
                   <p className="text-[#FF8A00] font-medium mb-2">{member.role}</p>
                   {member.email && (
@@ -251,8 +258,8 @@ const AboutPage = () => {
       </section> */}
 
       {/* Timeline Section - New section not in original */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-7">
+      <section className="py-16 md:py-24 mx-7 md:max-w-[86%] md:mx-auto">
+        <div>
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Journey</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -331,8 +338,8 @@ const AboutPage = () => {
       
 
       {/* Impact Section - Circular progress indicators */}
-      <section className="py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-7">
+      <section className="py-16 md:py-24 mx-7 md:max-w-[86%] md:mx-auto">
+        <div>
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-[#1E2A36] mb-4">Our Goals</h2>
             <p className="text-gray-600 max-w-3xl mx-auto">
@@ -398,8 +405,8 @@ const AboutPage = () => {
       </section> */}
 
       {/* CTA Section - Different style */}
-      <section className="py-16 bg-[#1E2A36] text-white mb-16">
-        <div className="max-w-7xl mx-auto px-7">
+      <section className="py-16 bg-[#1E2A36] text-white mb-16 md:bg-gray-100 md:max-w-[86%] md:mx-auto">
+        <div className="px-6 md:px-12 md:bg-[#1E2A36] md:rounded-lg md:py-16 md:-my-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold mb-6">Ready to Join the Circular Economy?</h2>

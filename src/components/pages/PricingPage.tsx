@@ -95,7 +95,7 @@ const PricingPage = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="py-16 flex justify-center items-center min-h-[400px]">
+      <div className="py-16 flex justify-center items-center min-h-[400px] mx-7 md:max-w-[86%] md:mx-auto">
         <div className="text-center">
           <Loader2 size={32} className="animate-spin text-[#FF8A00] mx-auto mb-4" />
           <p className="text-gray-600">Loading pricing information...</p>
@@ -107,7 +107,7 @@ const PricingPage = () => {
   // Error state
   if (error || !pricingData) {
     return (
-      <div className="py-16 flex justify-center items-center min-h-[400px]">
+      <div className="py-16 flex justify-center items-center min-h-[400px] mx-7 md:max-w-[86%] md:mx-auto">
         <div className="text-center">
           <AlertCircle size={32} className="text-red-500 mx-auto mb-4" />
           <p className="text-red-600 font-medium mb-2">Failed to load pricing information</p>
@@ -126,7 +126,7 @@ const PricingPage = () => {
   const { page_content, pricing_plans } = pricingData;
 
   return (
-    <div className="py-16">
+    <div className="py-16 mx-7 md:max-w-[86%] md:mx-auto">
       {/* Pricing Header */}
       <div className="text-center mb-12">
         <h3 className="text-[#FF8A00] font-medium mb-4">{page_content.section_label}</h3>

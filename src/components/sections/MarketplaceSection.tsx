@@ -13,6 +13,24 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   const [isSeeking, setIsSeeking] = useState(false);
   const [autoPaused, setAutoPaused] = useState(false); // paused because out of view
   const [userPaused, setUserPaused] = useState(false); // user explicitly paused
+  const [showControls, setShowControls] = useState(true); // controls visibility (both mobile & desktop)
+  const [isMobile, setIsMobile] = useState(false);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null); // inactivity / auto-hide timer
+  const initialShownRef = useRef(false); // track first reveal cycle
+
+  // Unified timer reset logic for both mobile & desktop
+  const scheduleHide = (delay = 3000) => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      // Only auto-hide if not seeking and not user-paused overlay interactions
+      setShowControls(false);
+    }, delay);
+  };
+
+  const revealControls = (autoSchedule = true) => {
+    setShowControls(true);
+    if (autoSchedule) scheduleHide();
+  };
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -27,7 +45,31 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
       setIsPlaying(false);
       setUserPaused(true);
     }
+    // Briefly ensure controls visible after play toggle
+    revealControls(true);
   };
+
+  const handleUserInteract = () => {
+    // Called on hover (desktop) or touch (mobile)
+    revealControls(true);
+  };
+  // Detect mobile device + initial auto-hide cycle
+  useEffect(() => {
+    const check = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // First mount: show then fade after longer delay (desktop 5000ms, mobile 4000ms)
+      if (!initialShownRef.current) {
+        initialShownRef.current = true;
+        revealControls(true);
+        scheduleHide(mobile ? 4000 : 5000);
+      }
+    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   // Pause when scrolled away, resume when back (if not user-paused)
   useEffect(() => {
     const target = containerRef.current;
@@ -60,15 +102,23 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   }, [autoPaused, userPaused]);
 
   const toggleMute = () => {
-    const v = videoRef.current; if (!v) return; v.muted = !v.muted; setIsMuted(v.muted);
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    setIsMuted(v.muted);
+    revealControls(true);
   };
 
   const handleLoaded = () => {
-    const v = videoRef.current; if (!v) return; setDuration(v.duration || 0);
+    const v = videoRef.current;
+    if (!v) return;
+    setDuration(v.duration || 0);
   };
   const handleTime = () => {
     if (isSeeking) return; // avoid UI jitter while dragging
-    const v = videoRef.current; if (!v) return; setCurrent(v.currentTime);
+    const v = videoRef.current;
+    if (!v) return;
+    setCurrent(v.currentTime);
   };
 
   const formatTime = (t: number) => {
@@ -88,7 +138,16 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   return (
   <div ref={containerRef} className="group relative w-full">
       <div className="relative rounded-2xl bg-white  ring-1 ring-gray-200/60 overflow-hidden">
-        <div className="relative w-full aspect-[16/9]">
+        <div
+          className="relative w-full aspect-[16/9]"
+          onTouchStart={handleUserInteract}
+          onMouseMove={isMobile ? undefined : handleUserInteract}
+          onClick={(e) => {
+            if (e.target === e.currentTarget || (e.target as HTMLElement).tagName === 'VIDEO') {
+              handleUserInteract();
+            }
+          }}
+        >
           <video
             ref={videoRef}
             className="absolute inset-0 w-full h-full object-cover"
@@ -107,7 +166,14 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
             Demo
           </div>
           {/* Unified bottom control bar */}
-          <div className="absolute bottom-0 left-0 w-full px-4 py-3 flex items-center gap-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent backdrop-blur-sm">
+          <div
+            className={`absolute bottom-0 left-0 w-full px-4 py-3 flex items-center gap-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent backdrop-blur-sm transition-opacity duration-300 ${
+              showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+            onTouchStart={handleUserInteract}
+            onMouseEnter={() => !isMobile && revealControls(false)}
+            onMouseLeave={() => !isMobile && scheduleHide()}
+          >
             <button
               onClick={togglePlay}
               aria-label={isPlaying ? 'Pause video' : 'Play video'}
@@ -134,10 +200,10 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
             <div className="flex-grow flex items-center select-none" aria-label="Video progress">
               <div
                 className="relative w-full h-2 cursor-pointer"
-                onMouseDown={(e) => { setIsSeeking(true); seekTo(e.clientX, e.currentTarget as HTMLDivElement); }}
-                onMouseMove={(e) => { if (isSeeking) seekTo(e.clientX, e.currentTarget as HTMLDivElement); }}
-                onMouseUp={() => setIsSeeking(false)}
-                onMouseLeave={() => isSeeking && setIsSeeking(false)}
+                onMouseDown={(e) => { setIsSeeking(true); seekTo(e.clientX, e.currentTarget as HTMLDivElement); revealControls(false); }}
+                onMouseMove={(e) => { if (isSeeking) { seekTo(e.clientX, e.currentTarget as HTMLDivElement); } }}
+                onMouseUp={() => { setIsSeeking(false); scheduleHide(); }}
+                onMouseLeave={() => { if (isSeeking) setIsSeeking(false); scheduleHide(); }}
               >
                 <div className="absolute inset-0 rounded-full bg-white/25" />
                 <div className="absolute inset-y-0 left-0 rounded-full bg-[#FF8A00]" style={{ width: `${percent}%` }} />
@@ -160,7 +226,8 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
 const MarketplaceSection = () => {
   return (
     // Match hero width: use section-margin + full-width grid similar spacing
-    <section className="py-12 lg:py-16 mx-7">
+    <section className="py-12 lg:py-16">
+      <div className="mx-7 md:max-w-[86%] md:mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 lg:gap-24 w-full">
         <div className="order-2 lg:order-1 flex flex-col justify-center items-start w-full">
             <h3 className="text-md md:text-md font-semibold mb-3 text-[#1E2A36]">Waste Marketplace</h3>
@@ -189,6 +256,7 @@ const MarketplaceSection = () => {
             title="Nordic Loop Material Listing Flow"
           />
         </div>
+      </div>
       </div>
     </section>
   );

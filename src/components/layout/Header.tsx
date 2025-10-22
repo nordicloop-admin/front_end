@@ -57,8 +57,8 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-[#1E2A36] py-4 rounded-lg mt-4 relative z-50">
-      <div className="mx-7 flex justify-between items-center">
+    <header className="bg-[#1E2A36] py-4 md:rounded-lg md:mt-4 relative z-50">
+      <div className="mx-4 md:mx-7 flex justify-between items-center">
         <Link href="/" className="flex items-center">
           <div className="relative w-[120px] h-[32px]">
             <Image
@@ -154,7 +154,15 @@ const Header = () => {
           <div className="flex flex-col h-full menu-content">
             {/* Menu Header with Close Button */}
             <div className="flex justify-between items-center p-6 border-b border-gray-700">
-              <h2 className="text-white text-lg font-medium">Menu</h2>
+              <div className="relative w-[120px] h-[32px]">
+                <Image
+                  src="/nordic logo.png"
+                  alt="Nordic Loop Logo"
+                  fill
+                  sizes="120px"
+                  className="object-contain"
+                />
+              </div>
               <button
                 onClick={() => setIsMenuOpen(false)}
                 className="text-gray-400 hover:text-white focus:outline-none"
@@ -169,6 +177,13 @@ const Header = () => {
             {/* Menu Items */}
             <div className="flex-1 overflow-y-auto py-6 px-6">
               <nav className="flex flex-col space-y-4">
+                <Link
+                  href="/"
+                  className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Home
+                </Link>
                 <Link
                   href="/market-place"
                   className="text-white hover:text-[#FF8A00] transition-colors font-medium block py-3 border-b border-gray-700"

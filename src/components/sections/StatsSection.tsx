@@ -3,8 +3,8 @@ import Link from 'next/link';
 
 const StatsSection = () => {
   return (
-    <section className="bg-[#1E2A36] text-white py-16 md:py-20 my-6">
-      <div className="container mx-auto px-6 md:px-10">
+    <section className="bg-[#1E2A36] text-white py-16 md:py-20 my-6 mx-7 md:max-w-[86%] md:mx-auto">
+      <div className="px-6 md:px-10">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Let&apos;s close the loop in the Nordics together<span className="text-[#FF8A00]">.</span></h2>
         <p className="text-center text-gray-300 mb-12">Turn your waste management challenges into opportunities</p>
 

@@ -24,14 +24,21 @@ export default function RootLayoutClient({
   const isAdminPage = pathname === '/admin' ||
                      pathname.startsWith('/admin/');
 
+  // Pages that should have full-width navbar on mobile
+  const isFullWidthNavPage = pathname === '/' ||
+                            pathname === '/market-place' ||
+                            pathname === '/about' ||
+                            pathname === '/pricing' ||
+                            pathname === '/contact';
+
   return (
     <>
       {!isAuthPage && !isDashboardPage && !isAdminPage && (
-        <div className="max-w-[86%] mx-auto">
+        <div className={isFullWidthNavPage ? "w-full md:max-w-[86%] md:mx-auto" : "max-w-[86%] mx-auto"}>
           <Header />
         </div>
       )}
-      <main className={`flex-1 ${!isAuthPage && !isDashboardPage && !isAdminPage ? 'max-w-[86%] mx-auto w-full' : 'w-full'}`}>
+      <main className={`flex-1 ${!isAuthPage && !isDashboardPage && !isAdminPage && !isFullWidthNavPage ? 'max-w-[86%] mx-auto w-full' : 'w-full'}`}>
         {children}
       </main>
       {!isAuthPage && !isDashboardPage && !isAdminPage && <Footer />}
