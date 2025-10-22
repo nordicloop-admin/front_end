@@ -57,8 +57,8 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-[#1E2A36] py-4 rounded-lg mt-4 relative z-50">
-      <div className="mx-7 flex justify-between items-center">
+    <header className="bg-[#1E2A36] py-4 md:rounded-lg md:mt-4 relative z-50">
+      <div className="mx-4 md:mx-7 flex justify-between items-center">
         <Link href="/" className="flex items-center">
           <div className="relative w-[120px] h-[32px]">
             <Image

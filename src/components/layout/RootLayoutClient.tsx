@@ -30,7 +30,7 @@ export default function RootLayoutClient({
   return (
     <>
       {!isAuthPage && !isDashboardPage && !isAdminPage && (
-        <div className="max-w-[86%] mx-auto">
+        <div className={isHomepage ? "w-full md:max-w-[86%] md:mx-auto" : "max-w-[86%] mx-auto"}>
           <Header />
         </div>
       )}
