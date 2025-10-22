@@ -181,7 +181,7 @@ const AboutPage = () => {
                     src={member.image}
                     alt={member.name}
                     fill
-                    className="object-cover object-top transition-all duration-500"
+                    className={`object-cover transition-all duration-500 ${member.name === 'Nicola Valenti' ? 'object-center' : 'object-[center_20%]'}`}
                     style={{
                       transform: hoveredTeamMember === index ? 'scale(1.05)' : 'scale(1)',
                     }}
