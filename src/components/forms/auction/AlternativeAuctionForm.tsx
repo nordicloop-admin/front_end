@@ -382,8 +382,10 @@ export function AlternativeAuctionForm({
         return step1Data;
       case 2:
         return {
-          specification_id: null,
-          additional_specifications: data.specifications.additionalSpecs?.join(', ') || ''
+          specification_color: data.specifications.color || '',
+          specification_material_grade: data.specifications.grade || '',
+          specification_material_form: data.specifications.form || '',
+          specification_additional: data.specifications.additionalSpecs?.join(', ') || ''
         };
       case 3:
         return {

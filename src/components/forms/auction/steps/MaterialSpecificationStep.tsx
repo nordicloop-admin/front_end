@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, X } from 'lucide-react';
 import InfoCallout from '@/components/ui/InfoCallout';
 import { FormData } from '../AlternativeAuctionForm';
@@ -89,14 +89,21 @@ const materialForms = {
 export function MaterialSpecificationStep({ formData, updateFormData }: Props) {
   const [customSpec, setCustomSpec] = useState('');
 
-  const handleSpecificationUpdate = (field: string, value: string) => {
+  const handleSpecificationUpdate = useCallback((field: string, value: string) => {
     updateFormData({
       specifications: {
         ...formData.specifications,
         [field]: value
       }
     });
-  };
+  }, [formData.specifications, updateFormData]);
+
+  // Set default color to "Natural/Clear" when component mounts if no color is selected
+  useEffect(() => {
+    if (!formData.specifications.color) {
+      handleSpecificationUpdate('color', 'Natural/Clear');
+    }
+  }, [formData.specifications.color, handleSpecificationUpdate]);
 
   const handleAdditionalSpecsUpdate = (specs: string[]) => {
     updateFormData({
