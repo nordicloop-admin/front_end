@@ -74,7 +74,7 @@ const AboutPage = () => {
     },
     {
       name: 'Olivier Karera',
-      role: 'Principal Engineer',
+      role: 'Software Engineer',
       bio: 'Olivier brings technical expertise to Nordic Loop, developing innovative solutions and architectural designs that power the platform. He focuses on creating scalable systems that deliver exceptional user experiences for our customers.',
       image: '/images/About/Olivier Karera.png',
     },
@@ -398,8 +398,8 @@ const AboutPage = () => {
       </section> */}
 
       {/* CTA Section - Different style */}
-      <section className="py-16 bg-[#1E2A36] text-white mb-16 mx-7 md:max-w-[86%] md:mx-auto">
-        <div>
+      <section className="py-16 bg-[#1E2A36] text-white mb-16 md:bg-gray-100 md:max-w-[86%] md:mx-auto">
+        <div className="px-6 md:px-12 md:bg-[#1E2A36] md:rounded-lg md:py-16 md:-my-16">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold mb-6">Ready to Join the Circular Economy?</h2>
