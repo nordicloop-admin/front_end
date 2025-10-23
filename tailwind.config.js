@@ -7,11 +7,15 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter-tight)', 'system-ui', 'sans-serif'],
+      },
       typography: {
         DEFAULT: {
           css: {
             maxWidth: '100%',
             color: '#333',
+            fontFamily: 'var(--font-inter-tight)',
             a: {
               color: '#FF8A00',
               '&:hover': {
