@@ -1,19 +1,15 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter_Tight } from "next/font/google";
 import Script from 'next/script';
 import "./globals.css";
 import RootLayoutClient from "../components/layout/RootLayoutClient";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { Toaster } from 'sonner';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const interTight = Inter_Tight({
+  variable: "--font-inter-tight",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -111,7 +107,7 @@ export default function RootLayout({
         </Script>
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${interTight.variable} antialiased`}
       >
         <AuthProvider>
           <RootLayoutClient>
