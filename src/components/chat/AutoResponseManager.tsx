@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Clock, 
   MessageSquare, 
-  Settings, 
   Save, 
   Edit3,
   Plus,
-  Trash2,
-  Globe,
-  Calendar
+  Trash2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -204,14 +201,20 @@ export function AutoResponseManager({
     ));
   };
 
-  const updateDayHours = (day: keyof BusinessHours, field: 'start' | 'end' | 'isOpen', value: string | boolean) => {
-    setEditingHours(prev => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [field]: value
+  const updateDayHours = (day: keyof Omit<BusinessHours, 'timezone'>, field: 'start' | 'end' | 'isOpen', value: string | boolean) => {
+    setEditingHours(prev => {
+      const currentDay = prev[day as keyof BusinessHours];
+      if (typeof currentDay === 'object' && currentDay !== null) {
+        return {
+          ...prev,
+          [day]: {
+            ...currentDay,
+            [field]: value
+          }
+        };
       }
-    }));
+      return prev;
+    });
   };
 
   return (

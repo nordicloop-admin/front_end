@@ -1,6 +1,16 @@
 "use client";
 
 import React, { useState } from 'react';
+
+interface AutoResponse {
+  id: string;
+  trigger: 'out_of_office' | 'after_hours' | 'weekend' | 'holiday' | 'custom';
+  message: string;
+  isActive: boolean;
+  language: 'en' | 'sv' | 'both';
+  startDate?: Date;
+  endDate?: Date;
+}
 import { 
   ArrowLeft, 
   Settings, 
@@ -142,7 +152,7 @@ export default function ChatDemoPage() {
   const [currentUser, setCurrentUser] = useState<'buyer' | 'seller'>('buyer');
   const [language, setLanguage] = useState<'en' | 'sv'>('en');
   const [businessHours, setBusinessHours] = useState(sampleBusinessHours);
-  const [autoResponses, setAutoResponses] = useState(sampleAutoResponses);
+  const [autoResponses, setAutoResponses] = useState<AutoResponse[]>(sampleAutoResponses);
   
   const {
     notifications,
@@ -173,13 +183,13 @@ export default function ChatDemoPage() {
     });
   }, [addNotification]);
 
-  const handleNotificationClick = (notification: any) => {
-    console.log('Notification clicked:', notification);
+  const handleNotificationClick = (_notification: any) => {
+    // console.log('Notification clicked:', notification);
     // In a real app, this would navigate to the relevant chat or order
   };
 
-  const toggleEmailNotifications = (enabled: boolean) => {
-    console.log('Email notifications:', enabled);
+  const toggleEmailNotifications = (_enabled: boolean) => {
+    // console.log('Email notifications:', enabled);
   };
 
   return (
@@ -324,7 +334,7 @@ export default function ChatDemoPage() {
               autoResponses={autoResponses}
               language={language}
               onUpdateBusinessHours={setBusinessHours}
-              onUpdateAutoResponses={setAutoResponses}
+              onUpdateAutoResponses={(responses) => setAutoResponses(responses)}
               onClose={() => setCurrentView('chat')}
             />
           </div>

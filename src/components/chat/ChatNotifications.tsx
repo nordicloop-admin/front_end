@@ -7,7 +7,6 @@ import {
   MessageCircle, 
   Package, 
   Truck, 
-  CheckCircle2,
   AlertTriangle,
   Clock,
   Mail

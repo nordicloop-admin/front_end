@@ -3,8 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   ArrowLeft, 
-  Phone, 
-  Video, 
   Info,
   Settings,
   Globe,
@@ -144,8 +142,8 @@ export function ChatContainer({
   const [messages, setMessages] = useState<Message[]>([]);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [currentLanguage, setCurrentLanguage] = useState(language);
-  const [isTyping, setIsTyping] = useState(false);
+  const [currentLanguage] = useState(language);
+  const [isTyping] = useState(false);
 
   const t = translations[currentLanguage];
   const otherUser = currentUser === 'buyer' ? orderContext.seller : orderContext.buyer;
@@ -266,12 +264,12 @@ export function ChatContainer({
 
   const handleReportIssue = () => {
     // This would open a modal or form for reporting issues
-    console.log('Report issue clicked');
+    // console.log('Report issue clicked');
   };
 
   const handleExportChat = () => {
     // This would generate and download a chat transcript
-    console.log('Export chat clicked');
+    // console.log('Export chat clicked');
   };
 
   const formatLastSeen = (date?: Date) => {

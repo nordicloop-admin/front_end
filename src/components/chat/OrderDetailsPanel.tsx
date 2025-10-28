@@ -4,14 +4,12 @@ import React from 'react';
 import { 
   X, 
   Package, 
-  MapPin, 
   Calendar, 
   Truck, 
   CheckCircle2, 
   Clock,
   FileText,
   Award,
-  Globe,
   Building
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -304,7 +302,7 @@ export function OrderDetailsPanel({
             {t.timeline}
           </h4>
           <div className="space-y-3">
-            {timelineItems.map((item, index) => (
+            {timelineItems.map((item, _index) => (
               <div key={item.key} className="flex items-start space-x-3">
                 <div className={cn(
                   "w-2 h-2 rounded-full mt-2",

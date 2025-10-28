@@ -4,11 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   MessageCircle, 
   Search, 
-  Filter,
-  Clock,
   CheckCircle2,
   Package,
-  User,
   Building,
   MoreVertical,
   Archive,
@@ -118,7 +115,7 @@ const translations = {
 
 export function ChatList({
   chats,
-  currentUserId,
+  currentUserId: _currentUserId,
   language = 'en',
   onChatSelect,
   onArchiveChat,
@@ -256,7 +253,7 @@ export function ChatList({
                   : "text-gray-600 hover:text-gray-900"
               )}
             >
-              {t[filter]}
+              {filter === 'all' ? t.allChats : t[filter as keyof typeof t]}
               {filterCounts[filter] > 0 && (
                 <span className="ml-1 text-xs">({filterCounts[filter]})</span>
               )}

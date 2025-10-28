@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { 
   MessageCircle, 
   ArrowRight,
-  Clock,
-  User,
   Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';

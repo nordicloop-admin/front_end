@@ -6,13 +6,11 @@ import {
   Paperclip, 
   Image as ImageIcon, 
   FileText, 
-  Phone, 
   Clock,
   CheckCircle2,
   AlertCircle,
   MoreVertical,
-  Download,
-  Globe
+  Download
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -20,12 +18,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 interface Message {
   id: string;
-  type: 'text' | 'image' | 'document' | 'system' | 'delivery_confirmation';
+  type: 'text' | 'image' | 'document' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
   content: string;
   sender: 'buyer' | 'seller' | 'moderator' | 'system';
   timestamp: Date;
   attachments?: {
-    type: 'image' | 'document';
+    type: 'image' | 'document' | 'certificate';
     url: string;
     name: string;
     size?: number;
@@ -143,7 +141,7 @@ export function ChatInterface({
     }
   };
 
-  const handleFileUpload = (files: FileList | null, type: 'file' | 'image') => {
+  const handleFileUpload = (files: FileList | null, _type: 'file' | 'image') => {
     if (files) {
       const newFiles = Array.from(files);
       setAttachments(prev => [...prev, ...newFiles]);

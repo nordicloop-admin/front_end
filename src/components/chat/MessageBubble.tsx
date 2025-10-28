@@ -7,7 +7,6 @@ import {
   Download, 
   FileText, 
   Image as ImageIcon,
-  AlertTriangle,
   Truck,
   Package,
   Clock
@@ -74,13 +73,13 @@ const translations = {
 };
 
 export function MessageBubble({
-  id,
+  id: _id,
   type,
   content,
   sender,
   timestamp,
   attachments = [],
-  isRead = false,
+  isRead: _isRead = false,
   deliveryStatus,
   isCurrentUser,
   language = 'en',

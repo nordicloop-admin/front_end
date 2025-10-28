@@ -5,12 +5,8 @@ import {
   Download, 
   FileText, 
   Mail, 
-  Calendar,
-  Filter,
-  CheckCircle2,
   X
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 interface Message {
@@ -209,8 +205,8 @@ ${'='.repeat(50)}
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       onClose();
-    } catch (error) {
-      console.error('Export failed:', error);
+    } catch (_error) {
+      // console.error('Export failed:', error);
     } finally {
       setIsExporting(false);
     }

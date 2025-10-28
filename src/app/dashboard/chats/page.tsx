@@ -6,6 +6,29 @@ import { ChatList } from '@/components/chat/ChatList';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { cn } from '@/lib/utils';
 
+interface ChatPreview {
+  id: string;
+  orderId: string;
+  otherUser: {
+    name: string;
+    company: string;
+    avatar?: string;
+    isOnline: boolean;
+    userType: 'buyer' | 'seller';
+  };
+  lastMessage: {
+    content: string;
+    timestamp: Date;
+    sender: 'me' | 'them' | 'system';
+    type: 'text' | 'image' | 'document' | 'system';
+  };
+  unreadCount: number;
+  materialName: string;
+  orderStatus: 'pending' | 'in_transit' | 'delivered' | 'completed';
+  chatStatus: 'active' | 'archived' | 'closed';
+  priority: 'low' | 'medium' | 'high';
+}
+
 // Sample chat data - in a real app, this would come from your API
 const sampleChats = [
   {
@@ -166,7 +189,7 @@ export default function ChatsPage() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(
     searchParams.get('chat') || null
   );
-  const [chats, setChats] = useState(sampleChats);
+  const [chats, setChats] = useState<ChatPreview[]>(sampleChats);
   const [isMobile, setIsMobile] = useState(false);
 
   // Check if mobile
