@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #1E2A36;
+        }
+        h2 {
+            color: #FF8A00;
+            border-bottom: 2px solid #FF8A00;
+            padding-bottom: 10px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #FF8A00;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #E67A00;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔌 Chat Microservice Integration Test</h1>
+    
+    <div class="container">
+        <h2>1. Configuration</h2>
+        <div class="input-group">
+            <label for="apiUrl">Chat API URL:</label>
+            <input type="text" id="apiUrl" value="http://localhost:8001" />
+        </div>
+        <div class="input-group">
+            <label for="jwtToken">JWT Token:</label>
+            <textarea id="jwtToken" rows="4" placeholder="Paste your JWT token here..."></textarea>
+            <small>Get this from localStorage: nordic_loop_access_token</small>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>2. Test Endpoints</h2>
+        
+        <h3>Health Check</h3>
+        <button onclick="testHealth()">Test Health Endpoint</button>
+        <div id="healthResult" class="result" style="display:none;"></div>
+
+        <h3>Get Transactions</h3>
+        <button onclick="testGetTransactions()">Get All Transactions</button>
+        <div id="transactionsResult" class="result" style="display:none;"></div>
+
+        <h3>Create Transaction</h3>
+        <div class="input-group">
+            <label for="transactionId">Transaction ID (UUID):</label>
+            <input type="text" id="transactionId" value="test-transaction-123" />
+        </div>
+        <div class="input-group">
+            <label for="auctionName">Auction Name:</label>
+            <input type="text" id="auctionName" value="Test Auction Item" />
+        </div>
+        <div class="input-group">
+            <label for="sellerId">Seller ID:</label>
+            <input type="number" id="sellerId" value="999" />
+        </div>
+        <div class="input-group">
+            <label for="sellerCompany">Seller Company:</label>
+            <input type="text" id="sellerCompany" value="Test Seller Company AB" />
+        </div>
+        <button onclick="testCreateTransaction()">Create Transaction</button>
+        <div id="createTransactionResult" class="result" style="display:none;"></div>
+
+        <h3>Get Messages</h3>
+        <div class="input-group">
+            <label for="messageTransactionId">Transaction ID:</label>
+            <input type="text" id="messageTransactionId" value="test-transaction-123" />
+        </div>
+        <button onclick="testGetMessages()">Get Messages</button>
+        <div id="messagesResult" class="result" style="display:none;"></div>
+
+        <h3>Send Message</h3>
+        <div class="input-group">
+            <label for="sendMessageTransactionId">Transaction ID:</label>
+            <input type="text" id="sendMessageTransactionId" value="test-transaction-123" />
+        </div>
+        <div class="input-group">
+            <label for="messageContent">Message:</label>
+            <textarea id="messageContent" rows="3" placeholder="Type your message...">Hello from the test page!</textarea>
+        </div>
+        <button onclick="testSendMessage()">Send Message</button>
+        <div id="sendMessageResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="container">
+        <h2>3. WebSocket Test</h2>
+        <div class="input-group">
+            <label for="wsTransactionId">Transaction ID:</label>
+            <input type="text" id="wsTransactionId" value="test-transaction-123" />
+        </div>
+        <div>
+            <span>Status: </span>
+            <span id="wsStatus" class="status disconnected">Disconnected</span>
+        </div>
+        <br>
+        <button onclick="connectWebSocket()">Connect WebSocket</button>
+        <button onclick="disconnectWebSocket()">Disconnect</button>
+        <div id="wsResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        let ws = null;
+
+        function getHeaders() {
+            const token = document.getElementById('jwtToken').value.trim();
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            };
+        }
+
+        function getApiUrl() {
+            return document.getElementById('apiUrl').value.trim();
+        }
+
+        function showResult(elementId, data, isError = false) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.className = 'result ' + (isError ? 'error' : 'success');
+            element.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        }
+
+        async function testHealth() {
+            try {
+                const response = await fetch(`${getApiUrl()}/health`);
+                const data = await response.json();
+                showResult('healthResult', data, !response.ok);
+            } catch (error) {
+                showResult('healthResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testGetTransactions() {
+            try {
+                const response = await fetch(`${getApiUrl()}/transactions`, {
+                    headers: getHeaders()
+                });
+                const data = await response.json();
+                showResult('transactionsResult', data, !response.ok);
+            } catch (error) {
+                showResult('transactionsResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testCreateTransaction() {
+            try {
+                const body = {
+                    transaction_id: document.getElementById('transactionId').value,
+                    auction_name: document.getElementById('auctionName').value,
+                    seller_id: parseInt(document.getElementById('sellerId').value),
+                    seller_company: document.getElementById('sellerCompany').value,
+                    transaction_status: "Pending"
+                };
+
+                const response = await fetch(`${getApiUrl()}/transactions`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                showResult('createTransactionResult', data, !response.ok);
+            } catch (error) {
+                showResult('createTransactionResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testGetMessages() {
+            try {
+                const transactionId = document.getElementById('messageTransactionId').value;
+                const response = await fetch(`${getApiUrl()}/messages/${transactionId}`, {
+                    headers: getHeaders()
+                });
+                const data = await response.json();
+                showResult('messagesResult', data, !response.ok);
+            } catch (error) {
+                showResult('messagesResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        async function testSendMessage() {
+            try {
+                const body = {
+                    transaction_id: document.getElementById('sendMessageTransactionId').value,
+                    message: document.getElementById('messageContent').value
+                };
+
+                const response = await fetch(`${getApiUrl()}/messages`, {
+                    method: 'POST',
+                    headers: getHeaders(),
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+                showResult('sendMessageResult', data, !response.ok);
+            } catch (error) {
+                showResult('sendMessageResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        function connectWebSocket() {
+            const transactionId = document.getElementById('wsTransactionId').value;
+            const wsUrl = getApiUrl().replace('http', 'ws');
+            
+            try {
+                ws = new WebSocket(`${wsUrl}/ws/${transactionId}`);
+                
+                ws.onopen = () => {
+                    document.getElementById('wsStatus').className = 'status connected';
+                    document.getElementById('wsStatus').textContent = 'Connected';
+                    showResult('wsResult', 'WebSocket connected successfully!');
+                };
+
+                ws.onmessage = (event) => {
+                    const currentResult = document.getElementById('wsResult').textContent;
+                    showResult('wsResult', currentResult + '\n\nReceived: ' + event.data);
+                };
+
+                ws.onerror = (error) => {
+                    showResult('wsResult', `WebSocket error: ${error}`, true);
+                };
+
+                ws.onclose = () => {
+                    document.getElementById('wsStatus').className = 'status disconnected';
+                    document.getElementById('wsStatus').textContent = 'Disconnected';
+                    const currentResult = document.getElementById('wsResult').textContent;
+                    showResult('wsResult', currentResult + '\n\nWebSocket disconnected');
+                };
+            } catch (error) {
+                showResult('wsResult', `Error: ${error.message}`, true);
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+        }
+
+        // Auto-fill JWT token from localStorage if available
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('nordic_loop_access_token');
+            if (token) {
+                document.getElementById('jwtToken').value = token;
+            }
+        });
+    </script>
+</body>
+</html>
+

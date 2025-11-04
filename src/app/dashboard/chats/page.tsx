@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { ChatList } from '@/components/chat/ChatList';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { getTransactions, Transaction } from '@/services/chat';
+import { Loader2 } from 'lucide-react';
 
 interface ChatPreview {
   id: string;
@@ -29,175 +32,158 @@ interface ChatPreview {
   priority: 'low' | 'medium' | 'high';
 }
 
-// Sample chat data - in a real app, this would come from your API
-const sampleChats = [
-  {
-    id: 'chat-1',
-    orderId: 'NL-2024-001234',
-    otherUser: {
-      name: 'Erik Andersson',
-      company: 'Nordic Recycling AB',
-      avatar: '/avatars/erik.jpg',
-      isOnline: true,
-      userType: 'seller' as const
-    },
-    lastMessage: {
-      content: 'The quality certificates have been uploaded. Please review them.',
-      timestamp: new Date(Date.now() - 300000), // 5 minutes ago
-      sender: 'them' as const,
-      type: 'text' as const
-    },
-    unreadCount: 2,
-    materialName: 'High-Quality HDPE Post-Industrial Pellets',
-    orderStatus: 'delivered' as const,
-    chatStatus: 'active' as const,
-    priority: 'high' as const
-  },
-  {
-    id: 'chat-2',
-    orderId: 'NL-2024-001189',
-    otherUser: {
-      name: 'Anna Larsson',
-      company: 'Green Materials Ltd',
-      avatar: '/avatars/anna.jpg',
-      isOnline: false,
-      userType: 'buyer' as const
-    },
-    lastMessage: {
-      content: 'Thank you for the quick delivery! Everything looks perfect.',
-      timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-      sender: 'them' as const,
-      type: 'text' as const
-    },
-    unreadCount: 0,
-    materialName: 'Recycled PET Flakes - Clear Grade',
-    orderStatus: 'completed' as const,
-    chatStatus: 'active' as const,
-    priority: 'low' as const
-  },
-  {
-    id: 'chat-3',
-    orderId: 'NL-2024-001156',
-    otherUser: {
-      name: 'Magnus Johansson',
-      company: 'Sustainable Plastics AB',
-      avatar: '/avatars/magnus.jpg',
-      isOnline: true,
-      userType: 'seller' as const
-    },
-    lastMessage: {
-      content: 'Shipping update: Your order is now in transit',
-      timestamp: new Date(Date.now() - 7200000), // 2 hours ago
-      sender: 'system' as const,
-      type: 'system' as const
-    },
-    unreadCount: 1,
-    materialName: 'PP Injection Grade Pellets',
-    orderStatus: 'in_transit' as const,
-    chatStatus: 'active' as const,
-    priority: 'medium' as const
-  },
-  {
-    id: 'chat-4',
-    orderId: 'NL-2024-001098',
-    otherUser: {
-      name: 'Sofia Nilsson',
-      company: 'EcoPlast Solutions',
-      avatar: '/avatars/sofia.jpg',
-      isOnline: false,
-      userType: 'buyer' as const
-    },
-    lastMessage: {
-      content: 'Could you provide more details about the material specifications?',
-      timestamp: new Date(Date.now() - 86400000), // 1 day ago
-      sender: 'them' as const,
-      type: 'text' as const
-    },
-    unreadCount: 0,
-    materialName: 'LDPE Film Grade Pellets',
-    orderStatus: 'pending' as const,
-    chatStatus: 'active' as const,
-    priority: 'medium' as const
-  },
-  {
-    id: 'chat-5',
-    orderId: 'NL-2024-000987',
-    otherUser: {
-      name: 'Lars Bergström',
-      company: 'Nordic Waste Solutions',
-      avatar: '/avatars/lars.jpg',
-      isOnline: false,
-      userType: 'seller' as const
-    },
-    lastMessage: {
-      content: 'Order completed successfully. Thank you for your business!',
-      timestamp: new Date(Date.now() - 172800000), // 2 days ago
-      sender: 'them' as const,
-      type: 'text' as const
-    },
-    unreadCount: 0,
-    materialName: 'Mixed Plastic Waste - Industrial Grade',
-    orderStatus: 'completed' as const,
-    chatStatus: 'archived' as const,
-    priority: 'low' as const
-  }
-];
+/**
+ * Convert Transaction from chat microservice to ChatPreview format
+ */
+function transactionToChatPreview(transaction: Transaction, currentUserId: number): ChatPreview {
+  const isCurrentUserBuyer = transaction.user_id === currentUserId;
 
-const sampleOrderContexts = {
-  'chat-1': {
-    orderId: "NL-2024-001234",
-    materialName: "High-Quality HDPE Post-Industrial Pellets",
-    materialType: "Plastic Pellets",
-    quantity: "2.5 tons",
-    price: "€3,750",
-    shippingAddress: "Industrivägen 15, 41234 Göteborg, Sweden",
-    estimatedDelivery: "2024-02-15",
-    status: "delivered" as const,
+  // Determine the other user based on current user's role
+  const otherUser = isCurrentUserBuyer ? {
+    name: `Seller ${transaction.seller_id}`, // In real app, fetch seller details
+    company: transaction.seller_company,
+    avatar: undefined,
+    isOnline: false,
+    userType: 'seller' as const
+  } : {
+    name: `${transaction.first_name} ${transaction.last_name}`,
+    company: transaction.buyer_company,
+    avatar: undefined,
+    isOnline: false,
+    userType: 'buyer' as const
+  };
+
+  // Map transaction status to order status
+  const orderStatusMap: Record<string, 'pending' | 'in_transit' | 'delivered' | 'completed'> = {
+    'Pending': 'pending',
+    'Delivered': 'delivered',
+    'Complete': 'completed'
+  };
+
+  return {
+    id: transaction.transaction_id,
+    orderId: transaction.transaction_id,
+    otherUser,
+    lastMessage: {
+      content: transaction.last_message || 'No messages yet',
+      timestamp: transaction.date_time ? new Date(transaction.date_time) : new Date(),
+      sender: 'them' as const,
+      type: 'text' as const
+    },
+    unreadCount: 0, // TODO: Implement unread count in backend
+    materialName: transaction.auction_name,
+    orderStatus: orderStatusMap[transaction.transaction_status] || 'pending',
+    chatStatus: 'active' as const,
+    priority: 'medium' as const
+  };
+}
+
+/**
+ * Convert Transaction to OrderContext format
+ */
+function transactionToOrderContext(transaction: Transaction, currentUserId: number) {
+  const isCurrentUserBuyer = transaction.user_id === currentUserId;
+
+  // Map transaction status
+  const statusMap: Record<string, 'pending' | 'in_transit' | 'delivered' | 'completed'> = {
+    'Pending': 'pending',
+    'Delivered': 'delivered',
+    'Complete': 'completed'
+  };
+
+  return {
+    orderId: transaction.transaction_id,
+    materialName: transaction.auction_name,
+    materialType: "Material",
+    quantity: "N/A",
+    price: "N/A",
+    shippingAddress: "N/A",
+    estimatedDelivery: transaction.date_time || new Date().toISOString(),
+    status: statusMap[transaction.transaction_status] || 'pending',
     seller: {
-      name: "Erik Andersson",
-      company: "Nordic Recycling AB",
-      avatar: "/avatars/erik.jpg",
-      isOnline: true,
-      lastSeen: new Date(Date.now() - 300000)
+      name: isCurrentUserBuyer ? `Seller ${transaction.seller_id}` : `${transaction.first_name} ${transaction.last_name}`,
+      company: isCurrentUserBuyer ? transaction.seller_company : transaction.buyer_company,
+      avatar: undefined,
+      isOnline: false,
+      lastSeen: undefined
     },
     buyer: {
-      name: "Current User",
-      company: "Your Company AB",
-      avatar: "/avatars/user.jpg",
-      isOnline: true,
-      lastSeen: new Date()
+      name: isCurrentUserBuyer ? `${transaction.first_name} ${transaction.last_name}` : `Buyer ${transaction.user_id}`,
+      company: isCurrentUserBuyer ? transaction.buyer_company : transaction.seller_company,
+      avatar: undefined,
+      isOnline: false,
+      lastSeen: undefined
     },
     specifications: {
-      grade: "Food Grade",
-      color: "Natural/Clear",
-      origin: "Sweden",
-      certifications: ["ISO 9001", "FDA Approved", "EU Food Contact"]
+      grade: undefined,
+      color: undefined,
+      origin: undefined,
+      certifications: undefined
     },
     timeline: {
-      orderPlaced: new Date("2024-01-15T10:30:00"),
-      paymentConfirmed: new Date("2024-01-15T11:15:00"),
-      shippingStarted: new Date("2024-01-18T09:00:00"),
-      delivered: new Date("2024-01-20T14:30:00"),
-      completed: undefined
+      orderPlaced: transaction.date_time ? new Date(transaction.date_time) : new Date(),
+      paymentConfirmed: transaction.date_time ? new Date(transaction.date_time) : new Date(),
+      shippingStarted: undefined,
+      delivered: transaction.transaction_status === 'Delivered' ? new Date() : undefined,
+      completed: transaction.transaction_status === 'Complete' ? new Date() : undefined
     }
-  }
-  // Add more order contexts as needed
-};
+  };
+}
 
 export default function ChatsPage() {
   const searchParams = useSearchParams();
+  const { user, isAuthenticated } = useAuth();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(
     searchParams.get('chat') || null
   );
-  const [chats, setChats] = useState<ChatPreview[]>(sampleChats);
+  const [chats, setChats] = useState<ChatPreview[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch transactions from chat microservice
+  useEffect(() => {
+    const fetchTransactions = async () => {
+      if (!isAuthenticated || !user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await getTransactions();
+
+        if (response.error) {
+          setError(response.error);
+          return;
+        }
+
+        if (response.data) {
+          setTransactions(response.data.transactions);
+          const chatPreviews = response.data.transactions.map(transaction =>
+            transactionToChatPreview(transaction, user.id)
+          );
+          setChats(chatPreviews);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load chats');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTransactions();
+  }, [isAuthenticated, user]);
 
   // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -238,29 +224,90 @@ export default function ChatsPage() {
   };
 
   const selectedChat = chats.find(chat => chat.id === selectedChatId);
-  const selectedOrderContext = selectedChatId ? sampleOrderContexts[selectedChatId as keyof typeof sampleOrderContexts] : null;
+  const selectedTransaction = transactions.find(t => t.transaction_id === selectedChatId);
 
-  // Determine current user type based on the selected chat
+  // Convert selected transaction to order context
+  const selectedOrderContext = selectedTransaction && user
+    ? transactionToOrderContext(selectedTransaction, user.id)
+    : null;
+
+  // Determine current user type based on the selected transaction
   const getCurrentUserType = () => {
-    if (!selectedChat) return 'buyer';
-    // If the other user is a seller, current user is buyer and vice versa
-    return selectedChat.otherUser.userType === 'seller' ? 'buyer' : 'seller';
+    if (!selectedTransaction || !user) return 'buyer';
+    return selectedTransaction.user_id === user.id ? 'buyer' : 'seller';
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="h-[calc(100vh-120px)] flex items-center justify-center bg-white">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#FF8A00] mx-auto mb-4" />
+          <p className="text-gray-600">Loading chats...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="h-[calc(100vh-120px)] flex items-center justify-center bg-white">
+        <div className="text-center max-w-md">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg
+              className="w-8 h-8 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load chats</h3>
+          <p className="text-sm text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-[#FF8A00] text-white rounded-lg hover:bg-[#E67A00] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show not authenticated state
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="h-[calc(100vh-120px)] flex items-center justify-center bg-white">
+        <div className="text-center">
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Please log in</h3>
+          <p className="text-sm text-gray-500">You need to be logged in to view chats</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-120px)] flex bg-white">
       {/* Chat List - Hidden on mobile when chat is selected */}
       <div className={cn(
         "border-r border-gray-200 bg-white",
-        isMobile 
-          ? selectedChatId 
-            ? "hidden" 
+        isMobile
+          ? selectedChatId
+            ? "hidden"
             : "w-full"
           : "w-80 flex-shrink-0"
       )}>
         <ChatList
           chats={chats}
-          currentUserId="current-user-id"
+          currentUserId={user.id.toString()}
           language="en"
           onChatSelect={handleChatSelect}
           onArchiveChat={handleArchiveChat}
