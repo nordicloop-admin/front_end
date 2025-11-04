@@ -6,7 +6,8 @@ import { ChatList } from '@/components/chat/ChatList';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { getTransactions, Transaction } from '@/services/chat';
+import { getTransactions, Transaction, ChatMessage } from '@/services/chat';
+import { useChatMessages } from '@/hooks/useChatMessages';
 import { Loader2 } from 'lucide-react';
 
 interface ChatPreview {
@@ -237,6 +238,49 @@ export default function ChatsPage() {
     return selectedTransaction.user_id === user.id ? 'buyer' : 'seller';
   };
 
+  // Use the chat messages hook for the selected transaction
+  const {
+    messages: apiMessages,
+    isLoading: isLoadingMessages,
+    error: messagesError,
+    sendNewMessage
+  } = useChatMessages(
+    selectedChatId,
+    true // Enable WebSocket for real-time updates
+  );
+
+  // Convert API messages to ChatContainer format
+  const convertApiMessageToMessage = (apiMessage: ChatMessage) => {
+    if (!user) return null;
+
+    const isCurrentUser = apiMessage.sender_id === user.id;
+    const currentUserType = getCurrentUserType();
+
+    return {
+      id: apiMessage._id || `${apiMessage.transaction_id}-${apiMessage.timestamp}`,
+      type: 'text' as const,
+      content: apiMessage.message,
+      sender: isCurrentUser ? currentUserType : (currentUserType === 'buyer' ? 'seller' : 'buyer') as 'buyer' | 'seller',
+      timestamp: apiMessage.timestamp ? new Date(apiMessage.timestamp) : new Date(),
+      isRead: true,
+      deliveryStatus: 'delivered' as const
+    };
+  };
+
+  const chatMessages = apiMessages
+    .map(convertApiMessageToMessage)
+    .filter((msg): msg is NonNullable<typeof msg> => msg !== null);
+
+  // Handle sending messages
+  const handleSendMessage = async (content: string, _attachments?: File[]) => {
+    const success = await sendNewMessage(content);
+
+    if (!success && messagesError) {
+      console.error('Failed to send message:', messagesError);
+      // TODO: Show error notification to user
+    }
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -328,6 +372,9 @@ export default function ChatsPage() {
             language="en"
             onBack={isMobile ? handleBackToList : undefined}
             className="h-full"
+            messages={chatMessages}
+            onSendMessage={handleSendMessage}
+            isLoadingMessages={isLoadingMessages}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-50">

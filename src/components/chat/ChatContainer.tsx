@@ -83,6 +83,13 @@ interface ChatContainerProps {
   language?: 'en' | 'sv';
   onBack?: () => void;
   className?: string;
+  // Optional props to override default behavior with real API data
+  messages?: Message[];
+  onSendMessage?: (content: string, attachments?: File[]) => void;
+  onConfirmDelivery?: () => void;
+  onReportIssue?: () => void;
+  onExportChat?: () => void;
+  isLoadingMessages?: boolean;
 }
 
 const translations = {
@@ -137,9 +144,15 @@ export function ChatContainer({
   currentUser,
   language = 'en',
   onBack,
-  className
+  className,
+  messages: externalMessages,
+  onSendMessage: externalOnSendMessage,
+  onConfirmDelivery: externalOnConfirmDelivery,
+  onReportIssue: externalOnReportIssue,
+  onExportChat: externalOnExportChat,
+  isLoadingMessages = false
 }: ChatContainerProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [internalMessages, setInternalMessages] = useState<Message[]>([]);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [currentLanguage] = useState(language);
@@ -148,8 +161,16 @@ export function ChatContainer({
   const t = translations[currentLanguage];
   const otherUser = currentUser === 'buyer' ? orderContext.seller : orderContext.buyer;
 
-  // Initialize with sample messages
+  // Use external messages if provided, otherwise use internal state with sample data
+  const messages = externalMessages || internalMessages;
+
+  // Initialize with sample messages only if no external messages provided
   useEffect(() => {
+    if (externalMessages) {
+      // Using external messages, don't initialize sample data
+      return;
+    }
+
     const sampleMessages: Message[] = [
       {
         id: '1',
@@ -214,10 +235,17 @@ export function ChatContainer({
       });
     }
 
-    setMessages(sampleMessages);
-  }, [orderContext, currentUser, t]);
+    setInternalMessages(sampleMessages);
+  }, [orderContext, currentUser, t, externalMessages]);
 
   const handleSendMessage = (content: string, attachments?: File[]) => {
+    // Use external handler if provided
+    if (externalOnSendMessage) {
+      externalOnSendMessage(content, attachments);
+      return;
+    }
+
+    // Fallback to internal handler
     const newMessage: Message = {
       id: Date.now().toString(),
       type: attachments && attachments.length > 0 ? 'document' : 'text',
@@ -233,23 +261,30 @@ export function ChatContainer({
       }))
     };
 
-    setMessages(prev => [...prev, newMessage]);
+    setInternalMessages(prev => [...prev, newMessage]);
 
     // Simulate delivery status updates
     setTimeout(() => {
-      setMessages(prev => prev.map(msg => 
+      setInternalMessages(prev => prev.map(msg =>
         msg.id === newMessage.id ? { ...msg, deliveryStatus: 'delivered' } : msg
       ));
     }, 1000);
 
     setTimeout(() => {
-      setMessages(prev => prev.map(msg => 
+      setInternalMessages(prev => prev.map(msg =>
         msg.id === newMessage.id ? { ...msg, deliveryStatus: 'read' } : msg
       ));
     }, 3000);
   };
 
   const handleConfirmDelivery = () => {
+    // Use external handler if provided
+    if (externalOnConfirmDelivery) {
+      externalOnConfirmDelivery();
+      return;
+    }
+
+    // Fallback to internal handler
     const confirmationMessage: Message = {
       id: Date.now().toString(),
       type: 'delivery_confirmation',
@@ -259,15 +294,25 @@ export function ChatContainer({
       deliveryStatus: 'sent'
     };
 
-    setMessages(prev => [...prev, confirmationMessage]);
+    setInternalMessages(prev => [...prev, confirmationMessage]);
   };
 
   const handleReportIssue = () => {
+    // Use external handler if provided
+    if (externalOnReportIssue) {
+      externalOnReportIssue();
+      return;
+    }
     // This would open a modal or form for reporting issues
     // console.log('Report issue clicked');
   };
 
   const handleExportChat = () => {
+    // Use external handler if provided
+    if (externalOnExportChat) {
+      externalOnExportChat();
+      return;
+    }
     // This would generate and download a chat transcript
     // console.log('Export chat clicked');
   };
