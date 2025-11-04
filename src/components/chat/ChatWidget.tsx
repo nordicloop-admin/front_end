@@ -136,7 +136,7 @@ export function ChatWidget({
                   <div className="relative flex-shrink-0">
                     <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
                       <span className="text-xs font-medium text-gray-700">
-                        {chat.otherUser.name.charAt(0).toUpperCase()}
+                        {chat.otherUser.userType === 'seller' ? chat.otherUser.company.charAt(0).toUpperCase() : chat.otherUser.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     {chat.otherUser.isOnline && (
@@ -149,7 +149,7 @@ export function ChatWidget({
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center space-x-2">
                         <h4 className="text-sm font-medium text-gray-900 truncate">
-                          {chat.otherUser.name}
+                          {chat.otherUser.userType === 'seller' ? chat.otherUser.company : chat.otherUser.name}
                         </h4>
                         <span className={cn(
                           "inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium",

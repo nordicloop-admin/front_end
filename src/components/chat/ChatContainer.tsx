@@ -302,7 +302,7 @@ export function ChatContainer({
             <div className="relative">
               <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
                 <span className="text-sm font-medium text-gray-700">
-                  {otherUser.name.charAt(0).toUpperCase()}
+                  {currentUser === 'buyer' ? otherUser.company.charAt(0).toUpperCase() : otherUser.name.charAt(0).toUpperCase()}
                 </span>
               </div>
               {otherUser.isOnline && (
@@ -311,8 +311,14 @@ export function ChatContainer({
             </div>
             
             <div>
-              <h3 className="font-semibold text-gray-900">{otherUser.name}</h3>
-              <p className="text-sm text-gray-500">{otherUser.company}</p>
+              <h3 className="font-semibold text-gray-900">
+                {/* Show only company name for sellers, keep buyer names unchanged */}
+                {currentUser === 'buyer' ? otherUser.company : otherUser.name}
+              </h3>
+              {/* Only show company as subtitle for buyers (when we show their name as main title) */}
+              {currentUser === 'seller' && (
+                <p className="text-sm text-gray-500">{otherUser.company}</p>
+              )}
               <div className="flex items-center space-x-2 text-xs text-gray-400">
                 {otherUser.isOnline ? (
                   <span className="text-green-600">{t.online}</span>

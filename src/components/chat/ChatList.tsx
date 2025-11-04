@@ -133,12 +133,13 @@ export function ChatList({
 
     // Filter by search query
     if (searchQuery.trim()) {
-      filtered = filtered.filter(chat => 
-        chat.otherUser.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      filtered = filtered.filter(chat => {
+        const displayName = chat.otherUser.userType === 'seller' ? chat.otherUser.company : chat.otherUser.name;
+        return displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         chat.otherUser.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
         chat.materialName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         chat.orderId.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      });
     }
 
     // Filter by status
@@ -286,7 +287,7 @@ export function ChatList({
                   <div className="relative flex-shrink-0">
                     <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
                       <span className="text-sm font-medium text-gray-700">
-                        {chat.otherUser.name.charAt(0).toUpperCase()}
+                        {chat.otherUser.userType === 'seller' ? chat.otherUser.company.charAt(0).toUpperCase() : chat.otherUser.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
                     {chat.otherUser.isOnline && (
@@ -299,7 +300,7 @@ export function ChatList({
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center space-x-2">
                         <h4 className="text-sm font-medium text-gray-900 truncate">
-                          {chat.otherUser.name}
+                          {chat.otherUser.userType === 'seller' ? chat.otherUser.company : chat.otherUser.name}
                         </h4>
                         <span className={cn(
                           "inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium",
