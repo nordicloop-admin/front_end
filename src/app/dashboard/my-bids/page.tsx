@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Loader2, Trophy, Clock, TrendingUp, RefreshCw } from 'lucide-react';
+import { AlertCircle, Loader2, Trophy, Clock, TrendingUp, RefreshCw, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getUserBids, getUserWinningBids, cancelBid, BidItem, PaginatedBidResult, BidPaginationParams } from '@/services/bid';
+import { createTransactionFromBid } from '@/services/chat';
 import { toast } from 'sonner';
 import useBidding from '@/hooks/useBidding';
 import PlaceBidModal from '@/components/auctions/PlaceBidModal';
@@ -13,6 +15,7 @@ import Pagination from '@/components/ui/Pagination';
 type TabType = 'all' | 'active' | 'winning' | 'outbid' | 'won' | 'lost' | 'cancelled';
 
 export default function MyBids() {
+  const router = useRouter();
   const [bids, setBids] = useState<BidItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,6 +184,49 @@ export default function MyBids() {
       originalBidAmount: bid.bid_price_per_unit,
       bidId: bid.id
     });
+  };
+
+  // Handle chat with seller
+  const handleChatWithSeller = async (bid: BidItem) => {
+    // Validate required fields
+    if (!bid.seller_id || !bid.seller_company) {
+      toast.error('Unable to start chat', {
+        description: 'Seller information is not available for this bid.',
+        duration: 5000,
+      });
+      return;
+    }
+
+    const loadingToast = toast.loading('Opening chat...');
+
+    try {
+      const response = await createTransactionFromBid({
+        ad_id: bid.ad_id,
+        ad_title: bid.ad_title,
+        seller_id: bid.seller_id,
+        seller_company: bid.seller_company,
+        status: bid.status,
+      });
+
+      toast.dismiss(loadingToast);
+
+      if (response.error) {
+        toast.error('Failed to open chat', {
+          description: response.error,
+          duration: 5000,
+        });
+        return;
+      }
+
+      // Navigate to chat page with the transaction ID
+      router.push(`/dashboard/chats?transaction=${response.data}`);
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error('Failed to open chat', {
+        description: error instanceof Error ? error.message : 'An unexpected error occurred',
+        duration: 5000,
+      });
+    }
   };
 
   // Format date to readable string
@@ -362,28 +408,41 @@ export default function MyBids() {
                       </div>
                     )}
 
-                    <div className="mt-4 flex gap-2">
-                      <Link
-                        href={`/dashboard/auctions/${bid.id}`}
-                        className="flex-1 text-center px-3 py-2 border border-gray-200 text-gray-700 rounded text-xs hover:bg-gray-50 transition-colors"
-                      >
-                        View Ad
-                      </Link>
-                      {(bid.status === 'active' || bid.status === 'winning' || bid.status === 'Highest_bid') && (
-                        <>
-                          <button
-                            onClick={() => handleUpdateBid(bid)}
-                            className="flex-1 px-3 py-2 bg-[#FF8A00] text-white rounded text-xs hover:bg-[#e67e00] transition-colors"
-                          >
-                            Update Bid
-                          </button>
-                          <button
-                            onClick={() => handleCancelBid(bid.id)}
-                            className="px-3 py-2 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </>
+                    <div className="mt-4 flex flex-col gap-2">
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/dashboard/auctions/${bid.id}`}
+                          className="flex-1 text-center px-3 py-2 border border-gray-200 text-gray-700 rounded text-xs hover:bg-gray-50 transition-colors"
+                        >
+                          View Ad
+                        </Link>
+                        {(bid.status === 'active' || bid.status === 'winning' || bid.status === 'Highest_bid') && (
+                          <>
+                            <button
+                              onClick={() => handleUpdateBid(bid)}
+                              className="flex-1 px-3 py-2 bg-[#FF8A00] text-white rounded text-xs hover:bg-[#e67e00] transition-colors"
+                            >
+                              Update Bid
+                            </button>
+                            <button
+                              onClick={() => handleCancelBid(bid.id)}
+                              className="px-3 py-2 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Chat button - only show for paid or active bids */}
+                      {(bid.status === 'paid' || bid.status === 'active') && bid.seller_id && bid.seller_company && (
+                        <button
+                          onClick={() => handleChatWithSeller(bid)}
+                          className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors"
+                        >
+                          <MessageCircle size={14} />
+                          Chat with Seller
+                        </button>
                       )}
                     </div>
                   </div>

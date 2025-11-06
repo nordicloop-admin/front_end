@@ -63,6 +63,9 @@ export interface BidItem {
   status: string;
   created_at: string;
   updated_at: string;
+  // Seller information (for chat integration)
+  seller_id?: number;
+  seller_company?: string;
   // Optional fields that may be present in some responses
   currency?: string;
   unit?: string;
