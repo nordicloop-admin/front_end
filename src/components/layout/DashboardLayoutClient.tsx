@@ -29,7 +29,7 @@ export default function DashboardLayoutClient({
   const { logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userAdsCount, setUserAdsCount] = useState<number>(0);
-  const [unreadChatsCount, setUnreadChatsCount] = useState<number>(0);
+  // const [unreadChatsCount, setUnreadChatsCount] = useState<number>(0);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -56,8 +56,8 @@ export default function DashboardLayoutClient({
       try {
         // In a real app, this would be an API call
         // For now, we'll simulate with sample data
-        const sampleUnreadCount = 3; // This would come from your API
-        setUnreadChatsCount(sampleUnreadCount);
+        // const sampleUnreadCount = 3; // This would come from your API
+        // setUnreadChatsCount(sampleUnreadCount);
       } catch (_error) {
         // Error handling - silently fail
       }
