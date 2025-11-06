@@ -107,19 +107,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await loginService({ email, password });
 
       if (response.data) {
-        // Create a user object from the response data
-        const user: User = {
-          id: response.data.id,
-            email: response.data.email,
-            username: response.data.username,
-            firstName: response.data.firstname || response.data.first_name || response.data.firstName || (response.data.username ? response.data.username.split('@')[0] : 'User'),
-            lastName: response.data.lastname || response.data.last_name || response.data.lastName,
-            position: response.data.position,
-            companyId: response.data.company_id || response.data.companyId,
-            role: response.data.role
-        };
-
-        setUser(user);
+        // The user data is already properly formatted by the auth service
+        // It extracts the data from JWT and includes it in response.data
+        const userData = response.data as User;
+        
+        setUser(userData);
         setAuthStatus(true);
         return { success: true };
       }

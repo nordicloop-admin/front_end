@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { getUserDashboardStatistics, UserDashboardStatistics } from '@/services/statistics';
 import NotificationWidget from '@/components/notifications/NotificationWidget';
 // Removed toast import – rejection toast considered too aggressive
+import { ChatWidget, useRecentChats } from '@/components/chat';
 
 const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -14,6 +15,7 @@ const DashboardPage = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   // Removed rejection toast state – no longer showing auto toast on rejection
+  const { recentChats } = useRecentChats();
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -429,6 +431,15 @@ const DashboardPage = () => {
           showViewAllLink={true}
           isAdmin={false}
         />
+
+        {/* Recent Chats */}
+        <div className="bg-white border border-gray-100 rounded-md">
+          <ChatWidget
+            recentChats={recentChats}
+            language="en"
+            className="border-0 shadow-none"
+          />
+        </div>
       </div>
     </div>
   );

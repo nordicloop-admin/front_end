@@ -9,12 +9,30 @@ const ACCESS_TOKEN_KEY = 'nordic_loop_access_token';
 const REFRESH_TOKEN_KEY = 'nordic_loop_refresh_token';
 const USER_KEY = 'nordic_loop_user';
 
+// Interface for JWT token payload
+interface JWTPayload {
+  exp?: number;
+  iat?: number;
+  jti?: string;
+  user_id?: number;
+  email?: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  contact_type?: string;
+  company_id?: number;
+  company_name?: string;
+  can_place_ads?: boolean;
+  can_place_bids?: boolean;
+}
+
 /**
- * Decode JWT token without verification (for expiration check)
+ * Decode JWT token without verification (for expiration check and user info extraction)
  * @param token The JWT token to decode
  * @returns The decoded payload or null if invalid
  */
-function decodeJWT(token: string): { exp?: number } | null {
+function decodeJWT(token: string): JWTPayload | null {
   try {
     const base64Url = token.split('.')[1];
     if (!base64Url) return null;
@@ -27,10 +45,34 @@ function decodeJWT(token: string): { exp?: number } | null {
         .join('')
     );
     
-    return JSON.parse(jsonPayload);
+    return JSON.parse(jsonPayload) as JWTPayload;
   } catch (_error) {
     return null;
   }
+}
+
+/**
+ * Extract user information from JWT token
+ * @param token The JWT access token
+ * @returns User information from token or null if invalid
+ */
+export function getUserFromToken(token: string): User | null {
+  const decoded = decodeJWT(token);
+  if (!decoded) return null;
+
+  return {
+    id: decoded.user_id || 0,
+    email: decoded.email || '',
+    username: decoded.username || '',
+    firstName: decoded.first_name || '',
+    lastName: decoded.last_name || '',
+    role: decoded.role || '',
+    contactType: decoded.contact_type || '',
+    companyId: decoded.company_id || null,
+    companyName: decoded.company_name || null,
+    canPlaceAds: decoded.can_place_ads || false,
+    canPlaceBids: decoded.can_place_bids || false,
+  };
 }
 
 /**
@@ -101,21 +143,9 @@ export function forceTokenExpiration(): void {
  */
 interface LoginResponse {
   message: string;
-  username: string;
-  email: string;
   access: string;
   refresh: string;
-  firstname?: string; // backend sometimes returns this format
-  lastname?: string;
-  first_name?: string;
-  id?: string;
-  firstName?: string;
-  lastName?: string;
-  last_name?: string;
-  position?: string;
-  companyId?: string;
-  company_id?: string;
-  role?: string;
+  // Note: User data is now extracted from JWT token, not response body
 }
 
 /**
@@ -176,13 +206,11 @@ export async function login(credentials: LoginCredentials) {
     }
 
     if (response.data) {
-      // Make sure we have all the required data
-      if (!response.data.access || !response.data.refresh || !response.data.email || !response.data.username) {
-        // Use a logger instead of console to avoid ESLint warnings
-        // console.error('Login response missing required fields:', response.data);
+      // Make sure we have the required tokens
+      if (!response.data.access || !response.data.refresh) {
         return {
           data: null,
-          error: 'Invalid response from server',
+          error: 'Invalid response from server - missing tokens',
           status: response.status
         };
       }
@@ -191,21 +219,27 @@ export async function login(credentials: LoginCredentials) {
       localStorage.setItem(ACCESS_TOKEN_KEY, response.data.access);
       localStorage.setItem(REFRESH_TOKEN_KEY, response.data.refresh);
 
-      // Store the user info in local storage
-      const user: User = {
-        id: response.data.id,
-        email: response.data.email,
-        username: response.data.username,
-        // Precedence: explicit 'firstname' -> snake 'first_name' -> camel 'firstName' -> fallback from username
-        firstName: response.data.firstname || response.data.first_name || response.data.firstName || (response.data.username ? response.data.username.split('@')[0] : 'User'),
-        lastName: response.data.lastname || response.data.last_name || response.data.lastName,
-        position: response.data.position,
-        companyId: response.data.company_id || response.data.companyId,
-        role: response.data.role
-      };
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
-      
-      return response;
+      // Extract user info from JWT token instead of response body
+      const userFromToken = getUserFromToken(response.data.access);
+      if (userFromToken) {
+        localStorage.setItem(USER_KEY, JSON.stringify(userFromToken));
+        
+        // Return response with user data from token for consistency
+        return {
+          data: {
+            ...response.data,
+            ...userFromToken, // Add user data extracted from token
+          },
+          error: null,
+          status: response.status
+        };
+      } else {
+        return {
+          data: null,
+          error: 'Failed to extract user data from token',
+          status: response.status
+        };
+      }
     }
 
     // If we get here, there's no data and no explicit error
@@ -269,7 +303,7 @@ export function getRefreshToken(): string | null {
 }
 
 /**
- * Get the current user
+ * Get the current user (from localStorage or JWT token)
  * @returns The current user
  */
 export function getUser(): User | null {
@@ -278,13 +312,24 @@ export function getUser(): User | null {
   }
 
   try {
+    // First try to get user from localStorage
     const user = localStorage.getItem(USER_KEY);
-
-    if (!user) {
-      return null;
+    if (user) {
+      return JSON.parse(user);
     }
 
-    return JSON.parse(user);
+    // If no user in localStorage, try to extract from JWT token
+    const accessToken = getAccessToken();
+    if (accessToken && !isTokenExpired(accessToken)) {
+      const userFromToken = getUserFromToken(accessToken);
+      if (userFromToken) {
+        // Store user data in localStorage for future use
+        localStorage.setItem(USER_KEY, JSON.stringify(userFromToken));
+        return userFromToken;
+      }
+    }
+
+    return null;
   } catch (error) {
     // If there's an error accessing localStorage or parsing the user data, remove it and return null
     if (process.env.NODE_ENV === 'development') {

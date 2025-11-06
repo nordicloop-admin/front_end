@@ -47,14 +47,18 @@ export interface UserSignUp {
 }
 
 export interface User {
-  id?: string;
+  id: number;
   email: string;
   username?: string;
   firstName?: string;
   lastName?: string;
   position?: string;
-  companyId?: string;
+  companyId?: number | null;
+  companyName?: string | null;
   role?: string;
+  contactType?: string;
+  canPlaceAds?: boolean;
+  canPlaceBids?: boolean;
   createdAt?: string;
 }
 
