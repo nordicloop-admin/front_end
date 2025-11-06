@@ -824,13 +824,12 @@ export default function MyActivity() {
                           {(bid.status === 'paid' || bid.status === 'active') && (
                             <button
                               onClick={() => handleChatWithSeller(bid)}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-blue-500 text-white rounded text-xs hover:bg-blue-600 transition-colors"
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-[#FF8A00] text-[#FF8A00] rounded text-xs font-medium hover:bg-[#FF8A00] hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
                             >
                               <MessageCircle size={14} />
                               Chat with Seller
                             </button>
                           )}
-                          
                         </div>
                       </div>
                     </div>
