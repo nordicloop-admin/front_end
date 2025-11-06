@@ -193,12 +193,12 @@ export default function ChatsPage() {
   const handleChatSelect = (chatId: string) => {
     setSelectedChatId(chatId);
     
-    // Mark chat as read
+    // Mark chat as read.
     setChats(prev => prev.map(chat => 
       chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
     ));
 
-    // Update URL
+    // Update URL 
     const url = new URL(window.location.href);
     url.searchParams.set('chat', chatId);
     window.history.pushState({}, '', url.toString());
