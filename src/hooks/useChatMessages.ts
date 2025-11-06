@@ -81,8 +81,9 @@ export function useChatMessages(
       }
 
       if (response.data) {
-        // Add the new message to the list
-        setMessages(prev => [...prev, response.data!]);
+        // ✅ FIX: Don't add message here - let WebSocket handle it
+        // This prevents duplicate messages for the sender
+        // The WebSocket broadcast will add the message for all users (including sender)
         return true;
       }
 
