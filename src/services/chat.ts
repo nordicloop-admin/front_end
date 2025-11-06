@@ -308,3 +308,73 @@ export function createChatWebSocket(transactionId: string): WebSocket {
   return new WebSocket(`${wsUrl}/ws/${transactionId}`);
 }
 
+/**
+ * Interface for bid data needed to create a chat transaction
+ */
+export interface BidChatData {
+  ad_id: number;
+  ad_title: string;
+  seller_id: number;
+  seller_company: string;
+  status: string;
+}
+
+/**
+ * Create or get existing transaction for a bid and navigate to chat
+ * This function is used when a buyer wants to chat with a seller from the My Bids page
+ *
+ * @param bidData The bid data containing seller information
+ * @returns The transaction ID if successful, or error message
+ */
+export async function createTransactionFromBid(
+  bidData: BidChatData
+): Promise<ChatApiResponse<string>> {
+  try {
+    // Use ad_id as transaction_id (unique identifier for the auction)
+    const transactionId = `ad-${bidData.ad_id}`;
+
+    // Check if transaction already exists
+    const existingTransaction = await getTransaction(transactionId);
+
+    if (existingTransaction.data) {
+      // Transaction already exists, return its ID
+      return {
+        data: transactionId,
+        error: null,
+        status: 200,
+      };
+    }
+
+    // Create new transaction
+    const createRequest: CreateTransactionRequest = {
+      transaction_id: transactionId,
+      auction_name: bidData.ad_title,
+      seller_id: bidData.seller_id,
+      seller_company: bidData.seller_company,
+      transaction_status: bidData.status === 'paid' ? 'Complete' : 'Pending',
+    };
+
+    const createResponse = await createTransaction(createRequest);
+
+    if (createResponse.error) {
+      return {
+        data: null,
+        error: createResponse.error,
+        status: createResponse.status,
+      };
+    }
+
+    return {
+      data: transactionId,
+      error: null,
+      status: createResponse.status,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to create transaction from bid',
+      status: 500,
+    };
+  }
+}
+
