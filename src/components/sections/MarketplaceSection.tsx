@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 
 // Showcase video with custom controls & seek bar
@@ -19,18 +19,18 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
   const initialShownRef = useRef(false); // track first reveal cycle
 
   // Unified timer reset logic for both mobile & desktop
-  const scheduleHide = (delay = 3000) => {
+  const scheduleHide = useCallback((delay = 3000) => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => {
       // Only auto-hide if not seeking and not user-paused overlay interactions
       setShowControls(false);
     }, delay);
-  };
+  }, []);
 
-  const revealControls = (autoSchedule = true) => {
+  const revealControls = useCallback((autoSchedule = true) => {
     setShowControls(true);
     if (autoSchedule) scheduleHide();
-  };
+  }, [scheduleHide]);
 
   const togglePlay = () => {
     const v = videoRef.current;
@@ -68,7 +68,7 @@ const ShowcaseVideo: React.FC<{ src: string; poster?: string; title?: string; }>
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
-  }, []);
+  }, [revealControls, scheduleHide]);
 
   // Pause when scrolled away, resume when back (if not user-paused)
   useEffect(() => {

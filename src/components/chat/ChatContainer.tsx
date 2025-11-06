@@ -150,7 +150,7 @@ export function ChatContainer({
   onConfirmDelivery: externalOnConfirmDelivery,
   onReportIssue: externalOnReportIssue,
   onExportChat: externalOnExportChat,
-  isLoadingMessages = false
+  isLoadingMessages: _isLoadingMessages = false
 }: ChatContainerProps) {
   const [internalMessages, setInternalMessages] = useState<Message[]>([]);
   const [showOrderDetails, setShowOrderDetails] = useState(false);
