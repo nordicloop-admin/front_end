@@ -229,6 +229,9 @@ export interface UserBidItem {
   status: string;
   created_at: string;
   updated_at: string;
+  // Seller information (for chat integration)
+  seller_id?: number;
+  seller_company?: string;
 }
 
 /**
@@ -476,6 +479,9 @@ export async function getUserBids(params?: BidPaginationParams) {
       status: bid.status,
       created_at: bid.created_at,
       updated_at: bid.updated_at,
+      // Seller information (for chat integration)
+      seller_id: bid.seller_id,
+      seller_company: bid.seller_company,
       // Add default values for required BidItem fields
       currency: 'EUR', // Default currency
       unit: 'kg',     // Default unit

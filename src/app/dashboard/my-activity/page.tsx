@@ -193,7 +193,7 @@ export default function MyActivity() {
       }
 
       const result = bidsResponse.data as PaginatedBidResult;
-      
+
       setBidPaginationData({
         count: result.pagination.count,
         totalPages: result.pagination.total_pages,
