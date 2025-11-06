@@ -375,7 +375,7 @@ export async function signup(credentials: SignupCredentials) {
           firstName: response.data.first_name || (response.data.username ? response.data.username.split(' ')[0] : 'User'),
           lastName: response.data.last_name,
           position: response.data.position,
-          companyId: response.data.company_id
+          companyId: response.data.company_id ? Number.parseInt(response.data.company_id, 10) : null
         };
 
         // Create an enhanced response with user data
