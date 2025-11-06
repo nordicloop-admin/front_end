@@ -116,7 +116,7 @@ export function useChatMessages(
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('WebSocket connected for transaction:', transactionId);
+        // WebSocket connected successfully
       };
 
       ws.onmessage = (event) => {
@@ -129,18 +129,18 @@ export function useChatMessages(
             if (exists) return prev;
             return [...prev, newMessage];
           });
-        } catch (err) {
-          console.error('Failed to parse WebSocket message:', err);
+        } catch (_err) {
+          // Failed to parse WebSocket message
+          setError('Failed to parse incoming message');
         }
       };
 
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+      ws.onerror = (_error) => {
         setError('Real-time connection error');
       };
 
       ws.onclose = () => {
-        console.log('WebSocket disconnected');
+        // WebSocket disconnected
       };
 
       // Cleanup on unmount or transaction change
@@ -150,8 +150,9 @@ export function useChatMessages(
         }
         wsRef.current = null;
       };
-    } catch (err) {
-      console.error('Failed to create WebSocket:', err);
+    } catch (_err) {
+      // Failed to create WebSocket connection
+      setError('Failed to establish real-time connection');
     }
   }, [transactionId, enableWebSocket]);
 

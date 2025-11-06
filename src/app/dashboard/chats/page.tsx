@@ -224,7 +224,6 @@ export default function ChatsPage() {
     window.history.pushState({}, '', url.toString());
   };
 
-  const selectedChat = chats.find(chat => chat.id === selectedChatId);
   const selectedTransaction = transactions.find(t => t.transaction_id === selectedChatId);
 
   // Convert selected transaction to order context
@@ -276,7 +275,6 @@ export default function ChatsPage() {
     const success = await sendNewMessage(content);
 
     if (!success && messagesError) {
-      console.error('Failed to send message:', messagesError);
       // TODO: Show error notification to user
     }
   };

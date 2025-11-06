@@ -369,13 +369,13 @@ export async function signup(credentials: SignupCredentials) {
       if (response.data.message && response.data.username) {
         // Create a temporary user object with the available information
         const user: User = {
-          id: response.data.id,
+          id: response.data.id ? Number.parseInt(response.data.id, 10) : 0,
           email: credentials.email, // Use the email from the credentials
           username: response.data.username,
           firstName: response.data.first_name || (response.data.username ? response.data.username.split(' ')[0] : 'User'),
           lastName: response.data.last_name,
           position: response.data.position,
-          companyId: response.data.company_id
+          companyId: response.data.company_id ? Number.parseInt(response.data.company_id, 10) : null
         };
 
         // Create an enhanced response with user data

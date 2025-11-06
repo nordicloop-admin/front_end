@@ -111,23 +111,20 @@ export function ChatContainerWithAPI({
     
     if (!success && error) {
       // Show error notification
-      console.error('Failed to send message:', error);
+      // TODO: Replace with proper error notification system
     }
   };
 
   const handleConfirmDelivery = () => {
     // TODO: Implement delivery confirmation
-    console.log('Confirm delivery');
   };
 
   const handleReportIssue = () => {
     // TODO: Implement issue reporting
-    console.log('Report issue');
   };
 
   const handleExportChat = () => {
     // TODO: Implement chat export
-    console.log('Export chat');
   };
 
   // Show loading state
