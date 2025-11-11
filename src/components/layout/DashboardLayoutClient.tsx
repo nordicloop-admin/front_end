@@ -172,11 +172,11 @@ export default function DashboardLayoutClient({
           >
             <MessageCircle size={18} className="mr-3" />
             <span>Chats</span>
-            {/* {unreadChatsCount > 0 && (
+            {unreadChatsCount > 0 && (
               <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                 {unreadChatsCount > 9 ? '9+' : unreadChatsCount}
               </span>
-            )} */}
+            )}
           </Link>
 
           <Link
