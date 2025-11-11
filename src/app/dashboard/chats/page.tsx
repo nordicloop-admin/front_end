@@ -185,7 +185,7 @@ export default function ChatsPage() {
     };
 
     fetchTransactions();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, unreadCountsByTransaction]);
 
   // Update chat previews when unread counts change
   useEffect(() => {

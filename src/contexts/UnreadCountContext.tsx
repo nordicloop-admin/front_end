@@ -47,22 +47,19 @@ export function UnreadCountProvider({ children }: { children: React.ReactNode })
 
       // Fetch global unread count
       const globalCount = await getUnreadCount();
-      console.log('[UnreadCount] Global unread count:', globalCount);
       setTotalUnreadCount(globalCount);
 
       // Fetch per-transaction unread counts
       const transactionCounts = await getUnreadCountsByTransaction();
-      console.log('[UnreadCount] Per-transaction counts:', transactionCounts);
 
       const countsMap = new Map<string, number>();
       transactionCounts.forEach(({ transaction_id, unread_count }) => {
         countsMap.set(transaction_id, unread_count);
       });
 
-      console.log('[UnreadCount] Counts map:', Array.from(countsMap.entries()));
       setUnreadCountsByTransaction(countsMap);
-    } catch (error) {
-      console.error('Failed to fetch unread counts:', error);
+    } catch {
+      // Failed to fetch unread counts - silently continue with defaults
     } finally {
       setIsLoading(false);
     }
@@ -82,33 +79,23 @@ export function UnreadCountProvider({ children }: { children: React.ReactNode })
           return newMap;
         });
       }
-    } catch (error) {
-      console.error('Failed to mark messages as read:', error);
+    } catch {
+      // Failed to mark messages as read - silently continue
     }
   }, []);
 
   // Handle new message received via WebSocket
   const handleNewMessage = useCallback((transactionId: string, senderId: number) => {
-    console.log('[UnreadCount] handleNewMessage called:', { transactionId, senderId, currentUserId: user?.id });
-
     // Only increment if the message is from someone else
     if (user && senderId !== user.id) {
-      console.log('[UnreadCount] Incrementing unread count for transaction:', transactionId);
-
-      setTotalUnreadCount(prev => {
-        console.log('[UnreadCount] Total count before:', prev, 'after:', prev + 1);
-        return prev + 1;
-      });
+      setTotalUnreadCount(prev => prev + 1);
 
       setUnreadCountsByTransaction(prev => {
         const newMap = new Map(prev);
         const currentCount = newMap.get(transactionId) || 0;
         newMap.set(transactionId, currentCount + 1);
-        console.log('[UnreadCount] Transaction counts updated:', Array.from(newMap.entries()));
         return newMap;
       });
-    } else {
-      console.log('[UnreadCount] Skipping increment - message from current user');
     }
   }, [user]);
 
@@ -126,8 +113,6 @@ export function UnreadCountProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (!user) return;
 
-    console.log('[UnreadCount] Setting up global WebSocket connection for user:', user.id);
-    
     // Initial load
     refreshUnreadCounts();
 
@@ -141,17 +126,14 @@ export function UnreadCountProvider({ children }: { children: React.ReactNode })
       globalWs = new WebSocket(wsUrl);
       
       globalWs.onopen = () => {
-        console.log('[UnreadCount] Global WebSocket connected');
+        // WebSocket connected successfully
       };
       
       globalWs.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('[UnreadCount] Global WebSocket message received:', data);
           
           if (data.type === 'unread_count_update') {
-            console.log('[UnreadCount] Processing unread count update:', data);
-            
             // Update total count
             setTotalUnreadCount(data.total_unread);
             
@@ -163,21 +145,20 @@ export function UnreadCountProvider({ children }: { children: React.ReactNode })
               } else {
                 newMap.delete(data.transaction_id);
               }
-              console.log('[UnreadCount] Transaction counts updated via WebSocket:', Array.from(newMap.entries()));
               return newMap;
             });
           }
-        } catch (error) {
-          console.error('[UnreadCount] Error parsing global WebSocket message:', error);
+        } catch {
+          // Error parsing WebSocket message - ignore
         }
       };
       
-      globalWs.onerror = (error) => {
-        console.error('[UnreadCount] Global WebSocket error:', error);
+      globalWs.onerror = () => {
+        // WebSocket error - will fallback to polling
       };
       
       globalWs.onclose = () => {
-        console.log('[UnreadCount] Global WebSocket disconnected');
+        // WebSocket disconnected
       };
       
       // Send periodic ping to keep connection alive
@@ -188,14 +169,11 @@ export function UnreadCountProvider({ children }: { children: React.ReactNode })
       }, 30000); // Ping every 30 seconds
       
       // Fallback polling (less frequent since we have WebSocket)
-      console.log('[UnreadCount] Setting up fallback polling interval (30 seconds)');
       const pollInterval = setInterval(() => {
-        console.log('[UnreadCount] Fallback polling for unread counts...');
         refreshUnreadCounts();
       }, 30000); // Reduced to 30 seconds since WebSocket handles real-time updates
       
       return () => {
-        console.log('[UnreadCount] Cleaning up global WebSocket and intervals');
         clearInterval(pingInterval);
         clearInterval(pollInterval);
         
@@ -203,35 +181,39 @@ export function UnreadCountProvider({ children }: { children: React.ReactNode })
           globalWs.close();
         }
       };
-    } catch (error) {
-      console.error('[UnreadCount] Failed to create global WebSocket:', error);
-      
+    } catch {
       // Fallback to polling only
-      console.log('[UnreadCount] Falling back to polling only');
       const interval = setInterval(() => {
-        console.log('[UnreadCount] Polling for unread counts (WebSocket failed)...');
         refreshUnreadCounts();
       }, 5000);
       return () => {
-        console.log('[UnreadCount] Cleaning up polling interval');
         clearInterval(interval);
       };
     }
   }, [user, refreshUnreadCounts]);
 
+  const contextValue = useMemo(() => ({
+    totalUnreadCount,
+    unreadChatsCount,
+    unreadCountsByTransaction,
+    markTransactionAsRead,
+    refreshUnreadCounts,
+    handleNewMessage,
+    handleReadReceipt,
+    isLoading,
+  }), [
+    totalUnreadCount,
+    unreadChatsCount,
+    unreadCountsByTransaction,
+    markTransactionAsRead,
+    refreshUnreadCounts,
+    handleNewMessage,
+    handleReadReceipt,
+    isLoading,
+  ]);
+
   return (
-    <UnreadCountContext.Provider
-      value={{
-        totalUnreadCount,
-        unreadChatsCount,
-        unreadCountsByTransaction,
-        markTransactionAsRead,
-        refreshUnreadCounts,
-        handleNewMessage,
-        handleReadReceipt,
-        isLoading,
-      }}
-    >
+    <UnreadCountContext.Provider value={contextValue}>
       {children}
     </UnreadCountContext.Provider>
   );
