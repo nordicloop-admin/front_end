@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnreadCount } from '@/contexts/UnreadCountContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 import {
@@ -27,9 +28,9 @@ export default function DashboardLayoutClient({
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+  const { totalUnreadCount } = useUnreadCount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userAdsCount, setUserAdsCount] = useState<number>(0);
-  // const [unreadChatsCount, setUnreadChatsCount] = useState<number>(0);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -169,11 +170,11 @@ export default function DashboardLayoutClient({
           >
             <MessageCircle size={18} className="mr-3" />
             <span>Chats</span>
-            {/* {unreadChatsCount > 0 && (
+            {totalUnreadCount > 0 && (
               <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {unreadChatsCount}
+                {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
               </span>
-            )} */}
+            )}
           </Link>
 
           <Link

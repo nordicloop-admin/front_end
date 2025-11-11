@@ -6,6 +6,7 @@ import { ChatList } from '@/components/chat/ChatList';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnreadCount } from '@/contexts/UnreadCountContext';
 import { getTransactions, Transaction, ChatMessage } from '@/services/chat';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { Loader2 } from 'lucide-react';
@@ -36,7 +37,11 @@ interface ChatPreview {
 /**
  * Convert Transaction from chat microservice to ChatPreview format
  */
-function transactionToChatPreview(transaction: Transaction, currentUserId: number): ChatPreview {
+function transactionToChatPreview(
+  transaction: Transaction,
+  currentUserId: number,
+  unreadCount: number = 0
+): ChatPreview {
   const isCurrentUserBuyer = transaction.user_id === currentUserId;
 
   // Determine the other user based on current user's role
@@ -71,7 +76,7 @@ function transactionToChatPreview(transaction: Transaction, currentUserId: numbe
       sender: 'them' as const,
       type: 'text' as const
     },
-    unreadCount: 0, // TODO: Implement unread count in backend
+    unreadCount,
     materialName: transaction.auction_name,
     orderStatus: orderStatusMap[transaction.transaction_status] || 'pending',
     chatStatus: 'active' as const,
@@ -134,6 +139,7 @@ function transactionToOrderContext(transaction: Transaction, currentUserId: numb
 export default function ChatsPage() {
   const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
+  const { markTransactionAsRead, unreadCountsByTransaction } = useUnreadCount();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(
     searchParams.get('chat') || null
   );
@@ -164,9 +170,10 @@ export default function ChatsPage() {
 
         if (response.data) {
           setTransactions(response.data.transactions);
-          const chatPreviews = response.data.transactions.map(transaction =>
-            transactionToChatPreview(transaction, user.id)
-          );
+          const chatPreviews = response.data.transactions.map(transaction => {
+            const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
+            return transactionToChatPreview(transaction, user.id, unreadCount);
+          });
           setChats(chatPreviews);
         }
       } catch (err) {
@@ -179,6 +186,17 @@ export default function ChatsPage() {
     fetchTransactions();
   }, [isAuthenticated, user]);
 
+  // Update chat previews when unread counts change
+  useEffect(() => {
+    if (transactions.length > 0 && user) {
+      const chatPreviews = transactions.map(transaction => {
+        const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
+        return transactionToChatPreview(transaction, user.id, unreadCount);
+      });
+      setChats(chatPreviews);
+    }
+  }, [unreadCountsByTransaction, transactions, user]);
+
   // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
@@ -190,15 +208,18 @@ export default function ChatsPage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handleChatSelect = (chatId: string) => {
+  const handleChatSelect = async (chatId: string) => {
     setSelectedChatId(chatId);
-    
-    // Mark chat as read.
-    setChats(prev => prev.map(chat => 
+
+    // Mark messages as read in backend
+    await markTransactionAsRead(chatId);
+
+    // Mark chat as read in local state
+    setChats(prev => prev.map(chat =>
       chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
     ));
 
-    // Update URL 
+    // Update URL
     const url = new URL(window.location.href);
     url.searchParams.set('chat', chatId);
     window.history.pushState({}, '', url.toString());

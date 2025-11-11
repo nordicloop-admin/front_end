@@ -82,6 +82,37 @@ export interface MessagesResponse {
 }
 
 /**
+ * Response from POST /messages/{transaction_id}/mark-read
+ */
+export interface MarkAsReadResponse {
+  transaction_id: string;
+  marked_count: number;
+  success: boolean;
+}
+
+/**
+ * Response from GET /messages/unread-count
+ */
+export interface UnreadCountResponse {
+  total_unread: number;
+}
+
+/**
+ * Transaction unread count
+ */
+export interface TransactionUnreadCount {
+  transaction_id: string;
+  unread_count: number;
+}
+
+/**
+ * Response from GET /transactions/unread-counts
+ */
+export interface UnreadCountsByTransactionResponse {
+  counts: TransactionUnreadCount[];
+}
+
+/**
  * Get headers for chat API requests
  */
 function getChatHeaders(): HeadersInit {
@@ -376,5 +407,68 @@ export async function createTransactionFromBid(
       status: 500,
     };
   }
+}
+
+/**
+ * Mark all messages in a transaction as read
+ * @param transactionId The transaction ID
+ * @returns Number of messages marked as read
+ */
+export async function markMessagesAsRead(transactionId: string): Promise<MarkAsReadResponse> {
+  const headers = getChatHeaders();
+  const url = `${CHAT_API_BASE_URL}/messages/${transactionId}/mark-read`;
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to mark messages as read');
+  }
+
+  return await response.json();
+}
+
+/**
+ * Get total unread message count for the current user
+ * @returns Total number of unread messages
+ */
+export async function getUnreadCount(): Promise<number> {
+  const headers = getChatHeaders();
+  const url = `${CHAT_API_BASE_URL}/messages/unread-count`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get unread count');
+  }
+
+  const data: UnreadCountResponse = await response.json();
+  return data.total_unread;
+}
+
+/**
+ * Get unread message counts grouped by transaction
+ * @returns List of unread counts per transaction
+ */
+export async function getUnreadCountsByTransaction(): Promise<TransactionUnreadCount[]> {
+  const headers = getChatHeaders();
+  const url = `${CHAT_API_BASE_URL}/transactions/unread-counts`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers,
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to get unread counts by transaction');
+  }
+
+  const data: UnreadCountsByTransactionResponse = await response.json();
+  return data.counts;
 }
 
