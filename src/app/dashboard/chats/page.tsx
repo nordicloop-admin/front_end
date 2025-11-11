@@ -250,7 +250,7 @@ export default function ChatsPage() {
       chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
     ));
 
-    // Update URL
+    // Update URL 
     const url = new URL(window.location.href);
     url.searchParams.set('chat', chatId);
     window.history.pushState({}, '', url.toString());
