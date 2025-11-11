@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChatList } from '@/components/chat/ChatList';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCount } from '@/contexts/UnreadCountContext';
-import { getTransactions, Transaction, ChatMessage } from '@/services/chat';
+import { getTransactions, Transaction, ChatMessage, searchTransactions } from '@/services/chat';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { Loader2 } from 'lucide-react';
 
@@ -147,6 +147,7 @@ export default function ChatsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch transactions from chat microservice
@@ -196,6 +197,36 @@ export default function ChatsPage() {
       setChats(chatPreviews);
     }
   }, [unreadCountsByTransaction, transactions, user]);
+
+  // Handle search functionality
+  const handleSearch = useCallback(async (query: string): Promise<ChatPreview[]> => {
+    if (!user) return [];
+
+    try {
+      setIsSearching(true);
+      const response = await searchTransactions(query);
+      
+      if (response.error || !response.data) {
+        // eslint-disable-next-line no-console
+        console.error('Search failed:', response.error);
+        return [];
+      }
+
+      // Convert search results to ChatPreview format
+      const searchResults = response.data.transactions.map(transaction => {
+        const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
+        return transactionToChatPreview(transaction, user.id, unreadCount);
+      });
+
+      return searchResults;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Search failed:', error);
+      return [];
+    } finally {
+      setIsSearching(false);
+    }
+  }, [user, unreadCountsByTransaction]);
 
   // Check if mobile
   useEffect(() => {
@@ -375,6 +406,8 @@ export default function ChatsPage() {
           onChatSelect={handleChatSelect}
           onArchiveChat={handleArchiveChat}
           onDeleteChat={handleDeleteChat}
+          onSearch={handleSearch}
+          isSearching={isSearching}
           className="h-full"
         />
       </div>

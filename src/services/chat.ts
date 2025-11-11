@@ -472,3 +472,42 @@ export async function getUnreadCountsByTransaction(): Promise<TransactionUnreadC
   return data.counts;
 }
 
+/**
+ * Search transactions by company name, buyer names, or auction name
+ * @param query Search query string
+ * @returns List of matching transactions
+ */
+export async function searchTransactions(query: string): Promise<ChatApiResponse<TransactionsResponse>> {
+  try {
+    const headers = getChatHeaders();
+    const url = `${CHAT_API_BASE_URL}/transactions/search?q=${encodeURIComponent(query)}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: data.detail || 'Failed to search transactions',
+        status: response.status,
+      };
+    }
+
+    return {
+      data: data,
+      error: null,
+      status: response.status,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to search transactions',
+      status: 500,
+    };
+  }
+}
+
