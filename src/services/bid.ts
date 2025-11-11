@@ -232,6 +232,9 @@ export interface UserBidItem {
   // Seller information (for chat integration)
   seller_id?: number;
   seller_company?: string;
+  // Currency and unit information from the ad
+  currency: string;
+  unit: string;
 }
 
 /**
@@ -482,9 +485,9 @@ export async function getUserBids(params?: BidPaginationParams) {
       // Seller information (for chat integration)
       seller_id: bid.seller_id,
       seller_company: bid.seller_company,
-      // Add default values for required BidItem fields
-      currency: 'EUR', // Default currency
-      unit: 'kg',     // Default unit
+      // Use actual currency and unit from backend instead of hardcoded values
+      currency: bid.currency || 'SEK', // Fallback to SEK if not provided
+      unit: bid.unit || 'kg',         // Fallback to kg if not provided
       is_winning: bid.status === 'winning',
       rank: bid.status === 'winning' ? 1 : 0
     }));
