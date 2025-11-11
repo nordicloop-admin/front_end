@@ -124,9 +124,11 @@ export function useChatMessages(
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log('[WebSocket] Message received:', data);
 
           // Check if this is a read receipt
           if (data.type === 'read_receipt') {
+            console.log('[WebSocket] Read receipt received:', data);
             // Handle read receipt
             handleReadReceipt(data.transaction_id, data.marked_count);
             return;
@@ -134,20 +136,27 @@ export function useChatMessages(
 
           // Otherwise, it's a regular message
           const newMessage = data as ChatMessage;
+          console.log('[WebSocket] New message received:', newMessage);
 
           // Notify unread count context about new message
           if (newMessage.sender_id) {
+            console.log('[WebSocket] Calling handleNewMessage for transaction:', newMessage.transaction_id);
             handleNewMessage(newMessage.transaction_id, newMessage.sender_id);
           }
 
           // Add new message to the list if it's not already there
           setMessages(prev => {
             const exists = prev.some(msg => msg._id === newMessage._id);
-            if (exists) return prev;
+            if (exists) {
+              console.log('[WebSocket] Message already exists, skipping');
+              return prev;
+            }
+            console.log('[WebSocket] Adding new message to list');
             return [...prev, newMessage];
           });
         } catch (_err) {
           // Failed to parse WebSocket message
+          console.error('[WebSocket] Failed to parse message:', _err);
           setError('Failed to parse incoming message');
         }
       };

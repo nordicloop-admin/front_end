@@ -28,7 +28,7 @@ export default function DashboardLayoutClient({
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
-  const { totalUnreadCount } = useUnreadCount();
+  const { unreadChatsCount } = useUnreadCount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userAdsCount, setUserAdsCount] = useState<number>(0);
 
@@ -170,9 +170,9 @@ export default function DashboardLayoutClient({
           >
             <MessageCircle size={18} className="mr-3" />
             <span>Chats</span>
-            {totalUnreadCount > 0 && (
+            {unreadChatsCount > 0 && (
               <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+                {unreadChatsCount > 9 ? '9+' : unreadChatsCount}
               </span>
             )}
           </Link>
