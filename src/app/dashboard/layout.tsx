@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 
 import DashboardLayoutClient from '@/components/layout/DashboardLayoutClient';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import { UnreadCountProvider } from '@/contexts/UnreadCountContext';
 
 export default function DashboardLayout({
   children,
@@ -16,7 +17,9 @@ export default function DashboardLayout({
 }) {
   return (
     <ProtectedRoute>
-      <DashboardLayoutClient>{children}</DashboardLayoutClient>
+      <UnreadCountProvider>
+        <DashboardLayoutClient>{children}</DashboardLayoutClient>
+      </UnreadCountProvider>
     </ProtectedRoute>
   );
 }

@@ -14,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface ChatPreview {
   id: string;
@@ -45,6 +46,8 @@ interface ChatListProps {
   onChatSelect: (chatId: string) => void;
   onArchiveChat?: (chatId: string) => void;
   onDeleteChat?: (chatId: string) => void;
+  onSearch?: (query: string) => Promise<ChatPreview[]>;
+  isSearching?: boolean;
   className?: string;
 }
 
@@ -120,19 +123,46 @@ export function ChatList({
   onChatSelect,
   onArchiveChat,
   onDeleteChat,
+  onSearch,
+  isSearching: _isSearching = false,
   className
 }: ChatListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'archived' | 'unread'>('all');
   const [filteredChats, setFilteredChats] = useState(chats);
+  const [searchResults, setSearchResults] = useState<ChatPreview[]>([]);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const t = translations[language];
+
+  // Effect for backend search
+  useEffect(() => {
+    const performSearch = async () => {
+      if (debouncedSearchQuery.trim() && onSearch) {
+        try {
+          const results = await onSearch(debouncedSearchQuery);
+          setSearchResults(results);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.error('Search failed:', error);
+          setSearchResults([]);
+        }
+      } else {
+        setSearchResults([]);
+      }
+    };
+
+    performSearch();
+  }, [debouncedSearchQuery, onSearch]);
 
   useEffect(() => {
     let filtered = chats;
 
-    // Filter by search query
-    if (searchQuery.trim()) {
+    // If we have search results from backend, use those instead of local filtering
+    if (debouncedSearchQuery.trim() && searchResults.length > 0) {
+      filtered = searchResults;
+    } else if (searchQuery.trim() && !onSearch) {
+      // Fallback to local search if no backend search function provided
       filtered = filtered.filter(chat => {
         const displayName = chat.otherUser.userType === 'seller' ? chat.otherUser.company : chat.otherUser.name;
         return displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -159,7 +189,7 @@ export function ChatList({
     filtered.sort((a, b) => b.lastMessage.timestamp.getTime() - a.lastMessage.timestamp.getTime());
 
     setFilteredChats(filtered);
-  }, [chats, searchQuery, filterStatus]);
+  }, [chats, searchQuery, searchResults, debouncedSearchQuery, filterStatus, onSearch]);
 
   const formatTimeAgo = (date: Date) => {
     const now = new Date();

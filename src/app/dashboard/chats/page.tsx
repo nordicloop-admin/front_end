@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChatList } from '@/components/chat/ChatList';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
-import { getTransactions, Transaction, ChatMessage } from '@/services/chat';
+import { useUnreadCount } from '@/contexts/UnreadCountContext';
+import { getTransactions, Transaction, ChatMessage, searchTransactions } from '@/services/chat';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { Loader2 } from 'lucide-react';
 
@@ -36,7 +37,11 @@ interface ChatPreview {
 /**
  * Convert Transaction from chat microservice to ChatPreview format
  */
-function transactionToChatPreview(transaction: Transaction, currentUserId: number): ChatPreview {
+function transactionToChatPreview(
+  transaction: Transaction,
+  currentUserId: number,
+  unreadCount: number = 0
+): ChatPreview {
   const isCurrentUserBuyer = transaction.user_id === currentUserId;
 
   // Determine the other user based on current user's role
@@ -71,7 +76,7 @@ function transactionToChatPreview(transaction: Transaction, currentUserId: numbe
       sender: 'them' as const,
       type: 'text' as const
     },
-    unreadCount: 0, // TODO: Implement unread count in backend
+    unreadCount,
     materialName: transaction.auction_name,
     orderStatus: orderStatusMap[transaction.transaction_status] || 'pending',
     chatStatus: 'active' as const,
@@ -134,6 +139,7 @@ function transactionToOrderContext(transaction: Transaction, currentUserId: numb
 export default function ChatsPage() {
   const searchParams = useSearchParams();
   const { user, isAuthenticated } = useAuth();
+  const { markTransactionAsRead, unreadCountsByTransaction } = useUnreadCount();
   const [selectedChatId, setSelectedChatId] = useState<string | null>(
     searchParams.get('chat') || null
   );
@@ -141,6 +147,7 @@ export default function ChatsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Fetch transactions from chat microservice
@@ -164,9 +171,10 @@ export default function ChatsPage() {
 
         if (response.data) {
           setTransactions(response.data.transactions);
-          const chatPreviews = response.data.transactions.map(transaction =>
-            transactionToChatPreview(transaction, user.id)
-          );
+          const chatPreviews = response.data.transactions.map(transaction => {
+            const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
+            return transactionToChatPreview(transaction, user.id, unreadCount);
+          });
           setChats(chatPreviews);
         }
       } catch (err) {
@@ -177,7 +185,48 @@ export default function ChatsPage() {
     };
 
     fetchTransactions();
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, unreadCountsByTransaction]);
+
+  // Update chat previews when unread counts change
+  useEffect(() => {
+    if (transactions.length > 0 && user) {
+      const chatPreviews = transactions.map(transaction => {
+        const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
+        return transactionToChatPreview(transaction, user.id, unreadCount);
+      });
+      setChats(chatPreviews);
+    }
+  }, [unreadCountsByTransaction, transactions, user]);
+
+  // Handle search functionality
+  const handleSearch = useCallback(async (query: string): Promise<ChatPreview[]> => {
+    if (!user) return [];
+
+    try {
+      setIsSearching(true);
+      const response = await searchTransactions(query);
+      
+      if (response.error || !response.data) {
+        // eslint-disable-next-line no-console
+        console.error('Search failed:', response.error);
+        return [];
+      }
+
+      // Convert search results to ChatPreview format
+      const searchResults = response.data.transactions.map(transaction => {
+        const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
+        return transactionToChatPreview(transaction, user.id, unreadCount);
+      });
+
+      return searchResults;
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Search failed:', error);
+      return [];
+    } finally {
+      setIsSearching(false);
+    }
+  }, [user, unreadCountsByTransaction]);
 
   // Check if mobile
   useEffect(() => {
@@ -190,11 +239,14 @@ export default function ChatsPage() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handleChatSelect = (chatId: string) => {
+  const handleChatSelect = async (chatId: string) => {
     setSelectedChatId(chatId);
-    
-    // Mark chat as read.
-    setChats(prev => prev.map(chat => 
+
+    // Mark messages as read in backend
+    await markTransactionAsRead(chatId);
+
+    // Mark chat as read in local state
+    setChats(prev => prev.map(chat =>
       chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
     ));
 
@@ -354,6 +406,8 @@ export default function ChatsPage() {
           onChatSelect={handleChatSelect}
           onArchiveChat={handleArchiveChat}
           onDeleteChat={handleDeleteChat}
+          onSearch={handleSearch}
+          isSearching={isSearching}
           className="h-full"
         />
       </div>

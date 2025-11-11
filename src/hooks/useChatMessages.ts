@@ -2,13 +2,14 @@
  * Custom hook for managing chat messages with WebSocket support
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  getMessages, 
-  sendMessage, 
+import {
+  getMessages,
+  sendMessage,
   createChatWebSocket,
   ChatMessage,
-  SendMessageRequest 
+  SendMessageRequest
 } from '@/services/chat';
+import { useUnreadCount } from '@/contexts/UnreadCountContext';
 
 interface UseChatMessagesReturn {
   messages: ChatMessage[];
@@ -32,6 +33,7 @@ export function useChatMessages(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const { handleNewMessage, handleReadReceipt } = useUnreadCount();
 
   // Fetch messages from API
   const fetchMessages = useCallback(async () => {
@@ -121,15 +123,32 @@ export function useChatMessages(
 
       ws.onmessage = (event) => {
         try {
-          const newMessage = JSON.parse(event.data) as ChatMessage;
-          
+          const data = JSON.parse(event.data);
+
+          // Check if this is a read receipt
+          if (data.type === 'read_receipt') {
+            // Handle read receipt
+            handleReadReceipt(data.transaction_id, data.marked_count);
+            return;
+          }
+
+          // Otherwise, it's a regular message
+          const newMessage = data as ChatMessage;
+
+          // Notify unread count context about new message
+          if (newMessage.sender_id) {
+            handleNewMessage(newMessage.transaction_id, newMessage.sender_id);
+          }
+
           // Add new message to the list if it's not already there
           setMessages(prev => {
             const exists = prev.some(msg => msg._id === newMessage._id);
-            if (exists) return prev;
+            if (exists) {
+              return prev;
+            }
             return [...prev, newMessage];
           });
-        } catch (_err) {
+        } catch {
           // Failed to parse WebSocket message
           setError('Failed to parse incoming message');
         }
@@ -150,11 +169,11 @@ export function useChatMessages(
         }
         wsRef.current = null;
       };
-    } catch (_err) {
+    } catch {
       // Failed to create WebSocket connection
       setError('Failed to establish real-time connection');
     }
-  }, [transactionId, enableWebSocket]);
+  }, [transactionId, enableWebSocket, handleNewMessage, handleReadReceipt]);
 
   return {
     messages,

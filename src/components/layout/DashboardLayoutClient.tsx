@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnreadCount } from '@/contexts/UnreadCountContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { cn } from '@/lib/utils';
 import {
@@ -27,9 +28,9 @@ export default function DashboardLayoutClient({
   const pathname = usePathname();
   const router = useRouter();
   const { logout } = useAuth();
+  const { unreadChatsCount } = useUnreadCount();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userAdsCount, setUserAdsCount] = useState<number>(0);
-  // const [unreadChatsCount, setUnreadChatsCount] = useState<number>(0);
 
   // Check if the screen is mobile
   const isMobile = useMediaQuery('(max-width: 768px)');
@@ -56,6 +57,8 @@ export default function DashboardLayoutClient({
       try {
         // In a real app, this would be an API call
         // For now, we'll simulate with sample data
+        // const sampleUnreadCount = 3; // This would come from your API
+        // setUnreadChatsCount(sampleUnreadCount);
         // const sampleUnreadCount = 3; // This would come from your API
         // setUnreadChatsCount(sampleUnreadCount);
       } catch (_error) {
@@ -171,7 +174,7 @@ export default function DashboardLayoutClient({
             <span>Chats</span>
             {/* {unreadChatsCount > 0 && (
               <span className="ml-auto bg-[#FF8A00] text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {unreadChatsCount}
+                {unreadChatsCount > 9 ? '9+' : unreadChatsCount}
               </span>
             )} */}
           </Link>
