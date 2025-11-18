@@ -317,10 +317,10 @@ export function ImagesStep({ formData, updateFormData, validationErrors, showVal
             aria-label="Upload material image by clicking or dragging a file"
             htmlFor="material-image-input"
             className={`
-              relative border-2 border-dashed rounded-lg p-8 text-center transition-all
+              relative rounded-lg p-8 text-center transition-all cursor-pointer
               ${dragActive 
-                ? 'border-[#FF8A00] bg-orange-50' 
-                : 'border-gray-300 hover:border-gray-400'
+                // ? 'bg-orange-50' 
+                // : 'hover:bg-gray-50'
               }
             `}
             onDragEnter={handleDrag}
