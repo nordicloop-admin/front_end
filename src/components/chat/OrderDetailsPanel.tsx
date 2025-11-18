@@ -4,7 +4,6 @@ import React from 'react';
 import { 
   X, 
   Package, 
-  Calendar, 
   Truck, 
   CheckCircle2, 
   Clock,
@@ -14,6 +13,43 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+
+interface AuctionInfo {
+  ad_id?: number;
+  category?: string;
+  subcategory?: string;
+  specific_material?: string;
+  available_quantity?: number;
+  unit_of_measurement?: string;
+  minimum_order_quantity?: number;
+  starting_bid_price?: number;
+  currency?: string;
+  reserve_price?: number;
+  packaging?: string;
+  material_frequency?: string;
+  origin?: string;
+  contamination?: string;
+  additives?: string;
+  storage_conditions?: string;
+  processing_methods?: string[];
+  location?: {
+    country?: string;
+    state_province?: string;
+    city?: string;
+    address_line?: string;
+    postal_code?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  delivery_options?: string[];
+  auction_duration?: number;
+  auction_start_date?: string;
+  auction_end_date?: string;
+  additional_specifications?: string;
+  keywords?: string;
+  status?: string;
+  allow_broker_bids?: boolean;
+}
 
 interface OrderContext {
   orderId: string;
@@ -51,6 +87,7 @@ interface OrderContext {
     delivered?: Date;
     completed?: Date;
   };
+  auctionInfo?: AuctionInfo;
 }
 
 interface OrderDetailsPanelProps {
@@ -74,12 +111,6 @@ const translations = {
     color: "Color",
     origin: "Origin",
     certifications: "Certifications",
-    timeline: "Timeline",
-    orderPlaced: "Order Placed",
-    paymentConfirmed: "Payment Confirmed",
-    shippingStarted: "Shipping Started",
-    delivered: "Delivered",
-    completed: "Completed",
     pending: "Pending",
     inTransit: "In Transit",
     seller: "Seller",
@@ -101,12 +132,6 @@ const translations = {
     color: "Färg",
     origin: "Ursprung",
     certifications: "Certifieringar",
-    timeline: "Tidslinje",
-    orderPlaced: "Order lagd",
-    paymentConfirmed: "Betalning bekräftad",
-    shippingStarted: "Leverans påbörjad",
-    delivered: "Levererad",
-    completed: "Slutförd",
     pending: "Väntande",
     inTransit: "Under transport",
     seller: "Säljare",
@@ -122,16 +147,6 @@ export function OrderDetailsPanel({
   onClose
 }: OrderDetailsPanelProps) {
   const t = translations[language];
-
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString(language === 'sv' ? 'sv-SE' : 'en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -150,39 +165,6 @@ export function OrderDetailsPanel({
       default: return <Clock size={16} className="text-gray-600" />;
     }
   };
-
-  const timelineItems = [
-    {
-      key: 'orderPlaced',
-      label: t.orderPlaced,
-      date: orderContext.timeline.orderPlaced,
-      completed: true
-    },
-    {
-      key: 'paymentConfirmed',
-      label: t.paymentConfirmed,
-      date: orderContext.timeline.paymentConfirmed,
-      completed: true
-    },
-    {
-      key: 'shippingStarted',
-      label: t.shippingStarted,
-      date: orderContext.timeline.shippingStarted,
-      completed: !!orderContext.timeline.shippingStarted
-    },
-    {
-      key: 'delivered',
-      label: t.delivered,
-      date: orderContext.timeline.delivered,
-      completed: !!orderContext.timeline.delivered
-    },
-    {
-      key: 'completed',
-      label: t.completed,
-      date: orderContext.timeline.completed,
-      completed: !!orderContext.timeline.completed
-    }
-  ];
 
   return (
     <div className="h-full flex flex-col bg-white">
@@ -264,8 +246,8 @@ export function OrderDetailsPanel({
                 <div>
                   <span className="text-sm text-gray-600">{t.certifications}</span>
                   <div className="mt-1 flex flex-wrap gap-1">
-                    {orderContext.specifications.certifications.map((cert, index) => (
-                      <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-50 text-green-700">
+                    {orderContext.specifications.certifications.map((cert) => (
+                      <span key={cert} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-50 text-green-700">
                         <Award size={10} className="mr-1" />
                         {cert}
                       </span>
@@ -295,36 +277,136 @@ export function OrderDetailsPanel({
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="border-t border-gray-200 pt-4">
-          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
-            <Calendar size={16} className="mr-2" />
-            {t.timeline}
-          </h4>
-          <div className="space-y-3">
-            {timelineItems.map((item, _index) => (
-              <div key={item.key} className="flex items-start space-x-3">
-                <div className={cn(
-                  "w-2 h-2 rounded-full mt-2",
-                  item.completed ? "bg-green-500" : "bg-gray-300"
-                )} />
-                <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    "text-sm",
-                    item.completed ? "text-gray-900 font-medium" : "text-gray-500"
-                  )}>
-                    {item.label}
-                  </p>
-                  {item.date && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {formatDate(item.date)}
-                    </p>
-                  )}
+        {/* Enhanced Auction Information */}
+        {orderContext.auctionInfo && (
+          <div className="border-t border-gray-200 pt-4">
+            <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+              <Award size={16} className="mr-2" />
+              Auction Details
+            </h4>
+            <div className="space-y-3">
+              {/* Material Characteristics */}
+              {orderContext.auctionInfo.packaging && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Packaging</span>
+                  <span className="text-sm font-medium capitalize">{orderContext.auctionInfo.packaging.replace('_', ' ')}</span>
                 </div>
-              </div>
-            ))}
+              )}
+              
+              {orderContext.auctionInfo.contamination && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Contamination</span>
+                  <span className="text-sm font-medium capitalize">{orderContext.auctionInfo.contamination.replace('_', ' ')}</span>
+                </div>
+              )}
+              
+              {orderContext.auctionInfo.storage_conditions && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Storage</span>
+                  <span className="text-sm font-medium capitalize">{orderContext.auctionInfo.storage_conditions.replace('_', ' ')}</span>
+                </div>
+              )}
+
+              {orderContext.auctionInfo.material_frequency && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Frequency</span>
+                  <span className="text-sm font-medium capitalize">{orderContext.auctionInfo.material_frequency.replace('_', ' ')}</span>
+                </div>
+              )}
+
+              {/* Pricing Information */}
+              {orderContext.auctionInfo.reserve_price && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Reserve Price</span>
+                  <span className="text-sm font-medium">
+                    {new Intl.NumberFormat('en-US', {
+                      style: 'currency',
+                      currency: orderContext.auctionInfo.currency || 'EUR'
+                    }).format(orderContext.auctionInfo.reserve_price)}
+                  </span>
+                </div>
+              )}
+
+              {orderContext.auctionInfo.minimum_order_quantity && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Min. Order</span>
+                  <span className="text-sm font-medium">
+                    {orderContext.auctionInfo.minimum_order_quantity} {orderContext.auctionInfo.unit_of_measurement}
+                  </span>
+                </div>
+              )}
+
+              {/* Processing Methods */}
+              {orderContext.auctionInfo.processing_methods && orderContext.auctionInfo.processing_methods.length > 0 && (
+                <div>
+                  <span className="text-sm text-gray-600">Processing Methods</span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {orderContext.auctionInfo.processing_methods.map((method) => (
+                      <span key={method} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-50 text-blue-700">
+                        {method.replace('_', ' ')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Delivery Options */}
+              {orderContext.auctionInfo.delivery_options && orderContext.auctionInfo.delivery_options.length > 0 && (
+                <div>
+                  <span className="text-sm text-gray-600">Delivery Options</span>
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {orderContext.auctionInfo.delivery_options.map((option) => (
+                      <span key={option} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-50 text-green-700">
+                        <Truck size={10} className="mr-1" />
+                        {option.replace('_', ' ')}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Additional Specifications */}
+              {orderContext.auctionInfo.additional_specifications && (
+                <div>
+                  <span className="text-sm text-gray-600">Additional Specs</span>
+                  <p className="text-sm text-gray-900 mt-1">{orderContext.auctionInfo.additional_specifications}</p>
+                </div>
+              )}
+
+              {/* Auction Timing */}
+              {orderContext.auctionInfo.auction_duration && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Auction Duration</span>
+                  <span className="text-sm font-medium">{orderContext.auctionInfo.auction_duration} days</span>
+                </div>
+              )}
+
+              {orderContext.auctionInfo.auction_end_date && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Auction Ends</span>
+                  <span className="text-sm font-medium">
+                    {new Date(orderContext.auctionInfo.auction_end_date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+              )}
+
+              {/* Broker Bids */}
+              {orderContext.auctionInfo.allow_broker_bids !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600">Broker Bids</span>
+                  <span className={`text-sm font-medium ${orderContext.auctionInfo.allow_broker_bids ? 'text-green-600' : 'text-red-600'}`}>
+                    {orderContext.auctionInfo.allow_broker_bids ? 'Allowed' : 'Not Allowed'}
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Contact Information */}
         <div className="border-t border-gray-200 pt-4">

@@ -39,6 +39,43 @@ interface Message {
   };
 }
 
+interface AuctionInfo {
+  ad_id?: number;
+  category?: string;
+  subcategory?: string;
+  specific_material?: string;
+  available_quantity?: number;
+  unit_of_measurement?: string;
+  minimum_order_quantity?: number;
+  starting_bid_price?: number;
+  currency?: string;
+  reserve_price?: number;
+  packaging?: string;
+  material_frequency?: string;
+  origin?: string;
+  contamination?: string;
+  additives?: string;
+  storage_conditions?: string;
+  processing_methods?: string[];
+  location?: {
+    country?: string;
+    state_province?: string;
+    city?: string;
+    address_line?: string;
+    postal_code?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  delivery_options?: string[];
+  auction_duration?: number;
+  auction_start_date?: string;
+  auction_end_date?: string;
+  additional_specifications?: string;
+  keywords?: string;
+  status?: string;
+  allow_broker_bids?: boolean;
+}
+
 interface OrderContext {
   orderId: string;
   materialName: string;
@@ -75,6 +112,7 @@ interface OrderContext {
     delivered?: Date;
     completed?: Date;
   };
+  auctionInfo?: AuctionInfo;
 }
 
 interface ChatContainerProps {

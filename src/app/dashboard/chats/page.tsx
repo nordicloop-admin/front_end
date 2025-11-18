@@ -85,10 +85,11 @@ function transactionToChatPreview(
 }
 
 /**
- * Convert Transaction to OrderContext format
+ * Convert Transaction to OrderContext format with enhanced auction_info support
  */
 function transactionToOrderContext(transaction: Transaction, currentUserId: number) {
   const isCurrentUserBuyer = transaction.user_id === currentUserId;
+  const auctionInfo = transaction.auction_info;
 
   // Map transaction status
   const statusMap: Record<string, 'pending' | 'in_transit' | 'delivered' | 'completed'> = {
@@ -97,14 +98,88 @@ function transactionToOrderContext(transaction: Transaction, currentUserId: numb
     'Complete': 'completed'
   };
 
+  // Format quantity and price from auction_info if available
+  const formatQuantity = () => {
+    if (auctionInfo?.available_quantity && auctionInfo?.unit_of_measurement) {
+      return `${auctionInfo.available_quantity} ${auctionInfo.unit_of_measurement}`;
+    }
+    return "N/A";
+  };
+
+  const formatPrice = () => {
+    if (auctionInfo?.starting_bid_price && auctionInfo?.currency) {
+      const price = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: auctionInfo.currency
+      }).format(auctionInfo.starting_bid_price);
+      return `${price} per ${auctionInfo.unit_of_measurement || 'unit'}`;
+    }
+    return "N/A";
+  };
+
+  // Format shipping address from location info
+  const formatShippingAddress = () => {
+    if (auctionInfo?.location) {
+      const location = auctionInfo.location;
+      const addressParts = [
+        location.address_line,
+        location.city,
+        location.state_province,
+        location.country
+      ].filter(Boolean);
+      
+      if (addressParts.length > 0) {
+        return addressParts.join(', ');
+      }
+    }
+    return "N/A";
+  };
+
+  // Format estimated delivery from auction end date
+  const formatEstimatedDelivery = () => {
+    if (auctionInfo?.auction_end_date) {
+      const endDate = new Date(auctionInfo.auction_end_date);
+      // Add 7-14 days for delivery after auction ends
+      const deliveryDate = new Date(endDate.getTime() + (10 * 24 * 60 * 60 * 1000));
+      return deliveryDate.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+    return transaction.date_time ? new Date(transaction.date_time).toLocaleDateString() : new Date().toLocaleDateString();
+  };
+
+  // Enhanced material type from category and subcategory
+  const materialType = auctionInfo?.category && auctionInfo?.subcategory 
+    ? `${auctionInfo.category} - ${auctionInfo.subcategory}`
+    : "Material";
+
+  // Enhanced specifications from auction_info
+  const specifications = {
+    grade: auctionInfo?.specific_material || undefined,
+    color: undefined, // Not available in current auction_info
+    origin: auctionInfo?.origin || undefined,
+    certifications: auctionInfo?.additives ? [auctionInfo.additives] : undefined
+  };
+
+  // Enhanced timeline using auction dates
+  const timeline = {
+    orderPlaced: transaction.date_time ? new Date(transaction.date_time) : new Date(),
+    paymentConfirmed: transaction.date_time ? new Date(transaction.date_time) : new Date(),
+    shippingStarted: transaction.transaction_status !== 'Pending' ? new Date() : undefined,
+    delivered: transaction.transaction_status === 'Delivered' ? new Date() : undefined,
+    completed: transaction.transaction_status === 'Complete' ? new Date() : undefined
+  };
+
   return {
     orderId: transaction.transaction_id,
     materialName: transaction.auction_name,
-    materialType: "Material",
-    quantity: "N/A",
-    price: "N/A",
-    shippingAddress: "N/A",
-    estimatedDelivery: transaction.date_time || new Date().toISOString(),
+    materialType,
+    quantity: formatQuantity(),
+    price: formatPrice(),
+    shippingAddress: formatShippingAddress(),
+    estimatedDelivery: formatEstimatedDelivery(),
     status: statusMap[transaction.transaction_status] || 'pending',
     seller: {
       name: isCurrentUserBuyer ? `Seller ${transaction.seller_id}` : `${transaction.first_name} ${transaction.last_name}`,
@@ -120,19 +195,10 @@ function transactionToOrderContext(transaction: Transaction, currentUserId: numb
       isOnline: false,
       lastSeen: undefined
     },
-    specifications: {
-      grade: undefined,
-      color: undefined,
-      origin: undefined,
-      certifications: undefined
-    },
-    timeline: {
-      orderPlaced: transaction.date_time ? new Date(transaction.date_time) : new Date(),
-      paymentConfirmed: transaction.date_time ? new Date(transaction.date_time) : new Date(),
-      shippingStarted: undefined,
-      delivered: transaction.transaction_status === 'Delivered' ? new Date() : undefined,
-      completed: transaction.transaction_status === 'Complete' ? new Date() : undefined
-    }
+    specifications,
+    timeline,
+    // Pass the complete auction_info for enhanced display
+    auctionInfo: auctionInfo || undefined
   };
 }
 
