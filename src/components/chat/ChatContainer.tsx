@@ -124,6 +124,8 @@ interface ChatContainerProps {
   // Optional props to override default behavior with real API data
   messages?: Message[];
   onSendMessage?: (content: string, attachments?: File[]) => void;
+  onSendImageMessage?: (imageFile: File, text?: string) => Promise<void>;
+  onSendFileMessage?: (file: File, text?: string) => Promise<void>;
   onConfirmDelivery?: () => void;
   onReportIssue?: () => void;
   onExportChat?: () => void;
@@ -185,6 +187,8 @@ export function ChatContainer({
   className,
   messages: externalMessages,
   onSendMessage: externalOnSendMessage,
+  onSendImageMessage: externalOnSendImageMessage,
+  onSendFileMessage: externalOnSendFileMessage,
   onConfirmDelivery: externalOnConfirmDelivery,
   onReportIssue: externalOnReportIssue,
   onExportChat: externalOnExportChat,
@@ -468,6 +472,8 @@ export function ChatContainer({
             }}
             language={currentLanguage}
             onSendMessage={handleSendMessage}
+            onSendImageMessage={externalOnSendImageMessage}
+            onSendFileMessage={externalOnSendFileMessage}
             onConfirmDelivery={handleConfirmDelivery}
             onReportIssue={handleReportIssue}
             onExportChat={handleExportChat}

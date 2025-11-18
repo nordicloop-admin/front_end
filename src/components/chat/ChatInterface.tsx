@@ -10,11 +10,13 @@ import {
   CheckCircle2,
   AlertCircle,
   MoreVertical,
-  Download
+  Download,
+  Plus
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { FileUpload } from './FileUpload';
 
 interface Message {
   id: string;
@@ -53,6 +55,8 @@ interface ChatInterfaceProps {
   };
   language?: 'en' | 'sv';
   onSendMessage: (message: string, attachments?: File[]) => void;
+  onSendImageMessage?: (imageFile: File, message?: string) => Promise<void>;
+  onSendFileMessage?: (file: File, message?: string) => Promise<void>;
   onConfirmDelivery?: () => void;
   onReportIssue?: () => void;
   onExportChat?: () => void;
@@ -106,12 +110,15 @@ export function ChatInterface({
   businessHours,
   language = 'en',
   onSendMessage,
+  onSendImageMessage,
+  onSendFileMessage,
   onConfirmDelivery,
   onReportIssue,
   onExportChat
 }: ChatInterfaceProps) {
   const [messageInput, setMessageInput] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [showFileUpload, setShowFileUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -150,6 +157,22 @@ export function ChatInterface({
 
   const removeAttachment = (index: number) => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleFilesSelected = async (files: File[]) => {
+    // Handle multiple file uploads
+    for (const file of files) {
+      if (file.type.startsWith('image/') && onSendImageMessage) {
+        await onSendImageMessage(file, messageInput.trim() || undefined);
+      } else if (onSendFileMessage) {
+        await onSendFileMessage(file, messageInput.trim() || undefined);
+      } else {
+        // Fallback to regular file attachment
+        setAttachments(prev => [...prev, file]);
+      }
+    }
+    setMessageInput('');
+    setShowFileUpload(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -327,6 +350,17 @@ export function ChatInterface({
           </div>
         )}
 
+        {showFileUpload && (
+          <div className="p-4 border-b bg-gray-50">
+            <FileUpload
+              onFilesSelected={handleFilesSelected}
+              onImageSelected={(file) => handleFilesSelected([file])}
+              maxFileSize={50} // 50MB
+              multiple={true}
+            />
+          </div>
+        )}
+
         <div className="flex items-end space-x-2">
           <div className="flex space-x-1">
             <input
@@ -361,6 +395,15 @@ export function ChatInterface({
               title={t.addPhoto}
             >
               <ImageIcon size={16} />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowFileUpload(!showFileUpload)}
+              title="Advanced Upload"
+            >
+              <Plus className="h-4 w-4" />
             </Button>
           </div>
 

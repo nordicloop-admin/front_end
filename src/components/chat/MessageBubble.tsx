@@ -22,13 +22,37 @@ interface Attachment {
   thumbnail?: string;
 }
 
+// Enhanced attachment interfaces matching chat service schema
+interface ImageAttachment {
+  image_name: string;
+  image_url: string;
+  file_size: number;
+  mime_type: string;
+  width?: number;
+  height?: number;
+  thumbnail_url?: string;
+  uploaded_at: string;
+}
+
+interface FileAttachment {
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_at: string;
+}
+
 interface MessageBubbleProps {
   id: string;
-  type: 'text' | 'image' | 'document' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
-  content: string;
+  type: 'text' | 'image' | 'file' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
+  content?: string;
   sender: 'buyer' | 'seller' | 'moderator' | 'system';
   timestamp: Date;
+  // Legacy attachments (for backward compatibility)
   attachments?: Attachment[];
+  // New chat service attachments
+  imageAttachment?: ImageAttachment;
+  fileAttachment?: FileAttachment;
   isRead?: boolean;
   deliveryStatus?: 'sent' | 'delivered' | 'read';
   isCurrentUser: boolean;
@@ -75,10 +99,12 @@ const translations = {
 export function MessageBubble({
   id: _id,
   type,
-  content,
+  content = '',
   sender,
   timestamp,
   attachments = [],
+  imageAttachment,
+  fileAttachment,
   isRead: _isRead = false,
   deliveryStatus,
   isCurrentUser,
@@ -170,10 +196,71 @@ export function MessageBubble({
     </div>
   );
 
+  const renderImageAttachment = () => {
+    if (!imageAttachment) return null;
+    
+    return (
+      <div className="mt-3 border rounded-lg overflow-hidden">
+        <div className="relative">
+          <Image
+            src={imageAttachment.image_url}
+            alt={imageAttachment.image_name}
+            width={imageAttachment.width || 300}
+            height={imageAttachment.height || 200}
+            className="w-full h-auto max-h-64 object-cover"
+          />
+          <div className="absolute top-2 right-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => window.open(imageAttachment.image_url, '_blank')}
+              className="bg-white/90 hover:bg-white"
+            >
+              <Download size={14} />
+            </Button>
+          </div>
+        </div>
+        <div className="p-2 bg-gray-50">
+          <p className="text-xs text-gray-600">{imageAttachment.image_name}</p>
+          <p className="text-xs text-gray-500">{formatFileSize(imageAttachment.file_size)}</p>
+        </div>
+      </div>
+    );
+  };
+
+  const renderFileAttachment = () => {
+    if (!fileAttachment) return null;
+    
+    return (
+      <div className="mt-3 border rounded-lg overflow-hidden">
+        <div className="p-3 bg-gray-50 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-white rounded">
+              <FileText size={16} className="text-gray-600" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-900">{fileAttachment.file_name}</p>
+              <p className="text-xs text-gray-500">{formatFileSize(fileAttachment.file_size)}</p>
+              <p className="text-xs text-gray-400">{fileAttachment.mime_type}</p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => window.open(fileAttachment.file_url, '_blank')}
+            title={t.downloadAttachment}
+          >
+            <Download size={14} />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   const renderAttachments = () => (
     <div className="mt-3 space-y-2">
       {attachments.map((attachment, index) => (
-        <div key={index} className="border rounded-lg overflow-hidden">
+        <div key={`${attachment.name}-${index}`} className="border rounded-lg overflow-hidden">
           {attachment.type === 'image' ? (
             <div className="relative">
               {attachment.thumbnail ? (
@@ -269,8 +356,18 @@ export function MessageBubble({
               : "bg-gray-100 text-gray-900"
           )}
         >
-          {/* Auto-response indicator */}
-          {content.includes('auto-response') || content.includes('out of office') ? (
+          {/* Message Content */}
+          {type === 'image' ? (
+            <>
+              {content && <p className="whitespace-pre-wrap mb-2">{content}</p>}
+              {renderImageAttachment()}
+            </>
+          ) : type === 'file' ? (
+            <>
+              {content && <p className="whitespace-pre-wrap mb-2">{content}</p>}
+              {renderFileAttachment()}
+            </>
+          ) : content.includes('auto-response') || content.includes('out of office') ? (
             renderAutoResponse()
           ) : type === 'quality_report' ? (
             renderQualityReport()
@@ -283,7 +380,7 @@ export function MessageBubble({
             <p className="whitespace-pre-wrap">{content}</p>
           )}
 
-          {/* Attachments */}
+          {/* Legacy Attachments (backward compatibility) */}
           {attachments.length > 0 && renderAttachments()}
 
           {/* Message footer */}

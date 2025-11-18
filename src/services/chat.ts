@@ -37,14 +37,47 @@ export interface Transaction {
 }
 
 /**
- * Message interface matching the chat microservice schema
+ * Message type enum
+ */
+export type MessageType = 'text' | 'image' | 'file';
+
+/**
+ * Image attachment interface
+ */
+export interface ImageAttachment {
+  image_name: string;
+  image_url: string;
+  file_size: number;
+  mime_type: string;
+  width?: number;
+  height?: number;
+  thumbnail_url?: string;
+  uploaded_at: string;
+}
+
+/**
+ * File attachment interface
+ */
+export interface FileAttachment {
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_at: string;
+}
+
+/**
+ * Message interface matching the enhanced chat microservice schema
  */
 export interface ChatMessage {
   _id?: string;
   transaction_id: string;
-  message: string;
+  message_type: MessageType;
+  message?: string;
   sender_id: number;
   timestamp?: string;
+  image_attachment?: ImageAttachment;
+  file_attachment?: FileAttachment;
 }
 
 /**
@@ -335,7 +368,7 @@ export async function getMessages(transactionId: string): Promise<ChatApiRespons
 }
 
 /**
- * Send a message in a transaction
+ * Send a text message in a transaction
  * @param request The message send request
  * @returns The created message
  */
@@ -371,6 +404,114 @@ export async function sendMessage(
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to send message',
+      status: 500,
+    };
+  }
+}
+
+/**
+ * Send an image message in a transaction
+ * @param transactionId The transaction ID
+ * @param imageFile The image file to upload
+ * @param message Optional text message to accompany the image
+ * @returns The created message with image attachment
+ */
+export async function sendImageMessage(
+  transactionId: string,
+  imageFile: File,
+  message?: string
+): Promise<ChatApiResponse<ChatMessage>> {
+  try {
+    const token = getAccessToken();
+    const formData = new FormData();
+    
+    formData.append('transaction_id', transactionId);
+    formData.append('image', imageFile);
+    if (message) {
+      formData.append('message', message);
+    }
+
+    const response = await fetch(`${CHAT_API_BASE_URL}/messages/image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: data.detail || 'Failed to send image message',
+        status: response.status,
+      };
+    }
+
+    return {
+      data: data,
+      error: null,
+      status: response.status,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to send image message',
+      status: 500,
+    };
+  }
+}
+
+/**
+ * Send a file message in a transaction
+ * @param transactionId The transaction ID
+ * @param file The file to upload
+ * @param message Optional text message to accompany the file
+ * @returns The created message with file attachment
+ */
+export async function sendFileMessage(
+  transactionId: string,
+  file: File,
+  message?: string
+): Promise<ChatApiResponse<ChatMessage>> {
+  try {
+    const token = getAccessToken();
+    const formData = new FormData();
+    
+    formData.append('transaction_id', transactionId);
+    formData.append('file', file);
+    if (message) {
+      formData.append('message', message);
+    }
+
+    const response = await fetch(`${CHAT_API_BASE_URL}/messages/file`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: data.detail || 'Failed to send file message',
+        status: response.status,
+      };
+    }
+
+    return {
+      data: data,
+      error: null,
+      status: response.status,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to send file message',
       status: 500,
     };
   }

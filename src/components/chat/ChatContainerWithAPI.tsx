@@ -106,12 +106,32 @@ export function ChatContainerWithAPI({
 
   // Handle sending messages
   const handleSendMessage = async (content: string, _attachments?: File[]) => {
-    // TODO: Implement file upload support
+    // TODO: Implement file upload support for regular messages
     const success = await sendNewMessage(content);
     
     if (!success && error) {
       // Show error notification
       // TODO: Replace with proper error notification system
+    }
+  };
+
+  // Handle sending image messages
+  const handleSendImageMessage = async (imageFile: File, text?: string) => {
+    try {
+      const { sendImageMessage } = await import('@/services/chat');
+      await sendImageMessage(transaction.transaction_id, imageFile, text);
+    } catch (_error) {
+      // Silent error handling
+    }
+  };
+
+  // Handle sending file messages
+  const handleSendFileMessage = async (file: File, text?: string) => {
+    try {
+      const { sendFileMessage } = await import('@/services/chat');
+      await sendFileMessage(transaction.transaction_id, file, text);
+    } catch (_error) {
+      // Silent error handling
     }
   };
 
@@ -176,6 +196,8 @@ export function ChatContainerWithAPI({
       // Override the message handling with API integration
       messages={messages}
       onSendMessage={handleSendMessage}
+      onSendImageMessage={handleSendImageMessage}
+      onSendFileMessage={handleSendFileMessage}
       onConfirmDelivery={handleConfirmDelivery}
       onReportIssue={handleReportIssue}
       onExportChat={handleExportChat}

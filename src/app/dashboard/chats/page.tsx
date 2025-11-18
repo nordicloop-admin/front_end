@@ -376,7 +376,7 @@ export default function ChatsPage() {
     return {
       id: apiMessage._id || `${apiMessage.transaction_id}-${apiMessage.timestamp}`,
       type: 'text' as const,
-      content: apiMessage.message,
+      content: apiMessage.message || '',
       sender: isCurrentUser ? currentUserType : (currentUserType === 'buyer' ? 'seller' : 'buyer') as 'buyer' | 'seller',
       timestamp: apiMessage.timestamp ? new Date(apiMessage.timestamp) : new Date(),
       isRead: true,
