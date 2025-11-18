@@ -6,8 +6,7 @@ import {
   getMessages,
   sendMessage,
   createChatWebSocket,
-  ChatMessage,
-  SendMessageRequest
+  ChatMessage
 } from '@/services/chat';
 import { useUnreadCount } from '@/contexts/UnreadCountContext';
 
@@ -70,12 +69,7 @@ export function useChatMessages(
     }
 
     try {
-      const request: SendMessageRequest = {
-        transaction_id: transactionId,
-        message: message.trim(),
-      };
-
-      const response = await sendMessage(request);
+      const response = await sendMessage(transactionId, message.trim());
 
       if (response.error) {
         setError(response.error);

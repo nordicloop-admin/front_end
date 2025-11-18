@@ -104,35 +104,44 @@ export function ChatContainerWithAPI({
   // Determine current user type
   const currentUser = transaction.user_id === currentUserId ? 'buyer' : 'seller';
 
-  // Handle sending messages
-  const handleSendMessage = async (content: string, _attachments?: File[]) => {
-    // TODO: Implement file upload support for regular messages
-    const success = await sendNewMessage(content);
-    
-    if (!success && error) {
-      // Show error notification
-      // TODO: Replace with proper error notification system
+  // Handle sending messages (text, images, or files using unified endpoint)
+  const handleSendMessage = async (content: string, attachments?: File[]) => {
+    try {
+      if (attachments && attachments.length > 0) {
+        // Send each file with the message text using the unified endpoint
+        const { sendMessage } = await import('@/services/chat');
+        
+        for (const file of attachments) {
+          const response = await sendMessage(transaction.transaction_id, content || undefined, file);
+          if (response.error) {
+            // TODO: Show error notification
+            // Error handling placeholder for production
+          }
+        }
+      } else {
+        // Send text-only message
+        const success = await sendNewMessage(content);
+        
+        if (!success && error) {
+          // TODO: Show error notification
+          // Error handling placeholder for production
+        }
+      }
+    } catch {
+      // Silently handle errors for now
     }
   };
 
-  // Handle sending image messages
+  // Handle sending image messages (using unified endpoint)
   const handleSendImageMessage = async (imageFile: File, text?: string) => {
-    try {
-      const { sendImageMessage } = await import('@/services/chat');
-      await sendImageMessage(transaction.transaction_id, imageFile, text);
-    } catch (_error) {
-      // Silent error handling
-    }
+    // Use the unified sendMessage function
+    await handleSendMessage(text || '', [imageFile]);
   };
 
-  // Handle sending file messages
+  // Handle sending file messages (using unified endpoint)
   const handleSendFileMessage = async (file: File, text?: string) => {
-    try {
-      const { sendFileMessage } = await import('@/services/chat');
-      await sendFileMessage(transaction.transaction_id, file, text);
-    } catch (_error) {
-      // Silent error handling
-    }
+    // Use the unified sendMessage function
+    await handleSendMessage(text || '', [file]);
   };
 
   const handleConfirmDelivery = () => {

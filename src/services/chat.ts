@@ -137,13 +137,7 @@ export interface CreateTransactionRequest {
   auction_info?: AuctionInfo;
 }
 
-/**
- * Request body for sending a message
- */
-export interface SendMessageRequest {
-  transaction_id: string;
-  message: string;
-}
+// SendMessageRequest interface removed - using FormData directly for unified endpoint
 
 /**
  * Response from GET /transactions
@@ -368,21 +362,37 @@ export async function getMessages(transactionId: string): Promise<ChatApiRespons
 }
 
 /**
- * Send a text message in a transaction
- * @param request The message send request
+ * Send a message in a transaction (text, image, or file)
+ * @param transactionId The transaction ID
+ * @param message Optional text message content
+ * @param file Optional file attachment (image or document)
  * @returns The created message
  */
 export async function sendMessage(
-  request: SendMessageRequest
+  transactionId: string,
+  message?: string,
+  file?: File
 ): Promise<ChatApiResponse<ChatMessage>> {
   try {
-    const headers = getChatHeaders();
-    const url = `${CHAT_API_BASE_URL}/messages`;
+    const token = getAccessToken();
+    const formData = new FormData();
+    
+    formData.append('transaction_id', transactionId);
+    
+    if (message) {
+      formData.append('message', message);
+    }
+    
+    if (file) {
+      formData.append('file', file);
+    }
 
-    const response = await fetch(url, {
+    const response = await fetch(`${CHAT_API_BASE_URL}/messages`, {
       method: 'POST',
-      headers,
-      body: JSON.stringify(request),
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+      },
+      body: formData,
     });
 
     const data = await response.json();
@@ -421,46 +431,8 @@ export async function sendImageMessage(
   imageFile: File,
   message?: string
 ): Promise<ChatApiResponse<ChatMessage>> {
-  try {
-    const token = getAccessToken();
-    const formData = new FormData();
-    
-    formData.append('transaction_id', transactionId);
-    formData.append('image', imageFile);
-    if (message) {
-      formData.append('message', message);
-    }
-
-    const response = await fetch(`${CHAT_API_BASE_URL}/messages/image`, {
-      method: 'POST',
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-      },
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        data: null,
-        error: data.detail || 'Failed to send image message',
-        status: response.status,
-      };
-    }
-
-    return {
-      data: data,
-      error: null,
-      status: response.status,
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Failed to send image message',
-      status: 500,
-    };
-  }
+  // Use the unified sendMessage function
+  return sendMessage(transactionId, message, imageFile);
 }
 
 /**
@@ -475,46 +447,8 @@ export async function sendFileMessage(
   file: File,
   message?: string
 ): Promise<ChatApiResponse<ChatMessage>> {
-  try {
-    const token = getAccessToken();
-    const formData = new FormData();
-    
-    formData.append('transaction_id', transactionId);
-    formData.append('file', file);
-    if (message) {
-      formData.append('message', message);
-    }
-
-    const response = await fetch(`${CHAT_API_BASE_URL}/messages/file`, {
-      method: 'POST',
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-      },
-      body: formData,
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        data: null,
-        error: data.detail || 'Failed to send file message',
-        status: response.status,
-      };
-    }
-
-    return {
-      data: data,
-      error: null,
-      status: response.status,
-    };
-  } catch (error) {
-    return {
-      data: null,
-      error: error instanceof Error ? error.message : 'Failed to send file message',
-      status: 500,
-    };
-  }
+  // Use the unified sendMessage function
+  return sendMessage(transactionId, message, file);
 }
 
 /**

@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   Send, 
   Paperclip, 
-  Image as ImageIcon, 
+  ImageIcon, 
   FileText, 
   Clock,
   CheckCircle2,
@@ -110,8 +110,8 @@ export function ChatInterface({
   businessHours,
   language = 'en',
   onSendMessage,
-  onSendImageMessage,
-  onSendFileMessage,
+  onSendImageMessage: _onSendImageMessage,
+  onSendFileMessage: _onSendFileMessage,
   onConfirmDelivery,
   onReportIssue,
   onExportChat
@@ -133,11 +133,18 @@ export function ChatInterface({
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = () => {
-    if (messageInput.trim() || attachments.length > 0) {
-      onSendMessage(messageInput.trim(), attachments);
+  const handleSendMessage = async () => {
+    if (attachments.length > 0) {
+      // Send each file with the message text
+      for (const file of attachments) {
+        onSendMessage(messageInput.trim() || '', [file]);
+      }
       setMessageInput('');
       setAttachments([]);
+    } else if (messageInput.trim()) {
+      // Send text only message
+      onSendMessage(messageInput.trim(), []);
+      setMessageInput('');
     }
   };
 
@@ -148,10 +155,11 @@ export function ChatInterface({
     }
   };
 
-  const handleFileUpload = (files: FileList | null, _type: 'file' | 'image') => {
+  const handleFileUpload = async (files: FileList | null, _type: 'file' | 'image') => {
     if (files) {
-      const newFiles = Array.from(files);
-      setAttachments(prev => [...prev, ...newFiles]);
+      const fileArray = Array.from(files);
+      // Add files to attachments array - they'll be sent when user clicks send
+      setAttachments(prev => [...prev, ...fileArray]);
     }
   };
 
@@ -160,18 +168,8 @@ export function ChatInterface({
   };
 
   const handleFilesSelected = async (files: File[]) => {
-    // Handle multiple file uploads
-    for (const file of files) {
-      if (file.type.startsWith('image/') && onSendImageMessage) {
-        await onSendImageMessage(file, messageInput.trim() || undefined);
-      } else if (onSendFileMessage) {
-        await onSendFileMessage(file, messageInput.trim() || undefined);
-      } else {
-        // Fallback to regular file attachment
-        setAttachments(prev => [...prev, file]);
-      }
-    }
-    setMessageInput('');
+    // Add files to attachments array
+    setAttachments(prev => [...prev, ...files]);
     setShowFileUpload(false);
   };
 

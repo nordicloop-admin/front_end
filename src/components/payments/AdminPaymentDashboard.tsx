@@ -19,7 +19,7 @@ import {
   getAdminTransactions,
   PaymentStats,
   PaymentIntent,
-  Transaction,
+  AdminTransaction,
   formatCurrency,
   getStatusBadgeColor
 } from '@/services/payments';
@@ -35,7 +35,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
   const [stats, setStats] = useState<PaymentStats | null>(null);
   const [pendingPayouts, setPendingPayouts] = useState<any>(null);
   const [paymentIntents, setPaymentIntents] = useState<PaymentIntent[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSellers, setSelectedSellers] = useState<number[]>([]);
   const [scheduledDate, setScheduledDate] = useState('');
@@ -628,55 +628,127 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
               <tbody className="bg-white divide-y divide-gray-200">
                 {(Array.isArray(transactions) ? transactions : [])
                   .slice((transactionsPage - 1) * itemsPerPage, transactionsPage * itemsPerPage)
-                  .map((transaction) => (
-                    <tr key={transaction.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {transaction.id.slice(-8)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="font-medium">{transaction.auction_title || 'Unknown Auction'}</div>
-                        <div className="text-xs text-gray-500">Transaction ID: {transaction.id.slice(-8)}</div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="font-medium text-blue-600">{transaction.other_party_company || 'Unknown Company'}</div>
-                        <div className="text-xs text-gray-500">{transaction.other_party_email || 'No email'}</div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <div className="font-medium text-green-600">{transaction.other_party_company || 'Unknown Company'}</div>
-                        <div className="text-xs text-gray-500">{transaction.other_party_email || 'No email'}</div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          transaction.transaction_type === 'commission'
-                            ? 'bg-orange-100 text-orange-800'
-                            : transaction.transaction_type === 'payout'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {transaction.transaction_type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <span className={
-                          transaction.transaction_type === 'commission'
-                            ? 'text-[#FF8A00]'
-                            : transaction.transaction_type === 'payout'
-                            ? 'text-green-600'
-                            : 'text-gray-900'
-                        }>
-                          {formatCurrency(parseFloat(transaction.amount), transaction.currency)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(transaction.status)}`}>
-                          {transaction.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {new Date(transaction.transaction_date).toLocaleDateString()}
-                      </td>
-                    </tr>
-                  ))}
+                  .map((transaction) => {
+                    // Helper function to get company names based on transaction type and direction
+                    const getFromCompanyInfo = () => {
+                      // For payment transactions: buyer is paying (FROM buyer TO platform)
+                      if (transaction.transaction_type === 'payment') {
+                        // Try direct fields first
+                        if (transaction.buyer_company_name && transaction.from_user_email) {
+                          return {
+                            company: transaction.buyer_company_name,
+                            email: transaction.from_user_email
+                          };
+                        }
+                        // Fallback to payment_intent_details
+                        if (transaction.payment_intent_details) {
+                          return {
+                            company: transaction.payment_intent_details.buyer_company_name || 'Unknown Company',
+                            email: transaction.payment_intent_details.buyer_email || 'No email'
+                          };
+                        }
+                      }
+                      // For payout transactions: platform is paying out (FROM platform TO seller)
+                      // So FROM should be platform/empty for payouts
+                      return {
+                        company: 'NordicLoop Platform',
+                        email: 'platform@nordicloop.com'
+                      };
+                    };
+
+                    const getToCompanyInfo = () => {
+                      // For payout transactions: money goes to seller (FROM platform TO seller)
+                      if (transaction.transaction_type === 'payout') {
+                        // Try direct fields first
+                        if (transaction.seller_company_name && transaction.to_user_email) {
+                          return {
+                            company: transaction.seller_company_name,
+                            email: transaction.to_user_email
+                          };
+                        }
+                        // Fallback to payment_intent_details
+                        if (transaction.payment_intent_details) {
+                          return {
+                            company: transaction.payment_intent_details.seller_company_name || 'Unknown Company',
+                            email: transaction.payment_intent_details.seller_email || 'No email'
+                          };
+                        }
+                      }
+                      // For payment transactions: money goes to platform (FROM buyer TO platform)
+                      // So TO should be platform for payments
+                      return {
+                        company: 'NordicLoop Platform',
+                        email: 'platform@nordicloop.com'
+                      };
+                    };
+
+                    const fromCompany = getFromCompanyInfo();
+                    const toCompany = getToCompanyInfo();
+
+                    return (
+                      <tr key={transaction.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {transaction.id.slice(-8)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="font-medium">{transaction.auction_title || 'Unknown Auction'}</div>
+                          <div className="text-xs text-gray-500">Transaction ID: {transaction.id.slice(-8)}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="font-medium text-blue-600">{fromCompany.company}</div>
+                          <div className="text-xs text-gray-500">{fromCompany.email}</div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <div className="font-medium text-green-600">{toCompany.company}</div>
+                          <div className="text-xs text-gray-500">{toCompany.email}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {(() => {
+                            const getBadgeColor = () => {
+                              if (transaction.transaction_type === 'commission') {
+                                return 'bg-orange-100 text-orange-800';
+                              } else if (transaction.transaction_type === 'payout') {
+                                return 'bg-green-100 text-green-800';
+                              }
+                              return 'bg-blue-100 text-blue-800';
+                            };
+                            
+                            return (
+                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getBadgeColor()}`}>
+                                {transaction.transaction_type}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          {(() => {
+                            const getAmountColor = () => {
+                              if (transaction.transaction_type === 'commission') {
+                                return 'text-[#FF8A00]';
+                              } else if (transaction.transaction_type === 'payout') {
+                                return 'text-green-600';
+                              }
+                              return 'text-gray-900';
+                            };
+                            
+                            return (
+                              <span className={getAmountColor()}>
+                                {formatCurrency(Number.parseFloat(transaction.amount), transaction.currency)}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(transaction.status)}`}>
+                            {transaction.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {new Date(transaction.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>

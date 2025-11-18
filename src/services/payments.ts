@@ -74,6 +74,71 @@ export interface Transaction {
   other_party_company?: string;
 }
 
+export interface AdminTransaction {
+  id: string;
+  payment_intent: string;
+  payment_intent_details?: {
+    id: string;
+    stripe_payment_intent_id: string;
+    bid: number;
+    bid_details?: {
+      id: number;
+      user: string;
+      ad: number;
+      ad_title: string;
+      bid_price_per_unit: number;
+      volume_requested: number;
+      total_bid_value: string;
+      currency: string;
+      status: string;
+      created_at: string;
+    };
+    buyer: number;
+    buyer_email: string;
+    buyer_company_name: string;
+    seller: number;
+    seller_email: string;
+    seller_company_name: string;
+    total_amount: string;
+    commission_amount: string;
+    seller_amount: string;
+    commission_rate: string;
+    status: string;
+    currency: string;
+    created_at: string;
+    updated_at: string;
+    confirmed_at?: string;
+    auction_title: string;
+    auction_id: number;
+    bid_id: number;
+  };
+  transaction_type: 'payment' | 'commission' | 'payout' | 'refund';
+  amount: string;
+  currency: string;
+  status: 'pending' | 'completed' | 'failed' | 'canceled';
+  from_user: number | null;
+  from_user_email?: string;
+  buyer_company_name?: string;
+  to_user: number | null;
+  to_user_email?: string;
+  seller_company_name?: string;
+  stripe_transfer_id?: string | null;
+  stripe_charge_id?: string | null;
+  description?: string;
+  metadata?: {
+    bid_id?: number;
+    auction_id?: number;
+    payment_type?: string;
+    commission_amount?: string;
+    original_payment_amount?: string;
+  };
+  created_at: string;
+  updated_at: string;
+  processed_at?: string | null;
+  auction_title?: string;
+  auction_id?: number;
+}
+
 export interface PayoutSchedule {
   id: string;
   seller_id: number;
@@ -329,12 +394,13 @@ export const getAdminPaymentIntents = async (): Promise<PaymentIntent[]> => {
   return response.data || [];
 };
 
-export const getAdminTransactions = async (): Promise<Transaction[]> => {
+export const getAdminTransactions = async (): Promise<AdminTransaction[]> => {
   if (USE_MOCK_DATA) {
-    return mockTransactions;
+    // Return empty array for now since mock data doesn't match admin structure
+    return [];
   }
 
-  const response = await apiGet<Transaction[]>('/payments/admin/transactions/', true);
+  const response = await apiGet<AdminTransaction[]>('/payments/admin/transactions/', true);
   return response.data || [];
 };
 
