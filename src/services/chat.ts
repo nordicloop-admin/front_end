@@ -32,6 +32,7 @@ export interface Transaction {
   transaction_status: 'Pending' | 'Delivered' | 'Complete';
   date_time?: string;
   last_message?: string | null;
+  auction_info?: AuctionInfo;
   created_at?: string;
 }
 
@@ -47,6 +48,51 @@ export interface ChatMessage {
 }
 
 /**
+ * Interface for comprehensive auction information
+ */
+export interface AuctionInfo {
+  // Basic material information
+  ad_id?: number;
+  category?: string;
+  subcategory?: string;
+  specific_material?: string;
+  
+  // Quantity and pricing
+  available_quantity?: number;
+  unit_of_measurement?: string;
+  minimum_order_quantity?: number;
+  starting_bid_price?: number;
+  currency?: string;
+  reserve_price?: number;
+  
+  // Material characteristics
+  packaging?: string;
+  material_frequency?: string;
+  origin?: string;
+  contamination?: string;
+  additives?: string;
+  storage_conditions?: string;
+  processing_methods?: string[];
+  
+  // Location and logistics
+  location?: any;
+  delivery_options?: string[];
+  
+  // Auction timing
+  auction_duration?: number;
+  auction_start_date?: string;
+  auction_end_date?: string;
+  
+  // Additional specifications
+  additional_specifications?: string;
+  keywords?: string;
+  
+  // Status information
+  status?: string;
+  allow_broker_bids?: boolean;
+}
+
+/**
  * Request body for creating a transaction
  */
 export interface CreateTransactionRequest {
@@ -55,6 +101,7 @@ export interface CreateTransactionRequest {
   seller_id: number;
   seller_company: string;
   transaction_status: 'Pending' | 'Delivered' | 'Complete';
+  auction_info?: AuctionInfo;
 }
 
 /**
@@ -351,8 +398,97 @@ export interface BidChatData {
 }
 
 /**
+ * Map ad details to auction_info format
+ * @param adDetails The ad details from Nordic Loop API
+ * @returns Formatted auction_info object
+ */
+function mapAdDetailsToAuctionInfo(adDetails: any): AuctionInfo {
+  return {
+    ad_id: adDetails.id,
+    category: adDetails.category_name,
+    subcategory: adDetails.subcategory_name,
+    specific_material: adDetails.specific_material,
+    available_quantity: adDetails.available_quantity,
+    unit_of_measurement: adDetails.unit_of_measurement,
+    minimum_order_quantity: adDetails.minimum_order_quantity ? Number.parseFloat(adDetails.minimum_order_quantity) : undefined,
+    starting_bid_price: adDetails.starting_bid_price,
+    currency: adDetails.currency,
+    reserve_price: adDetails.reserve_price,
+    packaging: adDetails.packaging,
+    material_frequency: adDetails.material_frequency,
+    origin: adDetails.origin,
+    contamination: adDetails.contamination,
+    additives: adDetails.additives,
+    storage_conditions: adDetails.storage_conditions,
+    processing_methods: adDetails.processing_methods || [],
+    location: adDetails.location,
+    delivery_options: adDetails.delivery_options || [],
+    auction_duration: adDetails.auction_duration,
+    auction_start_date: adDetails.auction_start_date,
+    auction_end_date: adDetails.auction_end_date,
+    additional_specifications: adDetails.additional_specifications,
+    keywords: adDetails.keywords,
+    status: adDetails.status,
+    allow_broker_bids: adDetails.allow_broker_bids,
+  };
+}
+
+/**
+ * Fetch ad details from Nordic Loop platform
+ * @param adId The ad ID to fetch details for
+ * @returns The ad details or error
+ */
+async function fetchAdDetails(adId: number): Promise<ChatApiResponse<any>> {
+  try {
+    const token = getAccessToken();
+    
+    if (!token) {
+      return {
+        data: null,
+        error: 'Authentication required to fetch ad details',
+        status: 401,
+      };
+    }
+
+    const response = await fetch(`http://127.0.0.1:8000/api/ads/${adId}/`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: responseData.detail || responseData.message || 'Failed to fetch ad details',
+        status: response.status,
+      };
+    }
+
+    // Extract the actual ad data from the response
+    const adDetails = responseData.data || responseData;
+
+    return {
+      data: adDetails,
+      error: null,
+      status: response.status,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to fetch ad details',
+      status: 500,
+    };
+  }
+}
+
+/**
  * Create or get existing transaction for a bid and navigate to chat
  * This function is used when a buyer wants to chat with a seller from the My Bids page
+ * Enhanced to include comprehensive auction information from the Nordic Loop platform
  *
  * @param bidData The bid data containing seller information
  * @returns The transaction ID if successful, or error message
@@ -376,13 +512,29 @@ export async function createTransactionFromBid(
       };
     }
 
-    // Create new transaction
+    // Fetch comprehensive ad details from Nordic Loop platform
+    const adDetailsResponse = await fetchAdDetails(bidData.ad_id);
+
+    if (adDetailsResponse.error) {
+      // Continue with transaction creation but without auction_info
+      // This ensures the chat functionality doesn't break if ad details can't be fetched
+    }
+
+    let auctionInfo: AuctionInfo | undefined;
+    
+    if (adDetailsResponse.data) {
+      // Map the ad details to auction_info format
+      auctionInfo = mapAdDetailsToAuctionInfo(adDetailsResponse.data);
+    }
+
+    // Create new transaction with auction information
     const createRequest: CreateTransactionRequest = {
       transaction_id: transactionId,
       auction_name: bidData.ad_title,
       seller_id: bidData.seller_id,
       seller_company: bidData.seller_company,
       transaction_status: bidData.status === 'paid' ? 'Complete' : 'Pending',
+      auction_info: auctionInfo, // Include the comprehensive auction information
     };
 
     const createResponse = await createTransaction(createRequest);
