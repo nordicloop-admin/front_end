@@ -440,8 +440,8 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
               </div>
             </div>
 
-            {/* Auto-bidding Section */}
-            <div className="mb-4 p-3 border border-gray-200 rounded-md">
+            {/* Auto-bidding Section - Hidden for now, might need it later */}
+            {/* <div className="mb-4 p-3 border border-gray-200 rounded-md">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center">
                   <label htmlFor="autoBid" className="text-sm font-medium text-gray-700">
@@ -507,7 +507,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
                   </div>
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* Notes Section */}
             <div className="mb-6">

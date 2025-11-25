@@ -7,7 +7,9 @@ import {
   TrendingUp, 
   Users, 
   Clock,
-  Filter
+  Filter,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import Pagination from '@/components/ui/Pagination';
 import {
@@ -21,7 +23,8 @@ import {
   PaymentIntent,
   AdminTransaction,
   formatCurrency,
-  getStatusBadgeColor
+  getStatusBadgeColor,
+  PendingPayout
 } from '@/services/payments';
 
 interface AdminPaymentDashboardProps {
@@ -38,6 +41,8 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
   const [transactions, setTransactions] = useState<AdminTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSellers, setSelectedSellers] = useState<number[]>([]);
+  const [selectedTransactions, setSelectedTransactions] = useState<Record<number, string[]>>({}); // seller_id -> transaction_ids
+  const [expandedSellers, setExpandedSellers] = useState<Set<number>>(new Set());
   const [scheduledDate, setScheduledDate] = useState('');
   const [notes, setNotes] = useState('');
   const [isCreatingSchedule, setIsCreatingSchedule] = useState(false);
@@ -141,25 +146,105 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
     }
   };
 
-  const handleSellerToggle = (sellerId: number) => {
-    setSelectedSellers(prev => 
-      prev.includes(sellerId) 
-        ? prev.filter(id => id !== sellerId)
-        : [...prev, sellerId]
-    );
+  const toggleSellerExpanded = (sellerId: number) => {
+    setExpandedSellers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sellerId)) {
+        newSet.delete(sellerId);
+      } else {
+        newSet.add(sellerId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSellerTotalToggle = (sellerId: number, payout: PendingPayout) => {
+    // Toggle entire seller (all transactions)
+    if (selectedSellers.includes(sellerId)) {
+      // Deselect seller and all transactions
+      setSelectedSellers(prev => prev.filter(id => id !== sellerId));
+      setSelectedTransactions(prev => {
+        const newState = { ...prev };
+        delete newState[sellerId];
+        return newState;
+      });
+    } else {
+      // Select seller with all transactions
+      setSelectedSellers(prev => [...prev, sellerId]);
+      if (payout.transactions && payout.transactions.length > 0) {
+        setSelectedTransactions(prev => ({
+          ...prev,
+          [sellerId]: payout.transactions!.map(t => t.id)
+        }));
+      }
+    }
+  };
+
+  const handleTransactionToggle = (sellerId: number, transactionId: string, payout: PendingPayout) => {
+    setSelectedTransactions(prev => {
+      const sellerTransactions = prev[sellerId] || [];
+      const isSelected = sellerTransactions.includes(transactionId);
+      
+      let newSellerTransactions: string[];
+      if (isSelected) {
+        // Deselect transaction
+        newSellerTransactions = sellerTransactions.filter(id => id !== transactionId);
+      } else {
+        // Select transaction
+        newSellerTransactions = [...sellerTransactions, transactionId];
+      }
+
+      const newState = {
+        ...prev,
+        [sellerId]: newSellerTransactions
+      };
+
+      // If all transactions are selected, also select the seller
+      // If no transactions are selected, deselect the seller
+      const allTransactionIds = payout.transactions?.map(t => t.id) || [];
+      if (newSellerTransactions.length === allTransactionIds.length && allTransactionIds.length > 0) {
+        if (!selectedSellers.includes(sellerId)) {
+          setSelectedSellers(prev => [...prev, sellerId]);
+        }
+      } else if (newSellerTransactions.length === 0) {
+        setSelectedSellers(prev => prev.filter(id => id !== sellerId));
+        delete newState[sellerId];
+      } else {
+        // Partial selection - keep seller selected
+        if (!selectedSellers.includes(sellerId)) {
+          setSelectedSellers(prev => [...prev, sellerId]);
+        }
+      }
+
+      return newState;
+    });
   };
 
   const handleSelectAll = () => {
-    if (selectedSellers.length === pendingPayouts?.pending_payouts?.length) {
+    if (!pendingPayouts?.pending_payouts) return;
+    
+    if (selectedSellers.length === pendingPayouts.pending_payouts.length) {
+      // Deselect all
       setSelectedSellers([]);
+      setSelectedTransactions({});
     } else {
-      setSelectedSellers(pendingPayouts?.pending_payouts?.map((p: any) => p.seller.id) || []);
+      // Select all sellers with all their transactions
+      const allSellers = pendingPayouts.pending_payouts.map((p: PendingPayout) => p.seller.id);
+      setSelectedSellers(allSellers);
+      
+      const allTransactions: Record<number, string[]> = {};
+      pendingPayouts.pending_payouts.forEach((p: PendingPayout) => {
+        if (p.transactions && p.transactions.length > 0) {
+          allTransactions[p.seller.id] = p.transactions.map(t => t.id);
+        }
+      });
+      setSelectedTransactions(allTransactions);
     }
   };
 
   const handleCreatePayoutSchedule = async () => {
     if (selectedSellers.length === 0) {
-      toast.error('Please select at least one seller');
+      toast.error('Please select at least one seller or transaction');
       return;
     }
 
@@ -171,10 +256,20 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
     setIsCreatingSchedule(true);
 
     try {
+      // Build transaction_ids map: convert seller IDs (numbers) to strings for the API
+      const transactionIdsMap: Record<string, string[]> = {};
+      selectedSellers.forEach(sellerId => {
+        const transactionIds = selectedTransactions[sellerId];
+        if (transactionIds && transactionIds.length > 0) {
+          transactionIdsMap[sellerId.toString()] = transactionIds;
+        }
+      });
+
       const result = await createPayoutSchedules({
         seller_ids: selectedSellers,
         scheduled_date: scheduledDate,
-        notes: notes
+        notes: notes,
+        transaction_ids: Object.keys(transactionIdsMap).length > 0 ? transactionIdsMap : undefined
       });
 
       if (result.success) {
@@ -182,6 +277,7 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
           description: `Created ${result.created_schedules.length} payout schedules`
         });
         setSelectedSellers([]);
+        setSelectedTransactions({});
         setScheduledDate('');
         setNotes('');
         loadOverviewData(); // Refresh data
@@ -438,45 +534,129 @@ export default function AdminPaymentDashboard({ className = '' }: AdminPaymentDa
 
               {pendingPayouts.pending_payouts?.length > 0 ? (
                 <div className="space-y-2">
-                  {pendingPayouts.pending_payouts?.map((payout: any) => (
-                    <div
-                      key={payout.seller.id}
-                      className="border border-gray-200 rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center justify-between p-3">
-                        <div className="flex items-center space-x-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedSellers.includes(payout.seller.id)}
-                            onChange={() => handleSellerToggle(payout.seller.id)}
-                            className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
-                          />
-                          <div>
-                            <p className="font-medium text-gray-900">{payout.seller.name || payout.seller.email}</p>
-                            <p className="text-sm text-gray-600">{payout.seller.email}</p>
-                            <p className="text-sm text-gray-600">
-                              {payout.transaction_count} transaction{payout.transaction_count !== 1 ? 's' : ''}
-                              {' • '}
-                              Oldest: {new Date(payout.oldest_transaction).toLocaleDateString()}
-                            </p>
+                  {pendingPayouts.pending_payouts?.map((payout: PendingPayout) => {
+                    const isExpanded = expandedSellers.has(payout.seller.id);
+                    const isSellerSelected = selectedSellers.includes(payout.seller.id);
+                    const selectedTransactionIds = selectedTransactions[payout.seller.id] || [];
+                    const hasTransactions = payout.transactions && payout.transactions.length > 0;
+                    const allTransactionsSelected = hasTransactions && 
+                      selectedTransactionIds.length === payout.transactions!.length &&
+                      payout.transactions!.length > 0;
+                    const someTransactionsSelected = selectedTransactionIds.length > 0 && 
+                      selectedTransactionIds.length < (payout.transactions?.length || 0);
+
+                    return (
+                      <div
+                        key={payout.seller.id}
+                        className="border border-gray-200 rounded-lg hover:bg-gray-50"
+                      >
+                        <div className="flex items-center justify-between p-3">
+                          <div className="flex items-center space-x-3 flex-1">
+                            <input
+                              type="checkbox"
+                              checked={isSellerSelected && allTransactionsSelected}
+                              ref={(input) => {
+                                if (input) input.indeterminate = someTransactionsSelected;
+                              }}
+                              onChange={() => handleSellerTotalToggle(payout.seller.id, payout)}
+                              className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
+                            />
+                            {hasTransactions && (
+                              <button
+                                onClick={() => toggleSellerExpanded(payout.seller.id)}
+                                className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                aria-label={isExpanded ? 'Collapse' : 'Expand'}
+                              >
+                                {isExpanded ? (
+                                  <ChevronUp className="w-4 h-4 text-gray-600" />
+                                ) : (
+                                  <ChevronDown className="w-4 h-4 text-gray-600" />
+                                )}
+                              </button>
+                            )}
+                            <div className="flex-1">
+                              <p className="font-medium text-gray-900">{payout.seller.name || payout.seller.email}</p>
+                              <p className="text-sm text-gray-600">{payout.seller.email}</p>
+                              <p className="text-sm text-gray-600">
+                                {payout.transaction_count} transaction{payout.transaction_count !== 1 ? 's' : ''}
+                                {' • '}
+                                Oldest: {new Date(payout.oldest_transaction).toLocaleDateString()}
+                                {someTransactionsSelected && (
+                                  <span className="ml-2 text-[#FF8A00]">
+                                    ({selectedTransactionIds.length} of {payout.transaction_count} selected)
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="text-right">
+                              <p className="font-medium text-gray-900">
+                                {formatCurrency(parseFloat(payout.total_amount), 'SEK')}
+                              </p>
+                              {someTransactionsSelected && (
+                                <p className="text-xs text-[#FF8A00]">
+                                  {formatCurrency(
+                                    payout.transactions
+                                      ?.filter(t => selectedTransactionIds.includes(t.id))
+                                      .reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0,
+                                    'SEK'
+                                  )} selected
+                                </p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleDirectPayout(payout.seller.id)}
+                              className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                            >
+                              Pay Now
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-3">
-                          <div className="text-right">
-                            <p className="font-medium text-gray-900">
-                              {formatCurrency(parseFloat(payout.total_amount), 'SEK')}
-                            </p>
+                        
+                        {/* Expanded Transaction List */}
+                        {isExpanded && hasTransactions && (
+                          <div className="border-t border-gray-200 bg-gray-50">
+                            <div className="p-3 space-y-2">
+                              <p className="text-xs font-medium text-gray-700 mb-2">Select individual transactions:</p>
+                              {payout.transactions!.map((transaction) => {
+                                const isTransactionSelected = selectedTransactionIds.includes(transaction.id);
+                                return (
+                                  <div
+                                    key={transaction.id}
+                                    className="flex items-center justify-between p-2 bg-white rounded border border-gray-200 hover:bg-gray-50"
+                                  >
+                                    <div className="flex items-center space-x-3 flex-1">
+                                      <input
+                                        type="checkbox"
+                                        checked={isTransactionSelected}
+                                        onChange={() => handleTransactionToggle(payout.seller.id, transaction.id, payout)}
+                                        className="w-4 h-4 text-[#FF8A00] border-gray-300 rounded focus:ring-[#FF8A00]"
+                                      />
+                                      <div className="flex-1">
+                                        <p className="text-sm font-medium text-gray-900">
+                                          {transaction.auction_title || `Transaction ${transaction.id.slice(-8)}`}
+                                        </p>
+                                        <p className="text-xs text-gray-600">
+                                          {new Date(transaction.created_at).toLocaleDateString()}
+                                          {transaction.description && ` • ${transaction.description}`}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-sm font-medium text-gray-900">
+                                        {formatCurrency(parseFloat(transaction.amount), transaction.currency)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                          <button
-                            onClick={() => handleDirectPayout(payout.seller.id)}
-                            className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          >
-                            Pay Now
-                          </button>
-                        </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">

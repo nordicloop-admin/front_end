@@ -296,14 +296,32 @@ export const getPaymentStats = async (startDate?: string, endDate?: string): Pro
   throw new Error(response.error || 'Failed to get payment stats');
 };
 
+export interface PendingPayoutTransaction {
+  id: string;
+  amount: string;
+  currency: string;
+  created_at: string;
+  description: string;
+  payment_intent_id?: string;
+  auction_title?: string;
+  auction_id?: number;
+}
+
+export interface PendingPayout {
+  seller: {
+    id: number;
+    email: string;
+    name: string;
+  };
+  total_amount: string;
+  transaction_count: number;
+  oldest_transaction: string;
+  transactions?: PendingPayoutTransaction[];
+}
+
 export const getPendingPayouts = async (): Promise<{
   success: boolean;
-  pending_payouts: Array<{
-    seller: any;
-    total_amount: string;
-    transaction_count: number;
-    oldest_transaction: string;
-  }>;
+  pending_payouts: PendingPayout[];
   total_sellers: number;
   total_amount: string;
 }> => {
@@ -313,12 +331,7 @@ export const getPendingPayouts = async (): Promise<{
 
   const response = await apiGet<{
     success: boolean;
-    pending_payouts: Array<{
-      seller: any;
-      total_amount: string;
-      transaction_count: number;
-      oldest_transaction: string;
-    }>;
+    pending_payouts: PendingPayout[];
     total_sellers: number;
     total_amount: string;
   }>('/payments/admin/pending-payouts/', true);
@@ -333,6 +346,7 @@ export const createPayoutSchedules = async (data: {
   seller_ids: number[];
   scheduled_date: string;
   notes?: string;
+  transaction_ids?: Record<string, string[]>; // Map of seller_id (as string) to transaction IDs
 }): Promise<{
   success: boolean;
   created_schedules: PayoutSchedule[];
