@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowRight, AlertCircle, ToggleLeft, ToggleRight, Info } from 'lucide-react';
+import { ArrowRight, AlertCircle } from 'lucide-react';
 import Modal from '@/components/ui/modal';
 import PaymentMethodSelector from '@/components/payments/PaymentMethodSelector';
 
@@ -39,7 +39,7 @@ export default function PlaceBidModal({ isOpen, onClose, onSubmit, auction, init
   const [isAutoBidEnabled, setIsAutoBidEnabled] = useState(false);
   const [error, setError] = useState('');
   const [volumeError, setVolumeError] = useState('');
-  const [autoBidError, setAutoBidError] = useState('');
+  const [_autoBidError, setAutoBidError] = useState('');
   const [bidAmountInputError, setBidAmountInputError] = useState('');
   const [volumeInputError, setVolumeInputError] = useState('');
   const [maxAutoBidInputError, setMaxAutoBidInputError] = useState('');

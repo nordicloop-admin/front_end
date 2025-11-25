@@ -267,7 +267,7 @@ export const mockPendingPayouts = {
       seller: {
         id: 4,
         email: "contact@industrialwaste.se",
-        company_name: "Industrial Waste Solutions"
+        name: "Industrial Waste Solutions"
       },
       total_amount: "1092.00",
       transaction_count: 1,
