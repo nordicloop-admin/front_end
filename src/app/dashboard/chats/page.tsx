@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChatList } from '@/components/chat/ChatList';
 import { ChatContainer } from '@/components/chat/ChatContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCount } from '@/contexts/UnreadCountContext';
-import { getTransactions, Transaction, ChatMessage, searchTransactions } from '@/services/chat';
+import { Transaction, ChatMessage, searchTransactions } from '@/services/chat';
 import { useChatMessages } from '@/hooks/useChatMessages';
+import { useTransactions } from '@/hooks/useTransactions';
 import { Loader2 } from 'lucide-react';
 
 interface ChatPreview {
@@ -127,7 +128,7 @@ function transactionToOrderContext(transaction: Transaction, currentUserId: numb
         location.state_province,
         location.country
       ].filter(Boolean);
-      
+
       if (addressParts.length > 0) {
         return addressParts.join(', ');
       }
@@ -151,7 +152,7 @@ function transactionToOrderContext(transaction: Transaction, currentUserId: numb
   };
 
   // Enhanced material type from category and subcategory
-  const materialType = auctionInfo?.category && auctionInfo?.subcategory 
+  const materialType = auctionInfo?.category && auctionInfo?.subcategory
     ? `${auctionInfo.category} - ${auctionInfo.subcategory}`
     : "Material";
 
@@ -209,60 +210,26 @@ export default function ChatsPage() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(
     searchParams.get('chat') || null
   );
-  const [chats, setChats] = useState<ChatPreview[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isMobile, setIsMobile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  // Fetch transactions from chat microservice
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!isAuthenticated || !user) {
-        setIsLoading(false);
-        return;
-      }
+  // Use TanStack Query for transactions - automatically handles background polling
+  const {
+    data: transactions = [],
+    isLoading,
+    error: queryError
+  } = useTransactions(30000); // Poll every 30 seconds
 
-      try {
-        setIsLoading(true);
-        setError(null);
+  const error = queryError?.message || null;
 
-        const response = await getTransactions();
-
-        if (response.error) {
-          setError(response.error);
-          return;
-        }
-
-        if (response.data) {
-          setTransactions(response.data.transactions);
-          const chatPreviews = response.data.transactions.map(transaction => {
-            const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
-            return transactionToChatPreview(transaction, user.id, unreadCount);
-          });
-          setChats(chatPreviews);
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load chats');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchTransactions();
-  }, [isAuthenticated, user, unreadCountsByTransaction]);
-
-  // Update chat previews when unread counts change
-  useEffect(() => {
-    if (transactions.length > 0 && user) {
-      const chatPreviews = transactions.map(transaction => {
-        const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
-        return transactionToChatPreview(transaction, user.id, unreadCount);
-      });
-      setChats(chatPreviews);
-    }
-  }, [unreadCountsByTransaction, transactions, user]);
+  // Compute chat previews using transactions and unread counts
+  const chats = useMemo(() => {
+    if (!user || transactions.length === 0) return [];
+    return transactions.map(transaction => {
+      const unreadCount = unreadCountsByTransaction.get(transaction.transaction_id) || 0;
+      return transactionToChatPreview(transaction, user.id, unreadCount);
+    });
+  }, [transactions, user, unreadCountsByTransaction]);
 
   // Handle search functionality
   const handleSearch = useCallback(async (query: string): Promise<ChatPreview[]> => {
@@ -271,7 +238,7 @@ export default function ChatsPage() {
     try {
       setIsSearching(true);
       const response = await searchTransactions(query);
-      
+
       if (response.error || !response.data) {
         // eslint-disable-next-line no-console
         console.error('Search failed:', response.error);
@@ -308,13 +275,8 @@ export default function ChatsPage() {
   const handleChatSelect = async (chatId: string) => {
     setSelectedChatId(chatId);
 
-    // Mark messages as read in backend
+    // Mark messages as read in backend (unread counts will auto-update)
     await markTransactionAsRead(chatId);
-
-    // Mark chat as read in local state
-    setChats(prev => prev.map(chat =>
-      chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
-    ));
 
     // Update URL 
     const url = new URL(window.location.href);
@@ -323,16 +285,18 @@ export default function ChatsPage() {
   };
 
   const handleArchiveChat = (chatId: string) => {
-    setChats(prev => prev.map(chat => 
-      chat.id === chatId ? { ...chat, chatStatus: 'archived' as const } : chat
-    ));
+    // TODO: Implement archive functionality with backend API
+    // eslint-disable-next-line no-console
+    console.log('Archive chat:', chatId);
   };
 
   const handleDeleteChat = (chatId: string) => {
-    setChats(prev => prev.filter(chat => chat.id !== chatId));
+    // TODO: Implement delete functionality with backend API
     if (selectedChatId === chatId) {
       setSelectedChatId(null);
     }
+    // eslint-disable-next-line no-console
+    console.log('Delete chat:', chatId);
   };
 
   const handleBackToList = () => {
@@ -373,14 +337,23 @@ export default function ChatsPage() {
     const isCurrentUser = apiMessage.sender_id === user.id;
     const currentUserType = getCurrentUserType();
 
+    // Map message_type from API to component type
+    // Note: API uses 'file' but component expects 'document'
+    const messageType = apiMessage.message_type === 'image' ? 'image' as const :
+      apiMessage.message_type === 'file' ? 'document' as const :
+        'text' as const;
+
     return {
       id: apiMessage._id || `${apiMessage.transaction_id}-${apiMessage.timestamp}`,
-      type: 'text' as const,
+      type: messageType,
       content: apiMessage.message || '',
       sender: isCurrentUser ? currentUserType : (currentUserType === 'buyer' ? 'seller' : 'buyer') as 'buyer' | 'seller',
       timestamp: apiMessage.timestamp ? new Date(apiMessage.timestamp) : new Date(),
       isRead: true,
-      deliveryStatus: 'delivered' as const
+      deliveryStatus: 'delivered' as const,
+      // Include image and file attachments from API
+      imageAttachment: apiMessage.image_attachment,
+      fileAttachment: apiMessage.file_attachment
     };
   };
 
@@ -389,8 +362,11 @@ export default function ChatsPage() {
     .filter((msg): msg is NonNullable<typeof msg> => msg !== null);
 
   // Handle sending messages
-  const handleSendMessage = async (content: string, _attachments?: File[]) => {
-    const success = await sendNewMessage(content);
+  const handleSendMessage = async (content: string, attachments?: File[]) => {
+    // If there are attachments, we take the first one (since ChatInterface sends them one by one currently)
+    const file = attachments && attachments.length > 0 ? attachments[0] : undefined;
+
+    const success = await sendNewMessage(content, file);
 
     if (!success && messagesError) {
       // TODO: Show error notification to user

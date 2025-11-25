@@ -2,10 +2,10 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { 
-  CheckCircle2, 
-  Download, 
-  FileText, 
+import {
+  CheckCircle2,
+  Download,
+  FileText,
   Image as ImageIcon,
   Truck,
   Package,
@@ -44,7 +44,7 @@ interface FileAttachment {
 
 interface MessageBubbleProps {
   id: string;
-  type: 'text' | 'image' | 'file' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
+  type: 'text' | 'image' | 'file' | 'document' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
   content?: string;
   sender: 'buyer' | 'seller' | 'moderator' | 'system';
   timestamp: Date;
@@ -198,7 +198,7 @@ export function MessageBubble({
 
   const renderImageAttachment = () => {
     if (!imageAttachment) return null;
-    
+
     return (
       <div className="mt-3 border rounded-lg overflow-hidden">
         <div className="relative">
@@ -230,7 +230,7 @@ export function MessageBubble({
 
   const renderFileAttachment = () => {
     if (!fileAttachment) return null;
-    
+
     return (
       <div className="mt-3 border rounded-lg overflow-hidden">
         <div className="p-3 bg-gray-50 flex items-center justify-between">
@@ -345,15 +345,15 @@ export function MessageBubble({
             {getSenderLabel()}
           </div>
         )}
-        
+
         <div
           className={cn(
             "rounded-lg px-4 py-3",
             isCurrentUser
               ? "bg-[#FF8A00] text-white"
               : sender === 'moderator'
-              ? "bg-blue-50 text-blue-900 border border-blue-200"
-              : "bg-gray-100 text-gray-900"
+                ? "bg-blue-50 text-blue-900 border border-blue-200"
+                : "bg-gray-100 text-gray-900"
           )}
         >
           {/* Message Content */}
@@ -362,7 +362,7 @@ export function MessageBubble({
               {content && <p className="whitespace-pre-wrap mb-2">{content}</p>}
               {renderImageAttachment()}
             </>
-          ) : type === 'file' ? (
+          ) : type === 'file' || type === 'document' ? (
             <>
               {content && <p className="whitespace-pre-wrap mb-2">{content}</p>}
               {renderFileAttachment()}
@@ -391,15 +391,15 @@ export function MessageBubble({
             )}>
               {formatTime(timestamp)}
             </span>
-            
+
             {isCurrentUser && deliveryStatus && (
               <div className="flex items-center space-x-1">
-                <CheckCircle2 
-                  size={12} 
+                <CheckCircle2
+                  size={12}
                   className={cn(
-                    deliveryStatus === 'read' ? 'text-blue-300' : 
-                    deliveryStatus === 'delivered' ? 'text-white/75' : 'text-white/50'
-                  )} 
+                    deliveryStatus === 'read' ? 'text-blue-300' :
+                      deliveryStatus === 'delivered' ? 'text-white/75' : 'text-white/50'
+                  )}
                 />
                 {deliveryStatus === 'read' && (
                   <CheckCircle2 size={12} className="text-blue-300 -ml-2" />

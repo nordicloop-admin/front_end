@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Send, 
-  Paperclip, 
-  ImageIcon, 
-  FileText, 
+import {
+  Send,
+  Paperclip,
+  ImageIcon,
+  FileText,
   Clock,
   CheckCircle2,
   AlertCircle,
@@ -135,9 +135,12 @@ export function ChatInterface({
 
   const handleSendMessage = async () => {
     if (attachments.length > 0) {
-      // Send each file with the message text
-      for (const file of attachments) {
-        onSendMessage(messageInput.trim() || '', [file]);
+      // Send each file with the message text (only for the first file)
+      for (let i = 0; i < attachments.length; i++) {
+        const file = attachments[i];
+        // Only send the text message with the first attachment
+        const messageToSend = i === 0 ? (messageInput.trim() || '') : '';
+        onSendMessage(messageToSend, [file]);
       }
       setMessageInput('');
       setAttachments([]);
@@ -219,7 +222,7 @@ export function ChatInterface({
               </span>
             </div>
           </div>
-          
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
@@ -270,14 +273,14 @@ export function ChatInterface({
                 message.sender === currentUser
                   ? "bg-[#FF8A00] text-white"
                   : message.sender === 'system'
-                  ? "bg-gray-100 text-gray-700 text-center text-sm"
-                  : "bg-gray-100 text-gray-900"
+                    ? "bg-gray-100 text-gray-700 text-center text-sm"
+                    : "bg-gray-100 text-gray-900"
               )}
             >
               {message.type === 'text' && (
                 <p className="whitespace-pre-wrap">{message.content}</p>
               )}
-              
+
               {message.type === 'delivery_confirmation' && (
                 <div className="flex items-center space-x-2">
                   <CheckCircle2 size={16} className="text-green-600" />
@@ -309,11 +312,11 @@ export function ChatInterface({
                 </span>
                 {message.sender === currentUser && message.deliveryStatus && (
                   <div className="flex items-center space-x-1">
-                    <CheckCircle2 
-                      size={12} 
+                    <CheckCircle2
+                      size={12}
                       className={cn(
                         message.deliveryStatus === 'read' ? 'text-blue-300' : 'text-white/50'
-                      )} 
+                      )}
                     />
                   </div>
                 )}
@@ -376,7 +379,7 @@ export function ChatInterface({
               className="hidden"
               onChange={(e) => handleFileUpload(e.target.files, 'image')}
             />
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -385,7 +388,7 @@ export function ChatInterface({
             >
               <Paperclip size={16} />
             </Button>
-            
+
             <Button
               variant="ghost"
               size="icon"

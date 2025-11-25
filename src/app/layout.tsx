@@ -4,6 +4,7 @@ import Script from 'next/script';
 import "./globals.css";
 import RootLayoutClient from "../components/layout/RootLayoutClient";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { Toaster } from 'sonner';
 
 const interTight = Inter_Tight({
@@ -109,12 +110,14 @@ export default function RootLayout({
       <body
         className={`${interTight.variable} antialiased`}
       >
-        <AuthProvider>
-          <RootLayoutClient>
-            <Toaster position="top-right" richColors />
-            {children}
-          </RootLayoutClient>
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <RootLayoutClient>
+              <Toaster position="top-right" richColors />
+              {children}
+            </RootLayoutClient>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );
