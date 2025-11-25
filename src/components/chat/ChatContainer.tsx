@@ -16,9 +16,29 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ChatInterface } from './ChatInterface';
 import { OrderDetailsPanel } from './OrderDetailsPanel';
 
+// Enhanced attachment interfaces matching chat service schema
+interface ImageAttachment {
+  image_name: string;
+  image_url: string;
+  file_size: number;
+  mime_type: string;
+  width?: number;
+  height?: number;
+  thumbnail_url?: string;
+  uploaded_at: string;
+}
+
+interface FileAttachment {
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_at: string;
+}
+
 interface Message {
   id: string;
-  type: 'text' | 'image' | 'document' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
+  type: 'text' | 'image' | 'document' | 'file' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
   content: string;
   sender: 'buyer' | 'seller' | 'moderator' | 'system';
   timestamp: Date;
@@ -29,6 +49,9 @@ interface Message {
     size?: number;
     thumbnail?: string;
   }[];
+  // New chat service attachments
+  imageAttachment?: ImageAttachment;
+  fileAttachment?: FileAttachment;
   isRead?: boolean;
   deliveryStatus?: 'sent' | 'delivered' | 'read';
   metadata?: {

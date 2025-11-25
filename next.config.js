@@ -16,6 +16,17 @@ const nextConfig = {
         hostname: 'nordicloop.foundela.com',
         pathname: '/material_images/**',
       },
+      // Chat images and files
+      {
+        protocol: 'https',
+        hostname: 'nordicloop.foundela.com',
+        pathname: '/chat-images/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'nordicloop.foundela.com',
+        pathname: '/chat-files/**',
+      },
       // Backend API domains for material images
       {
         protocol: 'http',

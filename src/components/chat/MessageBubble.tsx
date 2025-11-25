@@ -125,7 +125,7 @@ export function MessageBubble({
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const getSenderLabel = () => {
@@ -199,31 +199,64 @@ export function MessageBubble({
   const renderImageAttachment = () => {
     if (!imageAttachment) return null;
 
+    // Calculate aspect ratio and determine preview dimensions
+    const aspectRatio = imageAttachment.width && imageAttachment.height 
+      ? imageAttachment.width / imageAttachment.height 
+      : 1;
+    
+    // Set max height for preview (similar to WhatsApp - around 400px)
+    const maxHeight = 400;
+    const maxWidth = 300;
+    
+    // Calculate preview dimensions maintaining aspect ratio
+    let previewWidth = maxWidth;
+    let previewHeight = maxWidth / aspectRatio;
+    
+    if (previewHeight > maxHeight) {
+      previewHeight = maxHeight;
+      previewWidth = maxHeight * aspectRatio;
+    }
+
+    const handleImageClick = () => {
+      window.open(imageAttachment.image_url, '_blank');
+    };
+
+    const handleImageKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleImageClick();
+      }
+    };
+
     return (
-      <div className="mt-3 border rounded-lg overflow-hidden">
-        <div className="relative">
-          <Image
+      <div 
+        className="mt-2 rounded-lg overflow-hidden cursor-pointer group relative"
+        onClick={handleImageClick}
+        onKeyDown={handleImageKeyDown}
+        role="button"
+        tabIndex={0}
+        aria-label={`View image: ${imageAttachment.image_name || 'Image'}`}
+      >
+        <div className="relative" style={{ width: `${previewWidth}px`, height: `${previewHeight}px`, maxWidth: '100%' }}>
+          {/* Use regular img tag for external URLs - Next.js Image requires explicit domain configuration */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={imageAttachment.image_url}
-            alt={imageAttachment.image_name}
-            width={imageAttachment.width || 300}
-            height={imageAttachment.height || 200}
-            className="w-full h-auto max-h-64 object-cover"
+            alt={imageAttachment.image_name || 'Image'}
+            className="w-full h-full object-cover rounded-lg"
+            style={{ maxHeight: `${maxHeight}px` }}
+            loading="lazy"
           />
-          <div className="absolute top-2 right-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => window.open(imageAttachment.image_url, '_blank')}
-              className="bg-white/90 hover:bg-white"
-            >
-              <Download size={14} />
-            </Button>
+          {/* Overlay on hover */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors rounded-lg" />
+        </div>
+        {/* Optional: Show file name and size below image if provided */}
+        {imageAttachment.image_name && (
+          <div className="mt-1 px-1">
+            <p className="text-xs text-gray-600 truncate">{imageAttachment.image_name}</p>
+            <p className="text-xs text-gray-500">{formatFileSize(imageAttachment.file_size)}</p>
           </div>
-        </div>
-        <div className="p-2 bg-gray-50">
-          <p className="text-xs text-gray-600">{imageAttachment.image_name}</p>
-          <p className="text-xs text-gray-500">{formatFileSize(imageAttachment.file_size)}</p>
-        </div>
+        )}
       </div>
     );
   };
@@ -231,26 +264,63 @@ export function MessageBubble({
   const renderFileAttachment = () => {
     if (!fileAttachment) return null;
 
+    // Get file extension for icon/type display
+    const fileExtension = fileAttachment.file_name.split('.').pop()?.toUpperCase() || 'FILE';
+    
     return (
-      <div className="mt-3 border rounded-lg overflow-hidden">
-        <div className="p-3 bg-gray-50 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-white rounded">
-              <FileText size={16} className="text-gray-600" />
+      <div className="mt-2 rounded-lg overflow-hidden border" 
+           style={{
+             backgroundColor: isCurrentUser ? 'rgba(255, 255, 255, 0.15)' : '#f9fafb',
+             borderColor: isCurrentUser ? 'rgba(255, 255, 255, 0.2)' : '#e5e7eb'
+           }}>
+        <div className="p-3 flex items-center justify-between">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="p-2 rounded flex-shrink-0"
+                 style={{
+                   backgroundColor: isCurrentUser ? 'rgba(255, 255, 255, 0.2)' : '#ffffff'
+                 }}>
+              <FileText size={20} 
+                       style={{ color: isCurrentUser ? '#ffffff' : '#374151' }} />
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-900">{fileAttachment.file_name}</p>
-              <p className="text-xs text-gray-500">{formatFileSize(fileAttachment.file_size)}</p>
-              <p className="text-xs text-gray-400">{fileAttachment.mime_type}</p>
+            <div className="flex-1 min-w-0">
+              <p className={cn(
+                "text-sm font-medium truncate",
+                isCurrentUser ? "text-white" : "text-gray-900"
+              )}>
+                {fileAttachment.file_name}
+              </p>
+              <p className={cn(
+                "text-xs mt-0.5",
+                isCurrentUser ? "text-white/80" : "text-gray-500"
+              )}>
+                {formatFileSize(fileAttachment.file_size)}
+                {fileAttachment.mime_type && ` • ${fileExtension}`}
+              </p>
             </div>
           </div>
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => window.open(fileAttachment.file_url, '_blank')}
+            onClick={(e) => {
+              e.stopPropagation();
+              // Create a temporary anchor to download the file
+              const link = document.createElement('a');
+              link.href = fileAttachment.file_url;
+              link.download = fileAttachment.file_name;
+              link.target = '_blank';
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+            }}
             title={t.downloadAttachment}
+            className={cn(
+              "ml-2 flex-shrink-0",
+              isCurrentUser 
+                ? "text-white hover:bg-white/20" 
+                : "text-gray-600 hover:bg-gray-200"
+            )}
           >
-            <Download size={14} />
+            <Download size={16} />
           </Button>
         </div>
       </div>

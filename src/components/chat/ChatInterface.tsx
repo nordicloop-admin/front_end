@@ -17,10 +17,31 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { FileUpload } from './FileUpload';
+import { MessageBubble } from './MessageBubble';
+
+// Enhanced attachment interfaces matching chat service schema
+interface ImageAttachment {
+  image_name: string;
+  image_url: string;
+  file_size: number;
+  mime_type: string;
+  width?: number;
+  height?: number;
+  thumbnail_url?: string;
+  uploaded_at: string;
+}
+
+interface FileAttachment {
+  file_name: string;
+  file_url: string;
+  file_size: number;
+  mime_type: string;
+  uploaded_at: string;
+}
 
 interface Message {
   id: string;
-  type: 'text' | 'image' | 'document' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
+  type: 'text' | 'image' | 'document' | 'file' | 'system' | 'delivery_confirmation' | 'quality_report' | 'shipping_update';
   content: string;
   sender: 'buyer' | 'seller' | 'moderator' | 'system';
   timestamp: Date;
@@ -30,6 +51,9 @@ interface Message {
     name: string;
     size?: number;
   }[];
+  // New chat service attachments
+  imageAttachment?: ImageAttachment;
+  fileAttachment?: FileAttachment;
   isRead?: boolean;
   deliveryStatus?: 'sent' | 'delivered' | 'read';
 }
@@ -185,20 +209,6 @@ export function ChatInterface({
     }
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString(language === 'sv' ? 'sv-SE' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   return (
     <div className="flex flex-col h-full bg-white">
@@ -259,71 +269,36 @@ export function ChatInterface({
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              "flex",
-              message.sender === currentUser ? "justify-end" : "justify-start"
-            )}
-          >
-            <div
-              className={cn(
-                "max-w-[70%] rounded-lg px-4 py-2",
-                message.sender === currentUser
-                  ? "bg-[#FF8A00] text-white"
-                  : message.sender === 'system'
-                    ? "bg-gray-100 text-gray-700 text-center text-sm"
-                    : "bg-gray-100 text-gray-900"
-              )}
-            >
-              {message.type === 'text' && (
-                <p className="whitespace-pre-wrap">{message.content}</p>
-              )}
-
-              {message.type === 'delivery_confirmation' && (
-                <div className="flex items-center space-x-2">
-                  <CheckCircle2 size={16} className="text-green-600" />
-                  <span>{message.content}</span>
+        {messages.map((message) => {
+          // Skip rendering system messages with MessageBubble - render them separately
+          if (message.type === 'system' || message.sender === 'system') {
+            return (
+              <div key={message.id} className="flex justify-center">
+                <div className="bg-gray-100 text-gray-700 text-center text-sm rounded-lg px-4 py-2 max-w-md">
+                  {message.content}
                 </div>
-              )}
-
-              {message.attachments && message.attachments.length > 0 && (
-                <div className="mt-2 space-y-2">
-                  {message.attachments.map((attachment, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-2 bg-white/10 rounded">
-                      {attachment.type === 'image' ? (
-                        <ImageIcon size={16} />
-                      ) : (
-                        <FileText size={16} />
-                      )}
-                      <span className="text-sm">{attachment.name}</span>
-                      {attachment.size && (
-                        <span className="text-xs opacity-75">({formatFileSize(attachment.size)})</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-xs opacity-75">
-                  {formatTime(message.timestamp)}
-                </span>
-                {message.sender === currentUser && message.deliveryStatus && (
-                  <div className="flex items-center space-x-1">
-                    <CheckCircle2
-                      size={12}
-                      className={cn(
-                        message.deliveryStatus === 'read' ? 'text-blue-300' : 'text-white/50'
-                      )}
-                    />
-                  </div>
-                )}
               </div>
-            </div>
-          </div>
-        ))}
+            );
+          }
+
+          return (
+            <MessageBubble
+              key={message.id}
+              id={message.id}
+              type={message.type}
+              content={message.content}
+              sender={message.sender}
+              timestamp={message.timestamp}
+              attachments={message.attachments}
+              imageAttachment={message.imageAttachment}
+              fileAttachment={message.fileAttachment}
+              isRead={message.isRead}
+              deliveryStatus={message.deliveryStatus}
+              isCurrentUser={message.sender === currentUser}
+              language={language}
+            />
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 
