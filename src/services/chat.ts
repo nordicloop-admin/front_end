@@ -34,6 +34,7 @@ export interface Transaction {
   last_message?: string | null;
   auction_info?: AuctionInfo;
   created_at?: string;
+  is_archived?: boolean;
 }
 
 /**
@@ -205,14 +206,19 @@ function getChatHeaders(): HeadersInit {
 
 /**
  * Get all transactions for the authenticated user
+ * @param archived Optional filter for archived status. True returns archived only, False/None returns active only.
  * @returns List of transactions where user is buyer or seller
  */
-export async function getTransactions(): Promise<ChatApiResponse<TransactionsResponse>> {
+export async function getTransactions(archived?: boolean): Promise<ChatApiResponse<TransactionsResponse>> {
   try {
     const headers = getChatHeaders();
-    const url = `${CHAT_API_BASE_URL}/transactions`;
+    const url = new URL(`${CHAT_API_BASE_URL}/transactions`);
+    
+    if (archived !== undefined) {
+      url.searchParams.set('archived', String(archived));
+    }
 
-    const response = await fetch(url, {
+    const response = await fetch(url.toString(), {
       method: 'GET',
       headers,
     });
@@ -702,14 +708,20 @@ export async function getUnreadCountsByTransaction(): Promise<TransactionUnreadC
 /**
  * Search transactions by company name, buyer names, or auction name
  * @param query Search query string
+ * @param archived Optional filter for archived status. True returns archived only, False/None returns active only.
  * @returns List of matching transactions
  */
-export async function searchTransactions(query: string): Promise<ChatApiResponse<TransactionsResponse>> {
+export async function searchTransactions(query: string, archived?: boolean): Promise<ChatApiResponse<TransactionsResponse>> {
   try {
     const headers = getChatHeaders();
-    const url = `${CHAT_API_BASE_URL}/transactions/search?q=${encodeURIComponent(query)}`;
+    const url = new URL(`${CHAT_API_BASE_URL}/transactions/search`);
+    url.searchParams.set('q', query);
+    
+    if (archived !== undefined) {
+      url.searchParams.set('archived', String(archived));
+    }
 
-    const response = await fetch(url, {
+    const response = await fetch(url.toString(), {
       method: 'GET',
       headers,
     });
@@ -733,6 +745,45 @@ export async function searchTransactions(query: string): Promise<ChatApiResponse
     return {
       data: null,
       error: error instanceof Error ? error.message : 'Failed to search transactions',
+      status: 500,
+    };
+  }
+}
+
+/**
+ * Archive a transaction
+ * @param transactionId The transaction ID to archive
+ * @returns Success response
+ */
+export async function archiveTransaction(transactionId: string): Promise<ChatApiResponse<{ success: boolean; message: string }>> {
+  try {
+    const headers = getChatHeaders();
+    const url = `${CHAT_API_BASE_URL}/transactions/${transactionId}/archive`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        data: null,
+        error: data.detail || 'Failed to archive transaction',
+        status: response.status,
+      };
+    }
+
+    return {
+      data: data,
+      error: null,
+      status: response.status,
+    };
+  } catch (error) {
+    return {
+      data: null,
+      error: error instanceof Error ? error.message : 'Failed to archive transaction',
       status: 500,
     };
   }

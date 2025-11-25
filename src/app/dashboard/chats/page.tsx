@@ -7,7 +7,7 @@ import { ChatContainer } from '@/components/chat/ChatContainer';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnreadCount } from '@/contexts/UnreadCountContext';
-import { Transaction, ChatMessage, searchTransactions } from '@/services/chat';
+import { Transaction, ChatMessage, searchTransactions, archiveTransaction } from '@/services/chat';
 import { useChatMessages } from '@/hooks/useChatMessages';
 import { useTransactions } from '@/hooks/useTransactions';
 import { Loader2 } from 'lucide-react';
@@ -67,6 +67,9 @@ function transactionToChatPreview(
     'Complete': 'completed'
   };
 
+  // Map is_archived to chatStatus
+  const chatStatus: 'active' | 'archived' | 'closed' = transaction.is_archived ? 'archived' : 'active';
+
   return {
     id: transaction.transaction_id,
     orderId: transaction.transaction_id,
@@ -80,7 +83,7 @@ function transactionToChatPreview(
     unreadCount,
     materialName: transaction.auction_name,
     orderStatus: orderStatusMap[transaction.transaction_status] || 'pending',
-    chatStatus: 'active' as const,
+    chatStatus,
     priority: 'medium' as const
   };
 }
@@ -212,13 +215,18 @@ export default function ChatsPage() {
   );
   const [isMobile, setIsMobile] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'archived' | 'unread'>('all');
+
+  // Determine archived filter based on filterStatus
+  const archivedFilter = filterStatus === 'archived' ? true : filterStatus === 'active' ? false : undefined;
 
   // Use TanStack Query for transactions - automatically handles background polling
   const {
     data: transactions = [],
     isLoading,
-    error: queryError
-  } = useTransactions(30000); // Poll every 30 seconds
+    error: queryError,
+    refetch: refetchTransactions
+  } = useTransactions(30000, archivedFilter); // Poll every 30 seconds
 
   const error = queryError?.message || null;
 
@@ -237,7 +245,8 @@ export default function ChatsPage() {
 
     try {
       setIsSearching(true);
-      const response = await searchTransactions(query);
+      const archivedFilter = filterStatus === 'archived' ? true : filterStatus === 'active' ? false : undefined;
+      const response = await searchTransactions(query, archivedFilter);
 
       if (response.error || !response.data) {
         // eslint-disable-next-line no-console
@@ -259,7 +268,7 @@ export default function ChatsPage() {
     } finally {
       setIsSearching(false);
     }
-  }, [user, unreadCountsByTransaction]);
+  }, [user, unreadCountsByTransaction, filterStatus]);
 
   // Check if mobile
   useEffect(() => {
@@ -284,10 +293,20 @@ export default function ChatsPage() {
     window.history.pushState({}, '', url.toString());
   };
 
-  const handleArchiveChat = (chatId: string) => {
-    // TODO: Implement archive functionality with backend API
-    // eslint-disable-next-line no-console
-    console.log('Archive chat:', chatId);
+  const handleArchiveChat = async (chatId: string) => {
+    try {
+      const response = await archiveTransaction(chatId);
+      if (response.error) {
+        // eslint-disable-next-line no-console
+        console.error('Failed to archive chat:', response.error);
+        return;
+      }
+      // Refetch transactions to update the list
+      await refetchTransactions();
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to archive chat:', error);
+    }
   };
 
   const handleDeleteChat = (chatId: string) => {
@@ -451,6 +470,8 @@ export default function ChatsPage() {
           onSearch={handleSearch}
           isSearching={isSearching}
           className="h-full"
+          filterStatus={filterStatus}
+          onFilterChange={setFilterStatus}
         />
       </div>
 

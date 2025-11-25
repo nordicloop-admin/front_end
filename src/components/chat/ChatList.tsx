@@ -49,6 +49,8 @@ interface ChatListProps {
   onSearch?: (query: string) => Promise<ChatPreview[]>;
   isSearching?: boolean;
   className?: string;
+  filterStatus?: 'all' | 'active' | 'archived' | 'unread';
+  onFilterChange?: (filter: 'all' | 'active' | 'archived' | 'unread') => void;
 }
 
 const translations = {
@@ -125,13 +127,26 @@ export function ChatList({
   onDeleteChat,
   onSearch,
   isSearching: _isSearching = false,
-  className
+  className,
+  filterStatus: externalFilterStatus,
+  onFilterChange
 }: ChatListProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'archived' | 'unread'>('all');
+  const [internalFilterStatus, setInternalFilterStatus] = useState<'all' | 'active' | 'archived' | 'unread'>('all');
   const [filteredChats, setFilteredChats] = useState(chats);
   const [searchResults, setSearchResults] = useState<ChatPreview[]>([]);
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Use external filter status if provided, otherwise use internal state
+  const filterStatus = externalFilterStatus ?? internalFilterStatus;
+  
+  const setFilterStatus = (filter: 'all' | 'active' | 'archived' | 'unread') => {
+    if (onFilterChange) {
+      onFilterChange(filter);
+    } else {
+      setInternalFilterStatus(filter);
+    }
+  };
 
   const t = translations[language];
 
@@ -172,17 +187,10 @@ export function ChatList({
       });
     }
 
-    // Filter by status
-    switch (filterStatus) {
-      case 'active':
-        filtered = filtered.filter(chat => chat.chatStatus === 'active');
-        break;
-      case 'archived':
-        filtered = filtered.filter(chat => chat.chatStatus === 'archived');
-        break;
-      case 'unread':
-        filtered = filtered.filter(chat => chat.unreadCount > 0);
-        break;
+    // Filter by status - only filter for 'unread' locally since backend handles 'active'/'archived'
+    // Backend already filters by archived status, so all chats passed here match the backend filter
+    if (filterStatus === 'unread') {
+      filtered = filtered.filter(chat => chat.unreadCount > 0);
     }
 
     // Sort by last message timestamp (most recent first)
