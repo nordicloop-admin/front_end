@@ -1,14 +1,15 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
-import { MapPin, Truck, Package, Search, CheckCircle, Globe, MapPinned } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Truck, Package, CheckCircle, Globe, MapPinned } from 'lucide-react';
 import InfoCallout from '@/components/ui/InfoCallout';
 import { FormData } from '../AlternativeAuctionForm';
-import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
+import { PlacesAutocomplete } from '@/components/ui/PlacesAutocomplete';
+import { PlaceResult } from '@/hooks/useGoogleMaps';
 
 interface Props {
-  formData: FormData;
-  updateFormData: (updates: Partial<FormData>) => void;
+  readonly formData: FormData;
+  readonly updateFormData: (updates: Partial<FormData>) => void;
 }
 
 const deliveryOptions = [
@@ -45,60 +46,23 @@ const deliveryOptions = [
 ];
 
 export function LocationLogisticsStep({ formData, updateFormData }: Props) {
-  const [addressInput, setAddressInput] = useState('');
   const [locationError, setLocationError] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const addressInputRef = useRef<HTMLInputElement>(null!);
-  
-  // Load Google Maps API
-  const { isLoaded, loadError } = useGoogleMaps();
-  const { getPlaceDetails, selectedPlace } = usePlacesAutocomplete(addressInputRef, isLoaded);
 
-  // Watch for changes to selectedPlace and update the form data
-  useEffect(() => {
-    if (selectedPlace) {
-      updateFormData({
-        location: {
-          ...formData.location,
-          country: selectedPlace.countryCode,
-          region: selectedPlace.region,
-          city: selectedPlace.city,
-          fullAddress: selectedPlace.formattedAddress
-        }
-      });
-      setLocationError('');
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlace, updateFormData]);
-
-  const handleAddressSelect = async () => {
-    if (!isLoaded) return;
-    
-    setIsSearching(true);
-    
-    try {
-      const placeResult = await getPlaceDetails();
-      
-      if (placeResult) {
-        updateFormData({
-          location: {
-            ...formData.location,
-            country: placeResult.countryCode,
-            region: placeResult.region,
-            city: placeResult.city,
-            fullAddress: placeResult.formattedAddress
-          }
-        });
-        setLocationError('');
-      } else {
-        setLocationError('Please select a valid address from the suggestions');
+  // Handle place selection from the new PlacesAutocomplete component
+  const handlePlaceSelect = (place: PlaceResult) => {
+    updateFormData({
+      location: {
+        ...formData.location,
+        country: place.country || place.countryCode?.toUpperCase() || '',
+        region: place.stateProvince || place.region,
+        city: place.city,
+        fullAddress: place.addressLine || place.formattedAddress,
+        postalCode: place.postalCode || '',
+        latitude: place.latitude,
+        longitude: place.longitude
       }
-    } catch (_error) {
-      // Handle error silently
-      setLocationError('Failed to get location details');
-    } finally {
-      setIsSearching(false);
-    }
+    });
+    setLocationError('');
   };
 
   const handleLocationUpdate = (field: string, value: any) => {
@@ -140,46 +104,20 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
             Material Location
           </h4>
           
-          {/* Google Maps Autocomplete */}
+          {/* Places Autocomplete */}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="address-search" className="block text-sm font-medium text-gray-700 mb-2">
                 Search Address in Sweden *
               </label>
-              <div className="relative">
-                <input
-                  ref={addressInputRef}
-                  type="text"
-                  placeholder="Start typing your address in Sweden..."
-                  className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${locationError ? 'border-red-500' : 'border-gray-300'}`}
-                  onChange={(e) => {
-                    setAddressInput(e.target.value);
-                    if (locationError) {
-                      setLocationError('');
-                    }
-                  }}
-                  disabled={!isLoaded || isSearching}
-                />
-                <button 
-                  onClick={handleAddressSelect}
-                  disabled={!isLoaded || isSearching || !addressInput}
-                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${!isLoaded || isSearching || !addressInput ? 'text-gray-400 cursor-not-allowed' : 'text-[#FF8A00] hover:bg-orange-50'}`}
-                >
-                  {isSearching ? (
-                    <div className="animate-spin h-5 w-5 border-2 border-[#FF8A00] border-t-transparent rounded-full"></div>
-                  ) : (
-                    <Search className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
+              <PlacesAutocomplete
+                onPlaceSelect={handlePlaceSelect}
+                placeholder="Start typing your address in Sweden..."
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${locationError ? 'border-red-500' : 'border-gray-300'}`}
+                defaultValue={formData.location.fullAddress || ''}
+              />
               {locationError && (
                 <p className="mt-1 text-sm text-red-600">{locationError}</p>
-              )}
-              {!isLoaded && !loadError && (
-                <p className="mt-1 text-sm text-gray-500">Loading Google Maps...</p>
-              )}
-              {loadError && (
-                <p className="mt-1 text-sm text-red-600">Failed to load Google Maps. Please enter location manually.</p>
               )}
             </div>
 
@@ -202,55 +140,21 @@ export function LocationLogisticsStep({ formData, updateFormData }: Props) {
                     <span className="text-gray-700">
                       {formData.location.city}
                       {formData.location.region && `, ${formData.location.region}`}
-                      {formData.location.country && `, ${formData.location.country.toUpperCase()}`}
+                      {formData.location.country && `, ${formData.location.country}`}
                     </span>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Manual Location Input (Fallback) */}
-            {loadError && (
-              <div className="space-y-4 mt-4 border-t border-gray-200 pt-4">
-                <h5 className="font-medium text-gray-900">Manual Location Entry</h5>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Country *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter country"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
-                    value={formData.location.country || ''}
-                    onChange={(e) => handleLocationUpdate('country', e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Region/State
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter region or state"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
-                    value={formData.location.region || ''}
-                    onChange={(e) => handleLocationUpdate('region', e.target.value)}
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter city"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00]"
-                    value={formData.location.city || ''}
-                    onChange={(e) => handleLocationUpdate('city', e.target.value)}
-                  />
+                  {formData.location.postalCode && (
+                    <div className="flex">
+                      <span className="w-4 h-4 mr-2 flex-shrink-0 mt-1" />
+                      <span className="text-gray-700">Postal code: {formData.location.postalCode}</span>
+                    </div>
+                  )}
+                  {(formData.location.latitude !== undefined && formData.location.longitude !== undefined) && (
+                    <div className="flex">
+                      <span className="w-4 h-4 mr-2 flex-shrink-0 mt-1" />
+                      <span className="text-gray-700">Coordinates: {formData.location.latitude}, {formData.location.longitude}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

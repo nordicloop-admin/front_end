@@ -61,6 +61,9 @@ export interface FormData {
     city: string;
     deliveryOptions: string[];
     fullAddress?: string;
+    postalCode?: string;
+    latitude?: number;
+    longitude?: number;
   };
   
   // Quantity & Price
@@ -121,7 +124,11 @@ const initialFormData: FormData = {
     country: '',
     region: '',
     city: '',
-    deliveryOptions: []
+    deliveryOptions: [],
+    fullAddress: '',
+    postalCode: '',
+    latitude: undefined,
+    longitude: undefined
   },
   quantity: {
     available: 0,
@@ -276,6 +283,9 @@ export function AlternativeAuctionForm({
               city: adData.location?.city || '',
               deliveryOptions: adData.delivery_options?.map(o => convertValueToLabel('delivery_options', o)) || [],
               fullAddress: adData.location?.address_line || '',
+              postalCode: adData.location?.postal_code || '',
+              latitude: adData.location?.latitude || undefined,
+              longitude: adData.location?.longitude || undefined,
             },
             quantity: {
               available: adData.available_quantity || 0,
@@ -410,7 +420,9 @@ export function AlternativeAuctionForm({
             state_province: data.location.region || undefined,
             city: data.location.city,
             address_line: data.location.fullAddress || undefined,
-            postal_code: ''
+            postal_code: data.location.postalCode || undefined,
+            latitude: data.location.latitude || undefined,
+            longitude: data.location.longitude || undefined
           },
           delivery_options: Array.isArray(data.location.deliveryOptions) 
             ? data.location.deliveryOptions.map(option => convertLabelToValue('delivery_options', option))

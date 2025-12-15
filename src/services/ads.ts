@@ -39,6 +39,8 @@ export interface Step6Data {
     city: string;
     address_line?: string;
     postal_code?: string;
+    latitude?: number;
+    longitude?: number;
   };
   delivery_options: string[];
 }

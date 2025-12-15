@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Check, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, Search, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
+import { X, Check, Save, AlertCircle, Package, Box, Recycle, Factory, Thermometer, Upload, MapPin, CheckCircle, Globe, Truck, MapPinned, Info, Plus, Settings, Type, Tag } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { getCategories, Category } from '@/services/auction';
 import { adUpdateService, adCreationService } from '@/services/ads';
 import { getFullImageUrl } from '@/utils/imageUtils';
 import { convertLabelToValue } from '@/utils/adValidation';
-import { useGoogleMaps, usePlacesAutocomplete } from '@/hooks/useGoogleMaps';
+import { useGoogleMaps } from '@/hooks/useGoogleMaps';
+import { PlacesAutocomplete } from '@/components/ui/PlacesAutocomplete';
 import { toast } from 'sonner';
 import Modal from '@/components/ui/modal';
 
@@ -402,6 +403,8 @@ interface StepData {
     deliveryOptions?: string[];
     fullAddress?: string;
     postalCode?: string;
+    latitude?: number;
+    longitude?: number;
   };
   
   // Step 7: Quantity & Price
@@ -526,14 +529,10 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   const [showValidationErrors, setShowValidationErrors] = useState(false);
 
   // Google Maps integration state
-  const [_addressInput, setAddressInput] = useState('');
   const [locationError, setLocationError] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
-  const addressInputRef = useRef<HTMLInputElement>(null!);
 
   // Load Google Maps API
-  const { isLoaded, loadError } = useGoogleMaps();
-  const { getPlaceDetails, selectedPlace } = usePlacesAutocomplete(addressInputRef, isLoaded && isOpen);
+  const { loadError } = useGoogleMaps();
 
   // Load categories on component mount
   useEffect(() => {
@@ -560,305 +559,99 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
     if (isOpen && auction.id && !adDataLoaded) {
       const fetchCompleteAdData = async () => {
         try {
-
-
-          // Use the existing API to get complete ad details
+          const token = typeof window !== 'undefined' ? localStorage.getItem('nordic_loop_access_token') : null;
           const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ads/${auction.id}/`, {
             method: 'GET',
             headers: {
-              'Authorization': `Bearer ${localStorage.getItem('nordic_loop_access_token')}`,
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
             }
           });
-
           if (response.ok) {
             const result = await response.json();
-
             setCompleteAdData(result.data);
             setAdDataLoaded(true);
-          } else {
-
           }
         } catch (_error) {
-
+          // silently ignore
         }
       };
-
       fetchCompleteAdData();
     }
   }, [isOpen, auction.id, adDataLoaded]);
 
-  // Handle Google Maps place selection
+  // Initialize step data from fetched ad data
   useEffect(() => {
-    if (selectedPlace) {
-      handleStepDataChange({
-        location: {
-          ...stepData.location,
-          country: selectedPlace.countryCode,
-          region: selectedPlace.region,
-          city: selectedPlace.city,
-          fullAddress: selectedPlace.formattedAddress
-        }
-      });
-      setLocationError('');
+    if (!completeAdData) return;
+    const determinedMaterialType = (completeAdData.category_name || auction?.category || '').toLowerCase();
+    setStepData({
+      category: completeAdData.category_name || auction?.category || '',
+      subcategory: completeAdData.subcategory_name || auction?.subcategory || '',
+      materialType: determinedMaterialType,
+      specificMaterial: typeof completeAdData.specific_material === 'string'
+        ? completeAdData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [],
+      packaging: (() => {
+        const backendPackaging = completeAdData?.packaging || '';
+        const match = packagingOptions.find(opt => opt.id === backendPackaging || opt.name === backendPackaging);
+        return match ? match.id : backendPackaging;
+      })(),
+      materialFrequency: completeAdData?.material_frequency || '',
+      grade: completeAdData?.specification?.material_grade_display || '',
+      color: completeAdData?.specification?.color || '',
+      form: completeAdData?.specification?.material_form_display || '',
+      additionalSpecs: completeAdData?.specification?.additional_specifications
+        ? [completeAdData.specification.additional_specifications]
+        : [],
+      origin: completeAdData?.origin || '',
+      contaminationLevel: completeAdData?.contamination || '',
+      additives: completeAdData?.additives ? [completeAdData.additives] : [],
+      storageConditions: completeAdData?.storage_conditions || '',
+      processingMethods: completeAdData?.processing_methods || [],
+      location: completeAdData.location ? {
+        country: completeAdData.location.country || '',
+        region: completeAdData.location.state_province || '',
+        city: completeAdData.location.city || '',
+        fullAddress: completeAdData.location.address_line || '',
+        postalCode: completeAdData.location.postal_code || '',
+        latitude: completeAdData.location.latitude || undefined,
+        longitude: completeAdData.location.longitude || undefined,
+        deliveryOptions: completeAdData.delivery_options || []
+      } : {
+        country: '',
+        region: '',
+        city: '',
+        fullAddress: '',
+        postalCode: '',
+        latitude: undefined,
+        longitude: undefined,
+        deliveryOptions: []
+      },
+      availableQuantity: completeAdData?.available_quantity || 0,
+      unit: completeAdData?.unit_of_measurement || '',
+      minimumOrder: completeAdData?.minimum_order_quantity || 0,
+      startingPrice: completeAdData?.starting_bid_price || 0,
+      currency: completeAdData?.currency || 'SEK',
+      auctionDuration: completeAdData?.auction_duration ? String(completeAdData.auction_duration) : '',
+      reservePrice: completeAdData?.reserve_price || 0,
+      customAuctionDuration: completeAdData?.custom_auction_duration || 0,
+      title: completeAdData?.title || auction?.name || '',
+      description: completeAdData?.description || auction?.description || '',
+      keywords: typeof completeAdData?.keywords === 'string'
+        ? completeAdData.keywords.split(', ').map((k: string) => k.trim())
+        : (auction?.keywords
+          ? (typeof auction.keywords === 'string' ? auction.keywords.split(',').map((k: string) => k.trim())
+            : Array.isArray(auction.keywords) ? auction.keywords : [])
+          : []),
+      currentImageUrl: completeAdData?.material_image || auction?.material_image || auction?.image || '',
+      images: []
+    });
+    setImageLoadError(false);
+    const expected = getStepsByMaterialType(determinedMaterialType);
+    if (steps.length !== expected.length || steps[0].id !== expected[0].id) {
+      setTimeout(() => setSteps(expected), 0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedPlace]);
-
-  // Reinitialize Google Maps autocomplete when modal opens and we're on location step
-  useEffect(() => {
-    if (isOpen && activeStep === 6 && isLoaded && addressInputRef.current && window.google?.maps?.places) {
-      try {
-        // Create autocomplete instance
-        const autocomplete = new window.google.maps.places.Autocomplete(addressInputRef.current, {
-          types: ['address'],
-          fields: ['address_components', 'formatted_address', 'geometry', 'name'],
-          componentRestrictions: { country: 'se' } // Restrict to Sweden
-        });
-
-        // Add listener for place_changed event
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (place && place.address_components) {
-            // Extract address components
-            let city = '';
-            let region = '';
-            let countryCode = '';
-
-            place.address_components.forEach((component: any) => {
-              const types = component.types;
-
-              if (types.includes('locality') || types.includes('postal_town')) {
-                city = component.long_name;
-              } else if (types.includes('administrative_area_level_1')) {
-                region = component.long_name;
-              } else if (types.includes('country')) {
-                countryCode = component.short_name.toLowerCase();
-              }
-            });
-
-            handleStepDataChange({
-              location: {
-                ...stepData.location,
-                country: countryCode,
-                region: region,
-                city: city,
-                fullAddress: place.formatted_address || ''
-              }
-            });
-            setLocationError('');
-          }
-        });
-      } catch (_error) {
-        // Failed to initialize Google Maps autocomplete
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, activeStep, isLoaded]);
-
-  // Initialize form data from auction
-  useEffect(() => {
-    if (auction && categoriesLoaded && adDataLoaded && completeAdData) {
-      const volumeParts = auction.volume.split(' ');
-      const volumeValue = parseFloat(volumeParts[0]) || 0;
-      const volumeUnit = volumeParts[1] || '';
-      
-      const basePriceValue = parseFloat(auction.basePrice.replace(/[^0-9.]/g, '')) || 0;
-      
-      // Extract specifications from auction.specifications array
-      let grade = '';
-      let color = '';
-      let form = '';
-      const additionalSpecs: string[] = [];
-      
-      if (auction.specifications && Array.isArray(auction.specifications)) {
-        // Map common specification names to our form fields
-        auction.specifications.forEach(spec => {
-          const name = spec.name.toLowerCase();
-          if (name.includes('grade') || name.includes('quality')) {
-            grade = spec.value;
-          } else if (name.includes('color') || name.includes('colour')) {
-            color = spec.value;
-          } else if (name.includes('form') || name.includes('shape') || name.includes('type')) {
-            form = spec.value;
-          } else if (name.includes('additional specifications')) {
-            // Parse additional specifications string back into individual specs
-            const additionalSpecsStr = spec.value;
-            if (additionalSpecsStr) {
-              // Split by comma and extract grade, color, form if they exist
-              const specsArray = additionalSpecsStr.split(',').map(s => s.trim());
-              specsArray.forEach(specItem => {
-                const lowerSpec = specItem.toLowerCase();
-                if (lowerSpec.startsWith('grade:') && !grade) {
-                  grade = specItem.split(':')[1]?.trim() || '';
-                } else if (lowerSpec.startsWith('color:') && !color) {
-                  color = specItem.split(':')[1]?.trim() || '';
-                } else if (lowerSpec.startsWith('form:') && !form) {
-                  form = specItem.split(':')[1]?.trim() || '';
-                } else {
-                  // Keep as additional spec if it's not grade/color/form
-                  additionalSpecs.push(specItem);
-                }
-              });
-            }
-          } else {
-            // Add other specifications to additional specs
-            additionalSpecs.push(`${spec.name}: ${spec.value}`);
-          }
-        });
-      }
-      
-      // Also check if there's a description or other fields that might contain specifications
-      // This handles cases where the backend might return specifications in different formats
-      if (auction.description && auction.description.length > 0) {
-        // Look for common specification patterns in the description
-        const desc = auction.description.toLowerCase();
-        if (!grade && (desc.includes('grade') || desc.includes('quality'))) {
-          // Try to extract grade information from description if available
-        }
-      }
-      
-      // Use the materialType prop if provided, otherwise fall back to auction.category
-      const determinedMaterialType = materialType || auction.category?.toLowerCase() || '';
-
-
-
-      try {
-        setStepData({
-          // Step 1 - Use complete ad data with safe property access
-          category: completeAdData?.category_name || auction?.category || '',
-          subcategory: completeAdData?.subcategory_name || auction?.subcategory || '',
-          materialType: determinedMaterialType || '',
-          specificMaterial: completeAdData?.specific_material ? 
-            (typeof completeAdData.specific_material === 'string' ? 
-              completeAdData.specific_material.split(',').map((s: string) => s.trim()).filter(Boolean) : 
-              []) : [],
-          packaging: (() => {
-            const backendPackaging = completeAdData?.packaging || '';
-            // Keep backend packaging value as ID for consistency
-            const matchingOption = packagingOptions.find(opt => 
-              opt.id === backendPackaging || opt.name === backendPackaging
-            );
-            return matchingOption ? matchingOption.id : backendPackaging;
-          })(),
-          materialFrequency: completeAdData?.material_frequency || '',
-
-          // Step 2: Initialize specifications data from complete ad data with null checks
-          grade: completeAdData?.specification?.material_grade_display || grade || '',
-          color: completeAdData?.specification?.color || color || '',
-          form: completeAdData?.specification?.material_form_display || form || '',
-          additionalSpecs: completeAdData?.specification?.additional_specifications ?
-            [completeAdData.specification.additional_specifications] : (Array.isArray(additionalSpecs) ? additionalSpecs : []),
-
-          // Step 3: Material Origin - use ID value for form selection
-          origin: completeAdData?.origin || '',
-
-          // Step 4: Contamination - use ID values for form selection
-        contaminationLevel: completeAdData.contamination || '',
-        additives: completeAdData.additives ? [completeAdData.additives] : [],
-        storageConditions: completeAdData.storage_conditions || '',
-
-        // Step 5: Processing Methods
-        processingMethods: completeAdData.processing_methods || [],
-
-        // Step 6: Location & Logistics
-        location: completeAdData.location ? {
-          country: completeAdData.location.country || '',
-          region: completeAdData.location.state_province || '',
-          city: completeAdData.location.city || '',
-          fullAddress: completeAdData.location.address_line || '',
-          postalCode: completeAdData.location.postal_code || '',
-          deliveryOptions: completeAdData.delivery_options || []
-        } : {
-          country: '',
-          region: '',
-          city: '',
-          fullAddress: '',
-          postalCode: '',
-          deliveryOptions: []
-        },
-
-        // Step 7: Quantity & Price - use complete ad data when available
-        availableQuantity: completeAdData.available_quantity || volumeValue,
-        unit: completeAdData.unit_of_measurement || volumeUnit,
-        minimumOrder: completeAdData.minimum_order_quantity || 0,
-        startingPrice: completeAdData.starting_bid_price || basePriceValue,
-        currency: completeAdData.currency || 'SEK',
-        auctionDuration: completeAdData.auction_duration ? String(completeAdData.auction_duration) : '',
-        reservePrice: completeAdData.reserve_price || 0,
-        customAuctionDuration: completeAdData.custom_auction_duration || 0,
-
-        // Step 8: Title & Description - use complete ad data when available with safe property access
-        title: completeAdData?.title || auction?.name || '',
-        description: completeAdData?.description || auction?.description || '',
-        keywords: completeAdData?.keywords ?
-          (typeof completeAdData.keywords === 'string' ? completeAdData.keywords.split(', ').map((k: string) => k.trim()) : []) :
-          (auction?.keywords ?
-            (typeof auction.keywords === 'string' ? auction.keywords.split(',').map((k: string) => k.trim()) :
-             Array.isArray(auction.keywords) ? auction.keywords : []) : []),
-        currentImageUrl: completeAdData?.material_image || auction?.material_image || auction?.image || '',
-        images: []
-        });
-
-        // Reset image load error when new data is loaded
-        setImageLoadError(false);
-
-        // Set steps based on material type (only if not already set correctly)
-        const expectedSteps = getStepsByMaterialType(determinedMaterialType);
-        if (steps.length !== expectedSteps.length || steps[0].id !== expectedSteps[0].id) {
-          // Use setTimeout to avoid conflicts with other state updates
-          setTimeout(() => {
-            setSteps(expectedSteps);
-          }, 0);
-        }
-      } catch (error) {
-        // Handle any errors during data initialization
-        if (process.env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
-          console.error('Error initializing auction edit data:', error);
-        }
-        // Failed to load auction data - silently handle
-
-        // Set minimal default data to prevent crashes
-        setStepData({
-          category: auction?.category || '',
-          subcategory: auction?.subcategory || '',
-          materialType: auction?.category?.toLowerCase() || '',
-          specificMaterial: [],
-          packaging: '',
-          materialFrequency: '',
-          grade: '',
-          color: '',
-          form: '',
-          additionalSpecs: [],
-          origin: '',
-          contaminationLevel: '',
-          processingMethods: [],
-          location: {
-            country: '',
-            region: '',
-            city: '',
-            fullAddress: '',
-            postalCode: '',
-            deliveryOptions: []
-          },
-          availableQuantity: 0,
-          unit: '',
-          minimumOrder: 0,
-          startingPrice: 0,
-          currency: 'SEK',
-          auctionDuration: '',
-          reservePrice: 0,
-          customAuctionDuration: 0,
-          title: auction?.name || '',
-          description: auction?.description || '',
-          keywords: [],
-          currentImageUrl: auction?.image || '',
-          images: []
-        });
-      }
-    }
-  }, [auction, categoriesLoaded, adDataLoaded, completeAdData, categories.length, steps, materialType]);
+  }, [completeAdData, auction, steps]);
 
   // Update steps when materialType prop changes
   useEffect(() => {
@@ -1064,37 +857,6 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
   // Create preview URL for uploaded image
   const createImageUrl = (file: File) => {
     return URL.createObjectURL(file);
-  };
-
-  // Google Maps address selection handler
-  const handleAddressSelect = async () => {
-    if (!isLoaded) return;
-
-    setIsSearching(true);
-
-    try {
-      const placeResult = await getPlaceDetails();
-
-      if (placeResult) {
-        handleStepDataChange({
-          location: {
-            ...stepData.location,
-            country: placeResult.countryCode,
-            region: placeResult.region,
-            city: placeResult.city,
-            fullAddress: placeResult.formattedAddress
-          }
-        });
-        setLocationError('');
-      } else {
-        setLocationError('Please select a valid address from the suggestions');
-      }
-    } catch (_error) {
-      // Handle error silently
-      setLocationError('Failed to get location details');
-    } finally {
-      setIsSearching(false);
-    }
   };
 
   // Submit changes to backend
@@ -1501,7 +1263,9 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
             state_province: stepData.location.region || undefined,
             city: stepData.location.city,
             address_line: stepData.location.fullAddress || undefined,
-            postal_code: stepData.location.postalCode || undefined
+            postal_code: stepData.location.postalCode || undefined,
+            latitude: stepData.location.latitude || undefined,
+            longitude: stepData.location.longitude || undefined
           },
           delivery_options: deliveryOptions
         };
@@ -2326,46 +2090,35 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   Material Location
                 </h4>
 
-                {/* Google Maps Autocomplete */}
+                {/* Places API (New) Autocomplete */}
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Search Address in Sweden *
                     </label>
-                    <div className="relative">
-                      <input
-                        ref={addressInputRef}
-                        type="text"
-                        placeholder="Start typing your address in Sweden..."
-                        className={`w-full px-4 py-3 pr-10 border rounded-lg focus:ring-[#FF8A00] focus:border-[#FF8A00] ${locationError ? 'border-red-500' : 'border-gray-300'}`}
-                        onChange={(e) => {
-                          setAddressInput(e.target.value);
-                          if (locationError) {
-                            setLocationError('');
-                          }
-                        }}
-                        disabled={!isLoaded || isSearching}
-                      />
-                      <button
-                        onClick={handleAddressSelect}
-                        disabled={!isLoaded || isSearching}
-                        className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded-full ${!isLoaded || isSearching ? 'text-gray-400 cursor-not-allowed' : 'text-[#FF8A00] hover:bg-orange-50'}`}
-                      >
-                        {isSearching ? (
-                          <div className="animate-spin h-5 w-5 border-2 border-[#FF8A00] border-t-transparent rounded-full"></div>
-                        ) : (
-                          <Search className="h-5 w-5" />
-                        )}
-                      </button>
-                    </div>
+                    <PlacesAutocomplete
+                      onPlaceSelect={(place) => {
+                        if (place) {
+                          handleStepDataChange({
+                            location: {
+                              ...stepData.location,
+                              country: place.country || place.countryCode?.toUpperCase() || '',
+                              region: place.stateProvince || place.region || '',
+                              city: place.city || '',
+                              fullAddress: place.addressLine || place.formattedAddress || '',
+                              postalCode: place.postalCode || '',
+                              latitude: place.latitude,
+                              longitude: place.longitude
+                            }
+                          });
+                          setLocationError('');
+                        }
+                      }}
+                      placeholder="Start typing your address in Sweden..."
+                      className={locationError ? 'border-red-500' : ''}
+                    />
                     {locationError && (
                       <p className="mt-1 text-sm text-red-600">{locationError}</p>
-                    )}
-                    {!isLoaded && !loadError && (
-                      <p className="mt-1 text-sm text-gray-500">Loading Google Maps...</p>
-                    )}
-                    {loadError && (
-                      <p className="mt-1 text-sm text-red-600">Failed to load Google Maps. Please enter location manually.</p>
                     )}
                   </div>
 
@@ -2389,8 +2142,17 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                             {stepData.location.city}
                             {stepData.location.region && `, ${stepData.location.region}`}
                             {stepData.location.country && `, ${stepData.location.country.toUpperCase()}`}
+                            {stepData.location.postalCode && ` (${stepData.location.postalCode})`}
                           </span>
                         </div>
+                        {(stepData.location.latitude && stepData.location.longitude) && (
+                          <div className="flex">
+                            <MapPinned className="w-4 h-4 mr-2 text-gray-500 flex-shrink-0 mt-1" />
+                            <span className="text-gray-700 text-xs">
+                              {stepData.location.latitude.toFixed(4)}, {stepData.location.longitude.toFixed(4)}
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
