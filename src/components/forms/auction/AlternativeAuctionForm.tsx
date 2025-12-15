@@ -103,7 +103,7 @@ const initialFormData: FormData = {
   materialType: '',
   tradeType: '',
   businessType: '',
-  sellFrequency: '',
+  sellFrequency: 'one_time',
   category: '',
   subcategory: '',
   specificMaterial: '',

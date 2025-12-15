@@ -60,14 +60,15 @@ const packagingOptions = [
   }
 ];
 
-const sellFrequencies = [
-  { id: 'one_time', name: 'One-time' },
-  { id: 'weekly', name: 'Weekly' },
-  { id: 'bi_weekly', name: 'Bi-weekly' },
-  { id: 'monthly', name: 'Monthly' },
-  { id: 'quarterly', name: 'Quarterly' },
-  { id: 'yearly', name: 'Yearly' }
-];
+// Sell frequencies - commented out but kept for future use
+// const sellFrequencies = [
+//   { id: 'one_time', name: 'One-time' },
+//   { id: 'weekly', name: 'Weekly' },
+//   { id: 'bi_weekly', name: 'Bi-weekly' },
+//   { id: 'monthly', name: 'Monthly' },
+//   { id: 'quarterly', name: 'Quarterly' },
+//   { id: 'yearly', name: 'Yearly' }
+// ];
 
 const materialGrades = {
   plastics: [
@@ -596,7 +597,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
         const match = packagingOptions.find(opt => opt.id === backendPackaging || opt.name === backendPackaging);
         return match ? match.id : backendPackaging;
       })(),
-      materialFrequency: completeAdData?.material_frequency || '',
+      materialFrequency: completeAdData?.material_frequency || 'one_time',
       grade: completeAdData?.specification?.material_grade_display || '',
       color: completeAdData?.specification?.color || '',
       form: completeAdData?.specification?.material_form_display || '',
@@ -986,7 +987,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   : []
               ) : [],
               packaging: freshData.packaging || '',
-              materialFrequency: freshData.material_frequency || '',
+              materialFrequency: freshData.material_frequency || 'one_time',
               grade: freshData.specification?.material_grade_display || '',
               color: freshData.specification?.color || '',
               form: freshData.specification?.material_form_display || '',
@@ -1630,8 +1631,8 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                   </div>
                 </div>
 
-                {/* Sell Frequency Selection */}
-                <div>
+                {/* Sell Frequency Selection - Commented out but kept for future use */}
+                {/* <div>
                   <label className="block text-sm font-medium text-gray-700 mb-4">
                     How often do you have this material? *
                   </label>
@@ -1652,7 +1653,7 @@ export default function EditAuctionModal({ isOpen, onClose, onSubmit, auction, m
                       </button>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </>
             )}
           </div>

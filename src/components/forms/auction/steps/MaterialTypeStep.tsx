@@ -53,14 +53,15 @@ const packagingOptions = [
   }
 ];
 
-const sellFrequencies = [
-  { id: 'one_time', name: 'One-time' },
-  { id: 'weekly', name: 'Weekly' },
-  { id: 'bi_weekly', name: 'Bi-weekly' },
-  { id: 'monthly', name: 'Monthly' },
-  { id: 'quarterly', name: 'Quarterly' },
-  { id: 'yearly', name: 'Yearly' }
-];
+// Sell frequencies - commented out but kept for future use
+// const sellFrequencies = [
+//   { id: 'one_time', name: 'One-time' },
+//   { id: 'weekly', name: 'Weekly' },
+//   { id: 'bi_weekly', name: 'Bi-weekly' },
+//   { id: 'monthly', name: 'Monthly' },
+//   { id: 'quarterly', name: 'Quarterly' },
+//   { id: 'yearly', name: 'Yearly' }
+// ];
 
 export function MaterialTypeStep({ formData, updateFormData }: Props) {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -96,9 +97,10 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
     });
   };
 
-  const handleFrequencySelect = (frequency: string) => {
-    updateFormData({ sellFrequency: frequency });
-  };
+  // Frequency selection handler - commented out but kept for future use
+  // const handleFrequencySelect = (frequency: string) => {
+  //   updateFormData({ sellFrequency: frequency });
+  // };
 
   const handleCategorySelect = (categoryId: number, categoryName: string) => {
     updateFormData({ 
@@ -272,8 +274,8 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
         </div>
       </div>
 
-      {/* Sell Frequency Selection */}
-      <div>
+      {/* Sell Frequency Selection - Commented out but kept for future use */}
+      {/* <div>
         <label className="block text-sm font-medium text-gray-700 mb-4">
           How often do you have this material? *
         </label>
@@ -294,7 +296,7 @@ export function MaterialTypeStep({ formData, updateFormData }: Props) {
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
 
 
     </div>
